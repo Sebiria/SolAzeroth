@@ -15,11 +15,15 @@
 // Villes, villages et relais (migration 052) : un lieu peut être une aire. Faute de trajets de patrouille, les silhouettes
 // y vont d'un PNJ de service à un autre (aubergiste, marchands, maître de vol…) en suivant le navmesh, et apparaissent
 // plus près (20 à 90 m).
+// Routes (migration 053) : dans chaque zone, hors des villes et relais, des voyageurs à pied et des cavaliers suivent les
+// trajets de patrouille des PNJ amicaux (gardes de route, caravanes), avec l'apparence du camp de ce PNJ ; quelques
+// campements (2 à 4 silhouettes autour d'un feu de camp) s'installent à 8-14 m du trajet. Plus nombreux le jour.
 
 #include "SolAzeroth.h"
 #include "Config.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "GameObject.h"
 #include "Map.h"
 #include "MoveSpline.h"
 #include "MoveSplineInit.h"
@@ -36,6 +40,7 @@
 namespace
 {
     uint32 const SILHOUETTE = 900110;
+    uint32 const FEU_DE_CAMP = 1798;
 
     std::array<uint32, 11> const GESTES = { EMOTE_ONESHOT_TALK, EMOTE_ONESHOT_TALK, EMOTE_ONESHOT_TALK, EMOTE_ONESHOT_LAUGH,
         EMOTE_ONESHOT_POINT, EMOTE_ONESHOT_BOW, EMOTE_ONESHOT_QUESTION, EMOTE_ONESHOT_EXCLAMATION, EMOTE_ONESHOT_YES,
@@ -47,6 +52,7 @@ namespace
         uint32 soir = 80, jour = 30, nuit = 10;
         uint32 montures = 40;
         uint32 monturesMobiles = 25;
+        uint32 voyageurs = 8, cavaliersRoute = 4, campements = 2;   // par zone, le jour
     } reglages;
 
     struct Armes { uint32 droite, gauche, distance; };
@@ -67,6 +73,7 @@ namespace
         int32 point = 0;
         int32 sens = 1;
         bool monte = false;   // marcheur en selle (compté avec les cavaliers)
+        ObjectGuid feu;       // campement : feu de camp, porté par le premier du groupe
     };
 
     // Un lieu animé. La liste est remplie au démarrage puis ne change plus : chaque carte n'est mise à jour que par un
@@ -80,6 +87,9 @@ namespace
         float densite = 1.0f;
         std::vector<std::vector<G3D::Vector3>> chemins;   // trajets des patrouilles du lieu
         std::vector<G3D::Vector3> ancres;                 // ou, pour une aire, positions de ses PNJ de service
+        uint8 genre = 0;                                  // 0 ville, 1 routes de la zone
+        std::vector<uint8> campsChemins;                  // routes : camp de chaque trajet
+        std::vector<uint32> villes;                       // routes : aires des villes et relais de la zone
         std::vector<Silhouette> silhouettes;
         uint32 attente = 0;
         uint32 absence = 0;
@@ -140,19 +150,26 @@ namespace
         return false;
     }
 
-    // Apparences du camp du lieu ; dans une ville des deux camps, un camp au hasard.
-    std::vector<uint32> const& Apparences(Lieu const& lieu)
+    // Camp d'une silhouette : celui du lieu, ou sur une route celui du trajet.
+    uint8 CampDe(Lieu const& lieu, uint32 chemin)
     {
-        uint8 camp = lieu.camp < 2 ? lieu.camp : uint8(urand(0, 1));
+        return lieu.genre == 1 && chemin < lieu.campsChemins.size() ? lieu.campsChemins[chemin] : lieu.camp;
+    }
+
+    // Apparences d'un camp ; pour les deux camps, un camp au hasard.
+    std::vector<uint32> const& Apparences(uint8 camp)
+    {
+        if (camp >= 2)
+            camp = uint8(urand(0, 1));
         return apparences[camp].empty() ? apparences[0] : apparences[camp];
     }
 
-    Creature* Habiller(Map* map, Lieu const& lieu, Position const& position, int32 duree)
+    Creature* Habiller(Map* map, uint8 camp, Position const& position, int32 duree)
     {
         TempSummon* c = map->SummonCreature(SILHOUETTE, position, nullptr, duree + 5000);
         if (!c)
             return nullptr;
-        uint32 apparence = Acore::Containers::SelectRandomContainerElement(Apparences(lieu));
+        uint32 apparence = Acore::Containers::SelectRandomContainerElement(Apparences(camp));
         c->SetDisplayId(apparence);
         c->SetNativeDisplayId(apparence);
         if (!armes.empty() && urand(0, 1))
@@ -249,7 +266,7 @@ namespace
             s.chemin = chemin;
             s.point = point;
             s.sens = urand(0, 1) ? 1 : -1;
-            if (Creature* c = Habiller(map, endroit, Position(lieu.x, lieu.y, lieu.z, frand(0.0f, 2 * float(M_PI))), s.restant))
+            if (Creature* c = Habiller(map, CampDe(endroit, chemin), Position(lieu.x, lieu.y, lieu.z, frand(0.0f, 2 * float(M_PI))), s.restant))
             {
                 s.guid = c->GetGUID();
                 if (urand(0, 99) < 60)   // six passants sur dix courent
@@ -272,7 +289,7 @@ namespace
             float sol = map->GetHeight(PHASEMASK_NORMAL, x, y, lieu.z + 2.0f);
             Position position(x, y, std::fabs(sol - lieu.z) < 3.0f ? sol : lieu.z,
                 Position::NormalizeOrientation(angle + float(M_PI)));   // face au centre du groupe
-            Creature* c = Habiller(map, endroit, position, duree);
+            Creature* c = Habiller(map, CampDe(endroit, chemin), position, duree);
             if (!c)
                 continue;
             c->SetFacingTo(position.GetOrientation());
@@ -301,7 +318,7 @@ namespace
         if (std::fabs(sol - lieu.z) >= 3.0f)
             return;
         int32 duree = int32(urand(3, 8) * MINUTE * IN_MILLISECONDS);
-        Creature* c = Habiller(map, endroit, Position(x, y, sol, frand(0.0f, 2 * float(M_PI))), duree);
+        Creature* c = Habiller(map, CampDe(endroit, chemin), Position(x, y, sol, frand(0.0f, 2 * float(M_PI))), duree);
         if (!c)
             return;
         if (!c->IsOutdoors())
@@ -330,12 +347,107 @@ namespace
         endroit.silhouettes.push_back(m);
     }
 
+    // Route : un voyageur à pied, qui marche le plus souvent (trois sur dix pressent le pas).
+    void PlacerVoyageur(Map* map, Lieu& lieu, std::vector<Player*> const& joueurs)
+    {
+        uint32 chemin;
+        int32 point;
+        if (lieu.chemins.empty() || apparences[0].empty() || !ChoisirPoint(lieu, joueurs, chemin, point))
+            return;
+        G3D::Vector3 const& p = lieu.chemins[chemin][point];
+        Silhouette s{ ObjectGuid::Empty, MARCHEUR, int32(urand(3, 6) * MINUTE * IN_MILLISECONDS) };
+        Creature* c = Habiller(map, CampDe(lieu, chemin), Position(p.x, p.y, p.z, frand(0.0f, 2 * float(M_PI))), s.restant);
+        if (!c)
+            return;
+        s.guid = c->GetGUID();
+        s.chemin = chemin;
+        s.point = point;
+        s.sens = urand(0, 1) ? 1 : -1;
+        if (urand(0, 9) < 3)
+            c->SetWalk(false);
+        Marcher(lieu, c, s);
+        lieu.silhouettes.push_back(s);
+    }
+
+    // Route : un campement de 2 à 4 voyageurs autour d'un feu de camp, à 8-14 m du trajet, dehors. Deux sur trois sont
+    // assis ; les autres, debout, discutent par gestes.
+    void PlacerCampement(Map* map, Lieu& lieu, std::vector<Player*> const& joueurs)
+    {
+        uint32 chemin;
+        int32 point;
+        if (lieu.chemins.empty() || apparences[0].empty() || !ChoisirPoint(lieu, joueurs, chemin, point))
+            return;
+        G3D::Vector3 const& p = lieu.chemins[chemin][point];
+        G3D::Vector3 centre = Pres(map, p, 8.0f, 14.0f);
+        if (centre == p || !Dehors(map, centre))
+            return;
+        int32 duree = int32(urand(4, 8) * MINUTE * IN_MILLISECONDS);
+        GameObject* feu = map->SummonGameObject(FEU_DE_CAMP, centre.x, centre.y, centre.z, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+            uint32(duree / IN_MILLISECONDS));
+        if (!feu)
+            return;
+        uint8 camp = CampDe(lieu, chemin);
+        if (camp >= 2)
+            camp = uint8(urand(0, 1));   // un campement reste d'un seul camp
+        uint32 nombre = urand(2, 4);
+        float depart = frand(0.0f, 2 * float(M_PI));
+        bool premier = true;
+        for (uint32 i = 0; i < nombre; ++i)
+        {
+            float angle = depart + 2 * float(M_PI) * i / nombre;
+            float rayon = frand(1.8f, 2.4f);
+            float x = centre.x + rayon * std::cos(angle), y = centre.y + rayon * std::sin(angle);
+            float sol = map->GetHeight(PHASEMASK_NORMAL, x, y, centre.z + 2.0f);
+            Position position(x, y, std::fabs(sol - centre.z) < 3.0f ? sol : centre.z,
+                Position::NormalizeOrientation(angle + float(M_PI)));   // face au feu
+            Creature* c = Habiller(map, camp, position, duree);
+            if (!c)
+                continue;
+            c->SetFacingTo(position.GetOrientation());
+            if (urand(0, 2))
+                c->SetStandState(UNIT_STAND_STATE_SIT);
+            Silhouette s{ c->GetGUID(), BAVARD, duree };
+            s.geste = int32(urand(1000, 8000));
+            if (premier)
+                s.feu = feu->GetGUID();
+            premier = false;
+            lieu.silhouettes.push_back(s);
+        }
+        if (premier)
+            feu->DespawnOrUnsummon();
+    }
+
+    void Retirer(Map* map, Silhouette const& s)
+    {
+        if (Creature* c = map->GetCreature(s.guid))
+            c->DespawnOrUnsummon();
+        if (!s.feu.IsEmpty())
+            if (GameObject* feu = map->GetGameObject(s.feu))
+                feu->DespawnOrUnsummon();
+    }
+
     void ToutRetirer(Map* map, Lieu& lieu)
     {
         for (Silhouette const& s : lieu.silhouettes)
-            if (Creature* c = map->GetCreature(s.guid))
-                c->DespawnOrUnsummon();
+            Retirer(map, s);
         lieu.silhouettes.clear();
+    }
+
+    // Routes : voyageurs à pied plus nombreux le jour (les deux tiers le soir, un tiers la nuit), cavaliers et campements
+    // à toute heure. Trois essais par seconde pour chacun.
+    void PeuplerRoute(Map* map, Lieu& lieu, std::vector<Player*> const& joueurs)
+    {
+        std::vector<Silhouette> const& silhouettes = lieu.silhouettes;
+        std::tm t = Acore::Time::TimeBreakdown(time(nullptr));
+        float heure = t.tm_hour >= 18 ? 0.66f : t.tm_hour >= 8 ? 1.0f : 0.33f;
+        uint32 voyageurs = uint32(reglages.voyageurs * heure * lieu.densite + 0.5f);
+        auto Compter = [&](auto condition) { return uint32(std::count_if(silhouettes.begin(), silhouettes.end(), condition)); };
+        for (uint8 i = 0; i < 3 && Compter([](Silhouette const& s) { return s.role == MARCHEUR && !s.monte; }) < voyageurs; ++i)
+            PlacerVoyageur(map, lieu, joueurs);
+        for (uint8 i = 0; i < 3 && Compter([](Silhouette const& s) { return s.monte; }) < Selon(lieu, reglages.cavaliersRoute); ++i)
+            PlacerCavalier(map, lieu, joueurs, true);
+        for (uint8 i = 0; i < 3 && Compter([](Silhouette const& s) { return !s.feu.IsEmpty(); }) < Selon(lieu, reglages.campements); ++i)
+            PlacerCampement(map, lieu, joueurs);
     }
 
     void Animer(Map* map, Lieu& lieu, uint32 ecoule)
@@ -350,7 +462,13 @@ namespace
         for (auto const& ref : map->GetPlayers())
             if (Player* player = ref.GetSource(); player && player->IsInWorld() && player->GetZoneId() == lieu.zone &&
                 (!lieu.aire || player->GetAreaId() == lieu.aire))
+            {
+                // Routes : pas dans une ville ou un relais de la zone (ils ont leurs propres silhouettes), ni en vol.
+                if (lieu.genre == 1 && (player->IsInFlight() ||
+                    std::find(lieu.villes.begin(), lieu.villes.end(), player->GetAreaId()) != lieu.villes.end()))
+                    continue;
                 joueurs.push_back(player);
+            }
 
         std::vector<Silhouette>& silhouettes = lieu.silhouettes;
         if (joueurs.empty())
@@ -371,8 +489,7 @@ namespace
             bool loin = c && std::all_of(joueurs.begin(), joueurs.end(), [&](Player* p) { return c->GetExactDist2d(p) > 170.0f; });
             if (!c || !c->IsInWorld() || s.restant <= 0 || loin)
             {
-                if (c)
-                    c->DespawnOrUnsummon();
+                Retirer(map, s);
                 it = silhouettes.erase(it);
                 continue;
             }
@@ -393,6 +510,12 @@ namespace
                 Marcher(lieu, c, s);
             }
             ++it;
+        }
+
+        if (lieu.genre == 1)
+        {
+            PeuplerRoute(map, lieu, joueurs);
+            return;
         }
 
         // Population : jusqu'à 10 apparitions (marcheur ou groupe) par seconde vers le nombre voulu, une disparition par
@@ -445,6 +568,9 @@ public:
         reglages.nuit = sConfigMgr->GetOption<uint32>("SolAzeroth.Ambiance.Nuit", 10);
         reglages.montures = sConfigMgr->GetOption<uint32>("SolAzeroth.Ambiance.Montures", 40);
         reglages.monturesMobiles = sConfigMgr->GetOption<uint32>("SolAzeroth.Ambiance.MonturesMobiles", 25);
+        reglages.voyageurs = sConfigMgr->GetOption<uint32>("SolAzeroth.Ambiance.Voyageurs", 8);
+        reglages.cavaliersRoute = sConfigMgr->GetOption<uint32>("SolAzeroth.Ambiance.CavaliersRoute", 4);
+        reglages.campements = sConfigMgr->GetOption<uint32>("SolAzeroth.Ambiance.Campements", 2);
     }
 
     void OnStartup() override
@@ -462,7 +588,7 @@ public:
             do
                 armes.push_back({ (*r)[0].Get<uint32>(), (*r)[1].Get<uint32>(), (*r)[2].Get<uint32>() });
             while (r->NextRow());
-        if (QueryResult r = WorldDatabase.Query("SELECT carte, zone, aire, nom, camp, densite FROM solazeroth_ambiance_lieux"))
+        if (QueryResult r = WorldDatabase.Query("SELECT carte, zone, aire, nom, camp, densite, genre FROM solazeroth_ambiance_lieux"))
             do
             {
                 Field* f = r->Fetch();
@@ -473,13 +599,43 @@ public:
                 lieu.nom = f[3].Get<std::string>();
                 lieu.camp = f[4].Get<uint8>();
                 lieu.densite = f[5].Get<float>();
+                lieu.genre = f[6].Get<uint8>();
                 lieux.push_back(std::move(lieu));
             } while (r->NextRow());
 
         // Trajets des patrouilles et passants de chaque lieu (8 points au moins) ; pour une aire, ses PNJ de service.
-        uint32 trajets = 0, aires = 0;
+        uint32 trajets = 0, aires = 0, routes = 0;
         for (Lieu& lieu : lieux)
         {
+            if (lieu.genre == 1)
+            {
+                for (Lieu const& ville : lieux)
+                    if (ville.genre == 0 && ville.aire && ville.carte == lieu.carte && ville.zone == lieu.zone)
+                        lieu.villes.push_back(ville.aire);
+                QueryResult r = WorldDatabase.Query("SELECT w.id, w.position_x, w.position_y, w.position_z, r.camp FROM waypoint_data w "
+                    "JOIN solazeroth_ambiance_routes r ON r.chemin = w.id WHERE r.carte = {} AND r.zone = {} ORDER BY w.id, w.point",
+                    lieu.carte, lieu.zone);
+                if (!r)
+                    continue;
+                uint32 dernier = 0;
+                uint8 camp = 2;
+                std::vector<G3D::Vector3> trajet;
+                auto Garder = [&]() { if (!trajet.empty()) { lieu.chemins.push_back(trajet); lieu.campsChemins.push_back(camp); } trajet.clear(); };
+                do
+                {
+                    Field* f = r->Fetch();
+                    if (f[0].Get<uint32>() != dernier)
+                    {
+                        Garder();
+                        dernier = f[0].Get<uint32>();
+                        camp = f[4].Get<uint8>();
+                    }
+                    trajet.emplace_back(f[1].Get<float>(), f[2].Get<float>(), f[3].Get<float>());
+                } while (r->NextRow());
+                Garder();
+                routes += lieu.chemins.size();
+                continue;
+            }
             if (lieu.aire)
             {
                 if (QueryResult r = WorldDatabase.Query("SELECT c.position_x, c.position_y, c.position_z FROM creature c "
@@ -514,8 +670,8 @@ public:
             Garder();
             trajets += lieu.chemins.size();
         }
-        LOG_INFO("module", "Sol'Azeroth ambiance : {} apparences Alliance, {} Horde, {} jeux d'armes, {} montures, {} lieux ({} villes et relais), {} trajets",
-            apparences[0].size(), apparences[1].size(), armes.size(), montures.size(), lieux.size(), aires, trajets);
+        LOG_INFO("module", "Sol'Azeroth ambiance : {} apparences Alliance, {} Horde, {} jeux d'armes, {} montures, {} lieux ({} villes et relais), {} trajets, {} routes",
+            apparences[0].size(), apparences[1].size(), armes.size(), montures.size(), lieux.size(), aires, trajets, routes);
     }
 };
 

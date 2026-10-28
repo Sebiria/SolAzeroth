@@ -154,6 +154,9 @@ SolAzeroth.Contrats.BonusTheme = 0.5
 #    SolAzeroth.Ambiance.Nuit     Nombre de minuit à 8 h
 #    SolAzeroth.Ambiance.Montures Cavaliers en extérieur, à toute heure
 #    SolAzeroth.Ambiance.MonturesMobiles  Parmi eux, ceux qui se déplacent (les autres restent immobiles)
+#    SolAzeroth.Ambiance.Voyageurs        Routes : voyageurs à pied par zone, le jour (deux tiers le soir, un tiers la nuit)
+#    SolAzeroth.Ambiance.CavaliersRoute   Routes : cavaliers par zone, à toute heure
+#    SolAzeroth.Ambiance.Campements       Routes : campements autour d'un feu par zone, à toute heure
 
 SolAzeroth.Ambiance.Enable = 1
 SolAzeroth.Ambiance.Soir = 240
@@ -161,6 +164,9 @@ SolAzeroth.Ambiance.Jour = 90
 SolAzeroth.Ambiance.Nuit = 30
 SolAzeroth.Ambiance.Montures = 40
 SolAzeroth.Ambiance.MonturesMobiles = 25
+SolAzeroth.Ambiance.Voyageurs = 8
+SolAzeroth.Ambiance.CavaliersRoute = 4
+SolAzeroth.Ambiance.Campements = 2
 
 #    SolAzeroth.Raids.Epuisement       Rendements décroissants des raids (1 : oui)
 #    SolAzeroth.Raids.PassagesParJour  Passages du jour dans un même raid avant l'épuisement

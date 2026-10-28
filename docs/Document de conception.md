@@ -693,7 +693,16 @@ Des silhouettes aux apparences de joueurs peuplent les villes et les camps. Ce n
     - **Déplacement** : ces lieux n'ont presque pas de trajets de patrouille. Les passants vont donc d'un PNJ de service à un autre (aubergiste, marchands, maître de vol, donneurs de quêtes), à 8-100 m, en suivant le navmesh. Ils s'arrêtent à 2-4 m du PNJ. Les cavaliers ne visent que des points en extérieur. Les groupes se forment à 4-7 m d'un PNJ de service.
     - Apparition entre **20 et 90 m** du joueur (les villages sont petits), au lieu de 40-130 m.
     - **Densité provisoire** : 0,12 avec une auberge (environ 29 silhouettes le soir, 11 le jour, 5 cavaliers), 0,06 pour un relais sans auberge.
-    - Restent : voyageurs sur les routes et camps.
+    - **Validé en jeu par l'utilisateur le 29/10/2026** (« ça a l'air cohérent »).
+  - **Routes et campements (V8, 29/10/2026, construit, à valider en jeu)** : migration 053, dernière étape du chantier ambiance.
+    - **Trajets** : table `solazeroth_ambiance_routes`, **494 trajets dans 54 zones**. Ce sont les patrouilles de PNJ humanoïdes non hostiles aux joueurs (gardes de route, caravanes), de 8 points et 150 m au moins, hors capitales. Les bêtes neutres sont écartées, car elles errent dans les champs. Chaque trajet garde le camp de son PNJ (244 Alliance, 134 Horde, 116 neutres). Une ligne « routes » (`genre = 1`) par zone dans `solazeroth_ambiance_lieux`.
+    - **Où** : dans la zone, mais pas dans une de ses villes ou relais (qui ont leurs propres silhouettes), ni en vol.
+    - **Qui (provisoire, `mod_solazeroth.conf`)** :
+      - `Voyageurs = 8` voyageurs à pied par zone le jour, les deux tiers le soir, un tiers la nuit. Ils marchent, trois sur dix pressent le pas ;
+      - `CavaliersRoute = 4` cavaliers à toute heure, au pas ou au galop, qui ne quittent pas l'extérieur ;
+      - `Campements = 2` campements à toute heure : 2 à 4 silhouettes d'un même camp autour d'un feu de camp (objet 1798), à 8-14 m du trajet et dehors. Deux sur trois sont assises, les autres discutent par gestes. Le feu disparaît avec le campement.
+    - Mêmes distances qu'en capitale : apparition entre 40 et 130 m, disparition au-delà de 170 m.
+    - Après cette étape, le chantier ambiance est terminé, sauf retours en jeu. Les zones sans patrouille amicale (54 zones sur toutes celles du jeu) n'ont pas de voyageurs.
     - **Défaut connu, sans priorité (29/10/2026)** : un cavalier est encore entré dans la banque d'Orgrimmar dès les premières secondes. L'utilisateur juge que ce n'est pas important. Piste si besoin : les points du trajet sont dehors, mais la ligne droite entre deux points traverse l'entrée.
     - Ajouter un lieu (village, relais) = une ligne dans `solazeroth_ambiance_lieux`, à condition que la zone ait des trajets de patrouille.
   - **Objectif confirmé par l'utilisateur le 28/10/2026 : à terme, tout le monde.** Le monde entier doit être animé, pas seulement Hurlevent : toutes les capitales des deux factions, Shattrath et Dalaran, puis les villes, villages et relais de quêtes, les voyageurs sur les routes et les camps. La densité est adaptée à chaque lieu. Hurlevent sert de modèle.
@@ -941,7 +950,7 @@ Ces éléments ne doivent pas être commencés avant V8, et ceux de la liste « 
 | Élément | Raison | Notes |
 | --- | --- | --- |
 | Mise à l'échelle du monde | Si les monstres montent avec le joueur, il ne se sent jamais plus fort | En option, **avec retard** : monstres 2 à 3 niveaux sous le joueur dans les zones terminées. Villes, PNJ de service, gardes et boss de monde exclus. XP et or des quêtes alors calculés sur le niveau du joueur |
-| PNJ d'ambiance dans le monde entier | Hurlevent fait (V5) ; toutes les capitales, Shattrath et Dalaran construits le 29/10/2026 (migration 051, validés en jeu), puis 155 villes, villages et relais (migration 052, à valider). Restent routes et camps | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
+| PNJ d'ambiance dans le monde entier | Hurlevent fait (V5) ; toutes les capitales, Shattrath et Dalaran construits le 29/10/2026 (migration 051, validés en jeu), puis 155 villes, villages et relais (migration 052, validés), puis routes et campements de 54 zones (migration 053, à valider) | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
 | Ligues Remix et Chaos | Dépendent de la mise à l'échelle du monde | Section 3.3 |
 | Raids réécrits boss par boss | Très cher pour un gain modeste | Un boss à la fois, en ALE ou C++, en partant de la liste de faisabilité (section 4.7) |
 | Vol dans Kalimdor et les Royaumes de l'Est | Très cher, défauts visibles | Récompense de Renom. Patch `AreaTable.dbc` et retrait de la restriction serveur sur les cartes 0 et 1. Défauts acceptés : zones inachevées, trous, murs invisibles |
