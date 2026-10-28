@@ -687,6 +687,14 @@ Des silhouettes aux apparences de joueurs peuplent les villes et les camps. Ce n
     - **Densité (provisoire)**, qui multiplie les nombres de la configuration : Hurlevent et Orgrimmar 1 ; Forgefer, Fossoyeuse et Lune-d'Argent 0,7 ; Shattrath et Dalaran 0,8 ; Darnassus, l'Exodar et les Pitons-du-Tonnerre 0,5. Elle s'applique aussi aux cavaliers. Fossoyeuse étant souterraine, elle n'aura presque pas de cavaliers (extérieur seulement).
     - Les montures restent communes aux deux camps.
     - **Retour de l'utilisateur (29/10/2026)** : capitales « ok », mais des cavaliers entraient à cheval dans les bâtiments. Les cavaliers qui bougent s'arrêtent maintenant avant le premier point en intérieur de leur trajet et font demi-tour (même test que le jeu pour les montures). Construit, à revoir en jeu.
+  - **Villes, villages et relais de quêtes (V8, 29/10/2026, construit, à valider en jeu)** : migration 052, demande « build suivant » de l'utilisateur.
+    - Un lieu peut maintenant être une **aire** (sous-zone, colonne `aire`) : le joueur doit s'y trouver.
+    - **155 aires** hors capitales, avec un aubergiste ou un maître de vol et au moins 3 PNJ de service. Les aires qui couvrent toute une zone sont écartées. Répartition : 56 Alliance, 54 Horde, 45 mixtes (Baie-du-Butin, Gadgetzan…). Le camp vient de l'aubergiste et des maîtres de vol.
+    - **Déplacement** : ces lieux n'ont presque pas de trajets de patrouille. Les passants vont donc d'un PNJ de service à un autre (aubergiste, marchands, maître de vol, donneurs de quêtes), à 8-100 m, en suivant le navmesh. Ils s'arrêtent à 2-4 m du PNJ. Les cavaliers ne visent que des points en extérieur. Les groupes se forment à 4-7 m d'un PNJ de service.
+    - Apparition entre **20 et 90 m** du joueur (les villages sont petits), au lieu de 40-130 m.
+    - **Densité provisoire** : 0,12 avec une auberge (environ 29 silhouettes le soir, 11 le jour, 5 cavaliers), 0,06 pour un relais sans auberge.
+    - Restent : voyageurs sur les routes et camps.
+    - **Défaut connu, sans priorité (29/10/2026)** : un cavalier est encore entré dans la banque d'Orgrimmar dès les premières secondes. L'utilisateur juge que ce n'est pas important. Piste si besoin : les points du trajet sont dehors, mais la ligne droite entre deux points traverse l'entrée.
     - Ajouter un lieu (village, relais) = une ligne dans `solazeroth_ambiance_lieux`, à condition que la zone ait des trajets de patrouille.
   - **Objectif confirmé par l'utilisateur le 28/10/2026 : à terme, tout le monde.** Le monde entier doit être animé, pas seulement Hurlevent : toutes les capitales des deux factions, Shattrath et Dalaran, puis les villes, villages et relais de quêtes, les voyageurs sur les routes et les camps. La densité est adaptée à chaque lieu. Hurlevent sert de modèle.
 
@@ -933,7 +941,7 @@ Ces éléments ne doivent pas être commencés avant V8, et ceux de la liste « 
 | Élément | Raison | Notes |
 | --- | --- | --- |
 | Mise à l'échelle du monde | Si les monstres montent avec le joueur, il ne se sent jamais plus fort | En option, **avec retard** : monstres 2 à 3 niveaux sous le joueur dans les zones terminées. Villes, PNJ de service, gardes et boss de monde exclus. XP et or des quêtes alors calculés sur le niveau du joueur |
-| PNJ d'ambiance dans le monde entier | Hurlevent fait (V5) ; toutes les capitales, Shattrath et Dalaran construits le 29/10/2026 (migration 051, à valider en jeu). Restent villes, relais, routes et camps | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
+| PNJ d'ambiance dans le monde entier | Hurlevent fait (V5) ; toutes les capitales, Shattrath et Dalaran construits le 29/10/2026 (migration 051, validés en jeu), puis 155 villes, villages et relais (migration 052, à valider). Restent routes et camps | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
 | Ligues Remix et Chaos | Dépendent de la mise à l'échelle du monde | Section 3.3 |
 | Raids réécrits boss par boss | Très cher pour un gain modeste | Un boss à la fois, en ALE ou C++, en partant de la liste de faisabilité (section 4.7) |
 | Vol dans Kalimdor et les Royaumes de l'Est | Très cher, défauts visibles | Récompense de Renom. Patch `AreaTable.dbc` et retrait de la restriction serveur sur les cartes 0 et 1. Défauts acceptés : zones inachevées, trous, murs invisibles |
