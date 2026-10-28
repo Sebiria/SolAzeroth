@@ -682,6 +682,7 @@ Des silhouettes aux apparences de joueurs peuplent les villes et les camps. Ce n
   - **Dernière passe :** parmi les 40, **25 cavaliers se déplacent** sur les trajets (moitié au pas, moitié au galop à la vitesse d'une monture épique), les 15 autres restent immobiles. Réglage `SolAzeroth.Ambiance.MonturesMobiles = 25` (provisoire).
   - **Hurlevent validé en jeu par l'utilisateur le 28/10/2026.** Restent pour plus tard : autres capitales, voyageurs sur les routes, camps.
   - **Reste à faire :** autres capitales, voyageurs sur les routes, camps.
+  - **Objectif confirmé par l'utilisateur le 28/10/2026 : à terme, tout le monde.** Le monde entier doit être animé, pas seulement Hurlevent : toutes les capitales des deux factions, Shattrath et Dalaran, puis les villes, villages et relais de quêtes, les voyageurs sur les routes et les camps. La densité est adaptée à chaque lieu. Hurlevent sert de modèle.
 
 ### 6.6 Mode défi en extérieur (V3)
 
@@ -926,6 +927,7 @@ Ces éléments ne doivent pas être commencés avant V8, et ceux de la liste « 
 | Élément | Raison | Notes |
 | --- | --- | --- |
 | Mise à l'échelle du monde | Si les monstres montent avec le joueur, il ne se sent jamais plus fort | En option, **avec retard** : monstres 2 à 3 niveaux sous le joueur dans les zones terminées. Villes, PNJ de service, gardes et boss de monde exclus. XP et or des quêtes alors calculés sur le niveau du joueur |
+| PNJ d'ambiance dans le monde entier | Hurlevent seul est fait (V5) ; l'extension est demandée par l'utilisateur (28/10/2026) | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
 | Ligues Remix et Chaos | Dépendent de la mise à l'échelle du monde | Section 3.3 |
 | Raids réécrits boss par boss | Très cher pour un gain modeste | Un boss à la fois, en ALE ou C++, en partant de la liste de faisabilité (section 4.7) |
 | Vol dans Kalimdor et les Royaumes de l'Est | Très cher, défauts visibles | Récompense de Renom. Patch `AreaTable.dbc` et retrait de la restriction serveur sur les cartes 0 et 1. Défauts acceptés : zones inachevées, trous, murs invisibles |

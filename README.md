@@ -30,7 +30,7 @@ No bots, no group finder, no auction house: every dungeon and raid is tuned so o
 - Outdoor challenge mode (harder open world for better rewards).
 - A 16-chapter story chain to the Lich King, with credits for the "Story" ending.
 - Codex, Renown, collection journal, 50 account achievements, travelers' Marks as currency, quartermasters.
-- Ambient NPCs bringing Stormwind to life.
+- Ambient NPCs bringing Stormwind to life. Other capitals come next, then towns, roads and camps across the whole world.
 
 **Comfort**
 - One-click launcher: MySQL → auth → world → client, automatic and manual backups, versioned SQL migrations with rollback.

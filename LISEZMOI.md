@@ -28,7 +28,7 @@ Pas de bots, pas de recherche de groupe, pas d'hôtel des ventes. Chaque donjon 
 - Mode défi en extérieur : monde plus dur, meilleures récompenses.
 - Chaîne d'histoire en 16 chapitres jusqu'au Roi-liche, avec générique pour la fin « Histoire ».
 - Codex, Renom, journal de collection, 50 hauts faits de compte, Marques du voyageur comme monnaie, intendants.
-- PNJ d'ambiance qui font vivre Hurlevent.
+- PNJ d'ambiance qui font vivre Hurlevent. Les autres capitales suivront, puis les villes, les routes et les camps du monde entier.
 
 **Confort**
 - Lanceur en un clic : MySQL, connexion, monde, puis le jeu. Sauvegardes automatiques et manuelles, migrations SQL versionnées avec retour arrière.
