@@ -1049,6 +1049,13 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
       - sur parchemin (Collection), les lignes sont claires et translucides, et les textes passent à l'encre brune ;
     - les pages **Barres et sacs** et **Sauvegarde** sont refaites en cartes, avec icône, titre et boutons ;
     - **ensuite** : retouches page par page, à partir des captures d'écran de l'utilisateur.
+    - **Retouches d'après la vidéo de l'utilisateur (28/10/2026, à revoir en jeu)** :
+      - les petites pages sont agrandies jusqu'à ×1,3 pour remplir la fenêtre ;
+      - sur parchemin, l'en-tête est replacé : le titre sortait du cadre et la lettrine ne se voyait pas. Les textes clairs, y compris les couleurs dans le texte, y sont assombris en gardant leur teinte ;
+      - Apprentissage : la case « Déjà appris » ne chevauche plus l'or, et les boutons du bas (« Compétences » débordait) ont une largeur adaptée à leur texte ;
+      - Contrats : la fenêtre est élargie (560 × 440), avec des lignes plus hautes et plus larges. Les descriptions sur deux lignes ne se chevauchent plus ;
+      - Plaques de nom : le bouton « Réglages d'origine » passe sous la dernière case ;
+      - vu sans correction : dans Apprentissage → Éclats, des objets s'affichent « Objet 50339 » tant que le jeu ne connaît pas leur nom. La liste se redessine chaque seconde jusqu'à ce que le serveur réponde. **À surveiller** : si les noms ne viennent pas après quelques secondes, il faudra corriger.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
     - étape 6, connexion sans mot de passe : elle demanderait d'écrire le mot de passe dans un fichier du client ou de changer le serveur de connexion. **Décision à prendre par l'utilisateur.**

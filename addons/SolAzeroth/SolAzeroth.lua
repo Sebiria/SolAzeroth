@@ -6,7 +6,7 @@
 
 local LARGEUR, HAUTEUR = 820, 660
 local MARGE_HAUT, MARGE = 92, 18
-local ENTETE_PARCHEMIN = 46
+local ENTETE_PARCHEMIN = 58
 
 -- page : cadre accueilli (nom global) et commande qui le remplit, ou fonction de construction (pages simples).
 local SECTIONS = {
@@ -114,14 +114,15 @@ parchemin:SetPoint("TOPLEFT", 4, -4)
 parchemin:SetPoint("BOTTOMRIGHT", -4, 4)
 
 -- En-tête des pages sur parchemin : lettrine et titre
+-- Positions fixes depuis le haut du parchemin : ancré à la lettrine, le titre sortait du cadre.
 local lettrine = contenu:CreateFontString(nil, "OVERLAY")
-lettrine:SetFont("Fonts\\MORPHEUS.TTF", 38)
+lettrine:SetFont("Fonts\\MORPHEUS.TTF", 34)
 lettrine:SetTextColor(0.48, 0.18, 0.1)
-lettrine:SetPoint("TOPLEFT", 16, -6)
+lettrine:SetPoint("TOPLEFT", 18, -10)
 local titrePage = contenu:CreateFontString(nil, "OVERLAY")
 titrePage:SetFont("Fonts\\MORPHEUS.TTF", 20)
 titrePage:SetTextColor(0.23, 0.11, 0.04)
-titrePage:SetPoint("BOTTOMLEFT", lettrine, "BOTTOMRIGHT", 0, 6)
+titrePage:SetPoint("TOPLEFT", 46, -16)
 local sousTitre = contenu:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 sousTitre:SetTextColor(0.42, 0.29, 0.15)
 sousTitre:SetPoint("TOPLEFT", titrePage, "BOTTOMLEFT", 0, -2)
@@ -316,15 +317,40 @@ local function Encre(nom)
     return encresCreees[nom]
 end
 
+-- Une couleur claire (jaune, vert pâle…) est illisible sur le parchemin : on garde sa teinte en l'assombrissant.
+local function Assombrir(r, g, b)
+    local clarte = 0.3 * r + 0.59 * g + 0.11 * b
+    if clarte < 0.45 then return r, g, b end
+    local f = 0.4 / clarte
+    return r * f, g * f, b * f
+end
+
+local function AssombrirCode(a, rr, gg, bb)
+    local r, g, b = Assombrir(tonumber(rr, 16) / 255, tonumber(gg, 16) / 255, tonumber(bb, 16) / 255)
+    return string.format("|c%s%02x%02x%02x", a, r * 255, g * 255, b * 255)
+end
+
+local function EncrerTexte(t)
+    local couleur, texte = t.SetTextColor, t.SetText
+    t.SetTextColor = function(self, r, g, b, a) couleur(self, Assombrir(r, g, b)) end
+    t.SetText = function(self, s)
+        if type(s) == "string" then s = s:gsub("|c(%x%x)(%x%x)(%x%x)(%x%x)", AssombrirCode) end
+        texte(self, s)
+    end
+    local r, g, b = t:GetTextColor()
+    t:SetTextColor(r, g, b)
+    t:SetText(t:GetText())
+end
+
 local function HabillerTexte(t, parent, surParchemin)
     local objet = t:GetFontObject()
     local nom = objet and objet:GetName()
-    if not nom then return end
     if surParchemin then
         -- Les textes des boutons et des barres restent clairs : ils sont posés sur du sombre.
         local typeParent = parent:GetObjectType()
-        if ENCRES[nom] and typeParent ~= "Button" and typeParent ~= "StatusBar" and typeParent ~= "CheckButton" then
-            t:SetFontObject(Encre(nom))
+        if typeParent ~= "Button" and typeParent ~= "StatusBar" then
+            if nom and ENCRES[nom] then t:SetFontObject(Encre(nom)) end
+            EncrerTexte(t)
         end
     elseif nom == "GameFontNormalLarge" or nom == "GameFontNormalHuge" then
         t:SetShadowOffset(1, -1)
@@ -414,7 +440,8 @@ end
 local function Placer(page, f)
     local haut = SECTIONS[courante.section].parchemin and ENTETE_PARCHEMIN + 4 or 6
     local largeur, hauteur = contenu:GetWidth() - 12, contenu:GetHeight() - haut - 6
-    local echelle = math.min(1, largeur / f:GetWidth(), hauteur / f:GetHeight())
+    -- Les petites fenêtres sont agrandies (jusqu'à 1,3) pour remplir la page au lieu de flotter au milieu.
+    local echelle = math.min(1.3, largeur / f:GetWidth(), hauteur / f:GetHeight())
     f:SetScale(echelle)
     f:ClearAllPoints()
     f:SetPoint("TOP", contenu, "TOP", 0, -haut / echelle)

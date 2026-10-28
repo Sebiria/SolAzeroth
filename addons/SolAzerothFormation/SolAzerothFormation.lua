@@ -136,7 +136,7 @@ rechercheTexte:SetText("Rechercher")
 
 local caseConnus = CreateFrame("CheckButton", "SolAzerothFormationConnus", cadre, "UICheckButtonTemplate")
 caseConnus:SetPoint("LEFT", recherche, "RIGHT", 20, 0)
-_G["SolAzerothFormationConnusText"]:SetText("Afficher ce qui est déjà appris")
+_G["SolAzerothFormationConnusText"]:SetText("Déjà appris")
 
 local orTexte = cadre:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 orTexte:SetPoint("TOPRIGHT", -40, -46)
@@ -359,9 +359,14 @@ end
 local boutonsOnglet = {}
 for i, o in ipairs(ONGLETS) do
     local b = CreateFrame("Button", nil, cadre, "UIPanelButtonTemplate")
-    b:SetSize(68, 24)
-    b:SetPoint("BOTTOMLEFT", 24 + (i - 1) * 70, 18)
     b:SetText(o.nom)
+    -- Largeur selon le texte : « Compétences » ne tient pas dans un bouton de 68.
+    b:SetSize(math.max(60, b:GetFontString():GetStringWidth() + 20), 24)
+    if i == 1 then
+        b:SetPoint("BOTTOMLEFT", 24, 18)
+    else
+        b:SetPoint("LEFT", boutonsOnglet[i - 1], "RIGHT", 2, 0)
+    end
     b:SetScript("OnClick", function()
         onglet = o.cle
         for _, autre in ipairs(boutonsOnglet) do autre:UnlockHighlight() end

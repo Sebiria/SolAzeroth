@@ -11,7 +11,7 @@
 
 local PREFIXE = "SOLCONTRAT"
 local EMPLACEMENTS = 3
-local LIGNES, HAUTEUR = 7, 34
+local LIGNES, HAUTEUR = 7, 38
 
 local FAMILLES = { [1] = "Bêtes", [2] = "Draconiens", [3] = "Démons", [4] = "Élémentaires", [5] = "Géants",
                    [6] = "Morts-vivants", [7] = "Humanoïdes", [9] = "Mécaniques" }
@@ -60,7 +60,7 @@ end
 -- Fenêtre
 ------------------------------------------------------------------------
 local cadre = CreateFrame("Frame", "SolAzerothContratsCadre", UIParent)
-cadre:SetSize(470, 400)
+cadre:SetSize(560, 440)
 cadre:SetPoint("CENTER", 0, 60)
 cadre:SetFrameStrata("DIALOG")
 cadre:SetBackdrop({
@@ -91,12 +91,12 @@ local reserve = cadre:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 reserve:SetPoint("TOPLEFT", 26, -36)
 local recompense = cadre:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 recompense:SetPoint("TOPLEFT", 26, -54)
-recompense:SetWidth(420)
+recompense:SetWidth(500)
 recompense:SetJustifyH("LEFT")
 
 local themeTexte = cadre:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-themeTexte:SetPoint("TOPLEFT", 26, -318)
-themeTexte:SetWidth(420)
+themeTexte:SetPoint("TOPLEFT", 26, -84 - LIGNES * HAUTEUR - 6)
+themeTexte:SetWidth(500)
 themeTexte:SetJustifyH("LEFT")
 
 local vide = cadre:CreateFontString(nil, "OVERLAY", "GameFontDisable")
@@ -105,25 +105,25 @@ vide:SetWidth(400)
 
 -- Liste des choix (onglets Chasse et Donjon)
 local liste = CreateFrame("ScrollFrame", "SolAzerothContratsListe", cadre, "FauxScrollFrameTemplate")
-liste:SetPoint("TOPLEFT", 24, -76)
-liste:SetSize(400, LIGNES * HAUTEUR)
+liste:SetPoint("TOPLEFT", 24, -84)
+liste:SetSize(490, LIGNES * HAUTEUR)
 local lignes = {}
 local affiches = {}
 
 for i = 1, LIGNES do
     local l = CreateFrame("Frame", nil, cadre)
-    l:SetSize(400, HAUTEUR - 2)
-    l:SetPoint("TOPLEFT", 24, -76 - (i - 1) * HAUTEUR)
+    l:SetSize(490, HAUTEUR - 2)
+    l:SetPoint("TOPLEFT", 24, -84 - (i - 1) * HAUTEUR)
     l.icone = l:CreateTexture(nil, "ARTWORK")
     l.icone:SetSize(26, 26)
     l.icone:SetPoint("LEFT", 2, 0)
     l.nom = l:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     l.nom:SetPoint("TOPLEFT", l.icone, "TOPRIGHT", 8, 0)
-    l.nom:SetWidth(270)
+    l.nom:SetWidth(360)
     l.nom:SetJustifyH("LEFT")
     l.info = l:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     l.info:SetPoint("TOPLEFT", l.nom, "BOTTOMLEFT", 0, -2)
-    l.info:SetWidth(270)
+    l.info:SetWidth(360)
     l.info:SetJustifyH("LEFT")
     l.bouton = CreateFrame("Button", nil, l, "UIPanelButtonTemplate")
     l.bouton:SetSize(80, 22)

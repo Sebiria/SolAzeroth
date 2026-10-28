@@ -298,7 +298,7 @@ end)
 -- Fenêtre de réglages
 ------------------------------------------------------------------------
 local fen = CreateFrame("Frame", "SolAzerothPlaquesCadre", UIParent)
-fen:SetSize(320, 420)
+fen:SetSize(320, 460)
 fen:SetPoint("CENTER", 0, 60)
 fen:SetFrameStrata("DIALOG")
 fen:SetBackdrop({
@@ -382,7 +382,7 @@ Case("niveau", "Afficher le niveau")
 Case("ennemisAuto", "Toujours afficher les plaques ennemies")
 
 local defaut = CreateFrame("Button", nil, fen, "UIPanelButtonTemplate")
-defaut:SetPoint("BOTTOM", 0, 18)
+defaut:SetPoint("TOP", 0, y - 12)  -- sous la dernière case, pour ne pas la chevaucher
 defaut:SetSize(160, 22)
 defaut:SetText("Réglages d'origine")
 defaut:SetScript("OnClick", function()
