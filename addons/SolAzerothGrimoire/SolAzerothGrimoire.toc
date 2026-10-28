@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Grimoire
+## Notes: Les sorts achetés aux autres classes, rangés par classe (bouton « Autres classes » du grimoire, ou /grimoire).
+## Version: 1.0
+SolAzerothGrimoire.lua

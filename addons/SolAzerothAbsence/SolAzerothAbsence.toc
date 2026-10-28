@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Absence
+## Notes: Cache les messages d'absence automatique (le serveur empêche la déconnexion pour inactivité).
+## Version: 1.0
+SolAzerothAbsence.lua

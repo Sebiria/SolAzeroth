@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Butin
+## Notes: Choix de l'objet à la mort d'un boss de donjon (/butin).
+## Version: 1.0
+SolAzerothButin.lua

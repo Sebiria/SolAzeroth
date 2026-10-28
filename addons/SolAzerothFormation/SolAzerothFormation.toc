@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Apprentissage
+## Notes: Apprendre sorts, métiers, recettes, maîtrises et acheter les outils de base, sans entraîneur (bouton de la minicarte ou /apprendre).
+## Version: 1.1
+## SavedVariablesPerCharacter: SolAzerothFormationDB
+SolAzerothFormation.lua

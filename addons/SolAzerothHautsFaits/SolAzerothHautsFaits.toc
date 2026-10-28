@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Hauts faits
+## Notes: Hauts faits du compte, rangés par type, avec les points de talent qu'ils donnent (menu Sol'Azeroth ou /hf).
+## Version: 1.0
+SolAzerothHautsFaits.lua

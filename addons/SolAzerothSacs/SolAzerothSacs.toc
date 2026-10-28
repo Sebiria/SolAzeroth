@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Sacs
+## Notes: Tous les sacs dans une seule fenêtre, la banque dans une autre, recherche, et objets des autres personnages dans l'infobulle.
+## Version: 1.0
+## SavedVariables: SolAzerothSacsDB
+SolAzerothSacs.lua

@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Journal de collection
+## Notes: Une case par objet de chaque boss, pour tout le compte (menu Sol'Azeroth ou /journal).
+## Version: 1.0
+SolAzerothJournal.lua

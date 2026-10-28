@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Sauvegarde
+## Notes: Ajoute un bouton Sauvegarder au menu Echap.
+## Version: 1.0
+SolAzerothSauvegarde.lua

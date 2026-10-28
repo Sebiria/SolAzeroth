@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Plaques
+## Notes: Barres de vie personnalisables au-dessus des monstres, avec les affaiblissements de la cible au-dessus (/plaques).
+## Version: 1.0
+## SavedVariables: SolAzerothPlaquesDB
+SolAzerothPlaques.lua

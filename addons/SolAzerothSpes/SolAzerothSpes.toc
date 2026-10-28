@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Spécialisations
+## Notes: Cinq spécialisations par personnage, avec talents, glyphes et barres d'action (bouton de la minicarte ou /spe).
+## Version: 1.0
+## SavedVariablesPerCharacter: SolAzerothSpesDB
+SolAzerothSpes.lua

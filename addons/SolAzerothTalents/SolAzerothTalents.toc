@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Talents
+## Notes: Un arbre de talents d'une autre classe (bouton « Autre classe » de la fenêtre des talents, ou /arbre).
+## Version: 1.0
+SolAzerothTalents.lua

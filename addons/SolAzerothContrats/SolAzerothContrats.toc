@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Contrats
+## Notes: Tableau de contrats : chasse et donjon imposé, réserve du compte (bouton de la minicarte ou /contrats).
+## Version: 1.0
+## SavedVariablesPerCharacter: SolAzerothContratsDB
+SolAzerothContrats.lua

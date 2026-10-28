@@ -1,0 +1,7 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Menu
+## Notes: Un seul bouton autour de la minicarte, avec un menu vers toutes les fenêtres de Sol'Azeroth.
+## Version: 1.0
+## OptionalDeps: SolAzerothFormation, SolAzerothGrimoire, SolAzerothTalents, SolAzerothSpes, SolAzerothContrats, SolAzerothHautsFaits, SolAzerothCodex, SolAzerothJournal, SolAzerothMenace, SolAzerothDefis, SolAzerothSacs, SolAzerothButin
+## SavedVariablesPerCharacter: SolAzerothMenuDB
+SolAzerothMenu.lua

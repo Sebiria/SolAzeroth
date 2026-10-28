@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Codex
+## Notes: Codex (pourcentage de chaque ligne et des trois fins) et Renom du compte (menu Sol'Azeroth ou /codex).
+## Version: 1.0
+SolAzerothCodex.lua

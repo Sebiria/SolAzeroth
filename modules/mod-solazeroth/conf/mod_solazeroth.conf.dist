@@ -1,0 +1,293 @@
+#
+# Sol'Azeroth : réglages du module mod-solazeroth (valeurs provisoires, à équilibrer en jeu)
+#
+
+[worldserver]
+
+###################################################################################################
+# RANG DE MENACE (sections 4.2 et 4.3)
+#
+#    SolAzeroth.Menace.Enable              1 = actif
+#    SolAzeroth.Menace.PVParRang           Résistance des monstres par rang : dégâts subis divisés par (1 + valeur × rang)
+#    SolAzeroth.Menace.DegatsParRang       Dégâts des monstres par rang : multipliés par (1 + valeur × rang)
+#    SolAzeroth.Menace.OrParRang           Or ramassé par rang : multiplié par (1 + valeur × rang)
+#    SolAzeroth.Menace.DonjonsPourDebloquer Nombre de donjons différents à réussir au rang N pour débloquer N + 1
+#    SolAzeroth.Menace.PlafondClassiqueBC  Rang maximal des donjons Classic et Burning Crusade
+#    SolAzeroth.Menace.PlafondWotLK        Rang maximal des donjons Wrath of the Lich King
+
+SolAzeroth.Menace.Enable = 1
+SolAzeroth.Menace.PVParRang = 0.12
+SolAzeroth.Menace.DegatsParRang = 0.08
+SolAzeroth.Menace.OrParRang = 0.10
+SolAzeroth.Menace.DonjonsPourDebloquer = 2
+SolAzeroth.Menace.PlafondClassiqueBC = 5
+SolAzeroth.Menace.PlafondWotLK = 10
+
+###################################################################################################
+# AFFIXES (section 4.4) : Fortifié les semaines paires, Tyrannique les semaines impaires
+#
+#    SolAzeroth.Affixes.RangMin            Rang à partir duquel l'affixe s'applique
+#    Fortifie : monstres (hors boss) ; Tyrannique : boss. PV et Degats en fraction (0.20 = +20 %)
+
+SolAzeroth.Affixes.RangMin = 2
+SolAzeroth.Affixes.Fortifie.PV = 0.20
+SolAzeroth.Affixes.Fortifie.Degats = 0.20
+SolAzeroth.Affixes.Tyrannique.PV = 0.30
+SolAzeroth.Affixes.Tyrannique.Degats = 0.15
+
+###################################################################################################
+# BONUS SOLO PAR SPÉCIALISATION (section 3.5)
+#
+#    SolAzeroth.Solo.<Classe>.<Arbre> = "dégâts soins réduction"
+#        Trois pourcentages : dégâts infligés en plus, soins reçus en plus, dégâts subis en moins.
+#        La spécialisation est l'arbre de talents qui a le plus de points. Absent = "0 0 0".
+
+SolAzeroth.Solo.Guerrier.Protection = "30 0 0"
+SolAzeroth.Solo.Paladin.Sacre = "50 0 0"
+SolAzeroth.Solo.Paladin.Protection = "25 0 0"
+SolAzeroth.Solo.Pretre.Discipline = "40 0 0"
+SolAzeroth.Solo.Pretre.Sacre = "50 0 0"
+SolAzeroth.Solo.ChevalierMort.Sang = "15 0 0"
+SolAzeroth.Solo.Chaman.Restauration = "50 0 0"
+SolAzeroth.Solo.Druide.Farouche = "10 0 0"
+SolAzeroth.Solo.Druide.Restauration = "50 0 0"
+
+###################################################################################################
+# AJUSTEMENTS PAR CRÉATURE (valables partout, rang de menace ou non)
+#
+#    SolAzeroth.Ajustement.Creatures = "entrée fraction_PV fraction_dégâts, ..."
+#        fraction des PV et des dégâts du jeu d'origine (0.5 = moitié). Exemple : boss de fête prévus pour 5 joueurs.
+#        Cavalier sans tête (23682), sa tête (23775), Démons-citrouilles (23545), Citrouilles palpitantes (23694).
+
+SolAzeroth.Ajustement.Creatures = "23682 0.5 0.3, 23775 0.5 0.3, 23545 0.5 0.3, 23694 0.5 1"
+
+###################################################################################################
+# MARQUE DU VOYAGEUR (section 7.5)
+#
+#    SolAzeroth.Marques.Boss          Marques par boss de donjon tué (+ le rang de menace de l'instance)
+#    SolAzeroth.Marques.DernierBoss   Marques en plus pour le dernier boss d'un donjon
+#    SolAzeroth.Marques.QueteNiveaux  Quête rendue : 1 marque + 1 tous les N niveaux du personnage
+
+SolAzeroth.Marques.Boss = 2
+SolAzeroth.Marques.DernierBoss = 5
+SolAzeroth.Marques.QueteNiveaux = 40
+
+#    SolAzeroth.Bonus.PourcentParRang  Enchantement de bonus : part des caractéristiques de l'objet ajoutée par rang de menace (0.03 = 3 %, au moins +1 par rang)
+
+SolAzeroth.Bonus.PourcentParRang = 0.03
+
+###################################################################################################
+# DÉFIS DE BOSS (section 4.6) : un défi tiré au sort au début de chaque combat de boss de donjon
+#
+#    SolAzeroth.DefisBoss.Marques  Marques du voyageur gagnées si le défi est réussi
+#    SolAzeroth.DefisBoss.Chrono   « Contre la montre » : durée maximale du combat, en secondes
+#    SolAzeroth.DefisBoss.SeuilPV  « Intouchable » : pourcentage de PV sous lequel il ne faut pas descendre
+
+SolAzeroth.DefisBoss.Enable = 1
+SolAzeroth.DefisBoss.Marques = 3
+SolAzeroth.DefisBoss.Chrono = 60
+SolAzeroth.DefisBoss.SeuilPV = 50
+
+#    SolAzeroth.Specialisations.Prix  Prix des emplacements de spécialisation 2 à 5, en pièces d'or
+
+SolAzeroth.Specialisations.Prix = "50 250 1000 2500"
+
+#    SolAzeroth.DefiExterieur.PV       Résistance des monstres extérieurs, par niveau (1 à 5) : dégâts subis divisés par la valeur
+#    SolAzeroth.DefiExterieur.Degats   Dégâts des monstres extérieurs, par niveau : multipliés par la valeur
+#    SolAzeroth.DefiExterieur.XP       XP gagnée hors instance, par niveau : multipliée par la valeur
+#    SolAzeroth.DefiExterieur.Or       Or ramassé hors instance, par niveau : multiplié par la valeur
+#    SolAzeroth.DefiExterieur.Marques  Marques des quêtes rendues, par niveau : multipliées par la valeur
+#    Le nombre de niveaux est celui de la plus courte liste (10 au plus). Niveau 5 : deux monstres à la fois demandent de la tactique.
+
+SolAzeroth.DefiExterieur.PV = "1.15 1.35 1.55 1.75 2.00"
+SolAzeroth.DefiExterieur.Degats = "1.10 1.25 1.45 1.70 2.00"
+SolAzeroth.DefiExterieur.XP = "1.10 1.20 1.35 1.50 1.75"
+SolAzeroth.DefiExterieur.Or = "1.10 1.20 1.35 1.50 1.75"
+SolAzeroth.DefiExterieur.Marques = "1.10 1.20 1.30 1.40 1.50"
+
+#    SolAzeroth.Intendant.MarquesBase       Prix en Marques d'un objet d'intendant : base + MarquesParNiveau × niveau requis
+#    SolAzeroth.Intendant.MarquesParNiveau
+#    SolAzeroth.Intendant.OrFacteur         Prix en or : niveau requis² × facteur, en pièces de cuivre (25 : 4 po au niveau 40)
+#    SolAzeroth.Intendant.Rang              Rang de menace des objets achetés (enchantement de bonus)
+
+SolAzeroth.Intendant.MarquesBase = 40
+SolAzeroth.Intendant.MarquesParNiveau = 1.5
+SolAzeroth.Intendant.OrFacteur = 25
+SolAzeroth.Intendant.Rang = 3
+
+#    SolAzeroth.Contrats.ParJour      Contrats ajoutés à la réserve du compte chaque jour (à 6 h)
+#    SolAzeroth.Contrats.ReserveMax   Contrats en réserve au plus
+#    SolAzeroth.Contrats.Marques      Marques du voyageur par contrat rempli
+#    SolAzeroth.Contrats.OrFacteur    Or par contrat : niveau² × facteur, en pièces de cuivre (50 : 8 po au niveau 40)
+#    SolAzeroth.Contrats.ChanceObjet  Chance (%) d'un objet bleu de donjon au rang 3 (catalogue de l'intendant)
+#    SolAzeroth.Contrats.ChasseMin    Nombre de monstres à tuer pour une chasse (tiré entre Min et Max)
+#    SolAzeroth.Contrats.ChasseMax
+
+SolAzeroth.Contrats.ParJour = 3
+SolAzeroth.Contrats.ReserveMax = 9
+SolAzeroth.Contrats.Marques = 15
+SolAzeroth.Contrats.OrFacteur = 50
+SolAzeroth.Contrats.ChanceObjet = 25
+SolAzeroth.Contrats.ChasseMin = 15
+SolAzeroth.Contrats.ChasseMax = 25
+
+#    SolAzeroth.Contrats.PrimeMin     Prime de zone : monstres de la zone à tuer en plus de la cible (tiré entre Min et Max)
+#    SolAzeroth.Contrats.PrimeMax
+
+SolAzeroth.Contrats.PrimeMin = 8
+SolAzeroth.Contrats.PrimeMax = 12
+
+#    SolAzeroth.Contrats.ArtisanEcart      Commandes d'artisan : seules les recettes de maître de métier demandant au moins
+#    SolAzeroth.Contrats.ArtisanParNiveau  (niveau - écart) × par niveau de compétence sont proposées (5 et 5 : 200 au niveau 45, tisse-mage)
+
+SolAzeroth.Contrats.ArtisanEcart = 5
+SolAzeroth.Contrats.ArtisanParNiveau = 5
+
+#    SolAzeroth.Contrats.BonusTheme   Marques en plus (part) pour un contrat du thème de la semaine (0.5 : +50 %)
+
+SolAzeroth.Contrats.BonusTheme = 0.5
+
+#    SolAzeroth.Ambiance.Enable   PNJ d'ambiance à Hurlevent : silhouettes qui marchent et discutent par gestes (1 : oui)
+#    SolAzeroth.Ambiance.Soir     Nombre de silhouettes de 18 h à minuit (heure de l'ordinateur)
+#    SolAzeroth.Ambiance.Jour     Nombre de 8 h à 18 h
+#    SolAzeroth.Ambiance.Nuit     Nombre de minuit à 8 h
+#    SolAzeroth.Ambiance.Montures Cavaliers en extérieur, à toute heure
+#    SolAzeroth.Ambiance.MonturesMobiles  Parmi eux, ceux qui se déplacent (les autres restent immobiles)
+
+SolAzeroth.Ambiance.Enable = 1
+SolAzeroth.Ambiance.Soir = 240
+SolAzeroth.Ambiance.Jour = 90
+SolAzeroth.Ambiance.Nuit = 30
+SolAzeroth.Ambiance.Montures = 40
+SolAzeroth.Ambiance.MonturesMobiles = 25
+
+#    SolAzeroth.Raids.Epuisement       Rendements décroissants des raids (1 : oui)
+#    SolAzeroth.Raids.PassagesParJour  Passages du jour dans un même raid avant l'épuisement
+#    SolAzeroth.Raids.Reduction        Baisse du butin rare une fois épuisé (0.5 : -50 %)
+
+SolAzeroth.Raids.Epuisement = 1
+SolAzeroth.Raids.PassagesParJour = 3
+SolAzeroth.Raids.Reduction = 0.5
+
+#    SolAzeroth.Malchance.Seuil         % : un objet de boss (donjon ou raid) laissé à cette chance ou moins est « rare » et protégé
+#    SolAzeroth.Malchance.PalierDouble  Tirages ratés à partir desquels sa chance double
+#    SolAzeroth.Malchance.PalierCinq    Tirages ratés à partir desquels sa chance vaut au moins 5 %
+#    SolAzeroth.Malchance.Garantie      Tirage auquel l'objet est garanti
+#    SolAzeroth.Eclats.Prix             Éclats d'un boss de raid pour un objet au choix de sa table
+
+SolAzeroth.Malchance.Seuil = 3
+SolAzeroth.Malchance.PalierDouble = 20
+SolAzeroth.Malchance.PalierCinq = 40
+SolAzeroth.Malchance.Garantie = 60
+SolAzeroth.Eclats.Prix = 30
+
+#    SolAzeroth.Formation.MultiplicateurAutresClasses  Prix des sorts des autres classes : prix d'entraîneur × valeur (section 3.9)
+
+SolAzeroth.Formation.MultiplicateurAutresClasses = 10
+
+#    SolAzeroth.HautsFaits.Marques  Marques du voyageur par haut fait du compte obtenu
+
+SolAzeroth.HautsFaits.Marques = 10
+
+#    SolAzeroth.HautsFaits.OrParNiveau  Or par haut fait : pièces d'or × niveau du personnage (provisoire)
+
+SolAzeroth.HautsFaits.OrParNiveau = 1
+
+#    SolAzeroth.Talents.ReinitOrParNiveau     Réinitialisation des talents (fenêtre des talents) : pièces d'or par niveau du personnage
+#    SolAzeroth.Talents.ReinitMultiplicateur  Le prix est multiplié par cette valeur à chaque réinitialisation
+#    SolAzeroth.Talents.ReinitBaisseJours     Une réinitialisation de moins est comptée par période de ce nombre de jours sans réinitialiser (0 : jamais)
+
+SolAzeroth.Talents.ReinitOrParNiveau = 1
+SolAzeroth.Talents.ReinitMultiplicateur = 2
+SolAzeroth.Talents.ReinitBaisseJours = 7
+
+#    Codex (section 1.3) : objectifs des lignes qui se comptent en nombre
+#    SolAzeroth.Codex.Primes       Primes de zone (ligne Monde, fin Maître)
+#    SolAzeroth.Codex.Reputations  Réputations exaltées (ligne Monde, fin 100 %)
+#    SolAzeroth.Codex.ElitesRares  Élites rares tuées (ligne Monde, fin 100 %)
+#    SolAzeroth.Codex.Quetes       Quêtes rendues, distinctes, sur le compte (ligne Monde, fin 100 %)
+#    SolAzeroth.Codex.SansFilet    Défis « Sans filet » réussis (ligne Défis et hauts faits)
+#    SolAzeroth.Codex.Montures     Montures connues (ligne Collections)
+#    SolAzeroth.Codex.Mascottes    Mascottes connues (ligne Collections)
+
+SolAzeroth.Codex.Primes = 50
+SolAzeroth.Codex.Reputations = 50
+SolAzeroth.Codex.ElitesRares = 100
+SolAzeroth.Codex.Quetes = 3000
+SolAzeroth.Codex.SansFilet = 100
+SolAzeroth.Codex.Montures = 100
+SolAzeroth.Codex.Mascottes = 100
+
+###################################################################################################
+# Bonus permanents des hauts faits (section 7.4, valeurs provisoires)
+#
+#    SolAzeroth.BonusHF.VitesseParContinent  % de vitesse de course hors combat par continent exploré (4 au plus)
+#    SolAzeroth.BonusHF.OrContrats           Paliers « contrats rendus:% d'or des contrats en plus »
+#    SolAzeroth.BonusHF.PalierDefis          Défis de boss réussis par palier
+#    SolAzeroth.BonusHF.PvParPalier          % de points de vie par palier de défis de boss
+#    SolAzeroth.BonusHF.PvMax                % de points de vie au plus
+#    SolAzeroth.BonusHF.RecolteCompetence    Herboristerie, minage ou dépeçage à cette valeur : +1 unité par récolte
+#    SolAzeroth.BonusHF.XpCodex              XP de quête en plus = pourcentage de la fin Histoire du Codex × cette valeur
+
+SolAzeroth.BonusHF.VitesseParContinent = 5
+SolAzeroth.BonusHF.OrContrats = "25:10 50:20 100:100"
+SolAzeroth.BonusHF.PalierDefis = 10
+SolAzeroth.BonusHF.PvParPalier = 2
+SolAzeroth.BonusHF.PvMax = 20
+SolAzeroth.BonusHF.RecolteCompetence = 375
+SolAzeroth.BonusHF.XpCodex = 1
+
+###################################################################################################
+# Écart d'équipement (section 5, V5, valeurs provisoires)
+#
+#    SolAzeroth.Ecart.Enable         Active l'écart d'équipement (malus si sous-équipé, bonus si bien équipé)
+#    SolAzeroth.Ecart.ZoneNeutre     Écart sans effet, en % de l'ilvl attendu (de -X à +X)
+#    SolAzeroth.Ecart.MalusParPoint  Sous-équipé : % de dégâts et soins en moins par point d'écart au-delà de la zone neutre
+#    SolAzeroth.Ecart.MalusMax       Sous-équipé : malus au plus
+#    SolAzeroth.Ecart.SubisParPoint  Sous-équipé : % de dégâts subis en plus par point d'écart au-delà de la zone neutre
+#    SolAzeroth.Ecart.SubisMax       Sous-équipé : dégâts subis en plus au plus
+#    SolAzeroth.Ecart.BonusParPoint  Bien équipé : % de dégâts et soins en plus par point d'écart au-delà de la zone neutre
+#    SolAzeroth.Ecart.BonusMax       Bien équipé : bonus au plus
+#    (le rang de menace des objets et des donjons suit SolAzeroth.Bonus.PourcentParRang)
+
+SolAzeroth.Ecart.Enable = 1
+SolAzeroth.Ecart.ZoneNeutre = 5
+SolAzeroth.Ecart.MalusParPoint = 1
+SolAzeroth.Ecart.MalusMax = 20
+SolAzeroth.Ecart.SubisParPoint = 1
+SolAzeroth.Ecart.SubisMax = 20
+SolAzeroth.Ecart.BonusParPoint = 0.5
+SolAzeroth.Ecart.BonusMax = 10
+
+###################################################################################################
+# Affixes de mécanique à cocher (section 4.4, V5, valeurs provisoires) : fenêtre du rang (/rang)
+#    Palier de butin = rang + points des affixes cochés, plafonné au rang maximal du donjon.
+#
+#    SolAzeroth.Mecanique.Enable                 Active les affixes de mécanique
+#    SolAzeroth.Mecanique.<Affixe>.Points        Points de l'affixe (Enrage, Renforcant, Volcanique, Explosif)
+#    SolAzeroth.Mecanique.Enrage.Seuil           Enragé : % de vie sous lequel un monstre (hors boss) s'enrage
+#    SolAzeroth.Mecanique.Enrage.Degats          Enragé : dégâts en plus (0.5 = +50 %)
+#    SolAzeroth.Mecanique.Renforcant.ParCumul    Renforçant : dégâts et PV en plus par cumul (0.2 = +20 %)
+#    SolAzeroth.Mecanique.Renforcant.Portee      Renforçant : portée en mètres
+#    SolAzeroth.Mecanique.Volcanique.Intervalle  Volcanique : secondes entre deux pluies de feu en combat
+#    SolAzeroth.Mecanique.Volcanique.Degats      Volcanique : part des PV max retirée si on reste dedans (une impulsion, 0.15 = 15 %)
+#    SolAzeroth.Mecanique.Explosif.Intervalle    Explosif : secondes entre deux sphères en combat
+#    SolAzeroth.Mecanique.Explosif.Delai         Explosif : secondes avant l'explosion
+#    SolAzeroth.Mecanique.Explosif.PV            Explosif : PV de la sphère, en part des PV max du joueur
+#    SolAzeroth.Mecanique.Explosif.Degats        Explosif : part des PV max retirée par l'explosion
+
+SolAzeroth.Mecanique.Enable = 1
+SolAzeroth.Mecanique.Enrage.Points = 1
+SolAzeroth.Mecanique.Renforcant.Points = 1
+SolAzeroth.Mecanique.Volcanique.Points = 2
+SolAzeroth.Mecanique.Explosif.Points = 2
+SolAzeroth.Mecanique.Enrage.Seuil = 30
+SolAzeroth.Mecanique.Enrage.Degats = 0.5
+SolAzeroth.Mecanique.Renforcant.ParCumul = 0.2
+SolAzeroth.Mecanique.Renforcant.Portee = 30
+SolAzeroth.Mecanique.Volcanique.Intervalle = 10
+SolAzeroth.Mecanique.Volcanique.Degats = 0.15
+SolAzeroth.Mecanique.Explosif.Intervalle = 12
+SolAzeroth.Mecanique.Explosif.Delai = 6
+SolAzeroth.Mecanique.Explosif.PV = 0.05
+SolAzeroth.Mecanique.Explosif.Degats = 0.15

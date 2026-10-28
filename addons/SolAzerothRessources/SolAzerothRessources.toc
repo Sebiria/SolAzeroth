@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Ressources
+## Notes: Barres de rage, d'énergie et de puissance runique (et points de combo) pour les sorts achetés aux autres classes.
+## Version: 1.0
+## SavedVariablesPerCharacter: SolAzerothRessourcesDB
+SolAzerothRessources.lua

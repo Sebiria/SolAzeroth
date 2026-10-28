@@ -1,0 +1,5 @@
+Put here the DBC files that go into the client patch (patch-frFR-4.MPQ), then run: py outils\construire_patch.py
+To start: copy the three DBC files from mod-arac\patch-contents\DBFilesContent.
+
+Placer ici les fichiers DBC du patch client, puis lancer : py outils\construire_patch.py
+Pour commencer : copier les trois DBC de mod-arac\patch-contents\DBFilesContent.

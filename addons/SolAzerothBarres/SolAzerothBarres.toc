@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Barres
+## Notes: Sépare la barre de totems de la barre de postures et auras, et rend les deux déplaçables (/barres).
+## Version: 1.0
+## SavedVariablesPerCharacter: SolAzerothBarresDB
+SolAzerothBarres.lua

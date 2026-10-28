@@ -1,0 +1,22 @@
+# Propre à chaque machine : identifiants et chemin du client
+config/mysql-acore.cnf
+config/client.txt
+
+# Produit sur la machine : compilation, données du client, journaux, sauvegardes
+azerothcore/
+build/
+data/
+logs/
+journaux/
+backups/
+archives/
+runtime/
+*.log
+
+# Fichiers du client Blizzard (jamais dans le dépôt)
+*.MPQ
+*.mpq
+*.dbc
+*.blp
+
+__pycache__/
