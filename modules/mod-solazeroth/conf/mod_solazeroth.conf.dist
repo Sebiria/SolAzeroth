@@ -147,8 +147,9 @@ SolAzeroth.Contrats.ArtisanParNiveau = 5
 
 SolAzeroth.Contrats.BonusTheme = 0.5
 
-#    SolAzeroth.Ambiance.Enable   PNJ d'ambiance à Hurlevent : silhouettes qui marchent et discutent par gestes (1 : oui)
-#    SolAzeroth.Ambiance.Soir     Nombre de silhouettes de 18 h à minuit (heure de l'ordinateur)
+#    SolAzeroth.Ambiance.Enable   PNJ d'ambiance dans les capitales, Shattrath et Dalaran : silhouettes qui marchent et discutent par gestes (1 : oui)
+#    SolAzeroth.Ambiance.Soir     Nombre de silhouettes de 18 h à minuit (heure de l'ordinateur), pour Hurlevent ;
+#                                 multiplié par la densité de chaque lieu (table solazeroth_ambiance_lieux)
 #    SolAzeroth.Ambiance.Jour     Nombre de 8 h à 18 h
 #    SolAzeroth.Ambiance.Nuit     Nombre de minuit à 8 h
 #    SolAzeroth.Ambiance.Montures Cavaliers en extérieur, à toute heure

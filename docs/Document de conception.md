@@ -682,6 +682,11 @@ Des silhouettes aux apparences de joueurs peuplent les villes et les camps. Ce n
   - **Dernière passe :** parmi les 40, **25 cavaliers se déplacent** sur les trajets (moitié au pas, moitié au galop à la vitesse d'une monture épique), les 15 autres restent immobiles. Réglage `SolAzeroth.Ambiance.MonturesMobiles = 25` (provisoire).
   - **Hurlevent validé en jeu par l'utilisateur le 28/10/2026.** Restent pour plus tard : autres capitales, voyageurs sur les routes, camps.
   - **Reste à faire :** autres capitales, voyageurs sur les routes, camps.
+  - **Toutes les capitales, Shattrath et Dalaran (V8, 29/10/2026, construit, à valider en jeu)** : migration 051. `ambiance.cpp` anime maintenant chaque lieu de la table `solazeroth_ambiance_lieux` (carte, zone, camp, densité), avec ses propres trajets de patrouille (13 à 63 par ville). Mêmes règles qu'à Hurlevent.
+    - **Apparences par camp** : la colonne `camp` sépare les 742 apparences de l'Alliance (042) et **762 apparences de la Horde** : orcs, morts-vivants, taurens, trolls et elfes de sang, tirées des PNJ d'Orgrimmar, des Pitons, de Fossoyeuse et de Lune-d'Argent, sans gardes, Kor'kron ni enfants. Shattrath et Dalaran mélangent les deux camps.
+    - **Densité (provisoire)**, qui multiplie les nombres de la configuration : Hurlevent et Orgrimmar 1 ; Forgefer, Fossoyeuse et Lune-d'Argent 0,7 ; Shattrath et Dalaran 0,8 ; Darnassus, l'Exodar et les Pitons-du-Tonnerre 0,5. Elle s'applique aussi aux cavaliers. Fossoyeuse étant souterraine, elle n'aura presque pas de cavaliers (extérieur seulement).
+    - Les montures restent communes aux deux camps.
+    - Ajouter un lieu (village, relais) = une ligne dans `solazeroth_ambiance_lieux`, à condition que la zone ait des trajets de patrouille.
   - **Objectif confirmé par l'utilisateur le 28/10/2026 : à terme, tout le monde.** Le monde entier doit être animé, pas seulement Hurlevent : toutes les capitales des deux factions, Shattrath et Dalaran, puis les villes, villages et relais de quêtes, les voyageurs sur les routes et les camps. La densité est adaptée à chaque lieu. Hurlevent sert de modèle.
 
 ### 6.6 Mode défi en extérieur (V3)
@@ -927,7 +932,7 @@ Ces éléments ne doivent pas être commencés avant V8, et ceux de la liste « 
 | Élément | Raison | Notes |
 | --- | --- | --- |
 | Mise à l'échelle du monde | Si les monstres montent avec le joueur, il ne se sent jamais plus fort | En option, **avec retard** : monstres 2 à 3 niveaux sous le joueur dans les zones terminées. Villes, PNJ de service, gardes et boss de monde exclus. XP et or des quêtes alors calculés sur le niveau du joueur |
-| PNJ d'ambiance dans le monde entier | Hurlevent seul est fait (V5) ; l'extension est demandée par l'utilisateur (28/10/2026) | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
+| PNJ d'ambiance dans le monde entier | Hurlevent fait (V5) ; toutes les capitales, Shattrath et Dalaran construits le 29/10/2026 (migration 051, à valider en jeu). Restent villes, relais, routes et camps | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
 | Ligues Remix et Chaos | Dépendent de la mise à l'échelle du monde | Section 3.3 |
 | Raids réécrits boss par boss | Très cher pour un gain modeste | Un boss à la fois, en ALE ou C++, en partant de la liste de faisabilité (section 4.7) |
 | Vol dans Kalimdor et les Royaumes de l'Est | Très cher, défauts visibles | Récompense de Renom. Patch `AreaTable.dbc` et retrait de la restriction serveur sur les cartes 0 et 1. Défauts acceptés : zones inachevées, trous, murs invisibles |
