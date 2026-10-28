@@ -413,7 +413,8 @@ cadre:SetScript("OnUpdate", function(self, ecoule)
     attente = 0
     local manque = false
     for _, element in ipairs(catalogue[onglet]) do
-        if not NomSol(element.id) then
+        -- Le nom peut venir du cache Sol'Azeroth : l'objet est quand même chargé, pour son emplacement et son type.
+        if not NomSol(element.id) or not GetItemInfo(element.id) then
             manque = true
             cache:SetOwner(UIParent, "ANCHOR_NONE")
             cache:SetHyperlink("item:" .. element.id .. ":0:0:0:0:0:0:0")

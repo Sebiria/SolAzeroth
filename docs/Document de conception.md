@@ -1063,6 +1063,9 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
       - Intendant : « Chargement... » ne disparaissait pas. La liste n'était redessinée que s'il manquait encore des noms : quand tous arrivaient d'un coup, le dernier dessin n'avait jamais lieu. Corrigé dans Apprentissage et Contrats ;
       - Codex : la lettrine était cachée par le fond de la page. L'en-tête est maintenant sur un cadre au-dessus des pages. La note sous les barres tient sur une ligne, et les détails des lignes ne passent plus sur la ligne suivante.
     - **4e vidéo (28/10/2026)** : les noms d'objets s'affichent à l'Intendant. Le Codex montrait encore l'ancienne version : le jeu n'avait pas été relancé par le lanceur, qui recopie les addons. Corrigé : à l'Intendant, « À une main (Haches à une main) - rang 3 » passait sous le prix. Pour une arme, seul le sous-type reste (« Haches à une main »). « rang 3 » est retiré, car tous les objets de l'Intendant le sont. La ligne est coupée à la largeur disponible.
+    - **5e vidéo (29/10/2026)** : note du Codex et « Raids anciens » sur une ligne, comme prévu. Restait :
+      - Intendant : il ne restait que « Niveau 45 ». Le nom venait du cache Sol'Azeroth, donc l'objet n'était plus chargé par le client, et son emplacement et son type restaient inconnus. L'objet est maintenant chargé tant que `GetItemInfo` ne répond pas ;
+      - la lettrine ne s'affichait toujours pas. Sa police passe de 34 à 30 (hypothèse : taille trop grande pour le client), à confirmer en jeu.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
     - étape 6, connexion sans mot de passe : elle demanderait d'écrire le mot de passe dans un fichier du client ou de changer le serveur de connexion. **Décision à prendre par l'utilisateur.**
