@@ -1055,7 +1055,10 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
       - Apprentissage : la case « Déjà appris » ne chevauche plus l'or, et les boutons du bas (« Compétences » débordait) ont une largeur adaptée à leur texte ;
       - Contrats : la fenêtre est élargie (560 × 440), avec des lignes plus hautes et plus larges. Les descriptions sur deux lignes ne se chevauchent plus ;
       - Plaques de nom : le bouton « Réglages d'origine » passe sous la dernière case ;
-      - vu sans correction : dans Apprentissage → Éclats, des objets s'affichent « Objet 50339 » tant que le jeu ne connaît pas leur nom. La liste se redessine chaque seconde jusqu'à ce que le serveur réponde. **À surveiller** : si les noms ne viennent pas après quelques secondes, il faudra corriger.
+      - **noms d'objets** : Apprentissage (Intendant, Éclats) et le suivi des contrats affichaient « Objet 862 » (« pas très sexy de mettre les ID d'objet dans le jeu », 28/10/2026). Le client ne connaît un nom qu'après l'avoir demandé au serveur, un par un et lentement. Correction :
+        - nouvelle commande serveur `.solnoms id,id,…` (`addon.cpp`) : elle renvoie les noms dans la langue du joueur (préfixe d'addon `SolAzerothNoms`) ;
+        - l'addon `SolAzeroth` fournit `SolAzerothNomObjet(id)` : il demande les noms manquants par paquets de 30 et les garde d'une session à l'autre (`SolAzerothDB.noms`) ;
+        - Apprentissage, Contrats et Butin l'utilisent. En attendant la réponse, ils affichent « Chargement... », jamais un numéro.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
     - étape 6, connexion sans mot de passe : elle demanderait d'écrire le mot de passe dans un fichier du client ou de changer le serveur de connexion. **Décision à prendre par l'utilisateur.**

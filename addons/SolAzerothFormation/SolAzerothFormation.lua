@@ -7,6 +7,12 @@
 -- Autres classes (X, section 3.9) : ".solform classe <id>" renvoie "XDEBUT|classe", des paquets "X|…" comme S, "XFIN".
 -- Un élément X a un 5e champ : sort de posture, de forme ou de camouflage exigé (0 si aucun), affiché dans la condition.
 
+-- Nom d'un objet, demandé au serveur par l'addon SolAzeroth s'il manque (chargé après cet addon).
+local function NomSol(id)
+    if SolAzerothNomObjet then return SolAzerothNomObjet(id) end
+    return GetItemInfo(id)
+end
+
 local PREFIXE = "SOLFORM"
 local LIGNES, HAUTEUR = 10, 36
 
@@ -32,7 +38,7 @@ local TRIS = {
     { nom = "niveau (haut)", f = function(a, b) if a.niveau ~= b.niveau then return a.niveau > b.niveau end return a.id < b.id end },
     { nom = "niveau (bas)", f = function(a, b) if a.niveau ~= b.niveau then return a.niveau < b.niveau end return a.id < b.id end },
     { nom = "prix", f = function(a, b) if a.prix ~= b.prix then return a.prix < b.prix end return a.id < b.id end },
-    { nom = "nom", f = function(a, b) return (GetItemInfo(a.id) or "") < (GetItemInfo(b.id) or "") end },
+    { nom = "nom", f = function(a, b) return (NomSol(a.id) or "") < (NomSol(b.id) or "") end },
 }
 local emplacementChoisi, matiere, tri = 1, 1, 1
 
@@ -75,8 +81,8 @@ end
 
 local function Infos(element)
     if EstObjet(element) then
-        local nom = GetItemInfo(element.id)
-        return nom or ("Objet " .. element.id), "", GetItemIcon(element.id) or "Interface\\Icons\\INV_Misc_QuestionMark"
+        local nom = NomSol(element.id)
+        return nom or "Chargement...", "", GetItemIcon(element.id) or "Interface\\Icons\\INV_Misc_QuestionMark"
     end
     local nom, rang, icone = GetSpellInfo(element.id)
     return nom or ("Sort " .. element.id), rang or "", icone or "Interface\\Icons\\INV_Misc_QuestionMark"
@@ -400,7 +406,7 @@ cadre:SetScript("OnUpdate", function(self, ecoule)
     attente = 0
     local manque = false
     for _, element in ipairs(catalogue[onglet]) do
-        if not GetItemInfo(element.id) then
+        if not NomSol(element.id) then
             manque = true
             cache:SetOwner(UIParent, "ANCHOR_NONE")
             cache:SetHyperlink("item:" .. element.id .. ":0:0:0:0:0:0:0")

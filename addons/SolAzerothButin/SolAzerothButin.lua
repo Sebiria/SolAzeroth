@@ -1,6 +1,12 @@
 -- Fenêtre de choix du butin des boss de donjon. Le serveur (mod-solazeroth, butin.cpp) envoie
 -- "CHOIX;jeton;boss;objet,objet,..." et attend ".solbutin choisir <jeton> <objet>".
 
+-- Nom d'un objet, demandé au serveur par l'addon SolAzeroth s'il manque (chargé après cet addon).
+local function NomSol(id)
+    if SolAzerothNomObjet then return SolAzerothNomObjet(id) end
+    return GetItemInfo(id)
+end
+
 local PREFIXE = "SOLBUTIN"
 local COLONNES, TAILLE, ECART = 4, 40, 112
 
@@ -76,7 +82,7 @@ for i = 1, 16 do
         ShoppingTooltip2:Hide()
     end)
     b:SetScript("OnClick", function(self)
-        local nom = GetItemInfo(self.objet) or ("objet " .. self.objet)
+        local nom = NomSol(self.objet) or "cet objet"
         StaticPopup_Show("SOLAZEROTH_BUTIN_CONFIRMER", nom, nil, { jeton = file[1].jeton, objet = self.objet })
     end)
     boutons[i] = b
@@ -93,7 +99,8 @@ StaticPopupDialogs["SOLAZEROTH_BUTIN_CONFIRMER"] = {
 }
 
 local function NomObjet(objet)
-    local nom, _, qualite = GetItemInfo(objet)
+    local _, _, qualite = GetItemInfo(objet)
+    local nom = NomSol(objet)
     if not nom then return "|cff808080...|r" end
     local couleur = ITEM_QUALITY_COLORS[qualite]
     return (couleur and couleur.hex or "|cffffffff") .. nom .. "|r"

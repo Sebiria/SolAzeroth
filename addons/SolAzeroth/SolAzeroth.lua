@@ -646,6 +646,47 @@ SLASH_SOLAZEROTH2 = "/solazeroth"
 SlashCmdList["SOLAZEROTH"] = Basculer
 
 ------------------------------------------------------------------------
+-- Noms des objets, pour tous les addons Sol'Azeroth. Le jeu ne connaît le nom d'un objet qu'après l'avoir demandé
+-- au serveur, un par un et lentement : les fenêtres affichaient « Objet 862 ». Les noms manquants sont demandés
+-- par paquets (commande .solnoms) et gardés d'une session à l'autre.
+------------------------------------------------------------------------
+local nomsDemandes, aDemander = {}, {}
+
+function SolAzerothNomObjet(id)
+    id = tonumber(id)
+    if not id then return nil end
+    local nom = GetItemInfo(id)
+    if nom then return nom end
+    local memoire = SolAzerothDB and SolAzerothDB.noms
+    if memoire and memoire[id] then return memoire[id] end
+    if not nomsDemandes[id] then
+        nomsDemandes[id] = true
+        aDemander[#aDemander + 1] = id
+    end
+    return nil
+end
+
+local demandeNoms = CreateFrame("Frame")
+local attenteNoms = 0
+demandeNoms:SetScript("OnUpdate", function(self, ecoule)
+    attenteNoms = attenteNoms + ecoule
+    if attenteNoms < 0.3 or #aDemander == 0 then return end
+    attenteNoms = 0
+    local paquet = {}
+    while #aDemander > 0 and #paquet < 30 do paquet[#paquet + 1] = table.remove(aDemander) end
+    SendChatMessage(".solnoms " .. table.concat(paquet, ","), "SAY")
+end)
+demandeNoms:RegisterEvent("CHAT_MSG_ADDON")
+demandeNoms:SetScript("OnEvent", function(self, event, prefixe, message)
+    if prefixe ~= "SolAzerothNoms" or not SolAzerothDB then return end
+    SolAzerothDB.noms = SolAzerothDB.noms or {}
+    for element in string.gmatch(message, "[^;]+") do
+        local id, nom = element:match("^(%d+):(.*)$")
+        if id then SolAzerothDB.noms[tonumber(id)] = nom end
+    end
+end)
+
+------------------------------------------------------------------------
 -- Démarrage
 ------------------------------------------------------------------------
 local evenements = CreateFrame("Frame")

@@ -148,5 +148,6 @@ void AddSC_solazeroth_ulduar();
 void AddSC_solazeroth_croise();
 void AddSC_solazeroth_histoire();
 void AddSC_solazeroth_raids();
+void AddSC_solazeroth_addon();
 
 #endif

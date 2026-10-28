@@ -9,6 +9,12 @@
 -- Commandes : ".solcontrat etat|chasse <zone> <famille>|donjon <id>|prime <entrée>|artisan <sort>|livrer N|abandonner N".
 -- Les cibles de prime en cours sont aussi marquées sur la carte du monde et sur la minicarte.
 
+-- Nom d'un objet, demandé au serveur par l'addon SolAzeroth s'il manque (chargé après cet addon).
+local function NomSol(id)
+    if SolAzerothNomObjet then return SolAzerothNomObjet(id) end
+    return GetItemInfo(id)
+end
+
 local PREFIXE = "SOLCONTRAT"
 local EMPLACEMENTS = 3
 local LIGNES, HAUTEUR = 7, 38
@@ -29,7 +35,7 @@ local choix = { chasse = {}, donjon = {}, prime = {}, artisan = {} }
 local enCours = { chasse = {}, donjon = {}, prime = {}, artisan = {}, contrats = {} }
 
 local function NomObjet(objet)
-    return GetItemInfo(objet) or ("Objet " .. objet)
+    return NomSol(objet) or "Chargement..."
 end
 
 -- "45:62,50:70" -> { {45, 62}, {50, 70} }
@@ -525,7 +531,7 @@ sacs:SetScript("OnUpdate", function(self, ecoule)
     self.attente = 0
     local manque = false
     local function Verifier(objet)
-        if objet and not GetItemInfo(objet) then
+        if objet and not NomSol(objet) then
             manque = true
             cache:SetOwner(UIParent, "ANCHOR_NONE")
             cache:SetHyperlink("item:" .. objet .. ":0:0:0:0:0:0:0")
