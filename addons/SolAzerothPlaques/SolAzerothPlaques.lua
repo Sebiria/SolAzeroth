@@ -238,6 +238,9 @@ local function MettreAJour(p, maintenant, cible, nomsVisibles)
 
     local nom = s.nomOrig:GetText()
     s.nom:SetText(nom)
+    -- Le jeu peut réafficher le nom d'origine quand il recycle une plaque : on le recache à chaque passage.
+    s.nomOrig:SetAlpha(0)
+    s.nomOrig:Hide()
 
     -- Qui est ce monstre ? Cible (seule plaque opaque), souris (surbrillance), sinon nom unique déjà vu.
     if cible and p:GetAlpha() > 0.99 and nom == UnitName("target") then
