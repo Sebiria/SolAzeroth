@@ -85,7 +85,7 @@ local aide = pageCodex:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 aide:SetPoint("TOPLEFT", 26, -112)
 aide:SetWidth(600)
 aide:SetJustifyH("LEFT")
-aide:SetText("Chaque fin compte aussi les précédentes. Ce qui n'existe pas encore dans le jeu n'est pas compté : la ligne se recalculera.")
+aide:SetText("Chaque fin inclut les précédentes. Ce qui n'existe pas encore dans le jeu n'est pas compté.")
 
 -- Lignes du Codex
 local rangees = {}
@@ -102,7 +102,7 @@ for i = 1, LIGNES do
     l.nom:SetJustifyH("LEFT")
     l.detail = l:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     l.detail:SetPoint("TOPLEFT", l.nom, "BOTTOMLEFT", 0, -1)
-    l.detail:SetWidth(470)
+    l.detail:SetSize(590, 12)
     l.detail:SetJustifyH("LEFT")
     l.barre = Barre(l, 120, 12)
     l.barre:SetPoint("TOPRIGHT", -8, -5)

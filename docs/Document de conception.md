@@ -1059,6 +1059,9 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
         - nouvelle commande serveur `.solnoms id,id,…` (`addon.cpp`) : elle renvoie les noms dans la langue du joueur (préfixe d'addon `SolAzerothNoms`) ;
         - l'addon `SolAzeroth` fournit `SolAzerothNomObjet(id)` : il demande les noms manquants par paquets de 30 et les garde d'une session à l'autre (`SolAzerothDB.noms`) ;
         - Apprentissage, Contrats et Butin l'utilisent. En attendant la réponse, ils affichent « Chargement... », jamais un numéro.
+    - **Retouches d'après la 3e vidéo (28/10/2026, à revoir en jeu)** : Contrats, Butin et Sorts sont propres, et le suivi affiche bien « Commande : Bottes en lin écru ». Restait :
+      - Intendant : « Chargement... » ne disparaissait pas. La liste n'était redessinée que s'il manquait encore des noms : quand tous arrivaient d'un coup, le dernier dessin n'avait jamais lieu. Corrigé dans Apprentissage et Contrats ;
+      - Codex : la lettrine était cachée par le fond de la page. L'en-tête est maintenant sur un cadre au-dessus des pages. La note sous les barres tient sur une ligne, et les détails des lignes ne passent plus sur la ligne suivante.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
     - étape 6, connexion sans mot de passe : elle demanderait d'écrire le mot de passe dans un fichier du client ou de changer le serveur de connexion. **Décision à prendre par l'utilisateur.**

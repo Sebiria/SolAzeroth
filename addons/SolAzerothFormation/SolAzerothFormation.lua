@@ -399,7 +399,7 @@ end
 -- Objets de l'intendant pas encore connus du client : une infobulle cachée les demande au serveur,
 -- puis la liste est redessinée chaque seconde tant qu'il en manque.
 local cache = CreateFrame("GameTooltip", "SolAzerothFormationCache", UIParent, "GameTooltipTemplate")
-local attente = 0
+local attente, manquait = 0, false
 cadre:SetScript("OnUpdate", function(self, ecoule)
     attente = attente + ecoule
     if attente < 1 or (onglet ~= "I" and onglet ~= "E") then return end
@@ -412,7 +412,9 @@ cadre:SetScript("OnUpdate", function(self, ecoule)
             cache:SetHyperlink("item:" .. element.id .. ":0:0:0:0:0:0:0")
         end
     end
-    if manque then Filtrer() end
+    -- Un dernier dessin quand les derniers noms viennent d'arriver.
+    if manque or manquait then Filtrer() end
+    manquait = manque
 end)
 
 local function Relancer()

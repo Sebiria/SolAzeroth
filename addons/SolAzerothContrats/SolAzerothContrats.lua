@@ -542,10 +542,12 @@ sacs:SetScript("OnUpdate", function(self, ecoule)
         local k = etat.contrats[i]
         if k and k.type == 4 then Verifier(k.cible) end
     end
-    if manque then
+    -- Un dernier dessin quand les derniers noms viennent d'arriver.
+    if manque or self.manquait then
         if cadre:IsShown() then Rafraichir() end
         RafraichirSuivi()
     end
+    self.manquait = manque
 end)
 
 ------------------------------------------------------------------------

@@ -115,15 +115,19 @@ parchemin:SetPoint("BOTTOMRIGHT", -4, 4)
 
 -- En-tête des pages sur parchemin : lettrine et titre
 -- Positions fixes depuis le haut du parchemin : ancré à la lettrine, le titre sortait du cadre.
-local lettrine = contenu:CreateFontString(nil, "OVERLAY")
+-- Sur un cadre à part, au-dessus des pages : leur fond recouvrait la lettrine.
+local entetePage = CreateFrame("Frame", nil, contenu)
+entetePage:SetAllPoints()
+entetePage:SetFrameLevel(contenu:GetFrameLevel() + 30)
+local lettrine = entetePage:CreateFontString(nil, "OVERLAY")
 lettrine:SetFont("Fonts\\MORPHEUS.TTF", 34)
 lettrine:SetTextColor(0.48, 0.18, 0.1)
 lettrine:SetPoint("TOPLEFT", 18, -10)
-local titrePage = contenu:CreateFontString(nil, "OVERLAY")
+local titrePage = entetePage:CreateFontString(nil, "OVERLAY")
 titrePage:SetFont("Fonts\\MORPHEUS.TTF", 20)
 titrePage:SetTextColor(0.23, 0.11, 0.04)
 titrePage:SetPoint("TOPLEFT", 46, -16)
-local sousTitre = contenu:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+local sousTitre = entetePage:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 sousTitre:SetTextColor(0.42, 0.29, 0.15)
 sousTitre:SetPoint("TOPLEFT", titrePage, "BOTTOMLEFT", 0, -2)
 local filet = contenu:CreateTexture(nil, "ARTWORK")
