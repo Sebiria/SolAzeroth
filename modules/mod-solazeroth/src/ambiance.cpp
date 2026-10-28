@@ -146,7 +146,15 @@ namespace
         return c;
     }
 
-    // Lance un marcheur sur 8 à 15 points de son trajet ; faux au bout du trajet.
+    bool Dehors(Map* map, G3D::Vector3 const& p)
+    {
+        PositionFullTerrainStatus etat;
+        map->GetFullTerrainStatusForPosition(PHASEMASK_NORMAL, p.x, p.y, p.z, 2.0f, etat);
+        return etat.outdoors;
+    }
+
+    // Lance un marcheur sur 8 à 15 points de son trajet ; faux au bout du trajet. Un cavalier s'arrête avant le premier
+    // point en intérieur, puis fait demi-tour : il entrait à cheval dans les bâtiments (retour de l'utilisateur, 29/10/2026).
     bool Marcher(Lieu const& lieu, Creature* c, Silhouette& s)
     {
         std::vector<G3D::Vector3> const& trajet = lieu.chemins[s.chemin];
@@ -157,6 +165,8 @@ namespace
         {
             int32 suivant = s.point + s.sens;
             if (suivant < 0 || suivant >= int32(trajet.size()))
+                break;
+            if (s.monte && !Dehors(c->GetMap(), trajet[suivant]))
                 break;
             s.point = suivant;
             points.push_back(trajet[s.point]);
