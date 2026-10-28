@@ -96,6 +96,9 @@ local function Prix(element)
     return GetCoinTextureString(element.prix)
 end
 
+local ARMES = { INVTYPE_WEAPON = true, INVTYPE_2HWEAPON = true, INVTYPE_WEAPONMAINHAND = true,
+                INVTYPE_WEAPONOFFHAND = true, INVTYPE_RANGED = true, INVTYPE_RANGEDRIGHT = true, INVTYPE_THROWN = true }
+
 local function TexteRessources()
     return "Ton or : " .. GetCoinTextureString(GetMoney()) .. "   Marques : " .. marques
 end
@@ -218,7 +221,9 @@ local function Rafraichir()
             if element.categorie == "I" then
                 local _, _, _, _, _, _, sousType, _, emplacement = GetItemInfo(element.id)
                 local place = emplacement and _G[emplacement] or ""
-                condition = condition .. (place ~= "" and (" - " .. place) or "") .. (sousType and (" (" .. sousType .. ")") or "") .. " - rang 3"
+                -- Pour une arme, le sous-type dit déjà tout (« Haches à une main ») : la ligne débordait sous le prix.
+                if ARMES[emplacement] and sousType then place, sousType = sousType, nil end
+                condition = condition .. (place ~= "" and (" - " .. place) or "") .. (sousType and (" (" .. sousType .. ")") or "")
             elseif element.categorie == "E" then
                 condition = "Éclats de " .. element.nomBoss
             end
@@ -305,6 +310,8 @@ for i = 1, LIGNES do
     ligne.nom:SetJustifyH("LEFT")
     ligne.condition = ligne:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     ligne.condition:SetPoint("TOPLEFT", ligne.nom, "BOTTOMLEFT", 0, -2)
+    ligne.condition:SetSize(220, 12)
+    ligne.condition:SetJustifyH("LEFT")
     ligne.prix = ligne:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     ligne.prix:SetPoint("RIGHT", -100, 0)
     ligne.statut = ligne:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")

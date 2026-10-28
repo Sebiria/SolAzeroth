@@ -1062,6 +1062,7 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
     - **Retouches d'après la 3e vidéo (28/10/2026, à revoir en jeu)** : Contrats, Butin et Sorts sont propres, et le suivi affiche bien « Commande : Bottes en lin écru ». Restait :
       - Intendant : « Chargement... » ne disparaissait pas. La liste n'était redessinée que s'il manquait encore des noms : quand tous arrivaient d'un coup, le dernier dessin n'avait jamais lieu. Corrigé dans Apprentissage et Contrats ;
       - Codex : la lettrine était cachée par le fond de la page. L'en-tête est maintenant sur un cadre au-dessus des pages. La note sous les barres tient sur une ligne, et les détails des lignes ne passent plus sur la ligne suivante.
+    - **4e vidéo (28/10/2026)** : les noms d'objets s'affichent à l'Intendant. Le Codex montrait encore l'ancienne version : le jeu n'avait pas été relancé par le lanceur, qui recopie les addons. Corrigé : à l'Intendant, « À une main (Haches à une main) - rang 3 » passait sous le prix. Pour une arme, seul le sous-type reste (« Haches à une main »). « rang 3 » est retiré, car tous les objets de l'Intendant le sont. La ligne est coupée à la largeur disponible.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
     - étape 6, connexion sans mot de passe : elle demanderait d'écrire le mot de passe dans un fichier du client ou de changer le serveur de connexion. **Décision à prendre par l'utilisateur.**
