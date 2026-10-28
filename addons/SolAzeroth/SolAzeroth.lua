@@ -205,6 +205,164 @@ for j = 1, MAX_PAGES do
 end
 
 ------------------------------------------------------------------------
+-- Habillage des pages : les lignes, barres, icônes et textes des addons accueillis prennent le style des maquettes
+-- (lignes brunes bordées d'or sur fond sombre, lignes claires et encre brune sur parchemin). La logique des addons
+-- ne change pas : leurs couleurs d'état (vert = obtenu, or = actif…) sont gardées, seuls les gris neutres sont teintés.
+------------------------------------------------------------------------
+local BARRE = "Interface\\RaidFrame\\Raid-Bar-Hp-Fill"
+local habilles = setmetatable({}, { __mode = "k" })
+
+local function Neutre(r, g, b)
+    return math.max(r, g, b) - math.min(r, g, b) < 0.08
+end
+
+-- Fond d'une ligne : sombre → brun chaud ; sur parchemin → clair et translucide (couleurs d'état adoucies).
+local function TeinteFond(r, g, b, a, surParchemin)
+    if surParchemin then
+        if Neutre(r, g, b) then
+            if r < 0.07 then return 0.55, 0.45, 0.3, 0.12 end
+            return 1, 0.97, 0.88, 0.3
+        end
+        return 0.55 + r * 0.45, 0.55 + g * 0.45, 0.45 + b * 0.45, 0.4
+    end
+    if Neutre(r, g, b) then
+        if r < 0.07 then return 0.12, 0.085, 0.05, 0.95 end
+        return 0.21, 0.15, 0.08, 0.95
+    end
+    return r, g, b, math.max(a or 1, 0.9)
+end
+
+local function TeinteBord(r, g, b, surParchemin)
+    if Neutre(r, g, b) then
+        if surParchemin then return 0.6, 0.46, 0.26 end
+        if r < 0.5 then return 0.3, 0.23, 0.11 end
+        return 0.42, 0.33, 0.15
+    end
+    return r, g, b
+end
+
+local function HabillerLigne(f, surParchemin)
+    local fond, bord = f.SetBackdropColor, f.SetBackdropBorderColor
+    local r, g, b, a = f:GetBackdropColor()
+    local br, bg, bb = f:GetBackdropBorderColor()
+    f:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+    f.SetBackdropColor = function(self, r, g, b, a) fond(self, TeinteFond(r, g, b, a, surParchemin)) end
+    f.SetBackdropBorderColor = function(self, r, g, b) bord(self, TeinteBord(r, g, b, surParchemin)) end
+    f:SetBackdropColor(r or 0.1, g or 0.1, b or 0.1, a)
+    f:SetBackdropBorderColor(br or 0.6, bg or 0.6, bb or 0.6)
+    if not surParchemin then
+        -- Dégradé gauche → droite et reflet en haut, comme les lignes de la maquette « natif ».
+        local degrade = f:CreateTexture(nil, "BORDER")
+        degrade:SetTexture(0, 0, 0)
+        degrade:SetPoint("TOPLEFT", 1, -1)
+        degrade:SetPoint("BOTTOMRIGHT", -1, 1)
+        degrade:SetGradientAlpha("HORIZONTAL", 0, 0, 0, 0, 0, 0, 0, 0.45)
+        local reflet = f:CreateTexture(nil, "BORDER")
+        reflet:SetTexture(1, 0.85, 0.5, 0.08)
+        reflet:SetHeight(1)
+        reflet:SetPoint("TOPLEFT", 1, -1)
+        reflet:SetPoint("TOPRIGHT", -1, -1)
+    end
+end
+
+local function HabillerBarre(b)
+    b:SetStatusBarTexture(BARRE)
+    local fond = b:CreateTexture(nil, "BACKGROUND")
+    fond:SetTexture(0.05, 0.035, 0.02, 0.9)
+    fond:SetAllPoints()
+    local cadre = CreateFrame("Frame", nil, b)
+    cadre:SetPoint("TOPLEFT", -1, 1)
+    cadre:SetPoint("BOTTOMRIGHT", 1, -1)
+    cadre:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+    cadre:SetBackdropBorderColor(0.35, 0.27, 0.12)
+end
+
+-- Icône de sort ou d'objet posée sur un cadre : bords rognés et liseré doré.
+local function HabillerIcone(t)
+    t:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    local parent = t:GetParent()
+    local lisere = parent:CreateTexture(nil, "BACKGROUND", nil, 7)
+    lisere:SetTexture(0.55, 0.45, 0.25)
+    lisere:SetPoint("TOPLEFT", t, -2, 2)
+    lisere:SetPoint("BOTTOMRIGHT", t, 2, -2)
+    local creux = parent:CreateTexture(nil, "BORDER")
+    creux:SetTexture(0.08, 0.06, 0.04)
+    creux:SetPoint("TOPLEFT", t, -1, 1)
+    creux:SetPoint("BOTTOMRIGHT", t, 1, -1)
+end
+
+-- Encre du parchemin : chaque police du jeu a sa version brune.
+local ENCRES = {
+    GameFontNormal = { 0.45, 0.14, 0.07 }, GameFontNormalSmall = { 0.45, 0.14, 0.07 },
+    GameFontNormalLarge = { 0.4, 0.12, 0.05 }, GameFontNormalHuge = { 0.4, 0.12, 0.05 },
+    GameFontHighlight = { 0.2, 0.12, 0.05 }, GameFontHighlightSmall = { 0.24, 0.15, 0.07 },
+    GameFontHighlightLarge = { 0.2, 0.12, 0.05 },
+    GameFontDisable = { 0.45, 0.34, 0.2 }, GameFontDisableSmall = { 0.45, 0.34, 0.2 },
+    GameFontGreen = { 0.15, 0.4, 0.1 }, GameFontGreenSmall = { 0.15, 0.4, 0.1 },
+    GameFontRed = { 0.6, 0.1, 0.05 }, GameFontRedSmall = { 0.6, 0.1, 0.05 },
+}
+local encresCreees = {}
+local function Encre(nom)
+    if not encresCreees[nom] then
+        local police = CreateFont("SolAzerothEncre" .. nom)
+        police:SetFontObject(_G[nom])
+        police:SetTextColor(unpack(ENCRES[nom]))
+        police:SetShadowColor(0, 0, 0, 0)
+        encresCreees[nom] = police
+    end
+    return encresCreees[nom]
+end
+
+local function HabillerTexte(t, parent, surParchemin)
+    local objet = t:GetFontObject()
+    local nom = objet and objet:GetName()
+    if not nom then return end
+    if surParchemin then
+        -- Les textes des boutons et des barres restent clairs : ils sont posés sur du sombre.
+        local typeParent = parent:GetObjectType()
+        if ENCRES[nom] and typeParent ~= "Button" and typeParent ~= "StatusBar" and typeParent ~= "CheckButton" then
+            t:SetFontObject(Encre(nom))
+        end
+    elseif nom == "GameFontNormalLarge" or nom == "GameFontNormalHuge" then
+        t:SetShadowOffset(1, -1)
+        t:SetShadowColor(0, 0, 0, 1)
+    end
+end
+
+local function Habiller(f, surParchemin)
+    local typeObjet = f:GetObjectType()
+    if not habilles[f] then
+        habilles[f] = true
+        local fond = f.GetBackdrop and f:GetBackdrop()
+        if fond and fond.bgFile and fond.bgFile:find("UI%-Tooltip%-Background") then
+            HabillerLigne(f, surParchemin)
+        elseif typeObjet == "StatusBar" and not fond then
+            HabillerBarre(f)
+        end
+    end
+    -- Régions et enfants sont revus à chaque passage : les addons créent leurs lignes et posent leurs icônes
+    -- au fil des données reçues.
+    for _, r in ipairs({ f:GetRegions() }) do
+        if not habilles[r] then
+            if r:GetObjectType() == "FontString" then
+                habilles[r] = true
+                HabillerTexte(r, f, surParchemin)
+            elseif r:GetObjectType() == "Texture" and typeObjet ~= "Button" and typeObjet ~= "CheckButton" then
+                local chemin = (r:GetTexture() or ""):lower()
+                if chemin:find("^interface\\icons\\") and r:GetWidth() >= 18 then
+                    habilles[r] = true
+                    HabillerIcone(r)
+                end
+            end
+        end
+    end
+    for _, enfant in ipairs({ f:GetChildren() }) do Habiller(enfant, surParchemin) end
+end
+
+------------------------------------------------------------------------
 -- Accueil des fenêtres des autres addons
 ------------------------------------------------------------------------
 local function EnleverHabillage(f)
@@ -286,25 +444,46 @@ local function Texte(parent, modele, texte, x, y)
     return t
 end
 
+-- Carte de réglage : icône dorée, titre, explication ; les boutons se posent dessous (y relatif à la carte).
+local function Carte(parent, y, hauteur, icone, titreCarte, texte)
+    local c = CreateFrame("Frame", nil, parent)
+    c:SetPoint("TOPLEFT", 20, y)
+    c:SetPoint("RIGHT", -20, 0)
+    c:SetHeight(hauteur)
+    c:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                    tile = true, tileSize = 16, edgeSize = 12, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+    c:SetBackdropColor(0.1, 0.1, 0.1, 0.8)
+    c:SetBackdropBorderColor(0.6, 0.6, 0.6)
+    local ic = c:CreateTexture(nil, "ARTWORK")
+    ic:SetTexture(icone)
+    ic:SetSize(36, 36)
+    ic:SetPoint("TOPLEFT", 12, -12)
+    local t = Texte(c, "GameFontNormalLarge", titreCarte, 60, -12)
+    t:SetWidth(600)
+    local d = Texte(c, "GameFontHighlightSmall", texte, 60, -34)
+    d:SetWidth(600)
+    return c
+end
+
 local CONSTRUCTEURS = {
     BarresEtSacs = function(p)
-        Texte(p, "GameFontNormalLarge", "Barres de postures et de totems", 24, -24)
-        Texte(p, "GameFontHighlight", "Déplace les deux barres à la souris, puis valide (commande /barres).", 24, -48)
-        Bouton(p, "Déplacer les barres", 180, 24, -72, function() SlashCmdList.SOLAZEROTHBARRES("") end)
-        Texte(p, "GameFontNormalLarge", "Sacs", 24, -128)
-        Texte(p, "GameFontHighlight", "Une seule fenêtre pour tous les sacs, recherche par nom (touche B ou /sacs).", 24, -152)
-        Bouton(p, "Ouvrir les sacs", 180, 24, -176, function() SlashCmdList.SOLAZEROTHSACS("") end)
+        local barres = Carte(p, -20, 110, "Interface\\Icons\\Ability_Warrior_DefensiveStance", "Barres de postures et de totems",
+            "Déplace les deux barres à la souris, puis valide (commande /barres).")
+        Bouton(barres, "Déplacer les barres", 180, 60, -66, function() SlashCmdList.SOLAZEROTHBARRES("") end)
+        local sacs = Carte(p, -146, 110, "Interface\\Icons\\INV_Misc_Bag_08", "Sacs",
+            "Une seule fenêtre pour tous les sacs et la banque, recherche par nom (touche B ou /sacs).")
+        Bouton(sacs, "Ouvrir les sacs", 180, 60, -66, function() SlashCmdList.SOLAZEROTHSACS("") end)
     end,
     Sauvegarde = function(p)
-        Texte(p, "GameFontNormalLarge", "Sauvegarde de la partie", 24, -24)
-        Texte(p, "GameFontHighlight", "Copie de la base de données, comme le bouton « Sauvegarder » du menu Échap.", 24, -48)
-        Bouton(p, "Sauvegarder maintenant", 200, 24, -72, function() SendChatMessage(".sauvegarder", "SAY") end)
-        Texte(p, "GameFontNormalLarge", "Sauvegarde automatique", 24, -128)
-        Texte(p, "GameFontHighlight", "Intervalle entre deux sauvegardes pendant le jeu :", 24, -152)
+        local maintenant = Carte(p, -20, 110, "Interface\\Icons\\INV_Misc_Note_01", "Sauvegarde de la partie",
+            "Copie de la base de données, comme le bouton « Sauvegarder » du menu Échap.")
+        Bouton(maintenant, "Sauvegarder maintenant", 200, 60, -66, function() SendChatMessage(".sauvegarder", "SAY") end)
+        local auto = Carte(p, -146, 146, "Interface\\Icons\\INV_Misc_PocketWatch_01", "Sauvegarde automatique",
+            "Intervalle entre deux sauvegardes pendant le jeu :")
         for i, minutes in ipairs({ 5, 10, 15, 30, 60 }) do
-            Bouton(p, minutes .. " min", 80, 24 + (i - 1) * 88, -176, function() SendChatMessage(".sauvegarder " .. minutes, "SAY") end)
+            Bouton(auto, minutes .. " min", 80, 60 + (i - 1) * 88, -66, function() SendChatMessage(".sauvegarder " .. minutes, "SAY") end)
         end
-        Bouton(p, "Intervalle actuel", 160, 24, -212, function() SendChatMessage(".sauvegarder ?", "SAY") end)
+        Bouton(auto, "Intervalle actuel", 160, 60, -102, function() SendChatMessage(".sauvegarder ?", "SAY") end)
     end,
 }
 
@@ -391,7 +570,9 @@ Selectionner = function(numSection, numPage, depuisAddon)
     vide:SetText(page.vide or "")
 
     if page.construire then
-        PageSimple(page):Show()
+        local p = PageSimple(page)
+        p:Show()
+        Habiller(p, false)
     else
         local f = Adopter(page)
         if f then
@@ -399,6 +580,7 @@ Selectionner = function(numSection, numPage, depuisAddon)
             if not f:IsShown() and not depuisAddon and SlashCmdList[page.commande] then
                 SlashCmdList[page.commande]("")
             end
+            Habiller(f, surParchemin)
         end
     end
     enSelection = false
@@ -466,5 +648,7 @@ fenetre:SetScript("OnUpdate", function(self, ecoule)
     if attente > 1 then
         attente = 0
         Rafraichir()
+        local f = affichee and affichee.cadre and _G[affichee.cadre]
+        if f and f:IsShown() then Habiller(f, SECTIONS[courante.section].parchemin) end
     end
 end)

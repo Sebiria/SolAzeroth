@@ -1037,6 +1037,18 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
      - **Réglages** : Plaques de nom, Barres et sacs, Sauvegarde (maintenant, ou intervalle de 5 à 60 min) ;
      - chaque sous-onglet accueille la fenêtre de l'addon d'origine, sans son cadre ni son titre, et réduite si elle est trop grande. Les commandes (`/codex`, `/contrats`…) et les fenêtres qui s'ouvrent seules (choix du butin) ouvrent la fenêtre Sol'Azeroth sur le bon sous-onglet ;
      - **Spécialisations** en cartes : la spé active en grande carte, avec l'icône et les points de ses trois arbres ; les autres en petites cartes, deux par deux.
+  - **V7 validée en jeu par l'utilisateur le 28/10/2026** : patch unique (races et classes libres toujours présentes), hauts faits natifs, `/sol`, `/codex`, aura « Sous-équipé », spécialisations en cartes.
+  - **Retours du test du 28/10/2026** :
+    - les plaques de nom montraient deux noms superposés, un grand rouge et un petit blanc. Le nom d'origine est maintenant recaché à chaque mise à jour. **À revoir en jeu.** Si le rouge reste, c'est le nom affiché au-dessus de la tête des PNJ (réglage `UnitNameNPC`) ;
+    - « en l'état, seul le cadre est refait » : l'utilisateur demande de refaire tout le contenu des pages.
+  - **Refonte du contenu des pages (construite le 28/10/2026, à voir en jeu)** :
+    - un **habillage commun** s'applique à toutes les pages accueillies, sans changer leur logique :
+      - fond sombre : les lignes deviennent brunes, bordées d'or, avec un dégradé et un reflet. Les couleurs d'état sont gardées (vert = obtenu, or = actif) ;
+      - les barres de progression ont un fond, un liseré et une texture plus douce ;
+      - les icônes de sort et d'objet sont rognées, avec un liseré doré ;
+      - sur parchemin (Collection), les lignes sont claires et translucides, et les textes passent à l'encre brune ;
+    - les pages **Barres et sacs** et **Sauvegarde** sont refaites en cartes, avec icône, titre et boutons ;
+    - **ensuite** : retouches page par page, à partir des captures d'écran de l'utilisateur.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
     - étape 6, connexion sans mot de passe : elle demanderait d'écrire le mot de passe dans un fichier du client ou de changer le serveur de connexion. **Décision à prendre par l'utilisateur.**
