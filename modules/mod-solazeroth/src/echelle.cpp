@@ -6,8 +6,10 @@
 // tout ce qui est amical. Les quêtes trop basses rapportent l'XP d'une quête de ce niveau (l'or des quêtes suit déjà
 // le niveau du joueur dans le jeu).
 // - À l'apparition, le niveau est choisi d'après le joueur le plus proche qui a l'option (OnBeforeCreatureSelectLevel).
-// - Toutes les 3 s, les monstres déjà présents à 100 m sont mis à jour (option changée, montée de niveau), seulement
-//   hors combat et en pleine santé. Ceux qu'on a remontés reviennent à leur niveau quand l'option est coupée.
+// - Toutes les 3 s, les monstres déjà présents à 200 m sont mis à jour (option changée, montée de niveau), seulement
+//   hors combat, en pleine santé et hors de la vue du joueur : le jeu montrerait sinon l'animation de gain de niveau.
+//   Ceux qu'on a remontés reviennent à leur niveau quand l'option est coupée, eux aussi hors de vue.
+// - Un monstre qui réapparaît sous les yeux du joueur garde son niveau, pour la même raison.
 // - Or et sorts suivent : l'or ramassé sur un monstre remonté est multiplié par le rapport entre l'or moyen des monstres
 //   normaux de son nouveau niveau et de son niveau d'origine ; ses sorts (dégâts directs, sur la durée, soins) par le
 //   rapport des dégâts de base de ces deux niveaux, comme sa mêlée. Les sorts à dégâts d'arme suivent déjà la mêlée.
@@ -36,7 +38,7 @@ using namespace Acore::ChatCommands;
 namespace
 {
     char const* const PREFIXE = "SolAzerothEchelle";
-    float const PORTEE = 100.0f;
+    float const PORTEE = 200.0f;
 
     struct Option : DataMap::Base
     {
@@ -135,13 +137,22 @@ namespace
         Player* proche = nullptr;
         float meilleure = 250.0f;
         for (auto const& ref : map->GetPlayers())
-            if (Player* p = ref.GetSource(); p && p->IsInWorld() && Actif(p))
+            if (Player* p = ref.GetSource(); p && Actif(p))   // pas IsInWorld : la grille se charge avant l'entrée du joueur
                 if (float d = c->GetExactDist2d(p); d < meilleure)
                 {
                     meilleure = d;
                     proche = p;
                 }
         return proche;
+    }
+
+    // Un joueur de la carte voit-il ce monstre ? Changer son niveau montrerait alors l'animation de gain de niveau.
+    bool Vu(Creature* c)
+    {
+        for (auto const& ref : c->GetMap()->GetPlayers())
+            if (Player* p = ref.GetSource(); p && p->HaveAtClient(c))
+                return true;
+        return false;
     }
 
     // XP d'une quête d'un niveau donné pour un joueur, comme Quest::XPValue, sans arrondi.
@@ -171,7 +182,7 @@ namespace
         for (Unit* u : unites)
         {
             Creature* c = u->ToCreature();
-            if (!c || !c->IsAlive() || c->IsInCombat() || !c->IsFullHealth() || c->IsInEvadeMode())
+            if (!c || !c->IsAlive() || c->IsInCombat() || !c->IsFullHealth() || c->IsInEvadeMode() || Vu(c))
                 continue;
             uint8 cible = Cible(c, player);
             Remonte* marque = c->CustomData.Get<Remonte>("solazeroth_echelle");
@@ -192,9 +203,17 @@ public:
 
     void OnBeforeCreatureSelectLevel(CreatureTemplate const* /*modele*/, Creature* c, uint8& niveau) override
     {
+        Remonte* actuel = c->CustomData.Get<Remonte>("solazeroth_echelle");
+        if (c->IsInWorld() && Vu(c))
+        {
+            // Réapparition sous les yeux du joueur : un monstre remonté garde son niveau, les autres font comme d'habitude.
+            if (actuel && actuel->oui)
+                niveau = c->GetLevel();
+            return;
+        }
         uint8 cible = Cible(c, JoueurProche(c));
         bool remonte = cible && niveau < cible;
-        if (remonte || c->CustomData.Get<Remonte>("solazeroth_echelle"))
+        if (remonte || actuel)
         {
             Remonte* marque = c->CustomData.GetDefault<Remonte>("solazeroth_echelle");
             marque->oui = remonte;
@@ -209,16 +228,21 @@ class solazeroth_echelle_joueur : public PlayerScript
 {
 public:
     solazeroth_echelle_joueur() : PlayerScript("solazeroth_echelle_joueur", {
-        PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_LEVEL_CHANGED, PLAYERHOOK_ON_QUEST_COMPUTE_EXP,
+        PLAYERHOOK_ON_LOAD_FROM_DB, PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_LEVEL_CHANGED, PLAYERHOOK_ON_QUEST_COMPUTE_EXP,
         PLAYERHOOK_ON_BEFORE_LOOT_MONEY }) { }
 
-    void OnPlayerLogin(Player* player) override
+    // Lu avant l'entrée dans le monde : les monstres chargés autour du joueur apparaissent déjà à son niveau.
+    void OnPlayerLoadFromDB(Player* player) override
     {
         bool actif = false;
         if (QueryResult r = CharacterDatabase.Query("SELECT actif FROM solazeroth_echelle WHERE guid = {}", player->GetGUID().GetCounter()))
             actif = (*r)[0].Get<uint8>() != 0;
         player->CustomData.GetDefault<Option>("solazeroth_echelle")->actif = actif;
-        if (actif)
+    }
+
+    void OnPlayerLogin(Player* player) override
+    {
+        if (Actif(player))
             ChatHandler(player->GetSession()).SendSysMessage("|cffffd100Monstres à ton niveau : activé.|r");
     }
 
@@ -329,8 +353,8 @@ public:
         CharacterDatabase.DirectExecute("REPLACE INTO solazeroth_echelle (guid, actif) VALUES ({}, {})",
             player->GetGUID().GetCounter(), actif ? 1 : 0);
         handler->SendSysMessage(actif
-            ? "|cffffd100Monstres à ton niveau : activé.|r Les monstres plus faibles remontent à ton niveau moins 2 ou 3."
-            : "Monstres à ton niveau : désactivé. Les monstres reprennent leur niveau d'origine.");
+            ? "|cffffd100Monstres à ton niveau : activé.|r Les monstres plus faibles remontent à ton niveau moins 2 ou 3 dès qu'ils sont hors de ta vue."
+            : "Monstres à ton niveau : désactivé. Les monstres reprennent leur niveau d'origine dès qu'ils sont hors de ta vue.");
         EnvoyerEtat(player);
         return true;
     }
