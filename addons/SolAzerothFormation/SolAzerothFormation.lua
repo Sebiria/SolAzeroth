@@ -48,7 +48,6 @@ local ONGLETS = {
     { cle = "R", nom = "Recettes" },
     { cle = "C", nom = "Compétences" },
     { cle = "O", nom = "Outils" },
-    { cle = "B", nom = "Marques" },
     { cle = "I", nom = "Intendant" },
     { cle = "E", nom = "Éclats" },
     { cle = "X", nom = "Classes" },
@@ -64,8 +63,8 @@ local CLASSES = {
 }
 local classeChoisie = nil
 
-local catalogue = { S = {}, M = {}, R = {}, C = {}, O = {}, B = {}, I = {}, E = {}, X = {} }
-local enCours = { S = {}, M = {}, R = {}, C = {}, O = {}, B = {}, I = {}, E = {}, X = {} }
+local catalogue = { S = {}, M = {}, R = {}, C = {}, O = {}, I = {}, E = {}, X = {} }
+local enCours = { S = {}, M = {}, R = {}, C = {}, O = {}, I = {}, E = {}, X = {} }
 local enCoursX = {}
 local marques = 0
 local onglet, metierChoisi, affiches = "S", nil, {}
@@ -76,7 +75,7 @@ local function Commande(texte) SendChatMessage(texte, "SAY") end
 -- Noms et icônes (données du client)
 ------------------------------------------------------------------------
 local function EstObjet(element)
-    return element.categorie == "O" or element.categorie == "B" or element.categorie == "I" or element.categorie == "E"
+    return element.categorie == "O" or element.categorie == "I" or element.categorie == "E"
 end
 
 local function Infos(element)
@@ -90,7 +89,6 @@ end
 
 local function Prix(element)
     if element.prix == 0 then return "Gratuit" end
-    if element.categorie == "B" then return element.prix .. " Marques" end
     if element.categorie == "I" then return element.prix .. " Marques\n" .. GetCoinTextureString(element.cuivre) end
     if element.categorie == "E" then return element.prix .. " Éclats\n(" .. element.eclats .. " en réserve)" end
     return GetCoinTextureString(element.prix)
@@ -502,7 +500,7 @@ evenements:SetScript("OnEvent", function(self, event, prefixe, message)
         catalogue.X = enCoursX
         if cadre:IsShown() then Filtrer() end
     elseif message == "DEBUT" then
-        enCours = { S = {}, M = {}, R = {}, C = {}, O = {}, B = {}, I = {}, E = {}, X = {} }
+        enCours = { S = {}, M = {}, R = {}, C = {}, O = {}, I = {}, E = {}, X = {} }
     elseif strsub(message, 1, 2) == "N|" then
         marques = tonumber(strsub(message, 3)) or 0
     elseif message == "FIN" then

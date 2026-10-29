@@ -5,7 +5,7 @@
 //   R  recettes des entraîneurs de métier (pas celles des marchands)
 //   C  maîtrises d'armes et d'armures (section 3.7)
 //   O  outils de base de métier (prix du marchand)
-//   B  boutique de Marques ; I  intendant (intendant.cpp) ; E  Éclats de raid (malchance.cpp)
+//   I  intendant (intendant.cpp) ; E  Éclats de raid (malchance.cpp)
 // Les règles sont celles des entraîneurs du jeu (niveau, rang précédent, compétence de métier).
 // L'addon demande « .solform liste » et achète avec « .solform acheter <catégorie> <id> ».
 // Grimoire universel (section 3.9, V3b) : les sorts des autres classes (catégorie X), envoyés classe par classe à la
@@ -78,14 +78,6 @@ namespace
     // Pioche, couteau à dépecer, marteau, clé plate, bâtonnet runique, trousse de joaillier,
     // coffret de calligraphie, canne à pêche, silex et amadou.
     std::vector<uint32> const OUTILS = { 2901, 7005, 5956, 6219, 6218, 20815, 39505, 6256, 4471 };
-
-    // Boutique de marques (B) : achats de compte, en Marques du voyageur (prix provisoires).
-    // Une fois acheté par un personnage, l'objet est gratuit pour les autres personnages du compte.
-    struct ArticleBoutique { char const* cle; uint32 objet; uint32 sortConnu; uint32 prix; };
-    std::vector<ArticleBoutique> const BOUTIQUE =
-    {
-        { "ramasseur", 11825, 15048, 250 },   // Bombinette ramasseuse : ramassage automatique
-    };
 
     enum Etat : uint8 { DISPONIBLE = 0, INDISPONIBLE = 1, CONNU = 2 };
 
@@ -215,17 +207,6 @@ namespace
             for (uint32 outil : OUTILS)
                 if (ItemTemplate const* modele = sObjectMgr->GetItemTemplate(outil))
                     envoi.Ajouter(Acore::StringFormat("{}:0:{}:{}", outil, modele->BuyPrice, player->HasItemCount(outil, 1, true) ? uint32(CONNU) : uint32(DISPONIBLE)));
-        }
-        {
-            Envoi envoi(player, 'B');
-            uint32 compte = player->GetSession()->GetAccountId();
-            for (ArticleBoutique const& a : BOUTIQUE)
-            {
-                bool achete = SolAzeroth::AchatDeCompte(compte, a.cle);
-                bool possede = player->HasSpell(a.sortConnu) || player->HasItemCount(a.objet, 1, true);
-                Etat etat = possede ? CONNU : (achete || SolAzeroth::Marques(player) >= a.prix) ? DISPONIBLE : INDISPONIBLE;
-                envoi.Ajouter(Acore::StringFormat("{}:0:{}:{}", a.objet, achete ? 0 : a.prix, uint32(etat)));
-            }
         }
         {
             Envoi envoi(player, 'I');
@@ -664,31 +645,6 @@ public:
                         player->ModifyMoney(-int32(modele->BuyPrice));
                     else
                         handler->SendSysMessage("|cffff0000Sacs pleins.|r");
-                }
-                break;
-            case 'B':
-                for (ArticleBoutique const& a : BOUTIQUE)
-                {
-                    if (a.objet != id || player->HasSpell(a.sortConnu) || player->HasItemCount(a.objet, 1, true))
-                        continue;
-                    uint32 compte = player->GetSession()->GetAccountId();
-                    bool achete = SolAzeroth::AchatDeCompte(compte, a.cle);
-                    if (!achete && !SolAzeroth::RetirerMarques(player, a.prix))
-                    {
-                        handler->SendSysMessage(Acore::StringFormat("|cffff0000Il te faut {} Marques du voyageur.|r", a.prix));
-                        break;
-                    }
-                    if (!player->AddItem(a.objet, 1))
-                    {
-                        if (!achete)
-                            SolAzeroth::DonnerMarques(player, a.prix, "remboursement, sacs pleins");
-                        handler->SendSysMessage("|cffff0000Sacs pleins.|r");
-                        break;
-                    }
-                    SolAzeroth::EnregistrerAchatDeCompte(compte, a.cle);
-                    SolAzeroth::OublierCacheRamasseur(compte);
-                    handler->SendSysMessage("|cff00ff00Achat effectué :|r utilise l'objet pour apprendre la mascotte, puis sors-la depuis l'onglet Mascottes.");
-                    break;
                 }
                 break;
             case 'I':

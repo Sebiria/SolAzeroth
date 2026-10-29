@@ -547,6 +547,20 @@ Chaque instance garde son niveau d'origine, est ramenée à 1 joueur, et se joue
     - Val'kyrs jumelles : le bouclier du Pacte des jumelles n'absorbe que 25 % de sa valeur.
   - Tous les raids du Norfendre sont dans le guide `Stratégies des raids seul.md`.
   - Pas encore fait : multiplicateurs propres aux raids dans mod-autobalance (à régler après de vrais essais).
+- **Raids classiques et de l'Outreterre, et donjons (V8, 30/10/2026, à tester en jeu)** : demande de l'utilisateur « tous les autres raids, et tous les autres donjons s'il faut », en adaptant **seulement l'impossible** (sa décision). Lecture des scripts de Cœur du Magma, Aile noire, Zul'Gurub, Ahn'Qiraj (ruines et temple), Karazhan, Gruul, Magtheridon, Serpent, l'Œil, Hyjal, Temple noir, Zul'Aman et Puits de soleil, et des donjons suspects. Adaptations dans `raids_anciens.cpp`, seulement quand un seul joueur est dans l'instance :
+  - **toutes les instances** : le joueur est insensible aux contrôles mentaux des monstres (charme, possession). Seul, un contrôle mental lui ôtait tout ennemi et le combat se réinitialisait (Lucifron, Skeram, Hakkar, Jin'do, Kael'thas, et aussi Kel'Thuzad, Lana'thel, Yogg-Saron) ;
+  - **Thekal** (Zul'Gurub) et **Romulo et Julianne** (Karazhan) : ils se relèvent s'ils ne tombent pas ensemble ; dégâts partagés en proportion de leur vie, comme Freya ;
+  - **Dédain-du-Néant** : seul, on ne bloque qu'un rayon ; le boss est insensible aux rayons ;
+  - **Empereurs jumeaux** : le Soin fraternel ne soigne plus (seul, ils sont toujours proches). Leur vie partagée d'origine permet à toute classe de blesser l'un des deux ;
+  - **Viscidus** : chaque coup compte pour 20 coups de givre (gel), puis pour 30 coups de mêlée (bris) ;
+  - **Vaelastrasz** : insensible à la mort instantanée de l'Adrénaline brûlante (l'explosion reste) ; **Ébonroc** : insensible à son Ombre ;
+  - **Magtheridon** : un cube cliqué active les cinq ;
+  - **Vashj** : pas de paralysie en portant un noyau contaminé ;
+  - **Naj'entus** : une épine apparaît aux pieds du joueur quand le Bouclier de marée se lève ;
+  - **Kalecgos** : dégâts partagés avec Sathrovarr, que le joueur seul ne peut pas atteindre ; Sathrovarr ne blesse plus Kalec ; **Brutallus** : Taillade météorique plafonnée à 2 piles ;
+  - **Tyrannus** (Fosse de Saron) : insensible à la Marque du seigneur, qui renvoyait au joueur seul ses propres dégâts.
+  - **À vérifier en jeu** : Tranchetripe (orbe de domination), C'Thun (estomac), échiquier de Karazhan, Illidan (Flammes d'Azzinoth).
+  - **Classement** : 12 adaptations ; tous les autres boss sont faciles ou à régler par les chiffres. Guide : `Stratégies des raids seul.md`, partie « Raids classiques et de l'Outreterre ».
 
 ### 4.8 Validation
 
@@ -771,7 +785,7 @@ Le Codex rend la progression lisible, le Renom récompense le compte en confort,
 ### 7.2 Renom du compte (V4)
 
 - Chaque entrée du Codex donne des points de Renom.
-- Les rangs de Renom débloquent du **confort, très peu de puissance brute** : sacs, contrat en réserve supplémentaire, affixes au menu, vol tardif (V8+).
+- Les rangs de Renom débloquent du **confort, très peu de puissance brute** : sacs, contrat en réserve supplémentaire, affixes au menu, vol tardif (abandonné le 30/10/2026, voir 9.2).
 - **Construit (V4 étape 4, proposé par Claude et validé par l'utilisateur le 28/10/2026)** : `renom.cpp`, migration 034, onglet « Renom » de la fenêtre du Codex (`/codex`, menu « Codex et Renom »). **Validé en jeu le 28/10/2026** (sac lié reçu, Marques en monnaie).
   - Points : **10 par heure de Codex accomplie + 5 par contrat terminé** (contrats comptés depuis V4). Le Renom ne redescend jamais (on garde le maximum atteint), même si le Codex baisse quand du contenu arrive.
   - Rangs (noms tranchés, question de 11.2) et récompenses :
@@ -787,7 +801,7 @@ Le Codex rend la progression lisible, le Renom récompense le compte en confort,
     | 7 Champion | 4 000 | Sac glaciaire (22 places) |
     | 8 Légende | 6 000 | 500 Marques, une fois par compte |
     | 9 Mythe | 8 200 | 1 000 Marques, une fois par compte |
-    | 10 Éternel | 12 000 | Vol en Kalimdor et Royaumes de l'Est (V8+). Renommé d'« Immortel » le 28/10/2026 pour ne pas se confondre avec le titre « l'immortel » du défi Or (3.3) |
+    | 10 Éternel | 12 000 | **Récompense à redéfinir** : le vol en Kalimdor et dans les Royaumes de l'Est est abandonné (décision de l'utilisateur du 30/10/2026). Renommé d'« Immortel » le 28/10/2026 pour ne pas se confondre avec le titre « l'immortel » du défi Or (3.3) |
 
   - Les sacs se réclament une fois **par personnage** et sont **liés au personnage** (demande de l'utilisateur : pas de personnage créé exprès pour transférer les sacs).
 
@@ -865,8 +879,8 @@ Le Codex rend la progression lisible, le Renom récompense le compte en confort,
 
 - Nom : **Marque du voyageur** (choisi en V2).
 - **Fait en V2** (`marques.cpp`, migration 018) : objet 900100 rangé dans les sacs, empilable par 5 000. **Depuis le 28/10/2026 (migration 035, demande de l'utilisateur : l'objet 900100, inconnu du client, s'affichait avec un « ? »)** : la Marque reprend l'objet 37711, jeton de test de Blizzard jamais utilisé et déjà connu du client comme monnaie (catégorie « Divers ») : vraie icône, onglet Monnaie de la fiche de personnage, sans patch client. Les Marques existantes ont été rendues à la connexion sous la nouvelle forme. Sources **(provisoires, `mod_solazeroth.conf`)** : boss de donjon 2 marques + le rang de menace, dernier boss + 5 ; quête rendue 1 marque + 1 tous les 20 niveaux du personnage (7.6) ; récompenses de défis (3.3) versées directement, ou à la connexion si les sacs sont pleins.
-- **Boutique de marques** : onglet « Marques » de l'addon d'apprentissage (3.6 bis). Achats **de compte** : une fois payé, l'objet est gratuit pour les autres personnages du compte. Premier article : l'**Alarme-bombe ramasseuse**, 250 marques **(provisoire)**.
-- **Bombinette ramasseuse** (`ramasseur.cpp`) : une vraie mascotte, la Bombinette (créature 9656, objet 11825), avec son apparence d'origine. Essayée d'abord avec l'apparence de l'Alarme-bombe 2600 de Gnomeregan, abandonnée (migration 022) car son animation de repos sonne l'alarme en permanence. Quand elle est sortie et que le compte l'a achetée à la boutique, tout monstre tué est ramassé automatiquement (or et objets ; ce qui ne rentre pas reste sur le cadavre). Une Bombinette fabriquée par un ingénieur reste décorative. Confort, pas puissance.
+- **Boutique de marques — retirée le 30/10/2026** avec la Bombinette, son seul article (demande de l'utilisateur ; achat de test non remboursé, sa décision). Elle était l'onglet « Marques » de l'addon d'apprentissage (3.6 bis). Achats **de compte** : une fois payé, l'objet est gratuit pour les autres personnages du compte. Premier article : l'**Alarme-bombe ramasseuse**, 250 marques **(provisoire)**.
+- **Bombinette ramasseuse — retirée le 30/10/2026** (demande de l'utilisateur ; `ramasseur.cpp` supprimé) : une vraie mascotte, la Bombinette (créature 9656, objet 11825), avec son apparence d'origine. Essayée d'abord avec l'apparence de l'Alarme-bombe 2600 de Gnomeregan, abandonnée (migration 022) car son animation de repos sonne l'alarme en permanence. Quand elle est sortie et que le compte l'a achetée à la boutique, tout monstre tué est ramassé automatiquement (or et objets ; ce qui ne rentre pas reste sur le cadavre). Une Bombinette fabriquée par un ingénieur reste décorative. Confort, pas puissance.
 - **Marques des boss de donjon, une seule fois (décision de l'utilisateur du 29/10/2026, migration 037)** : par personnage, par boss et par rang de menace.
   - Une victoire à un rang plus haut que le dernier payé rapporte aussi les rangs inférieurs pas encore payés. Exemple : un premier passage direct au rang 3 paie les rangs 0, 1, 2 et 3.
   - Un rang déjà payé, ou plus bas, ne rapporte plus de Marques. Le butin ne change pas.
@@ -956,9 +970,7 @@ Ces éléments ne doivent pas être commencés avant V8, et ceux de la liste « 
 | Mise à l'échelle du monde | Si les monstres montent avec le joueur, il ne se sent jamais plus fort | En option, **avec retard** : monstres 2 à 3 niveaux sous le joueur. Villes, PNJ de service, gardes et boss de monde exclus. XP et or des quêtes alors calculés sur le niveau du joueur. **Construite le 29/10/2026 (V8), à valider en jeu** : détail en 9.3 |
 | PNJ d'ambiance dans le monde entier | Hurlevent fait (V5) ; toutes les capitales, Shattrath et Dalaran construits le 29/10/2026 (migration 051, validés en jeu), puis 155 villes, villages et relais (migration 052, validés), puis routes et campements de 54 zones (migration 053, à valider) | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
 | Ligues Remix et Chaos | Dépendent de la mise à l'échelle du monde | **Construites le 30/10/2026 (V8), à valider en jeu** : section 3.3 |
-| Raids réécrits boss par boss | Très cher pour un gain modeste | Un boss à la fois, en ALE ou C++, en partant de la liste de faisabilité (section 4.7) |
-| Vol dans Kalimdor et les Royaumes de l'Est | Très cher, défauts visibles | Récompense de Renom. Patch `AreaTable.dbc` et retrait de la restriction serveur sur les cartes 0 et 1. Défauts acceptés : zones inachevées, trous, murs invisibles |
-| Extensions de contenu façon « Curator » | À étudier | L'utilisateur fournira la référence |
+| Raids réécrits boss par boss | Très cher pour un gain modeste | **Fait le 30/10/2026 (V8), à tester en jeu** : tous les raids classiques et de l'Outreterre, plus les donjons, adaptés seulement là où c'est impossible seul (section 4.7) |
 
 ### 9.3 Mise à l'échelle du monde avec retard (V8, construite le 29/10/2026, à valider en jeu)
 
@@ -989,6 +1001,9 @@ Ces éléments ne doivent pas être commencés avant V8, et ceux de la liste « 
 - **Malus d'équipement de −40 %** (plafonné à −20 %).
 - **Mise à l'échelle du monde dès le départ** (repoussée, voir 9.1).
 - **Chapitres de contenu mensuels** écrits à la main (remplacés par le thème du mois piloté par données).
+- **Vol dans Kalimdor et les Royaumes de l'Est** (décision de l'utilisateur du 30/10/2026). La récompense du rang 10 de Renom est à redéfinir (7.2).
+- **Extensions de contenu façon « Curator »** (décision de l'utilisateur du 30/10/2026 : le Codex en tient lieu).
+- **Mascotte ramasseuse de butin** et boutique de marques (retirées le 30/10/2026, demande de l'utilisateur).
 - **Ligue Ironman**, dans sa version du document comme dans celle de mod-challenge-modes : en solo il n'y a ni échange ni groupe, et tout l'équipement se ramasse ou se fabrique.
 
 ## 10. Feuille de route
@@ -1007,7 +1022,7 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
 | V5 ✔ (validée le 28/10/2026) | 3-4 sem. | Écart d'équipement, 3-4 affixes de mécanique, affixes à points, thème du mois, ligue Destin, PNJ d'ambiance | Critère 5.4. Des PNJ d'ambiance animés et non ciblables sont visibles à Hurlevent le soir |
 | V6 (commencée le 28/10/2026) | 4 sem. | Chaîne d'histoire (16 chapitres, sans raccourci : toute la Citadelle), Roi-liche réglé. Liste de faisabilité des boss WotLK. Rendements décroissants de raid | **Fin « Histoire » jouable :** le Roi-liche est vaincu seul en rang 0, avec haut fait, titre et générique. L'aura « Raid épuisé » apparaît au 4e passage du jour |
 | V7 (commencée le 28/10/2026, périmètre revu en 10.2) | 3-4 sem. | Patch unique dans `Data\frFR` (fusion de mod-arac), hauts faits natifs, auras nommées, addon unifié au design choisi, connexion sans mot de passe en option | Critère 7.8 avec l'interface native. Les jetons existants sont convertis |
-| V8+ | des mois | Section 9.1 : mise à l'échelle du monde avec retard, ligues Remix et Chaos, raids boss par boss, vol en récompense de Renom | Critères définis au moment de chaque chantier |
+| V8+ | des mois | Section 9.1 : mise à l'échelle du monde avec retard, ligues Remix et Chaos, raids boss par boss (faits le 30/10/2026 ; vol et « Curator » abandonnés) | Critères définis au moment de chaque chantier |
 | Calibrage final | à définir | **Équipe d'évaluation montée par Claude** (demande de l'utilisateur du 29/10/2026), voir 10.3 | L'expérience reste exigeante d'un bout à l'autre, sans passage infaisable |
 
 ### 10.4 Publication sur GitHub (demande de l'utilisateur du 28/10/2026)
@@ -1164,7 +1179,7 @@ Six décisions ont été prises par défaut pour combler des trous ; huit questi
 - [x] Courbe d'XP : **tranché**, le joueur choisit sa vitesse avec mod-individual-xp (`.xp set`, section 3.4).
 - [ ] Nom des affixes. Rangs de Renom : **tranché le 28/10/2026** (7.2). (Monnaie : **Marque du voyageur**, tranché en V2.)
 - [ ] Seuil de « quête grise » et barème de jetons par niveau (7.6).
-- [ ] Extensions de contenu façon « Curator » : l'utilisateur fournira la référence.
+- [x] Extensions de contenu façon « Curator » : abandonnées le 30/10/2026 (le Codex en tient lieu).
 - [x] Ligne « Classes » du Codex (500 h) : **tranché le 28/10/2026**, elle compte les 9 autres classes montées vers le niveau 80, sans ligues pour l'instant (7.1).
 - [ ] Ligues : l'achat de sorts, de maîtrises et de spés est-il autorisé en Hardcore ? (Destin : **tranché le 30/10/2026**, ni sorts ni talents d'autres classes ; spés et maîtrises permises.)
 - [ ] Connexion sans mot de passe, avec un choix parmi les comptes (demande de l'utilisateur, non urgente) : l'écran de connexion est dans l'interface du client (GlueXML), qu'un addon ne peut pas modifier. Piste : l'intégrer au patch client unique de V7.

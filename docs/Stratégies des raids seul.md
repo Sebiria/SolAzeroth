@@ -7,6 +7,7 @@ Guide de jeu, boss par boss et raid par raid, pour un personnage seul. Rédigé 
 - Les raids sont ramenés à 1 joueur par mod-autobalance : moins de PV et de dégâts que pour 10 joueurs, mais les boss gardent leurs mécaniques.
 - Les adaptations marquées **[Sol'Azeroth]** ne jouent que lorsque tu es **seul dans l'instance**.
 - Tout ce qui « vise un joueur au hasard sauf la cible du boss » ne te vise jamais : seul, tu es toujours la cible du boss.
+- **[Sol'Azeroth] Contrôles mentaux** (ajouté le 30/10/2026) : seul dans un donjon ou un raid, tu es insensible aux contrôles mentaux des monstres (Lucifron, Skeram, Hakkar, Jin'do, Kael'thas, Kel'Thuzad, Lana'thel, Yogg-Saron…). Seul, un contrôle mental te retirerait tout ennemi et le combat se réinitialiserait.
 - Le journal de donjon (`C:\SolAzeroth\journaux\`) enregistre chaque combat : signale la fin d'un raid pour qu'on le lise.
 - Rendements décroissants : à partir du 4e passage du jour dans le même raid, le butin rare baisse de moitié.
 
@@ -303,3 +304,77 @@ Ces raids se font seul tels quels : aucune mécanique n'exige un deuxième joueu
 - Une heure pour le vaincre. Étoiles qui s'effondrent : tue-les, elles laissent des trous noirs. Big Bang : entre dans un trou noir juste avant, puis ressors.
 - Coup de phase : en groupe, à 5 piles, le tank change de phase et un autre prend le boss. **Seul, il plafonne à 4 piles.**
 - Frappe cosmique : sors de la cible.
+
+---
+
+## Raids classiques et de l'Outreterre (ajoutés le 30/10/2026)
+
+Joués à leur niveau d'origine. Rédigé d'après la lecture des scripts ; seules les mécaniques impossibles seul sont adaptées. Les combats marqués *à vérifier* sont possibles en principe, mais incertains.
+
+### Cœur du Magma
+Aucun boss bloquant. **Lucifron** et **Gehennas** : malédictions à dissiper si tu peux ; la Domination de l'esprit de Lucifron n'a pas d'effet sur toi **[Sol'Azeroth]**. **Baron Geddon** : Bombe vivante, éloigne-toi de tes familiers et des invocations. **Majordome Executus** : tue ses gardes un à un. **Ragnaros** : s'il n'a personne au corps à corps, il lance Explosion de magma : reste collé à lui ; à la submersion, tue les Fils des flammes.
+
+### Repaire de l'Aile noire
+- **Tranchetripe l'Indompté** — *à vérifier* : range ton familier, prends le contrôle de Tranchetripe avec l'Orbe de domination et brise les 30 œufs ; ton corps reste exposé aux renforts pendant ce temps.
+- **Vaelastrasz le Corrompu** — **[Sol'Azeroth]** : l'Adrénaline brûlante finit toujours sur toi ; seul, elle ne te tue plus au bout de 20 s, mais son explosion fait mal : garde tes défenses pour ce moment.
+- **Lashlayer**, **Gueule-de-feu**, **Flamegor** : sans mécanique bloquante. La Flamme d'ombre demande toujours la Cape d'écailles d'Onyxia équipée.
+- **Ébonroc** — **[Sol'Azeroth]** : tu es insensible à l'Ombre d'Ébonroc (prévue pour un changement de tank, elle le soignait à chaque coup).
+- **Chromaggus** : souffles variés ; le Sablier de bronze retire l'Affliction de la couvée bronze.
+- **Nefarian** : phase 1, tue les drakônides ; ensuite, appels de classe à subir.
+
+### Zul'Gurub
+- **Grand prêtre Thekal** — **[Sol'Azeroth]** : lui et ses deux zélotes se relèvent si les trois ne tombent pas à 10 s d'écart. Seul, tes dégâts sur l'un touchent aussi les deux autres, en proportion : frappe qui tu veux.
+- **Hakkar** : prends le Sang empoisonné des Fils de Hakkar avant chaque Siphon de sang ; sa Cause de la folie n'a pas d'effet sur toi **[Sol'Azeroth]**.
+- **Jin'do** : détruis le Totem de lavage de cerveau et le Totem de soins ; maudit, tu vois les ombres : tue-les.
+- **Mandokir** : Regard menaçant, arrête tout (même de bouger) jusqu'à la fin du regard.
+- Les autres (Jeklik, Venoxis, Mar'li, Arlokk, Gahz'ranka, Bord de la folie) : sans mécanique bloquante.
+
+### Ruines d'Ahn'Qiraj
+Aucun boss bloquant. **Buru** : attire-le sur ses œufs pour qu'ils explosent sur lui. **Ossirian** : active les cristaux pour lui retirer sa Force et lui donner une faiblesse.
+
+### Temple d'Ahn'Qiraj
+- **Le Prophète Skeram** : ses copies sont à tuer ; sa Véritable réalisation ne te contrôle plus **[Sol'Azeroth]**.
+- **Trio d'insectes**, **Sartura**, **Fankriss**, **Huhuran**, **Ouro** : sans mécanique bloquante.
+- **Viscidus** — **[Sol'Azeroth]** : seul, chacun de tes coups compte pour 20 coups de givre ; une dizaine de coups le gèlent, quelle que soit ton école de magie. Gelé, chaque coup compte pour 30 coups de mêlée : **passe en attaque automatique au corps à corps** (même un lanceur de sorts) ; 5 coups le brisent. Tue ensuite les gouttelettes avant qu'elles le rejoignent.
+- **Empereurs jumeaux** — **[Sol'Azeroth]** : ils partagent déjà leur vie, donc frappe celui que ta classe peut blesser (Vek'nilash est insensible à la magie, Vek'lor aux coups physiques). Seul, leur Soin fraternel ne soigne plus. Ils échangent leurs places de temps en temps.
+- **C'Thun** — *à vérifier* : avalé, tue les tentacules dans l'estomac puis ressors par la sortie ; dehors, évite le Rayon de l'œil.
+
+### Karazhan
+- **Attumen**, **Moroes**, **Damoiselle de vertu**, **Conservateur**, **Terestian**, **Aran**, **Prince Malchezaar**, **Plaie-de-nuit** : sans mécanique bloquante. Aran : ne bouge pas pendant la Couronne de flammes.
+- **Opéra, Romulo et Julianne** — **[Sol'Azeroth]** : en dernière phase, chacun ressuscite l'autre s'ils ne meurent pas à 10 s d'écart ; seul, tes dégâts sur l'un touchent l'autre, en proportion.
+- **Dédain-du-Néant** — **[Sol'Azeroth]** : il est insensible aux rayons des portails. Bloque le rayon de ton choix pour son bonus (rouge : vie et menace, vert : soins et mana, bleu : dégâts), sans y rester trop longtemps.
+- **Échiquier** — *à vérifier* : contrôle les pièces de ton camp.
+
+### Repaire de Gruul et Magtheridon
+- **Haut-roi Maulgar** : cinq ogres, à tuer un par un. **Gruul** : sa Frappe douloureuse, prévue pour un deuxième tank, retombe sur toi toutes les 8 s environ : garde tes soins ; Fracas : éloigne-toi des murs.
+- **Magtheridon** — **[Sol'Azeroth]** : quand il prépare son Onde explosive, clique sur **un** cube : seul, les cinq cubes s'activent et l'interrompent. Après un cube, Épuisement mental : attends la fin avant le suivant.
+
+### Caverne du sanctuaire du Serpent
+- **Hydross**, **le Rôdeur d'en bas**, **Morogrim**, **Karathress** : sans mécanique bloquante. Hydross : fais-lui changer de forme pour remettre ses Marques à zéro.
+- **Léotheras** : tue ton démon intérieur quand il apparaît.
+- **Dame Vashj** — **[Sol'Azeroth]** : en phase 2, ramasse le noyau contaminé d'un élémentaire : seul, tu n'es pas paralysé ; porte-le toi-même au générateur de bouclier et utilise-le.
+
+### Donjon de la Tempête (l'Œil)
+**Al'ar**, **Saccage du Vide**, **Solarian** : sans mécanique bloquante. **Kael'thas** : ses conseillers, puis ses armes (équipe-les), puis lui ; son Contrôle mental n'a pas d'effet sur toi **[Sol'Azeroth]**. Gravité inversée : nage dans les airs, loin des orbes.
+
+### Sommet d'Hyjal
+Vagues à tenir avec les défenseurs, puis cinq boss. **Archimonde** : s'il n'a personne au corps à corps, Doigt de la mort ; reste près de lui, évite le Feu funeste.
+
+### Temple noir
+- **Grand seigneur de guerre Naj'entus** — **[Sol'Azeroth]** : quand il lève son Bouclier de marée, une épine apparaît à tes pieds : ramasse-la et lance-la sur lui.
+- **Supremus**, **Ombre d'Akama**, **Gurtogg**, **Reliquaire des âmes**, **Mère Shahraz**, **Conseil illidari** : sans mécanique bloquante.
+- **Teron Gorefiend** : son Ombre de la mort évite le tank : seul, elle ne te vise pas.
+- **Illidan** — *à vérifier* : en phase 2, reste à moins de 25 m des lames pour que les Flammes d'Azzinoth ne chargent pas ; ensuite, attire-le dans le piège de Maiev.
+
+### Zul'Aman
+Aucun boss bloquant. **Akil'zon** : la Tempête électrique te soulève, rien à faire. **Jan'alai** : tue les dragonneaux avant qu'ils éclosent tous. **Seigneur des maléfices** : coupe ses drains.
+
+### Plateau du Puits de soleil
+- **Kalecgos** — **[Sol'Azeroth]** : seul, le Souffle spectral ne t'envoie jamais dans l'autre royaume. Tes dégâts sur Kalecgos touchent aussi Sathrovarr, en proportion, et Sathrovarr ne blesse plus Kalec : frappe Kalecgos jusqu'au bout.
+- **Brutallus** — **[Sol'Azeroth]** : la Taillade météorique plafonne à 2 piles sur toi. Brûlure : éloigne-toi des autres cibles.
+- **Gangrebrume**, **Jumelles érédar**, **M'uru**, **Kil'jaeden** : sans mécanique bloquante prévue. Kil'jaeden : utilise les orbes des dragons bleus.
+
+## Donjons
+- **Fosse de Saron, Tyrannus** — **[Sol'Azeroth]** : tu es insensible à la Marque du seigneur (elle te renvoyait tes propres dégâts).
+- **Forge des âmes, Dévoreur d'âmes** : sous l'Âme reflétée, arrête de frapper le boss 8 s (tu subirais une part de tes dégâts).
+- Les contrôles mentaux des boss de donjon n'ont plus d'effet (règle commune).

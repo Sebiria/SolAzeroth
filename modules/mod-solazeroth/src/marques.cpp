@@ -4,7 +4,6 @@
 //     une seule fois par personnage, boss et rang (les rangs inférieurs pas encore payés sont rattrapés)
 //   - quête rendue : 1 + niveau du personnage / SolAzeroth.Marques.QueteNiveaux (section 7.6), soit 1, 2 dès le niveau 40, 3 au 80
 //   - défis : les jetons mis de côté dans solazeroth_jetons_dus sont versés à la connexion.
-// Les achats de compte (solazeroth_compte_achats) servent à la boutique (formation.cpp) et au ramasseur.
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -64,20 +63,6 @@ bool SolAzeroth::RetirerMarques(Player* player, uint32 nombre)
         return false;
     player->DestroyItemCount(MARQUE, nombre, true, true);
     return true;
-}
-
-bool SolAzeroth::AchatDeCompte(uint32 compte, std::string const& achat)
-{
-    std::string cle = achat;
-    CharacterDatabase.EscapeString(cle);
-    return CharacterDatabase.Query("SELECT 1 FROM solazeroth_compte_achats WHERE account = {} AND achat = '{}'", compte, cle) != nullptr;
-}
-
-void SolAzeroth::EnregistrerAchatDeCompte(uint32 compte, std::string const& achat)
-{
-    std::string cle = achat;
-    CharacterDatabase.EscapeString(cle);
-    CharacterDatabase.DirectExecute("INSERT IGNORE INTO solazeroth_compte_achats (account, achat) VALUES ({}, '{}')", compte, cle);
 }
 
 class solazeroth_marques_joueur : public PlayerScript

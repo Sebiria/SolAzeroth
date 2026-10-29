@@ -29,10 +29,6 @@ namespace SolAzeroth
     unsigned int Marques(Player* player);
     bool DonnerMarques(Player* player, unsigned int nombre, std::string const& raison);
     bool RetirerMarques(Player* player, unsigned int nombre);
-    // Achats valables pour tout le compte (boutique de marques)
-    bool AchatDeCompte(unsigned int compte, std::string const& achat);
-    void EnregistrerAchatDeCompte(unsigned int compte, std::string const& achat);
-    void OublierCacheRamasseur(unsigned int compte);
 
     // Donne un objet obtenu au rang de menace « rang », avec son enchantement de bonus (bonus.cpp).
     // nullptr si les sacs sont pleins.
@@ -123,7 +119,6 @@ void AddSC_solazeroth_formation();
 void AddSC_solazeroth_banque();
 void AddSC_solazeroth_pistage();
 void AddSC_solazeroth_marques();
-void AddSC_solazeroth_ramasseur();
 void AddSC_solazeroth_bonus();
 void AddSC_solazeroth_defis_boss();
 void AddSC_solazeroth_metiers();
@@ -153,5 +148,6 @@ void AddSC_solazeroth_raids();
 void AddSC_solazeroth_addon();
 void AddSC_solazeroth_echelle();
 void AddSC_solazeroth_ligues();
+void AddSC_solazeroth_raids_anciens();
 
 #endif

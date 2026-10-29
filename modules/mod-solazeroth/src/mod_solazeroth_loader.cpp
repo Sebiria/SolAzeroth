@@ -11,7 +11,6 @@ void Addmod_solazerothScripts()
     AddSC_solazeroth_banque();
     AddSC_solazeroth_pistage();
     AddSC_solazeroth_marques();
-    AddSC_solazeroth_ramasseur();
     AddSC_solazeroth_bonus();
     AddSC_solazeroth_defis_boss();
     AddSC_solazeroth_metiers();
@@ -41,4 +40,5 @@ void Addmod_solazerothScripts()
     AddSC_solazeroth_addon();
     AddSC_solazeroth_echelle();
     AddSC_solazeroth_ligues();
+    AddSC_solazeroth_raids_anciens();
 }
