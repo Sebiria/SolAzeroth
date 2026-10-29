@@ -139,11 +139,20 @@ namespace
         SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, Acore::StringFormat("FIN;{};{}", prixAmelioration, rangMaxAmelioration));
     }
 
-    // Rang des objets pour l'infobulle : « RANGS;objet:suffixe:rang,… ». Le client reconnaît l'objet à son numéro et
-    // à son suffixe (lien de l'objet) et garde la correspondance d'une session à l'autre.
+    // Rang des objets pour l'infobulle : « RANGS;objet:suffixe:rang:valeur:caractéristique,… ». Le client reconnaît
+    // l'objet à son numéro et à son suffixe (lien de l'objet), écrit le rang sous la ligne du bonus (« +18 Endurance »)
+    // et garde la correspondance d'une session à l'autre.
     std::string EntreeRang(Item* item, uint8 rang)
     {
-        return Acore::StringFormat("{}:{}:{}", item->GetEntry(), item->GetItemRandomPropertyId(), rang);
+        uint32 valeur = 0, stat = 0;
+        int32 suffixe = item->GetItemRandomPropertyId();
+        if (ItemRandomPropertiesEntry const* p = suffixe > 0 ? sItemRandomPropertiesStore.LookupEntry(uint32(suffixe)) : nullptr)
+            if (SpellItemEnchantmentEntry const* e = sSpellItemEnchantmentStore.LookupEntry(p->Enchantment[0]))
+            {
+                valeur = e->amount[0];
+                stat = e->spellid[0];
+            }
+        return Acore::StringFormat("{}:{}:{}:{}:{}", item->GetEntry(), suffixe, rang, valeur, stat);
     }
 
     void EnvoyerRang(Player* player, Item* item, uint8 rang)

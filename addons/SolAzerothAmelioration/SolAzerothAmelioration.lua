@@ -2,8 +2,8 @@
 -- Le serveur (mod-solazeroth, bonus.cpp) envoie "DEBUT", puis "OBJET;sac;case;objet;rang;bonus;bonus suivant;carac"
 -- pour chaque objet améliorable, puis "FIN;prix;rang max". Commandes : ".solameliorer liste",
 -- ".solameliorer monter <sac> <case>" (sac -1 : équipement porté, case 1 à 19 ; sac 0 à 4 : sacs).
--- Infobulles : "RANGS;objet:suffixe:rang,..." (".solameliorer rangs") donne le rang des objets du personnage, affiché
--- sous le nom de l'objet partout où il apparaît.
+-- Infobulles : "RANGS;objet:suffixe:rang:valeur:carac,..." (".solameliorer rangs") donne le rang des objets du
+-- personnage, écrit juste sous la ligne de son bonus (« +18 Endurance ») partout où l'objet apparaît.
 
 local PREFIXE = "SOLAMELIO"
 local PAR_PAGE, LIGNES = 12, 6
@@ -203,8 +203,8 @@ evenements:SetScript("OnEvent", function(self, event, prefixe, message)
         table.insert(recus, { sac = tonumber(a), case = tonumber(b), objet = tonumber(c), rang = tonumber(d),
                               avant = tonumber(e), apres = tonumber(f), stat = tonumber(g) })
     elseif type == "RANGS" then
-        for objet, suffixe, rang in string.gmatch(a or "", "(%d+):(%-?%d+):(%d+)") do
-            SolAzerothAmeliorationDB.rangs[objet .. ":" .. suffixe] = tonumber(rang)
+        for objet, suffixe, rang, valeur, stat in string.gmatch(a or "", "(%d+):(%-?%d+):(%d+):(%d+):(%d+)") do
+            SolAzerothAmeliorationDB.rangs[objet .. ":" .. suffixe] = { rang = tonumber(rang), valeur = tonumber(valeur), stat = tonumber(stat) }
         end
     elseif type == "FIN" then
         objets, prix, rangMax = recus, tonumber(a) or prix, tonumber(b) or rangMax
@@ -223,11 +223,23 @@ end
 local function AjouterRang(infobulle)
     local _, lien = infobulle:GetItem()
     local objet, suffixe = (lien or ""):match("item:(%d+):%-?%d+:%-?%d+:%-?%d+:%-?%d+:%-?%d+:(%-?%d+)")
-    local rang = objet and SolAzerothAmeliorationDB and SolAzerothAmeliorationDB.rangs[objet .. ":" .. suffixe]
-    if rang then
-        infobulle:AddLine(string.format("Rang de menace %d", rang), 1, 0.82, 0)
-        infobulle:Show()
+    local info = objet and SolAzerothAmeliorationDB and SolAzerothAmeliorationDB.rangs[objet .. ":" .. suffixe]
+    if type(info) ~= "table" then return end
+    local texteRang = string.format("|cffffd100Rang de menace %d|r", info.rang)
+    -- La ligne du bonus est la dernière « +valeur caractéristique » (le bonus suit les caractéristiques de base).
+    local bonus = CARACS[info.stat] and ("+" .. info.valeur .. " " .. CARACS[info.stat])
+    local nom = infobulle:GetName()
+    for i = infobulle:NumLines(), 2, -1 do
+        local ligne = _G[nom .. "TextLeft" .. i]
+        local texte = ligne and ligne:GetText()
+        if bonus and texte and texte:find(bonus, 1, true) then
+            ligne:SetText(texte .. "\n" .. texteRang)
+            infobulle:Show()
+            return
+        end
     end
+    infobulle:AddLine(texteRang)
+    infobulle:Show()
 end
 
 for _, infobulle in ipairs({ GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2 }) do
