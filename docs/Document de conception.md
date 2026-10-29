@@ -694,7 +694,7 @@ Des silhouettes aux apparences de joueurs peuplent les villes et les camps. Ce n
     - Apparition entre **20 et 90 m** du joueur (les villages sont petits), au lieu de 40-130 m.
     - **Densité provisoire** : 0,12 avec une auberge (environ 29 silhouettes le soir, 11 le jour, 5 cavaliers), 0,06 pour un relais sans auberge.
     - **Validé en jeu par l'utilisateur le 29/10/2026** (« ça a l'air cohérent »).
-  - **Routes et campements (V8, 29/10/2026, construit, à valider en jeu)** : migration 053, dernière étape du chantier ambiance.
+  - **Routes et campements (V8, 29/10/2026, validés par l'utilisateur le 29/10/2026)** : migration 053, dernière étape du chantier ambiance.
     - **Trajets** : table `solazeroth_ambiance_routes`, **494 trajets dans 54 zones**. Ce sont les patrouilles de PNJ humanoïdes non hostiles aux joueurs (gardes de route, caravanes), de 8 points et 150 m au moins, hors capitales. Les bêtes neutres sont écartées, car elles errent dans les champs. Chaque trajet garde le camp de son PNJ (244 Alliance, 134 Horde, 116 neutres). Une ligne « routes » (`genre = 1`) par zone dans `solazeroth_ambiance_lieux`.
     - **Où** : dans la zone, mais pas dans une de ses villes ou relais (qui ont leurs propres silhouettes), ni en vol.
     - **Qui (provisoire, `mod_solazeroth.conf`)** :
@@ -878,7 +878,7 @@ Le Codex rend la progression lisible, le Renom récompense le compte en confort,
 
 ### 7.6 Quêtes sans mise à l'échelle du monde (provisoire)
 
-La mise à l'échelle du monde étant repoussée (section 9), les quêtes gardent leur niveau d'origine.
+Sans l'option de mise à l'échelle du monde (section 9.3), les quêtes gardent leur niveau d'origine. Avec l'option, une quête trop basse rapporte l'XP d'une quête du niveau du joueur moins 2.
 
 - Les quêtes à leur niveau donnent leurs récompenses d'origine (XP, or, objets).
 - Toute quête rendue rapporte aussi des jetons, **en quantité calculée sur le niveau du joueur**. Une quête grise garde donc un intérêt.
@@ -949,12 +949,30 @@ Ces éléments ne doivent pas être commencés avant V8, et ceux de la liste « 
 
 | Élément | Raison | Notes |
 | --- | --- | --- |
-| Mise à l'échelle du monde | Si les monstres montent avec le joueur, il ne se sent jamais plus fort | En option, **avec retard** : monstres 2 à 3 niveaux sous le joueur dans les zones terminées. Villes, PNJ de service, gardes et boss de monde exclus. XP et or des quêtes alors calculés sur le niveau du joueur |
+| Mise à l'échelle du monde | Si les monstres montent avec le joueur, il ne se sent jamais plus fort | En option, **avec retard** : monstres 2 à 3 niveaux sous le joueur. Villes, PNJ de service, gardes et boss de monde exclus. XP et or des quêtes alors calculés sur le niveau du joueur. **Construite le 29/10/2026 (V8), à valider en jeu** : détail en 9.3 |
 | PNJ d'ambiance dans le monde entier | Hurlevent fait (V5) ; toutes les capitales, Shattrath et Dalaran construits le 29/10/2026 (migration 051, validés en jeu), puis 155 villes, villages et relais (migration 052, validés), puis routes et campements de 54 zones (migration 053, à valider) | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
 | Ligues Remix et Chaos | Dépendent de la mise à l'échelle du monde | Section 3.3 |
 | Raids réécrits boss par boss | Très cher pour un gain modeste | Un boss à la fois, en ALE ou C++, en partant de la liste de faisabilité (section 4.7) |
 | Vol dans Kalimdor et les Royaumes de l'Est | Très cher, défauts visibles | Récompense de Renom. Patch `AreaTable.dbc` et retrait de la restriction serveur sur les cartes 0 et 1. Défauts acceptés : zones inachevées, trous, murs invisibles |
 | Extensions de contenu façon « Curator » | À étudier | L'utilisateur fournira la référence |
+
+### 9.3 Mise à l'échelle du monde avec retard (V8, construite le 29/10/2026, à valider en jeu)
+
+- **Décisions de l'utilisateur (29/10/2026)** :
+  - **option par personnage**, désactivée par défaut, changeable à tout moment : `/sol` > Réglages > **Monde**, ou `.solechelle on` / `off` ;
+  - **toute zone sous le niveau du joueur** : pas de notion de zone « terminée ».
+- **Règle** (`echelle.cpp`, migration 054 `solazeroth_echelle`) :
+  - hors instance, un monstre plus bas que le niveau du joueur moins 2 ou 3 remonte à ce niveau. Le retard (2 ou 3) est fixe pour chaque monstre ;
+  - le jeu recalcule alors sa vie, ses dégâts, son armure et l'XP qu'il rapporte ;
+  - jamais vers le bas : un monstre plus fort que le joueur le reste.
+- **Exclus** : PNJ de service, gardes, civils, déclencheurs, bestioles, boss de monde, familiers et totems des joueurs, et tout ce qui est amical. Donjons, raids et champs de bataille ne sont pas touchés (autobalance s'en charge).
+- **Quand** :
+  - à l'apparition du monstre, d'après le joueur le plus proche qui a l'option ;
+  - toutes les 3 s pour les monstres déjà présents à 100 m (option changée, montée de niveau), seulement hors combat et en pleine santé. Couper l'option ramène les monstres remontés à leur niveau.
+- **Quêtes** : une quête de niveau inférieur au niveau du joueur moins 2 rapporte l'XP d'une quête de ce niveau. L'or des quêtes du jeu suit déjà le niveau du joueur (récompense par niveau du core). Les Marques des quêtes (7.6) suivaient déjà le niveau du joueur.
+- **Limites connues** :
+  - l'or ramassé sur les monstres reste celui de leur niveau d'origine ;
+  - les sorts des monstres gardent leur puissance d'origine : un lanceur de sorts remonté frappe moins fort qu'un vrai monstre de ce niveau.
 
 ### 9.2 Abandonné
 

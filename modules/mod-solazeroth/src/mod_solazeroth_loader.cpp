@@ -39,4 +39,5 @@ void Addmod_solazerothScripts()
     AddSC_solazeroth_histoire();
     AddSC_solazeroth_raids();
     AddSC_solazeroth_addon();
+    AddSC_solazeroth_echelle();
 }

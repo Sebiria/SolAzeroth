@@ -35,6 +35,7 @@ local SECTIONS = {
         { nom = "Plaques de nom", cadre = "SolAzerothPlaquesCadre", commande = "SOLAZEROTHPLAQUES" },
         { nom = "Barres et sacs", construire = "BarresEtSacs" },
         { nom = "Sauvegarde", construire = "Sauvegarde" },
+        { nom = "Monde", construire = "Monde" },
     } },
 }
 
@@ -516,6 +517,24 @@ local CONSTRUCTEURS = {
             Bouton(auto, minutes .. " min", 80, 60 + (i - 1) * 88, -66, function() SendChatMessage(".sauvegarder " .. minutes, "SAY") end)
         end
         Bouton(auto, "Intervalle actuel", 160, 60, -102, function() SendChatMessage(".sauvegarder ?", "SAY") end)
+    end,
+    -- Mise à l'échelle du monde avec retard (section 9.1), propre à chaque personnage.
+    Monde = function(p)
+        local echelle = Carte(p, -20, 150, "Interface\\Icons\\Ability_Hunter_Pathfinding", "Monstres à ton niveau",
+            "Hors donjons, les monstres plus faibles que toi remontent à ton niveau moins 2 ou 3 : aucune zone ne devient "
+            .. "triviale. Les quêtes trop basses rapportent l'XP d'une quête de ce niveau. Les PNJ de service, les gardes "
+            .. "et les boss de monde ne changent pas. Propre à ce personnage, désactivé par défaut.")
+        local etat = Texte(echelle, "GameFontNormal", "État : ...", 60, -86)
+        Bouton(echelle, "Activer", 140, 60, -110, function() SendChatMessage(".solechelle on", "SAY") end)
+        Bouton(echelle, "Désactiver", 140, 210, -110, function() SendChatMessage(".solechelle off", "SAY") end)
+        local ecoute = CreateFrame("Frame", nil, p)
+        ecoute:RegisterEvent("CHAT_MSG_ADDON")
+        ecoute:SetScript("OnEvent", function(self, event, prefixe, message)
+            if prefixe ~= "SolAzerothEchelle" then return end
+            etat:SetText(message == "1" and "État : |cff40c040activé|r" or "État : |cffc04040désactivé|r")
+        end)
+        p:SetScript("OnShow", function() SendChatMessage(".solechelle etat", "SAY") end)
+        SendChatMessage(".solechelle etat", "SAY")
     end,
 }
 
