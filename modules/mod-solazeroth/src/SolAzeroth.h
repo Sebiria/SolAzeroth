@@ -112,6 +112,7 @@ namespace SolAzeroth
     std::vector<std::string> LignesBonusHautsFaits(Player* player);
     // Écart d'équipement (ecart.cpp) : rang de menace d'un objet obtenu avec un enchantement de bonus.
     void NoterRangObjet(unsigned int guid, unsigned char rang);
+    unsigned char RangDObjet(unsigned int guid);
 }
 
 void AddSC_solazeroth_menace();

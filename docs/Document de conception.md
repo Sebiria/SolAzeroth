@@ -1103,7 +1103,11 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
     - Changement de spécialisation : les lignes « sort appris / désappris » sont masquées dans le chat pendant le changement.
     - PNJ d'ambiance sur les toits d'Orgrimmar : les passants des villes ne suivent plus les trajets des guetteurs des toits, des balais volants de Lune-d'Argent, ni ceux des créatures volantes, invisibles ou déclencheurs.
   - Laissés en l'état sur décision de l'utilisateur : immunités et défenses empruntées (elles coûtent déjà du temps de DPS), prix des sorts d'autres classes (×10).
-  - À construire ensuite : Marques pour monter le rang d'un objet, défi de vagues dans l'arène des Croisés (récompense du rang 10 du Renom), chapitre d'histoire vers 45-48.
+  - **Amélioration des objets (G6), construite le 29/10/2026** : page « Amélioration » de la fenêtre /sol (section Aventure, ou `/ameliorer`).
+    - 100 Marques du voyageur montent le rang d'un objet de 1, jusqu'au rang 5 (`SolAzeroth.Amelioration.Prix`, `.RangMax`). Au-delà, le rang vient des donjons et des raids.
+    - Objets acceptés : armes et armures vertes ou mieux, portées ou dans les sacs, hors héritage et hors objets à suffixe aléatoire du jeu (« de l'Ours »…). Un objet sans rang part du rang 0.
+    - Le bonus suit la formule des rangs de menace (section 4.5) et compte pour l'écart d'équipement. Impossible en combat.
+  - À construire ensuite : défi de vagues dans l'arène des Croisés (récompense du rang 10 du Renom), chapitre d'histoire vers 45-48.
 
 ### 10.2 Chantier d'interface à prévoir (demande de l'utilisateur du 27/10/2026)
 

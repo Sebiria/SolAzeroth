@@ -202,6 +202,11 @@ namespace
     }
 }
 
+unsigned char SolAzeroth::RangDObjet(unsigned int guid)
+{
+    return RangObjet(guid);
+}
+
 void SolAzeroth::NoterRangObjet(unsigned int guid, unsigned char rang)
 {
     std::unique_lock<std::shared_mutex> garde(verrouRangs);

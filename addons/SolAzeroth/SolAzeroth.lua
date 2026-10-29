@@ -21,6 +21,7 @@ local SECTIONS = {
         { nom = "Rang de menace", cadre = "SolAzerothMenaceCadre", commande = "SOLAZEROTHMENACE" },
         { nom = "Défi extérieur", cadre = "SolAzerothExterieurCadre", commande = "SOLAZEROTHEXTERIEUR" },
         { nom = "Contrats", cadre = "SolAzerothContratsCadre", commande = "SOLAZEROTHCONTRATS" },
+        { nom = "Amélioration", cadre = "SolAzerothAmeliorationCadre", commande = "SOLAZEROTHAMELIORER" },
         { nom = "Butin", cadre = "SolAzerothButinCadre", commande = "SOLAZEROTHBUTIN", vide = "Aucun butin en attente.", pastille = true },
     } },
     { nom = "Collection", icone = "Interface\\Icons\\INV_Misc_Book_09", parchemin = true, pages = {

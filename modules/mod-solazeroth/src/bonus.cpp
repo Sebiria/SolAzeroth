@@ -9,8 +9,15 @@
 //   caractéristique principale (Endurance si l'objet n'en a pas). Proportionnelle, comme la difficulté des rangs :
 //   un rang pèse autant au niveau 13 qu'au niveau 80 (décision de l'utilisateur, remplace « + R niveaux d'objet »).
 // - Le rang est mémorisé avec l'objet (solazeroth_objets_rang) pour l'écart d'équipement de V5.
+// - Amélioration (calibrage final G6, 29/10/2026) : des Marques montent le rang d'un objet de 1, jusqu'au rang 5
+//   (SolAzeroth.Amelioration.Prix par rang, SolAzeroth.Amelioration.RangMax). Arme ou armure verte ou mieux, hors
+//   héritage, sans suffixe aléatoire du jeu ; un objet sans rang part du rang 0. Débouché des Marques au niveau 80.
+//   Commandes de l'addon SolAzerothAmelioration : « .solameliorer liste » et « .solameliorer monter <sac> <case> »
+//   (sac -1 : équipement porté, case 1 à 19 ; sac 0 à 4 : sacs du jeu, case à partir de 1).
 
 #include "SolAzeroth.h"
+#include "Bag.h"
+#include "Chat.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
 #include "DBCStores.h"
@@ -20,16 +27,23 @@
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "StringFormat.h"
+#include "WorldSession.h"
 #include <algorithm>
 #include <cmath>
 #include <map>
 #include <unordered_map>
+
+using namespace Acore::ChatCommands;
 
 namespace
 {
     // caractéristique -> (valeur -> suffixe aléatoire « +valeur caractéristique »)
     std::unordered_map<uint32, std::map<uint32, uint32>> suffixes;
     float pourcentParRang = 0.03f;
+    uint32 prixAmelioration = 100;
+    uint8 rangMaxAmelioration = 5;
+    char const* const PREFIXE_AMELIORATION = "SOLAMELIO";
 
     bool EstPrincipale(uint32 stat)
     {
@@ -63,6 +77,63 @@ namespace
         --it;
         valeur = it->first;
         return it->second;
+    }
+}
+
+namespace
+{
+    // Objet dont le rang peut monter d'un cran (rang actuel « rang »).
+    bool Ameliorable(Item* item, uint8 rang)
+    {
+        ItemTemplate const* m = item ? item->GetTemplate() : nullptr;
+        if (!m || (m->Class != ITEM_CLASS_WEAPON && m->Class != ITEM_CLASS_ARMOR)
+            || m->Quality < ITEM_QUALITY_UNCOMMON || m->Quality == ITEM_QUALITY_HEIRLOOM || m->RandomProperty || m->RandomSuffix)
+            return false;
+        if (!rang && item->GetItemRandomPropertyId())
+            return false;
+        uint32 valeur = 0;
+        return rang < rangMaxAmelioration && ChoisirSuffixe(m, rang + 1, valeur);
+    }
+
+    // Position vue par l'addon (sac -1 : équipement porté, case 1-19 ; sac 0 : sac à dos ; 1-4 : sacs) -> objet.
+    Item* ObjetEn(Player* player, int32 sac, uint32 emplacement)
+    {
+        if (sac == -1 && emplacement >= 1 && emplacement <= EQUIPMENT_SLOT_END)
+            return player->GetItemByPos(INVENTORY_SLOT_BAG_0, uint8(emplacement - 1));
+        if (sac == 0 && emplacement >= 1 && emplacement <= INVENTORY_SLOT_ITEM_END - INVENTORY_SLOT_ITEM_START)
+            return player->GetItemByPos(INVENTORY_SLOT_BAG_0, uint8(INVENTORY_SLOT_ITEM_START + emplacement - 1));
+        if (sac >= 1 && sac <= 4 && emplacement >= 1 && emplacement <= MAX_BAG_SIZE)
+            return player->GetItemByPos(uint8(INVENTORY_SLOT_BAG_START + sac - 1), uint8(emplacement - 1));
+        return nullptr;
+    }
+
+    // « OBJET;sac;case;objet;rang;gain » pour chaque objet améliorable, puis « FIN;prix;rang max ».
+    void ListerAmeliorables(Player* player)
+    {
+        auto Envoyer = [&](Item* item, int32 sac, uint32 emplacement)
+        {
+            if (!item)
+                return;
+            uint8 rang = SolAzeroth::RangDObjet(item->GetGUID().GetCounter());
+            if (!Ameliorable(item, rang))
+                return;
+            uint32 avant = 0, apres = 0;
+            if (rang)
+                ChoisirSuffixe(item->GetTemplate(), rang, avant);
+            ChoisirSuffixe(item->GetTemplate(), rang + 1, apres);
+            SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, Acore::StringFormat("OBJET;{};{};{};{};{}",
+                sac, emplacement, item->GetEntry(), rang, apres > avant ? apres - avant : 0));
+        };
+        SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, "DEBUT");
+        for (uint8 i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+            Envoyer(player->GetItemByPos(INVENTORY_SLOT_BAG_0, i), -1, i + 1);
+        for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+            Envoyer(player->GetItemByPos(INVENTORY_SLOT_BAG_0, i), 0, i - INVENTORY_SLOT_ITEM_START + 1);
+        for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+            if (Bag* b = player->GetBagByPos(i))
+                for (uint32 j = 0; j < b->GetBagSize(); ++j)
+                    Envoyer(b->GetItemByPos(uint8(j)), i - INVENTORY_SLOT_BAG_START + 1, j + 1);
+        SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, Acore::StringFormat("FIN;{};{}", prixAmelioration, rangMaxAmelioration));
     }
 }
 
@@ -135,6 +206,72 @@ public:
     }
 };
 
+class solazeroth_bonus_amelioration : public CommandScript
+{
+public:
+    solazeroth_bonus_amelioration() : CommandScript("solazeroth_bonus_amelioration") { }
+
+    ChatCommandTable GetCommands() const override
+    {
+        static ChatCommandTable sousCommandes =
+        {
+            { "liste",  HandleListe,  SEC_PLAYER, Console::No },
+            { "monter", HandleMonter, SEC_PLAYER, Console::No },
+        };
+        static ChatCommandTable commandes =
+        {
+            { "solameliorer", sousCommandes },
+        };
+        return commandes;
+    }
+
+    static bool HandleListe(ChatHandler* handler)
+    {
+        ListerAmeliorables(handler->GetSession()->GetPlayer());
+        return true;
+    }
+
+    static bool HandleMonter(ChatHandler* handler, int32 sac, uint32 emplacement)
+    {
+        Player* player = handler->GetSession()->GetPlayer();
+        Item* item = ObjetEn(player, sac, emplacement);
+        uint8 rang = item ? SolAzeroth::RangDObjet(item->GetGUID().GetCounter()) : 0;
+        if (!item || !Ameliorable(item, rang))
+        {
+            handler->SendSysMessage("|cffff6060Cet objet ne peut pas monter de rang.|r");
+            ListerAmeliorables(player);
+            return true;
+        }
+        if (player->IsInCombat())
+        {
+            handler->SendSysMessage("|cffff6060Impossible en combat.|r");
+            return true;
+        }
+        uint32 valeur = 0;
+        uint32 bonus = ChoisirSuffixe(item->GetTemplate(), rang + 1, valeur);
+        if (!SolAzeroth::RetirerMarques(player, prixAmelioration))
+        {
+            handler->PSendSysMessage("|cffff6060Il faut {} Marques du voyageur.|r", prixAmelioration);
+            return true;
+        }
+        // Objet porté : ses caractéristiques sont retirées puis remises, avec le nouveau suffixe.
+        bool porte = item->IsEquipped();
+        if (porte)
+            player->_ApplyItemMods(item, item->GetSlot(), false);
+        item->SetItemRandomProperties(int32(bonus));
+        item->SetState(ITEM_CHANGED, player);
+        if (porte)
+            player->_ApplyItemMods(item, item->GetSlot(), true);
+        ++rang;
+        CharacterDatabase.Execute("REPLACE INTO solazeroth_objets_rang (item_guid, rang, enchantement) VALUES ({}, {}, {})",
+            item->GetGUID().GetCounter(), rang, bonus);
+        SolAzeroth::NoterRangObjet(item->GetGUID().GetCounter(), rang);
+        handler->PSendSysMessage("|cffffd100Objet porté au rang {}|r (+{} au total).", rang, valeur);
+        ListerAmeliorables(player);
+        return true;
+    }
+};
+
 class solazeroth_bonus_monde : public WorldScript
 {
 public:
@@ -143,6 +280,8 @@ public:
     void OnAfterConfigLoad(bool /*rechargement*/) override
     {
         pourcentParRang = sConfigMgr->GetOption<float>("SolAzeroth.Bonus.PourcentParRang", 0.03f);
+        prixAmelioration = sConfigMgr->GetOption<uint32>("SolAzeroth.Amelioration.Prix", 100);
+        rangMaxAmelioration = uint8(sConfigMgr->GetOption<uint32>("SolAzeroth.Amelioration.RangMax", 5));
     }
 
     // Suffixes aléatoires à un seul enchantement « +N caractéristique » simple (sans condition, gemme ni niveau requis).
@@ -170,4 +309,5 @@ void AddSC_solazeroth_bonus()
 {
     new solazeroth_bonus_monde();
     new solazeroth_bonus_raid();
+    new solazeroth_bonus_amelioration();
 }

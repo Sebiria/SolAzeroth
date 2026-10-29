@@ -8,6 +8,7 @@ local ENTREES = {
     { texte = "Talents d'une autre classe",  commande = "SOLAZEROTHTALENTS" },
     { texte = "Spécialisations",             commande = "SOLAZEROTHSPES" },
     { texte = "Contrats",                    commande = "SOLAZEROTHCONTRATS" },
+    { texte = "Amélioration des objets",     commande = "SOLAZEROTHAMELIORER" },
     { texte = "Codex et Renom",              commande = "SOLAZEROTHCODEX" },
     { texte = "Journal de collection",       commande = "SOLAZEROTHJOURNAL" },
     { texte = "Hauts faits du compte",       commande = "SOLAZEROTHHAUTSFAITS" },

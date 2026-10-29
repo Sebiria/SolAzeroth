@@ -82,6 +82,12 @@ SolAzeroth.Marques.QueteNiveaux = 40
 
 SolAzeroth.Bonus.PourcentParRang = 0.03
 
+#    SolAzeroth.Amelioration.Prix     Marques du voyageur pour monter le rang d'un objet de 1 (calibrage final G6)
+#    SolAzeroth.Amelioration.RangMax  Rang le plus haut atteignable avec des Marques (au-delà : donjons et raids)
+
+SolAzeroth.Amelioration.Prix = 100
+SolAzeroth.Amelioration.RangMax = 5
+
 ###################################################################################################
 # DÉFIS DE BOSS (section 4.6) : un défi tiré au sort au début de chaque combat de boss de donjon
 #
