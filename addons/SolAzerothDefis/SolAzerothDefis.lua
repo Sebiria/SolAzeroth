@@ -4,6 +4,8 @@
 -- Ligue Destin (indice 100) : « .soldefi destin tirer|abandonner » ; l'état ajoute « ;race;classe;correspond;attente »
 -- (race et classe tirées, 0 si aucune ; correspond = ce personnage a cette race et cette classe ; attente = secondes
 -- avant le prochain tirage). Le défi Destin ne se coche que sur le personnage qui correspond au tirage.
+-- Ligues Remix (101) et Chaos (102) : cochées comme les autres. Chaos actif : « .solchaos etat » renvoie
+-- « CHAOS;nom;règle », la mutation du jour, affichée sur sa ligne.
 
 local PREFIXE = "SOLDEFI"
 
@@ -16,7 +18,11 @@ local DEFIS = {
     { index = 5, nom = "XP très lente",           desc = "Expérience gagnée ×0,25.",                             points = 2, icone = "INV_Misc_PocketWatch_02" },
     { index = 6, nom = "XP de quêtes uniquement", desc = "Aucune expérience en tuant des monstres.",              points = 2, icone = "INV_Misc_Note_01" },
     { index = 100, nom = "Destin",                desc = "",                                                      points = 4, icone = "INV_Misc_Dice_01" },
+    { index = 101, nom = "Ligue Remix",           desc = "Monstres toujours à ton niveau. XP ×2 et +1 % de dégâts et de vie par niveau.", points = 1, icone = "Spell_Nature_TimeStop" },
+    { index = 102, nom = "Ligue Chaos",           desc = "Chaque jour, une mutation tirée au sort change les règles : dégâts, soins, XP, or...", points = 2, icone = "Spell_Shadow_Charm" },
 }
+local CHAOS = 102
+local mutation
 local DESTIN = 100
 local RACES = { [1] = "Humain", [2] = "Orc", [3] = "Nain", [4] = "Elfe de la nuit", [5] = "Mort-vivant", [6] = "Tauren",
                 [7] = "Gnome", [8] = "Troll", [10] = "Elfe de sang", [11] = "Draeneï" }
@@ -51,7 +57,7 @@ end
 -- Fenêtre
 ------------------------------------------------------------------------
 local cadre = CreateFrame("Frame", "SolAzerothDefisCadre", UIParent)
-cadre:SetSize(600, 660)
+cadre:SetSize(600, 770)
 cadre:SetPoint("CENTER")
 cadre:SetFrameStrata("DIALOG")
 cadre:SetBackdrop({
@@ -132,14 +138,14 @@ end
 
 -- Récompenses : un médaillon rond par niveau récompensé
 local bandeau = cadre:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-bandeau:SetPoint("TOPLEFT", 26, -514)
+bandeau:SetPoint("TOPLEFT", 26, -622)
 bandeau:SetText("Récompenses du palier")
 
 local medaillons = {}
 for i, niveau in ipairs(NIVEAUX) do
     local m = CreateFrame("Frame", nil, cadre)
     m:SetSize(44, 44)
-    m:SetPoint("TOPLEFT", 200 + (i - 1) * 90, -500)
+    m:SetPoint("TOPLEFT", 200 + (i - 1) * 90, -608)
     local fond = m:CreateTexture(nil, "ARTWORK")
     fond:SetAllPoints()
     SetPortraitToTexture(fond, "Interface\\Icons\\INV_Misc_Coin_01")
@@ -242,6 +248,9 @@ local function Rafraichir()
         if index == DESTIN then
             permis = RafraichirDestin(ligne, modifiable) and modifiable
             if not permis then choix[DESTIN] = nil end
+        elseif index == CHAOS then
+            ligne.desc:SetText((etat.verrouille and etat.actifs[CHAOS] and mutation) and
+                ("Mutation du jour : |cffffffff" .. mutation.nom .. "|r. " .. mutation.regle) or ligne.defi.desc)
         end
         local coche = (etat.verrouille and etat.actifs[index]) or (not etat.verrouille and choix[index])
         ligne.case:SetChecked(coche)
@@ -356,11 +365,17 @@ evenements:SetScript("OnEvent", function(self, event, prefixe, message)
         etat.note = tonumber(champs[5]) or 0
         etat.destin = { race = tonumber(champs[7]) or 0, classe = tonumber(champs[8]) or 0, correspond = champs[9] == "1",
                         attente = tonumber(champs[10]) or 0, recu = GetTime() }
+        if etat.verrouille and etat.actifs[CHAOS] and not mutation then Commande(".solchaos etat") end
         Rafraichir()
         if ouvertureAuto then
             ouvertureAuto = false
             if etat.eligible then cadre:Show() end
         end
+    elseif champs[1] == "CHAOS" then
+        mutation = { nom = champs[2] or "", regle = champs[3] or "" }
+        Rafraichir()
+    elseif champs[1] == "OK" then
+        if choix[CHAOS] then Commande(".solchaos") end
     elseif champs[1] == "ERREUR" then
         UIErrorsFrame:AddMessage(champs[2] or "Erreur", 1, 0.2, 0.2)
     end

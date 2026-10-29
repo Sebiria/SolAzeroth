@@ -8,6 +8,8 @@
 -- possible 24 h après le précédent, une fois celui-ci utilisé ou abandonné (« .soldefi destin abandonner »).
 -- Pas de chevalier de la mort (il commence au niveau 55). Un personnage Destin ne peut ni acheter les sorts ni prendre
 -- les talents d'une autre classe (formation.cpp, talents_etrangers.cpp lisent le réglage REGLAGE_DESTIN).
+-- Ligues Remix (indice 101) et Chaos (indice 102), V8 (décisions de l'utilisateur du 30/10/2026) : cochées au niveau 1
+-- comme les autres défis ; leurs règles sont dans le module C++ (ligues.cpp), qui lit les réglages 4 et 5.
 
 local PREFIXE = "SOLDEFI"
 local SOURCE_MODULE = "mod-challenge-modes"
@@ -23,6 +25,8 @@ local INCOMPATIBLES = { { 0, 1 }, { 4, 5 } }
 
 local DESTIN = 100
 local POINTS_DESTIN = 4
+-- Ligues V8 : indice -> réglage de la source SOURCE et points (provisoires).
+local LIGUES = { [101] = { reglage = 4, points = 1 }, [102] = { reglage = 5, points = 2 } }
 local DELAI_TIRAGE = 24 * 3600
 local RACES = { [1] = "Humain", [2] = "Orc", [3] = "Nain", [4] = "Elfe de la nuit", [5] = "Mort-vivant", [6] = "Tauren",
                 [7] = "Gnome", [8] = "Troll", [10] = "Elfe de sang", [11] = "Draeneï" }
@@ -135,6 +139,11 @@ local function EnvoyerEtat(player)
     if player:GetPlayerSettingValue(SOURCE, REGLAGE_DESTIN) == 1 then
         table.insert(actifs, DESTIN)
     end
+    for index, ligue in pairs(LIGUES) do
+        if player:GetPlayerSettingValue(SOURCE, ligue.reglage) == 1 then
+            table.insert(actifs, index)
+        end
+    end
     local note = player:GetPlayerSettingValue(SOURCE, REGLAGE_NOTE)
     local palier = Palier(note)
     -- Destin : race et classe tirées (0 si aucune), ce personnage y correspond-il, secondes avant le prochain tirage.
@@ -157,13 +166,13 @@ local function Valider(player, liste)
                 Envoyer(player, "ERREUR;Ce personnage ne correspond pas à ton destin.")
                 return
             end
-        elseif not POINTS[index] then
+        elseif not POINTS[index] and not LIGUES[index] then
             Envoyer(player, "ERREUR;Défi inconnu.")
             return
         end
         if not choisis[index] then
             choisis[index] = true
-            note = note + (index == DESTIN and POINTS_DESTIN or POINTS[index])
+            note = note + (index == DESTIN and POINTS_DESTIN or LIGUES[index] and LIGUES[index].points or POINTS[index])
         end
     end
     for _, paire in ipairs(INCOMPATIBLES) do
@@ -178,6 +187,8 @@ local function Valider(player, liste)
             local compte = player:GetAccountId()
             local _, _, tireLe = Tirage(compte)
             NoterTirage(compte, 0, 0, tireLe)
+        elseif LIGUES[index] then
+            player:UpdatePlayerSetting(SOURCE, LIGUES[index].reglage, 1)
         else
             player:UpdatePlayerSetting(SOURCE_MODULE, index, 1)
         end

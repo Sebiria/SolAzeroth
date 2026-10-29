@@ -173,7 +173,8 @@ Le joueur lance quand il veut un personnage de saison avec une règle. Huit sema
 | --- | --- | --- |
 | Hardcore | Mort définitive | V1 |
 | Destin | Race et classe tirées au sort | V5 |
-| Remix et Chaos | Règles changeantes, à définir | V8+ (après la mise à l'échelle du monde) |
+| Remix | Monde à ton niveau imposé, XP ×2, +1 % de dégâts et de vie par niveau | V8 (construite le 30/10/2026, à valider) |
+| Chaos | Une mutation tirée au sort chaque jour | V8 (construite le 30/10/2026, à valider) |
 
 - **mod-challenge-modes** (dépôt ZhengPeiRu21, installé en V1) fournit Hardcore. Il a été corrigé localement (signature d'un hook incompatible avec le core actuel) et traduit en français ; le correctif est dans `C:\SolAzeroth\patches\`.
 - **Mort Hardcore sûre** (`hardcore.cpp`, 30/10/2026) : toute mort d'un personnage Hardcore (monstre, chute, noyade, lave…) est marquée et le personnage sauvegardé aussitôt dans la base. Ainsi, un serveur arrêté ou planté juste après la mort ne rend pas le personnage vivant. À la connexion, un personnage Hardcore mort est renvoyé à l'écran des personnages : la vérification du module ne fonctionnait pas.
@@ -182,6 +183,9 @@ Le joueur lance quand il veut un personnage de saison avec une règle. Huit sema
   - un tirage par compte ; nouveau tirage possible **24 h après le précédent**, une fois celui-ci utilisé ou abandonné (bouton « Abandonner », avec confirmation). Le tirage est écrit en base **immédiatement** : se déconnecter ou arrêter le serveur ne permet pas de retirer ;
   - **pas de grimoire universel** : un personnage Destin ne peut ni acheter les sorts ni prendre les talents d'une autre classe. Les spécialisations et les maîtrises d'armes restent permises ;
   - **récompense comme les défis** : Destin est un défi de **4 points (provisoire)**, cumulable avec Hardcore et les autres. Il compte dans la note, donc dans l'or, les Marques et les titres des paliers.
+- **Ligues Remix et Chaos (construites le 30/10/2026, à valider en jeu)** : ligues.cpp, lignes 101 et 102 de la fenêtre des défis (defis.lua, réglages 4 et 5 de la source solazeroth-defis). Elles se cochent au niveau 1 comme les autres défis et se cumulent avec eux. Décisions de l'utilisateur :
+  - **Remix** : la mise à l'échelle du monde (9.3) est imposée et ne se coupe pas ; XP ×2 (toutes sources) ; chaque niveau donne +1 % de dégâts (le joueur et ses familiers) et +1 % de vie, soit +80 % au niveau 80. **1 point (provisoire)** ;
+  - **Chaos** : chaque jour (minuit, heure du serveur), une mutation tirée au sort pour ce personnage s'applique, annoncée à la connexion, au changement de jour et par .solchaos, et affichée sur la ligne Chaos de /defis. **2 points (provisoire)**. Onze mutations (valeurs provisoires) : Furie (dégâts infligés et subis +25 %), Fragilité (subis +20 %), Puissance (infligés +20 %), Rempart (infligés et subis −20 %), Soins taris (soins reçus −30 %), Bénédiction (soins reçus +30 %), Savoir (XP ×1,5), Fortune (or des monstres ×2), Embrasement, Grand froid et Ténèbres (dégâts de feu, de givre ou d'ombre +50 %, ceux du joueur comme ceux des monstres).
 - Le module propose aussi des défis cumulables, laissés actifs : Semi-Hardcore (perte de l'équipement et de l'or à la mort), Artisan (équipement fabriqué uniquement), Équipement modeste (qualité commune ou médiocre), XP lente (×0,5), XP très lente (×0,25), XP de quêtes uniquement. Son mode Iron Man est désactivé (section 9.2).
 
 **Choix des défis (V1)**
@@ -189,7 +193,7 @@ Le joueur lance quand il veut un personnage de saison avec une règle. Huit sema
 - Une **fenêtre en addon** (`SolAzerothDefis`) s'ouvre seule à la première connexion d'un personnage de niveau 1 (55 pour le chevalier de la mort) : une ligne par défi avec icône, règle et points, des médaillons de récompenses, la note et le palier. Le choix est définitif ; « Plus tard » la referme jusqu'à la prochaine connexion.
 - On la rouvre à tout moment par un **bouton autour de la minicarte**, déplaçable à la souris (position mémorisée par personnage), ou par `/defis`. Après le choix, elle affiche les défis en lecture seule.
 - Les **Autels du défi** du module sont retirés (migration 010) : tout passe par l'addon et `lua_scripts/defis.lua`.
-- **Note de difficulté** = somme des points des défis choisis **(provisoire)** : Hardcore 5, Destin 4, Semi-Hardcore 3, Artisan 3, Équipement modeste 2, XP très lente 2, XP de quêtes uniquement 2, XP lente 1. Ce n'est pas une monnaie : elle fixe le palier.
+- **Note de difficulté** = somme des points des défis choisis **(provisoire)** : Hardcore 5, Destin 4, Semi-Hardcore 3, Chaos 2, Remix 1, Artisan 3, Équipement modeste 2, XP très lente 2, XP de quêtes uniquement 2, XP lente 1. Ce n'est pas une monnaie : elle fixe le palier.
 - **Paliers (provisoires)**, récompenses versées aux niveaux 20, 40, 60 et 80 :
 
 | Palier | Note | Or (20 / 40 / 60 / 80) | En plus |
@@ -951,7 +955,7 @@ Ces éléments ne doivent pas être commencés avant V8, et ceux de la liste « 
 | --- | --- | --- |
 | Mise à l'échelle du monde | Si les monstres montent avec le joueur, il ne se sent jamais plus fort | En option, **avec retard** : monstres 2 à 3 niveaux sous le joueur. Villes, PNJ de service, gardes et boss de monde exclus. XP et or des quêtes alors calculés sur le niveau du joueur. **Construite le 29/10/2026 (V8), à valider en jeu** : détail en 9.3 |
 | PNJ d'ambiance dans le monde entier | Hurlevent fait (V5) ; toutes les capitales, Shattrath et Dalaran construits le 29/10/2026 (migration 051, validés en jeu), puis 155 villes, villages et relais (migration 052, validés), puis routes et campements de 54 zones (migration 053, à valider) | Section 6.5. Par étapes : capitales, puis Shattrath et Dalaran, puis villes et relais, puis routes et camps |
-| Ligues Remix et Chaos | Dépendent de la mise à l'échelle du monde | Section 3.3 |
+| Ligues Remix et Chaos | Dépendent de la mise à l'échelle du monde | **Construites le 30/10/2026 (V8), à valider en jeu** : section 3.3 |
 | Raids réécrits boss par boss | Très cher pour un gain modeste | Un boss à la fois, en ALE ou C++, en partant de la liste de faisabilité (section 4.7) |
 | Vol dans Kalimdor et les Royaumes de l'Est | Très cher, défauts visibles | Récompense de Renom. Patch `AreaTable.dbc` et retrait de la restriction serveur sur les cartes 0 et 1. Défauts acceptés : zones inachevées, trous, murs invisibles |
 | Extensions de contenu façon « Curator » | À étudier | L'utilisateur fournira la référence |

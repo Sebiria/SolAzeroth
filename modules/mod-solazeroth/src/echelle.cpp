@@ -13,6 +13,7 @@
 // - Or et sorts suivent : l'or ramassé sur un monstre remonté est multiplié par le rapport entre l'or moyen des monstres
 //   normaux de son nouveau niveau et de son niveau d'origine ; ses sorts (dégâts directs, sur la durée, soins) par le
 //   rapport des dégâts de base de ces deux niveaux, comme sa mêlée. Les sorts à dégâts d'arme suivent déjà la mêlée.
+// - Ligue Remix (ligues.cpp) : l'option est imposée et ne se coupe pas.
 // Addon : « 1 » ou « 0 » (préfixe SolAzerothEchelle).
 
 #include "SolAzeroth.h"
@@ -100,7 +101,7 @@ namespace
     bool Actif(Player* player)
     {
         Option* o = player->CustomData.Get<Option>("solazeroth_echelle");
-        return o && o->actif;
+        return (o && o->actif) || SolAzeroth::EstRemix(player);
     }
 
     bool Admissible(Creature* c, Player* player)
@@ -347,6 +348,12 @@ public:
     static bool Changer(ChatHandler* handler, bool actif)
     {
         Player* player = handler->GetPlayer();
+        if (!actif && SolAzeroth::EstRemix(player))
+        {
+            handler->SendSysMessage("Ligue Remix : les monstres à ton niveau sont imposés pour ce personnage.");
+            EnvoyerEtat(player);
+            return true;
+        }
         Option* o = player->CustomData.GetDefault<Option>("solazeroth_echelle");
         o->actif = actif;
         o->attente = 3 * IN_MILLISECONDS;

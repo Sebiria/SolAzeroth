@@ -16,6 +16,8 @@ namespace SolAzeroth
     void EnvoyerAddon(Player* player, std::string const& prefixe, std::string const& message);
     // Ligue Destin (défi choisi au niveau 1, lua_scripts/defis.lua) : ni sorts ni talents d'une autre classe (formation.cpp).
     bool EstDestin(Player* player);
+    // Ligue Remix (ligues.cpp) : monde à ton niveau imposé (echelle.cpp).
+    bool EstRemix(Player* player);
     // Niveau d'objet moyen équipé (rangs de menace compris) et ilvl attendu à un niveau (ecart.cpp).
     float IlvlEquipe(Player* player);
     float IlvlAttenduNiveau(unsigned char niveau);
@@ -150,5 +152,6 @@ void AddSC_solazeroth_histoire();
 void AddSC_solazeroth_raids();
 void AddSC_solazeroth_addon();
 void AddSC_solazeroth_echelle();
+void AddSC_solazeroth_ligues();
 
 #endif
