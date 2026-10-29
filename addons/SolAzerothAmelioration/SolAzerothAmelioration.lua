@@ -1,7 +1,9 @@
 -- Amélioration des objets (calibrage final G6, 29/10/2026) : des Marques du voyageur montent le rang d'un objet de 1.
--- Le serveur (mod-solazeroth, bonus.cpp) envoie "DEBUT", puis "OBJET;sac;case;objet;rang;gain" pour chaque objet
--- améliorable, puis "FIN;prix;rang max". Commandes : ".solameliorer liste", ".solameliorer monter <sac> <case>"
--- (sac -1 : équipement porté, case 1 à 19 ; sac 0 à 4 : sacs).
+-- Le serveur (mod-solazeroth, bonus.cpp) envoie "DEBUT", puis "OBJET;sac;case;objet;rang;bonus;bonus suivant;carac"
+-- pour chaque objet améliorable, puis "FIN;prix;rang max". Commandes : ".solameliorer liste",
+-- ".solameliorer monter <sac> <case>" (sac -1 : équipement porté, case 1 à 19 ; sac 0 à 4 : sacs).
+-- Infobulles : "RANGS;objet:suffixe:rang,..." (".solameliorer rangs") donne le rang des objets du personnage, affiché
+-- sous le nom de l'objet partout où il apparaît.
 
 local PREFIXE = "SOLAMELIO"
 local PAR_PAGE, LIGNES = 12, 6
@@ -11,6 +13,16 @@ local prix, rangMax = 100, 5
 local page = 1
 
 local function Commande(texte) SendChatMessage(texte, "SAY") end
+
+local CARACS = { [3] = ITEM_MOD_AGILITY_SHORT, [4] = ITEM_MOD_STRENGTH_SHORT, [5] = ITEM_MOD_INTELLECT_SHORT,
+                 [6] = ITEM_MOD_SPIRIT_SHORT, [7] = ITEM_MOD_STAMINA_SHORT }
+
+-- Ex. « Rang 2 (+12 Endurance). Au rang 3 : +18 Endurance. »
+local function LigneRang(o)
+    local carac = CARACS[o.stat] or ""
+    local actuel = o.rang > 0 and string.format("Rang %d (+%d %s)", o.rang, o.avant, carac) or "Sans rang"
+    return string.format("%s. Au rang %d : +%d %s.%s", actuel, o.rang + 1, o.apres, carac, o.sac == -1 and " Porté." or "")
+end
 
 local function Lien(o)
     if o.sac == -1 then return GetInventoryItemLink("player", o.case) end
@@ -72,6 +84,8 @@ for i = 1, PAR_PAGE do
     b.nom:SetJustifyH("LEFT")
     b.rang = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     b.rang:SetPoint("TOPLEFT", b.nom, "BOTTOMLEFT", 0, -3)
+    b.rang:SetWidth(240)
+    b.rang:SetJustifyH("LEFT")
     b:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         if self.objet.sac == -1 then
@@ -120,7 +134,7 @@ local function Afficher()
             b.objet = o
             b.icone:SetTexture(GetItemIcon(o.objet) or "Interface\\Icons\\INV_Misc_QuestionMark")
             b.nom:SetText(Lien(o) or "...")
-            b.rang:SetText(string.format("Rang %d → %d : +%d%s", o.rang, o.rang + 1, o.gain, o.sac == -1 and " (porté)" or ""))
+            b.rang:SetText(LigneRang(o))
             b:Show()
         else
             b:Hide()
@@ -153,17 +167,45 @@ local evenements = CreateFrame("Frame")
 evenements:RegisterEvent("CHAT_MSG_ADDON")
 evenements:RegisterEvent("BAG_UPDATE")
 evenements:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+evenements:RegisterEvent("ADDON_LOADED")
+evenements:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+local delai = 0
+local function DemanderRangs(self, ecoule)
+    delai = delai + ecoule
+    if delai >= 3 then
+        self:SetScript("OnUpdate", nil)
+        Commande(".solameliorer rangs")
+    end
+end
+
 evenements:SetScript("OnEvent", function(self, event, prefixe, message)
+    if event == "ADDON_LOADED" then
+        if prefixe ~= "SolAzerothAmelioration" then return end
+        SolAzerothAmeliorationDB = SolAzerothAmeliorationDB or {}
+        SolAzerothAmeliorationDB.rangs = SolAzerothAmeliorationDB.rangs or {}
+        return
+    end
+    if event == "PLAYER_ENTERING_WORLD" then
+        self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+        self:SetScript("OnUpdate", DemanderRangs)
+        return
+    end
     if event ~= "CHAT_MSG_ADDON" then
         if cadre:IsShown() then aDemander = true end
         return
     end
     if prefixe ~= PREFIXE then return end
-    local type, a, b, c, d, e = strsplit(";", message)
+    local type, a, b, c, d, e, f, g = strsplit(";", message)
     if type == "DEBUT" then
         recus = {}
     elseif type == "OBJET" then
-        table.insert(recus, { sac = tonumber(a), case = tonumber(b), objet = tonumber(c), rang = tonumber(d), gain = tonumber(e) })
+        table.insert(recus, { sac = tonumber(a), case = tonumber(b), objet = tonumber(c), rang = tonumber(d),
+                              avant = tonumber(e), apres = tonumber(f), stat = tonumber(g) })
+    elseif type == "RANGS" then
+        for objet, suffixe, rang in string.gmatch(a or "", "(%d+):(%-?%d+):(%d+)") do
+            SolAzerothAmeliorationDB.rangs[objet .. ":" .. suffixe] = tonumber(rang)
+        end
     elseif type == "FIN" then
         objets, prix, rangMax = recus, tonumber(a) or prix, tonumber(b) or rangMax
         Afficher()
@@ -173,4 +215,21 @@ end)
 SLASH_SOLAZEROTHAMELIORER1 = "/ameliorer"
 SlashCmdList["SOLAZEROTHAMELIORER"] = function()
     if cadre:IsShown() then cadre:Hide() else cadre:Show() end
+end
+
+------------------------------------------------------------------------
+-- Rang dans l'infobulle des objets
+------------------------------------------------------------------------
+local function AjouterRang(infobulle)
+    local _, lien = infobulle:GetItem()
+    local objet, suffixe = (lien or ""):match("item:(%d+):%-?%d+:%-?%d+:%-?%d+:%-?%d+:%-?%d+:(%-?%d+)")
+    local rang = objet and SolAzerothAmeliorationDB and SolAzerothAmeliorationDB.rangs[objet .. ":" .. suffixe]
+    if rang then
+        infobulle:AddLine(string.format("Rang de menace %d", rang), 1, 0.82, 0)
+        infobulle:Show()
+    end
+end
+
+for _, infobulle in ipairs({ GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2 }) do
+    infobulle:HookScript("OnTooltipSetItem", AjouterRang)
 end

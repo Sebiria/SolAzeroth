@@ -1,5 +1,6 @@
 ## Interface: 30300
 ## Title: Sol'Azeroth - Amélioration
 ## Notes: Monter le rang d'un objet avec des Marques du voyageur (/ameliorer).
-## Version: 1.0
+## Version: 1.1
+## SavedVariablesPerCharacter: SolAzerothAmeliorationDB
 SolAzerothAmelioration.lua

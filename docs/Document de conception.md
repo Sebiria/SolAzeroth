@@ -1107,6 +1107,7 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
     - 100 Marques du voyageur montent le rang d'un objet de 1, jusqu'au rang 5 (`SolAzeroth.Amelioration.Prix`, `.RangMax`). Au-delà, le rang vient des donjons et des raids.
     - Objets acceptés : armes et armures vertes ou mieux, portées ou dans les sacs, hors héritage et hors objets à suffixe aléatoire du jeu (« de l'Ours »…). Un objet sans rang part du rang 0.
     - Le bonus suit la formule des rangs de menace (section 4.5) et compte pour l'écart d'équipement. Impossible en combat.
+    - Retour du test (29/10/2026) : chaque ligne dit le rang et le bonus actuels, puis ceux du rang suivant (« Rang 2 (+12 Endurance). Au rang 3 : +18 Endurance. »). L'infobulle de tout objet de rang porte « Rang de menace N », qu'il vienne d'un donjon, d'un raid ou des Marques.
   - À construire ensuite : défi de vagues dans l'arène des Croisés (récompense du rang 10 du Renom), chapitre d'histoire vers 45-48.
 
 ### 10.2 Chantier d'interface à prévoir (demande de l'utilisateur du 27/10/2026)

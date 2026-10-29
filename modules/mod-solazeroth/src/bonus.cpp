@@ -51,7 +51,7 @@ namespace
             || stat == ITEM_MOD_SPIRIT || stat == ITEM_MOD_STAMINA;
     }
 
-    uint32 ChoisirSuffixe(ItemTemplate const* modele, uint8 rang, uint32& valeur)
+    uint32 ChoisirSuffixe(ItemTemplate const* modele, uint8 rang, uint32& valeur, uint32* stat = nullptr)
     {
         uint32 somme = 0, principale = ITEM_MOD_STAMINA, meilleure = 0;
         for (uint32 i = 0; i < modele->StatsCount && i < MAX_ITEM_PROTO_STATS; ++i)
@@ -67,6 +67,8 @@ namespace
             }
         }
         valeur = std::max<uint32>(rang, uint32(std::lround(double(somme) * rang * pourcentParRang)));
+        if (stat)
+            *stat = principale;
 
         auto liste = suffixes.find(principale);
         if (liste == suffixes.end() || liste->second.empty())
@@ -107,7 +109,8 @@ namespace
         return nullptr;
     }
 
-    // « OBJET;sac;case;objet;rang;gain » pour chaque objet améliorable, puis « FIN;prix;rang max ».
+    // « OBJET;sac;case;objet;rang;bonus actuel;bonus suivant;caractéristique » pour chaque objet améliorable,
+    // puis « FIN;prix;rang max ».
     void ListerAmeliorables(Player* player)
     {
         auto Envoyer = [&](Item* item, int32 sac, uint32 emplacement)
@@ -117,12 +120,12 @@ namespace
             uint8 rang = SolAzeroth::RangDObjet(item->GetGUID().GetCounter());
             if (!Ameliorable(item, rang))
                 return;
-            uint32 avant = 0, apres = 0;
+            uint32 avant = 0, apres = 0, stat = 0;
             if (rang)
                 ChoisirSuffixe(item->GetTemplate(), rang, avant);
-            ChoisirSuffixe(item->GetTemplate(), rang + 1, apres);
-            SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, Acore::StringFormat("OBJET;{};{};{};{};{}",
-                sac, emplacement, item->GetEntry(), rang, apres > avant ? apres - avant : 0));
+            ChoisirSuffixe(item->GetTemplate(), rang + 1, apres, &stat);
+            SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, Acore::StringFormat("OBJET;{};{};{};{};{};{};{}",
+                sac, emplacement, item->GetEntry(), rang, avant, apres, stat));
         };
         SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, "DEBUT");
         for (uint8 i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
@@ -134,6 +137,50 @@ namespace
                 for (uint32 j = 0; j < b->GetBagSize(); ++j)
                     Envoyer(b->GetItemByPos(uint8(j)), i - INVENTORY_SLOT_BAG_START + 1, j + 1);
         SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, Acore::StringFormat("FIN;{};{}", prixAmelioration, rangMaxAmelioration));
+    }
+
+    // Rang des objets pour l'infobulle : « RANGS;objet:suffixe:rang,… ». Le client reconnaît l'objet à son numéro et
+    // à son suffixe (lien de l'objet) et garde la correspondance d'une session à l'autre.
+    std::string EntreeRang(Item* item, uint8 rang)
+    {
+        return Acore::StringFormat("{}:{}:{}", item->GetEntry(), item->GetItemRandomPropertyId(), rang);
+    }
+
+    void EnvoyerRang(Player* player, Item* item, uint8 rang)
+    {
+        SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, "RANGS;" + EntreeRang(item, rang));
+    }
+
+    // Tous les objets de rang du personnage : porté, sacs, banque et ses sacs.
+    void EnvoyerRangs(Player* player)
+    {
+        std::string paquet;
+        auto Ajouter = [&](Item* item)
+        {
+            uint8 rang = item ? SolAzeroth::RangDObjet(item->GetGUID().GetCounter()) : 0;
+            if (!rang)
+                return;
+            if (paquet.size() > 200)
+            {
+                SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, "RANGS;" + paquet);
+                paquet.clear();
+            }
+            paquet += (paquet.empty() ? "" : ",") + EntreeRang(item, rang);
+        };
+        for (uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+            Ajouter(player->GetItemByPos(INVENTORY_SLOT_BAG_0, i));
+        for (uint8 i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+            Ajouter(player->GetItemByPos(INVENTORY_SLOT_BAG_0, i));
+        for (uint8 sac = INVENTORY_SLOT_BAG_START; sac < INVENTORY_SLOT_BAG_END; ++sac)
+            if (Bag* b = player->GetBagByPos(sac))
+                for (uint32 j = 0; j < b->GetBagSize(); ++j)
+                    Ajouter(b->GetItemByPos(uint8(j)));
+        for (uint8 sac = BANK_SLOT_BAG_START; sac < BANK_SLOT_BAG_END; ++sac)
+            if (Bag* b = player->GetBagByPos(sac))
+                for (uint32 j = 0; j < b->GetBagSize(); ++j)
+                    Ajouter(b->GetItemByPos(uint8(j)));
+        if (!paquet.empty())
+            SolAzeroth::EnvoyerAddon(player, PREFIXE_AMELIORATION, "RANGS;" + paquet);
     }
 }
 
@@ -163,6 +210,7 @@ Item* SolAzeroth::DonnerObjetDeRang(Player* player, unsigned int objet, unsigned
         CharacterDatabase.Execute("REPLACE INTO solazeroth_objets_rang (item_guid, rang, enchantement) VALUES ({}, {}, {})",
             item->GetGUID().GetCounter(), rang, bonus);
         SolAzeroth::NoterRangObjet(item->GetGUID().GetCounter(), rang);
+        EnvoyerRang(player, item, rang);
     }
     player->SendNewItem(item, 1, true, false);
     return item;
@@ -182,6 +230,7 @@ void SolAzeroth::AppliquerRangObjet(Player* player, Item* item, unsigned char ra
     CharacterDatabase.Execute("REPLACE INTO solazeroth_objets_rang (item_guid, rang, enchantement) VALUES ({}, {}, {})",
         item->GetGUID().GetCounter(), rang, bonus);
     SolAzeroth::NoterRangObjet(item->GetGUID().GetCounter(), rang);
+    EnvoyerRang(player, item, rang);
 }
 
 // Butin d'un boss de raid ramassé : l'équipement prend l'enchantement de bonus du rang de menace de l'instance
@@ -217,6 +266,7 @@ public:
         {
             { "liste",  HandleListe,  SEC_PLAYER, Console::No },
             { "monter", HandleMonter, SEC_PLAYER, Console::No },
+            { "rangs",  HandleRangs,  SEC_PLAYER, Console::No },
         };
         static ChatCommandTable commandes =
         {
@@ -228,6 +278,12 @@ public:
     static bool HandleListe(ChatHandler* handler)
     {
         ListerAmeliorables(handler->GetSession()->GetPlayer());
+        return true;
+    }
+
+    static bool HandleRangs(ChatHandler* handler)
+    {
+        EnvoyerRangs(handler->GetSession()->GetPlayer());
         return true;
     }
 
@@ -266,6 +322,7 @@ public:
         CharacterDatabase.Execute("REPLACE INTO solazeroth_objets_rang (item_guid, rang, enchantement) VALUES ({}, {}, {})",
             item->GetGUID().GetCounter(), rang, bonus);
         SolAzeroth::NoterRangObjet(item->GetGUID().GetCounter(), rang);
+        EnvoyerRang(player, item, rang);
         handler->PSendSysMessage("|cffffd100Objet porté au rang {}|r (+{} au total).", rang, valeur);
         ListerAmeliorables(player);
         return true;
