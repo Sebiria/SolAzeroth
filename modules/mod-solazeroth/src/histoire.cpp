@@ -1,7 +1,7 @@
 // Chaîne d'histoire « Le fil du Fléau » (section 4.7, V6 ; décisions de l'utilisateur du 28/10/2026 : fil du Fléau de
 // 1 à 80, chapitres conditionnés par le niveau et le niveau d'objet, pas de raccourci jusqu'au Roi-liche).
-// - Le chroniqueur de la Croisade (900120, Hurlevent et Orgrimmar) donne les 16 chapitres (quêtes 900200 à 900215,
-//   migration 045) l'un après l'autre. Il ne propose le suivant que si le personnage a le niveau et le niveau d'objet
+// - Le chroniqueur de la Croisade (900120, Hurlevent et Orgrimmar) donne les 17 chapitres (quêtes 900200 à 900216,
+//   migrations 045 et 059 ; le chapitre 4, « Les cultes de la mort », est la quête 900216) l'un après l'autre. Il ne propose le suivant que si le personnage a le niveau et le niveau d'objet
 //   moyen du chapitre (table solazeroth_histoire ; ilvl 0 = 90 % de l'ilvl attendu à ce niveau, ecart.cpp).
 // - Certains chapitres demandent d'avoir vécu une quête d'origine (Portail du Courroux, gambit de Tirion…). Le serveur
 //   crédite alors un « témoin » (solazeroth_histoire_temoins) : à la fin de la quête d'origine, à l'acceptation du
@@ -89,8 +89,8 @@ public:
             return true;
         }
 
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, Acore::StringFormat("Chapitre {} sur 16 : reviens quand tu seras prêt.",
-            suivant->numero), GOSSIP_SENDER_MAIN, 0);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, Acore::StringFormat("Chapitre {} sur {} : reviens quand tu seras prêt.",
+            suivant->numero, chapitres.size()), GOSSIP_SENDER_MAIN, 0);
         AddGossipItemFor(player, GOSSIP_ICON_CHAT, Acore::StringFormat("Niveau requis : {} (tu es {}{}).", suivant->niveau,
             player->GetLevel(), player->GetLevel() >= suivant->niveau ? ", c'est bon" : ""), GOSSIP_SENDER_MAIN, 0);
         AddGossipItemFor(player, GOSSIP_ICON_CHAT, Acore::StringFormat("Niveau d'objet moyen requis : {:.0f} (tu as {:.0f}{}).",

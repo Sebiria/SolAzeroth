@@ -501,7 +501,7 @@ Chaque instance garde son niveau d'origine, est ramenée à 1 joueur, et se joue
     - Sindragosa : un Tombeau de glace se brise seul au bout de 5 s ;
     - Roi-liche : une Val'kyr qui saisit le joueur le lâche au bout de 3 s, il revient au centre de la plateforme et la Val'kyr disparaît.
     - Pas de raccourci : le Roi-liche demande toujours les quatre ailes (script d'origine).
-  - **Chaîne d'histoire « Le fil du Fléau »** (`histoire.cpp`, migration 045) : un **chroniqueur de la Croisade** à Hurlevent et à Orgrimmar (places choisies par l'utilisateur, migration 048) donne **16 chapitres** l'un après l'autre (quêtes 900200 à 900215). Il ne propose le suivant que si le personnage a le **niveau** et le **niveau d'objet moyen** du chapitre (provisoire, table `solazeroth_histoire`) ; sinon il affiche ce qui manque.
+  - **Chaîne d'histoire « Le fil du Fléau »** (`histoire.cpp`, migration 045) : un **chroniqueur de la Croisade** à Hurlevent et à Orgrimmar (places choisies par l'utilisateur, migration 048) donne **17 chapitres** l'un après l'autre (quêtes 900200 à 900216 ; le chapitre 4, ajouté le 29/10/2026, est la quête 900216, migration 059). Il ne propose le suivant que si le personnage a le **niveau** et le **niveau d'objet moyen** du chapitre (provisoire, table `solazeroth_histoire`) ; sinon il affiche ce qui manque.
 
 | Ch. | Niveau | Ilvl | Titre | Ce qu'il faut faire |
 | --- | --- | --- | --- | --- |
@@ -1108,7 +1108,8 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
     - Objets acceptés : armes et armures vertes ou mieux, portées ou dans les sacs, hors héritage et hors objets à suffixe aléatoire du jeu (« de l'Ours »…). Un objet sans rang part du rang 0.
     - Le bonus suit la formule des rangs de menace (section 4.5) et compte pour l'écart d'équipement. Impossible en combat.
     - Retour du test (29/10/2026) : chaque ligne dit le rang et le bonus actuels, puis ceux du rang suivant (« Rang 2 (+12 Endurance). Au rang 3 : +18 Endurance. »). L'infobulle de tout objet de rang porte « Rang de menace N » juste sous la ligne de son bonus (« +18 Endurance »), qu'il vienne d'un donjon, d'un raid ou des Marques.
-  - À construire ensuite : défi de vagues dans l'arène des Croisés (récompense du rang 10 du Renom), chapitre d'histoire vers 45-48.
+  - **Chapitre d'histoire vers 45-48 (E7), construit le 29/10/2026** (migration 059) : « Le fil du Fléau 4/17 : Les cultes de la mort », à partir du niveau 45 (quête niveau 48). Tuer le féticheur Zum'rah à Zul'Farrak, Jammal'an le prophète et l'Ombre d'Eranikus au temple d'Atal'Hakkar : les trolls relevaient les morts bien avant le Fléau. Deux donjons accessibles aux deux camps. Il s'insère entre le Porte-froid (37) et les Maleterres (55) ; la chaîne passe à 17 chapitres, titres renumérotés.
+  - À construire ensuite : défi de vagues dans l'arène des Croisés (récompense du rang 10 du Renom).
 
 ### 10.2 Chantier d'interface à prévoir (demande de l'utilisateur du 27/10/2026)
 
