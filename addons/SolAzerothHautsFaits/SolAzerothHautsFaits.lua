@@ -89,7 +89,7 @@ for i = 1, LIGNES do
     local l = CreateFrame("Frame", nil, cadre)
     l:SetSize(420, HAUTEUR - 4)
     l:SetPoint("TOPLEFT", 154, -84 - (i - 1) * HAUTEUR)
-    l:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    l:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
                     edgeSize = 10, insets = { left = 2, right = 2, top = 2, bottom = 2 } })
     l.nom = l:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     l.nom:SetPoint("TOPLEFT", 8, -5)

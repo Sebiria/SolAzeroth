@@ -1132,6 +1132,10 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
     - les textes posés directement sur le parchemin étaient gris pâle ou blancs, donc à peine lisibles. Ils passent en brun foncé, les chiffres en rouge brique, les titres dorés en rouge brique ;
     - dans les lignes à fond sombre, les gris (« À venir », heures, points) deviennent beige clair ;
     - les boutons d'instance du journal ont un fond plus sombre.
+  - **Second retour du 29/10/2026 (capture du Codex)**, corrigé :
+    - les lignes du Codex, du Renom et des hauts faits du compte laissaient voir le parchemin, car leur fond d'infobulle est à moitié transparent. Elles ont maintenant un **fond sombre plein**, sur lequel l'or, le blanc et le beige se lisent ;
+    - le titre de page passe en Friz Quadrata, plus épaisse que Morpheus, et en rouge brique plus foncé. Même rouge pour les titres posés sur le parchemin.
+- **Défis du personnage (retour du 29/10/2026)** : le choix se fermait au niveau 2. Il se ferme maintenant au **premier point d'expérience** (`lua_scripts/defis.lua`, `Eligible`). Le chevalier de la mort le garde au niveau 55 de départ, tant qu'il n'a pas d'expérience. « Plus tard » ne repousse donc le choix que jusqu'au premier gain d'expérience.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
     - étape 6, connexion sans mot de passe : elle demanderait d'écrire le mot de passe dans un fichier du client ou de changer le serveur de connexion. **Décision à prendre par l'utilisateur.**

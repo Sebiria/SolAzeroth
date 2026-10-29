@@ -295,11 +295,11 @@ local function Rafraichir()
         valider:SetText("Fermer")
         plusTard:Hide()
     elseif etat.eligible then
-        sousTitre:SetText("Choisis tes défis avant de gagner ton premier niveau. Le choix est définitif.")
+        sousTitre:SetText("Choisis tes défis avant de gagner le moindre point d'expérience. Le choix est définitif.")
         valider:SetText(note > 0 and "Commencer l'aventure" or "Commencer sans défi")
         plusTard:Show()
     else
-        sousTitre:SetText("Les défis se choisissent au niveau 1, à la création du personnage.")
+        sousTitre:SetText("Les défis se choisissent à la création du personnage, avant le premier point d'expérience.")
         valider:SetText("Fermer")
         plusTard:Hide()
     end

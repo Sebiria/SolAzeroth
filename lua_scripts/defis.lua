@@ -58,10 +58,12 @@ local function Verrouille(player)
     return player:GetPlayerSettingValue(SOURCE, REGLAGE_VERROU) == 1
 end
 
+-- Choix possible tant que le personnage n'a gagné aucun point d'expérience (demande de l'utilisateur du 29/10/2026 :
+-- avant, il restait ouvert pendant tout le niveau 1). Chevalier de la mort : au niveau 55 de départ.
 local function Eligible(player)
-    if Verrouille(player) then return false end
+    if Verrouille(player) or player:GetXP() > 0 then return false end
     local niveau = player:GetLevel()
-    return niveau == 1 or (player:GetClass() == CHEVALIER_DE_LA_MORT and niveau <= 55)
+    return niveau == 1 or (player:GetClass() == CHEVALIER_DE_LA_MORT and niveau == 55)
 end
 
 local function Envoyer(player, message)
@@ -155,7 +157,7 @@ end
 
 local function Valider(player, liste)
     if not Eligible(player) then
-        Envoyer(player, "ERREUR;Les défis ne se choisissent qu'au niveau 1.")
+        Envoyer(player, "ERREUR;Les défis ne se choisissent qu'avant le premier point d'expérience.")
         return
     end
     local choisis, note = {}, 0

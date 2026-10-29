@@ -71,7 +71,7 @@ pageRenom:Hide()
 local barresFins = {}
 for i, f in ipairs(FINS) do
     local nom = pageCodex:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    nom:SetTextColor(0.42, 0.14, 0.06)
+    nom:SetTextColor(0.32, 0.08, 0.03)
     nom:SetPoint("TOPLEFT", 26, -40 - (i - 1) * 24)
     nom:SetWidth(170)
     nom:SetJustifyH("LEFT")
@@ -95,7 +95,7 @@ for i = 1, LIGNES do
     local l = CreateFrame("Frame", nil, pageCodex)
     l:SetSize(610, HAUTEUR - 3)
     l:SetPoint("TOPLEFT", 24, -130 - (i - 1) * HAUTEUR)
-    l:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    l:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
                     edgeSize = 10, insets = { left = 2, right = 2, top = 2, bottom = 2 } })
     l:SetBackdropColor(0.1, 0.1, 0.1, 0.8)
     l.nom = l:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -155,7 +155,7 @@ local AFFIXES = { [0] = "celui de la semaine", [1] = "Fortifié (monstres hors b
 local ETATS = { [0] = "|cffc9b88fÀ venir|r", [1] = "|cff40ff40Acquis|r", [3] = "|cff40ff40Réclamé|r", [4] = "|cffc9b88fPlus tard|r" }
 
 local renomTitre = pageRenom:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-renomTitre:SetTextColor(0.42, 0.14, 0.06)
+renomTitre:SetTextColor(0.32, 0.08, 0.03)
 renomTitre:SetPoint("TOPLEFT", 26, -40)
 local renomBarre = Barre(pageRenom, 600, 16)
 renomBarre:SetPoint("TOPLEFT", 26, -66)
@@ -172,7 +172,7 @@ for i = 1, 10 do
     local l = CreateFrame("Frame", nil, pageRenom)
     l:SetSize(610, 40)
     l:SetPoint("TOPLEFT", 24, -110 - (i - 1) * 43)
-    l:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    l:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
                     edgeSize = 10, insets = { left = 2, right = 2, top = 2, bottom = 2 } })
     l.nom = l:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     l.nom:SetPoint("TOPLEFT", 8, -5)

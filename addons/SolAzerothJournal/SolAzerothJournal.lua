@@ -107,7 +107,7 @@ local titresBoss, cases = {}, {}
 local function TitreBoss(i)
     if not titresBoss[i] then
         local t = contenu:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        t:SetTextColor(0.42, 0.14, 0.06)
+        t:SetTextColor(0.32, 0.08, 0.03)
         t:SetJustifyH("LEFT")
         t:SetWidth(460)
         titresBoss[i] = t
