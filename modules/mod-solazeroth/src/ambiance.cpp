@@ -648,10 +648,16 @@ public:
                     ++aires;
                 continue;
             }
+            // Pas les trajets hors de la rue : guetteurs des toits d'Orgrimmar (23090), balais de Lune-d'Argent (17213),
+            // déclencheur de Dalaran (32265), ni ceux des créatures volantes, invisibles ou déclencheurs (retour de
+            // l'utilisateur, 29/10/2026 : les passants marchaient sur les toits d'Orgrimmar).
             QueryResult r = WorldDatabase.Query(
                 "SELECT w.id, w.position_x, w.position_y, w.position_z FROM waypoint_data w WHERE w.id IN ("
                 "SELECT ca.path_id FROM creature c JOIN creature_addon ca ON ca.guid = c.guid "
-                "WHERE c.map = {} AND c.zoneId = {} AND ca.path_id > 0) ORDER BY w.id, w.point", lieu.carte, lieu.zone);
+                "JOIN creature_template t ON t.entry = c.id LEFT JOIN creature_template_movement m ON m.CreatureId = c.id "
+                "WHERE c.map = {} AND c.zoneId = {} AND ca.path_id > 0 AND c.id NOT IN (23090, 17213, 32265) "
+                "AND COALESCE(m.Flight, 0) = 0 AND (t.unit_flags & 33554432) = 0 AND (t.flags_extra & 128) = 0) "
+                "ORDER BY w.id, w.point", lieu.carte, lieu.zone);
             if (!r)
                 continue;
             uint32 dernier = 0;

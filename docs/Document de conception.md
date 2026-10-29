@@ -1098,6 +1098,10 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
       - contrats : 15 % d'objet, 20 Marques ;
       - Renom rangs 8 et 9 : 250 et 500 Marques.
     - **Spécialisations** : changement en 10 s d'incantation (sort 100004, migration 058), interrompu par le mouvement et les dégâts, sans délai entre deux.
+  - **Retours du premier test (29/10/2026), corrigés le jour même** :
+    - « Échec d'une action d'interface » en donjon : le Grimoire (seule fenêtre à boutons de sort sécurisés) rendait toute la fenêtre /sol intouchable en combat, et le butin ne pouvait plus l'ouvrir. Le Grimoire quitte désormais la fenêtre à l'entrée en combat et y revient après ; demandé en combat, il s'ouvre à la fin du combat. Si une action est encore bloquée, le chat nomme l'addon et la fonction.
+    - Changement de spécialisation : les lignes « sort appris / désappris » sont masquées dans le chat pendant le changement.
+    - PNJ d'ambiance sur les toits d'Orgrimmar : les passants des villes ne suivent plus les trajets des guetteurs des toits, des balais volants de Lune-d'Argent, ni ceux des créatures volantes, invisibles ou déclencheurs.
   - Laissés en l'état sur décision de l'utilisateur : immunités et défenses empruntées (elles coûtent déjà du temps de DPS), prix des sorts d'autres classes (×10).
   - À construire ensuite : Marques pour monter le rang d'un objet, défi de vagues dans l'arène des Croisés (récompense du rang 10 du Renom), chapitre d'histoire vers 45-48.
 

@@ -290,3 +290,42 @@ chargement:SetScript("OnEvent", function(self, event, nom)
     SolAzerothSpesDB = SolAzerothSpesDB or { angle = 200 }
     Placer(SolAzerothSpesDB.angle)
 end)
+
+------------------------------------------------------------------------
+-- Changer de spécialisation désapprend puis réapprend des dizaines de sorts et de talents : le jeu l'annonce ligne
+-- par ligne dans le chat. Ces messages sont masqués pendant le changement (incantation 100004, specialisations.cpp).
+------------------------------------------------------------------------
+local SORT_CHANGEMENT = GetSpellInfo(100004)
+local masquerJusqua = 0
+
+local motifs = {}
+for _, nom in ipairs({ "ERR_LEARN_SPELL_S", "ERR_LEARN_ABILITY_S", "ERR_LEARN_PASSIVE_S", "ERR_SPELL_UNLEARNED_S" }) do
+    local texte = _G[nom]
+    if texte then
+        local motif = texte:gsub("[%^%$%(%)%.%[%]%*%+%-%?]", "%%%0")
+        motifs[#motifs + 1] = "^" .. motif:gsub("%%s", ".+") .. "$"
+    end
+end
+
+ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", function(self, event, message)
+    if GetTime() > masquerJusqua then return false end
+    for _, motif in ipairs(motifs) do
+        if message:find(motif) then return true end
+    end
+    return false
+end)
+
+local incantation = CreateFrame("Frame")
+incantation:RegisterEvent("UNIT_SPELLCAST_START")
+incantation:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+incantation:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+incantation:SetScript("OnEvent", function(self, event, unite, sort)
+    if unite ~= "player" or not SORT_CHANGEMENT or sort ~= SORT_CHANGEMENT then return end
+    if event == "UNIT_SPELLCAST_START" then
+        masquerJusqua = GetTime() + 15
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        masquerJusqua = GetTime() + 5
+    else
+        masquerJusqua = 0
+    end
+end)

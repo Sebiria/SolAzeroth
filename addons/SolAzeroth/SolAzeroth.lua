@@ -12,7 +12,7 @@ local ENTETE_PARCHEMIN = 58
 local SECTIONS = {
     { nom = "Personnage", icone = "Interface\\Icons\\Achievement_Character_Human_Male", pages = {
         { nom = "Apprentissage", cadre = "SolAzerothFormationCadre", commande = "SOLAZEROTHFORMATION" },
-        { nom = "Grimoire", cadre = "SolAzerothGrimoireCadre", commande = "SOLAZEROTHGRIMOIRE" },
+        { nom = "Grimoire", cadre = "SolAzerothGrimoireCadre", commande = "SOLAZEROTHGRIMOIRE", securise = true },
         { nom = "Talents d'une autre classe", cadre = "SolAzerothTalentsCadre", commande = "SOLAZEROTHTALENTS" },
         { nom = "Spécialisations", cadre = "SolAzerothSpesCadre", commande = "SOLAZEROTHSPES" },
         { nom = "Défis", cadre = "SolAzerothDefisCadre", commande = "SOLAZEROTHDEFIS" },
@@ -418,14 +418,20 @@ local function EnleverHabillage(f)
     end
 end
 
+-- Une page sécurisée (boutons de sort du Grimoire) rend protégée la fenêtre qui la contient : en combat, plus moyen
+-- de l'ouvrir, la fermer ni la déplacer (« Échec d'une action d'interface »). Elle n'y entre donc que hors combat,
+-- et en sort à l'entrée en combat (Detacher).
 local function Adopter(page)
     local f = page.cadre and _G[page.cadre]
-    if not f or page.adopte then return f end
+    if not f or (page.securise and InCombatLockdown()) then return nil end
+    if f:GetParent() ~= contenu then
+        f:Hide()
+        f:SetParent(contenu)
+        f:SetFrameStrata("DIALOG")
+    end
+    if page.adopte then return f end
     page.adopte = true
     EnleverHabillage(f)
-    f:Hide()
-    f:SetParent(contenu)
-    f:SetFrameStrata("DIALOG")
     -- Les commandes de l'addon (/codex…) montrent son cadre : on ouvre alors cette fenêtre sur la bonne page.
     hooksecurefunc(f, "Show", function()
         if enSelection then return end
@@ -436,6 +442,21 @@ local function Adopter(page)
         end
     end)
     return f
+end
+
+-- Entrée en combat : la page sécurisée quitte la fenêtre (encore permis pendant cet événement).
+local function Detacher()
+    for _, section in ipairs(SECTIONS) do
+        for _, page in ipairs(section.pages) do
+            local f = page.securise and _G[page.cadre]
+            if f and f:GetParent() == contenu then
+                f:Hide()
+                f:SetParent(UIParent)
+                f:ClearAllPoints()
+                f:SetPoint("LEFT", 40, 40)
+            end
+        end
+    end
 end
 
 local function Placer(page, f)
@@ -547,6 +568,7 @@ end
 -- Sélection
 ------------------------------------------------------------------------
 local affichee
+local differee   -- page sécurisée demandée en combat, ouverte à la fin du combat
 
 local function Rafraichir()
     local butins = NombreButins()
@@ -578,12 +600,17 @@ Selectionner = function(numSection, numPage, depuisAddon)
     local section = SECTIONS[numSection]
     numPage = math.min(numPage, #section.pages)
     local page = section.pages[numPage]
+    if page.securise and InCombatLockdown() then
+        differee = { numSection, numPage }
+        UIErrorsFrame:AddMessage("Le grimoire s'ouvrira à la fin du combat.", 1, 0.82, 0)
+        return
+    end
     courante.section, courante.page = numSection, numPage
     SolAzerothDB.section, SolAzerothDB.pages[numSection] = numSection, numPage
 
     enSelection = true
     if affichee and affichee ~= page then
-        if affichee.cadre and _G[affichee.cadre] then _G[affichee.cadre]:Hide() end
+        if affichee.cadre and _G[affichee.cadre] and _G[affichee.cadre]:IsShown() then _G[affichee.cadre]:Hide() end
         if construites[affichee] then construites[affichee]:Hide() end
     end
     affichee = page
@@ -644,7 +671,7 @@ end)
 -- Fermer la fenêtre ferme la page affichée : sinon l'addon la croirait encore ouverte.
 fenetre:SetScript("OnHide", function()
     PlaySound("igCharacterInfoClose")
-    if affichee and affichee.cadre and _G[affichee.cadre] then
+    if affichee and affichee.cadre and _G[affichee.cadre] and _G[affichee.cadre]:IsShown() then
         enSelection = true
         _G[affichee.cadre]:Hide()
         enSelection = false
@@ -711,7 +738,11 @@ local evenements = CreateFrame("Frame")
 evenements:RegisterEvent("ADDON_LOADED")
 evenements:RegisterEvent("PLAYER_LOGIN")
 evenements:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
-evenements:SetScript("OnEvent", function(self, event, nom)
+evenements:RegisterEvent("PLAYER_REGEN_DISABLED")
+evenements:RegisterEvent("PLAYER_REGEN_ENABLED")
+evenements:RegisterEvent("ADDON_ACTION_BLOCKED")
+evenements:RegisterEvent("ADDON_ACTION_FORBIDDEN")
+evenements:SetScript("OnEvent", function(self, event, nom, fonction)
     if event == "ADDON_LOADED" then
         if nom ~= "SolAzeroth" then return end
         SolAzerothDB = SolAzerothDB or {}
@@ -722,6 +753,22 @@ evenements:SetScript("OnEvent", function(self, event, nom)
             for _, page in ipairs(section.pages) do Adopter(page) end
         end
         Rafraichir()
+    elseif event == "PLAYER_REGEN_DISABLED" then
+        Detacher()
+        if fenetre:IsShown() and affichee and affichee.securise then vide:SetText("Le grimoire revient à la fin du combat.") end
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        if differee then
+            local s, p = differee[1], differee[2]
+            differee = nil
+            Selectionner(s, p)
+        elseif fenetre:IsShown() and affichee and affichee.securise then
+            Selectionner(courante.section, courante.page)
+        end
+    elseif event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
+        -- Mouchard : si l'erreur d'interface revient, le chat dit quel addon et quelle fonction l'ont causée.
+        if nom and nom:find("^SolAzeroth") then
+            print(string.format("|cffff6060Sol'Azeroth :|r action bloquée en combat (%s, %s). Signale-le.", nom, tostring(fonction)))
+        end
     elseif fenetre:IsShown() then
         Rafraichir()
     end
