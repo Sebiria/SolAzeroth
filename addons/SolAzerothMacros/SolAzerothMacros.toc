@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Macros
+## Notes: Créer et modifier les macros, icônes triées par catégorie et recherche (/macros).
+## Version: 1.0
+SolAzerothMacros.lua

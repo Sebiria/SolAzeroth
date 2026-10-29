@@ -34,6 +34,7 @@ local SECTIONS = {
     } },
     { nom = "Réglages", icone = "Interface\\Icons\\INV_Misc_Gear_01", pages = {
         { nom = "Plaques de nom", cadre = "SolAzerothPlaquesCadre", commande = "SOLAZEROTHPLAQUES" },
+        { nom = "Macros", cadre = "SolAzerothMacrosCadre", commande = "SOLAZEROTHMACROS" },
         { nom = "Barres et sacs", construire = "BarresEtSacs" },
         { nom = "Sauvegarde", construire = "Sauvegarde" },
         { nom = "Monde", construire = "Monde" },

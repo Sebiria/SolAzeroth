@@ -18,6 +18,7 @@ local ENTREES = {
     { texte = "Sacs",                        commande = "SOLAZEROTHSACS" },
     { texte = "Choix de butin en attente",   commande = "SOLAZEROTHBUTIN" },
     { texte = "Plaques de nom",              commande = "SOLAZEROTHPLAQUES" },
+    { texte = "Macros",                      commande = "SOLAZEROTHMACROS" },
 }
 
 -- Boutons de minicarte remplacés par celui-ci.

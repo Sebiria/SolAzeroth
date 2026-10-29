@@ -1109,6 +1109,10 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
     - Le bonus suit la formule des rangs de menace (section 4.5) et compte pour l'écart d'équipement. Impossible en combat.
     - Retour du test (29/10/2026) : chaque ligne dit le rang et le bonus actuels, puis ceux du rang suivant (« Rang 2 (+12 Endurance). Au rang 3 : +18 Endurance. »). L'infobulle de tout objet de rang porte « Rang de menace N » juste sous la ligne de son bonus (« +18 Endurance »), qu'il vienne d'un donjon, d'un raid ou des Marques.
   - **Chapitre d'histoire vers 45-48 (E7), construit le 29/10/2026** (migration 059) : « Le fil du Fléau 4/17 : Les cultes de la mort », à partir du niveau 45 (quête niveau 48). Tuer le féticheur Zum'rah à Zul'Farrak, Jammal'an le prophète et l'Ombre d'Eranikus au temple d'Atal'Hakkar : les trolls relevaient les morts bien avant le Fléau. Deux donjons accessibles aux deux camps. Il s'insère entre le Porte-froid (37) et les Maleterres (55) ; la chaîne passe à 17 chapitres, titres renumérotés.
+  - **Macros (demande de l'utilisateur du 29/10/2026)** : addon `SolAzerothMacros` (`/macros`, page « Macros » des Réglages de /sol).
+    - Créer, modifier, supprimer une macro et la poser sur la barre ; icônes triées par catégorie (classes, écoles de magie, armes, armures, montures, familiers, hauts faits, métiers…) et recherche par nom de fichier.
+    - Modèles prêts pour les commandes de Sol'Azeroth (`/sol`, `/rang`, `.coffre`…).
+    - 513 icônes du client ajoutées à la liste des macros du jeu (`outils/icones_macros.py`, SpellIcon.dbc du patch client) : hauts faits, montures, boss… absentes de la fenêtre d'origine.
   - À construire ensuite : défi de vagues dans l'arène des Croisés (récompense du rang 10 du Renom).
 
 ### 10.2 Chantier d'interface à prévoir (demande de l'utilisateur du 27/10/2026)
