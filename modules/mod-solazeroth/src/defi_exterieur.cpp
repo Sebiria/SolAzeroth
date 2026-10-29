@@ -79,9 +79,11 @@ namespace
         return player->GetMap()->Instanceable() ? 0 : NiveauDe(player);
     }
 
+    // Zone de repos, ou n'importe où avant le niveau 10 : les zones de départ n'ont pas d'auberge (retour de l'utilisateur
+    // du 30/10/2026).
     bool EnRepos(Player* player)
     {
-        return player->HasRestFlag(REST_FLAG_IN_TAVERN) || player->HasRestFlag(REST_FLAG_IN_CITY)
+        return player->GetLevel() < 10 || player->HasRestFlag(REST_FLAG_IN_TAVERN) || player->HasRestFlag(REST_FLAG_IN_CITY)
             || player->HasRestFlag(REST_FLAG_IN_FACTION_AREA);
     }
 
@@ -254,7 +256,7 @@ public:
             return true;
         if (!EnRepos(player) || player->IsInCombat())
         {
-            handler->SendSysMessage("Le niveau de défi ne se change qu'en zone de repos (auberge, capitale), hors combat.");
+            handler->SendSysMessage("Le niveau de défi ne se change qu'en zone de repos (auberge, capitale), hors combat (partout avant le niveau 10).");
             EnvoyerEtat(player);
             return true;
         }

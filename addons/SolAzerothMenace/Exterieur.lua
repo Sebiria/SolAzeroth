@@ -1,6 +1,6 @@
 -- Mode défi en extérieur. Le serveur (mod-solazeroth, defi_exterieur.cpp) envoie
 -- "EXT;niveau;max;repos;pv;dégâts;xp;or;marques" (multiplicateurs par niveau, séparés par des virgules).
--- Choix : ".solext choisir <niveau>", en zone de repos.
+-- Choix : ".solext choisir <niveau>", en zone de repos (partout avant le niveau 10 : pas d'auberge en zone de départ).
 -- Ouverture : clic droit sur le bouton de la minicarte du rang de menace, ou /exterieur.
 
 local PREFIXE = "SOLEXT"
@@ -99,7 +99,8 @@ local function Rafraichir()
     end
     effets:SetText(Effets(n))
     if etat.repos then
-        note:SetText("Vous êtes en zone de repos : vous pouvez changer de niveau.")
+        note:SetText(UnitLevel("player") < 10 and "Avant le niveau 10, vous pouvez changer de niveau partout, hors combat."
+            or "Vous êtes en zone de repos : vous pouvez changer de niveau.")
     else
         note:SetText("|cffff8040Le niveau ne se change qu'en zone de repos (auberge, capitale), hors combat.|r")
     end
@@ -110,7 +111,7 @@ evenements:RegisterEvent("CHAT_MSG_ADDON")
 evenements:RegisterEvent("PLAYER_UPDATE_RESTING")
 evenements:SetScript("OnEvent", function(self, event, prefixe, message)
     if event == "PLAYER_UPDATE_RESTING" then
-        etat.repos = IsResting() and true or false
+        etat.repos = (IsResting() or UnitLevel("player") < 10) and true or false
         if cadre:IsShown() then Rafraichir() end
         return
     end
@@ -132,7 +133,7 @@ local function Basculer()
     if cadre:IsShown() then
         cadre:Hide()
     else
-        etat.repos = IsResting() and true or false
+        etat.repos = (IsResting() or UnitLevel("player") < 10) and true or false
         cadre:Show()
         Rafraichir()
         Commande(".solext etat")

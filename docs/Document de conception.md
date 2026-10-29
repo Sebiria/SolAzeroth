@@ -611,7 +611,7 @@ Chaque soirée de 1 à 2 h offre un choix au départ, un objectif clair, une ré
   - Dans la fenêtre : une étoile devant le nom, en tête de liste, et une ligne « Thème de la semaine » avec sa description. Un contrat du thème rapporte **+50 % de Marques** (`SolAzeroth.Contrats.BonusTheme`, provisoire). Le thème est retenu à l'acceptation : il compte encore si la semaine change avant la fin.
 - **Décisions de l'utilisateur (27/10/2026) :**
   - **quatre types de contrats**, tous tirés au niveau du personnage :
-    - **chasse** : tuer N monstres d'une famille (bêtes, démons, morts-vivants…) dans une zone de son niveau ;
+    - **chasse** : tuer N monstres d'une famille (bêtes, démons, morts-vivants…) dans une zone de son niveau. N est tiré entre 15 et 25 en acceptant ; le tableau l'écrit « nombre tiré en acceptant » (retour de l'utilisateur du 30/10/2026 : le nombre de monstres présents dans la zone, affiché avant, se lisait comme l'objectif). **Les zones de l'autre faction ne sont proposées ni en chasse ni en prime** (champ 	eam d'AreaTable ; même retour) ;
     - **donjon imposé** : finir un donjon précis de son niveau, à un rang de menace minimal ;
     - **prime de zone** : tuer un élite ou un rare nommé d'une zone de son niveau, plus une série de monstres de cette zone ;
     - **commande d'artisan** : fabriquer et livrer N objets d'un métier connu, à sa compétence actuelle ;
@@ -722,7 +722,7 @@ Des silhouettes aux apparences de joueurs peuplent les villes et les camps. Ce n
 - **Décisions de l'utilisateur (27/10/2026, début de V3) :**
   - pas de PNJ : tout passe par une **fenêtre d'addon** (comme 3.6 bis) ;
   - un **niveau de défi de 0 à 5** par personnage, sur le principe du rang de menace, plutôt que des affixes à cocher ;
-  - on ne peut changer de niveau **qu'en zone de repos** (auberge, capitale) et hors combat ;
+  - on ne peut changer de niveau **qu'en zone de repos** (auberge, capitale) et hors combat. **Avant le niveau 10, partout hors combat** (retour de l'utilisateur du 30/10/2026 : les zones de départ n'ont pas d'auberge) ;
   - premier morceau construit de V3, avant les intendants, puis les contrats, puis la protection contre la malchance.
 - **Construit le 27/10/2026, à valider en jeu** : module C++ `defi_exterieur.cpp` (migration 026), fenêtre dans l'addon `SolAzerothMenace` (clic droit sur son bouton de minicarte, ou `/exterieur`).
   - S'applique **hors instance** seulement, aux monstres que le personnage ou son familier combat. Ne se cumule donc jamais avec le rang de menace.

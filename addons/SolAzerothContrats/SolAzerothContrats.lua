@@ -188,7 +188,7 @@ local function RafraichirListe()
             if onglet == "chasse" then
                 l.icone:SetTexture(ICONES[1])
                 l.nom:SetText(Etoile(e) .. (FAMILLES[e.famille] or "Monstres") .. " : " .. e.nom)
-                l.info:SetText(string.format("Tuer 15 à 25 %s (%d dans la zone à ton niveau)", strlower(FAMILLES[e.famille] or "monstres"), e.nombre))
+                l.info:SetText(string.format("Tuer 15 à 25 %s (nombre tiré en acceptant)", strlower(FAMILLES[e.famille] or "monstres")))
                 l.bouton:SetScript("OnClick", function() Commande(".solcontrat chasse " .. e.zone .. " " .. e.famille) end)
             elseif onglet == "donjon" then
                 l.icone:SetTexture(ICONES[2])
@@ -571,7 +571,8 @@ evenements:SetScript("OnEvent", function(self, event, prefixe, message)
         enCours = { chasse = {}, donjon = {}, prime = {}, artisan = {}, contrats = {} }
     elseif type == "THEME" then
         etat.theme = { nom = champs[2] or "?", famille = tonumber(champs[3]) or 0, metier = tonumber(champs[4]) or 0,
-                       description = champs[5] or "", bonus = tonumber(champs[6]) or 0 }
+                       -- la description peut contenir des « ; » : tout ce qui est entre le métier et le bonus
+                       description = table.concat(champs, ";", 5, math.max(5, #champs - 1)), bonus = tonumber(champs[#champs]) or 0 }
     elseif type == "AR" then
         table.insert(enCours.artisan, { sort = tonumber(champs[2]), objet = tonumber(champs[3]), nombre = tonumber(champs[4]) or 1,
                                         metier = tonumber(champs[5]) or 0, theme = champs[6] == "1" })

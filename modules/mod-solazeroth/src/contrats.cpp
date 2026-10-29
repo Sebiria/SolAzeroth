@@ -292,6 +292,14 @@ namespace
         return d->MinLevel <= niveau && niveau <= d->MaxLevel;
     }
 
+    // Zone de l'autre faction (AreaTable : 2 Alliance, 4 Horde) : ni chasse ni prime (retour de l'utilisateur du 30/10/2026).
+    bool ZoneOuverte(Player* player, uint32 zone)
+    {
+        AreaTableEntry const* aire = sAreaTableStore.LookupEntry(zone);
+        uint32 autre = player->GetTeamId() == TEAM_ALLIANCE ? AREATEAM_HORDE : AREATEAM_ALLY;
+        return !aire || aire->team != autre;
+    }
+
     bool CibleDisponible(uint8 niveau, Cible const& c)
     {
         return c.min + 4 >= niveau && c.max <= niveau + 3;
@@ -406,7 +414,7 @@ namespace
         for (auto const& [cle, groupes] : chasses)
         {
             uint32 nombre = MonstresANiveau(groupes, niveau);
-            if (nombre >= 20)
+            if (nombre >= 20 && ZoneOuverte(player, cle.first))
                 SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("CH;{};{};{};{};{}", cle.first, cle.second, NomZone(cle.first), nombre,
                     AuTheme(CHASSE, cle.first, cle.second) ? 1 : 0));
         }
@@ -416,7 +424,7 @@ namespace
                 SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("DJ;{};{};{};{}", d->ID, Nom(d->Name), rang,
                     AuTheme(DONJON, d->ID, 0) ? 1 : 0));
         for (auto const& [entree, cible] : cibles)
-            if (CibleDisponible(niveau, cible))
+            if (CibleDisponible(niveau, cible) && ZoneOuverte(player, cible.zone))
                 SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("PR;{};{};{};{};{};{};{}", entree, cible.nom,
                     cible.classement, cible.max, NomZone(cible.zone), Coordonnees(cible), AuTheme(PRIME, cible.zone, entree) ? 1 : 0));
         for (Recette const& r : RecettesArtisan(player))
@@ -674,7 +682,7 @@ public:
     static bool HandleChasse(ChatHandler* handler, uint32 zone, uint32 famille)
     {
         Player* player = handler->GetPlayer();
-        if (!ChasseDisponible(player->GetLevel(), zone, famille))
+        if (!ChasseDisponible(player->GetLevel(), zone, famille) || !ZoneOuverte(player, zone))
             return true;
         Contrat c;
         c.type = CHASSE;
@@ -706,7 +714,7 @@ public:
     {
         Player* player = handler->GetPlayer();
         auto cible = cibles.find(entree);
-        if (cible == cibles.end() || !CibleDisponible(player->GetLevel(), cible->second))
+        if (cible == cibles.end() || !CibleDisponible(player->GetLevel(), cible->second) || !ZoneOuverte(player, cible->second.zone))
             return true;
         Contrat c;
         c.type = PRIME;
