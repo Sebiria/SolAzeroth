@@ -970,9 +970,9 @@ Ces éléments ne doivent pas être commencés avant V8, et ceux de la liste « 
   - à l'apparition du monstre, d'après le joueur le plus proche qui a l'option ;
   - toutes les 3 s pour les monstres déjà présents à 100 m (option changée, montée de niveau), seulement hors combat et en pleine santé. Couper l'option ramène les monstres remontés à leur niveau.
 - **Quêtes** : une quête de niveau inférieur au niveau du joueur moins 2 rapporte l'XP d'une quête de ce niveau. L'or des quêtes du jeu suit déjà le niveau du joueur (récompense par niveau du core). Les Marques des quêtes (7.6) suivaient déjà le niveau du joueur.
-- **Limites connues** :
-  - l'or ramassé sur les monstres reste celui de leur niveau d'origine ;
-  - les sorts des monstres gardent leur puissance d'origine : un lanceur de sorts remonté frappe moins fort qu'un vrai monstre de ce niveau.
+- **Or et sorts (demande de l'utilisateur du 29/10/2026, construits le 29/10/2026, à valider en jeu)** :
+  - l'or ramassé sur un monstre remonté est multiplié par le rapport entre l'or moyen des monstres normaux de son nouveau niveau et celui de son niveau d'origine (calculé au démarrage d'après la base). Exemple : un monstre de niveau 10 (10 pc) remonté au niveau 78 donne environ 21 pa ;
+  - ses sorts (dégâts directs, dégâts sur la durée, soins) sont multipliés par le rapport de ses dégâts de base entre les deux niveaux, comme sa mêlée. Les sorts à dégâts d'arme suivent déjà la mêlée et ne sont pas touchés deux fois.
 
 ### 9.2 Abandonné
 

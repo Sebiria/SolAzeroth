@@ -8,6 +8,9 @@
 // - À l'apparition, le niveau est choisi d'après le joueur le plus proche qui a l'option (OnBeforeCreatureSelectLevel).
 // - Toutes les 3 s, les monstres déjà présents à 100 m sont mis à jour (option changée, montée de niveau), seulement
 //   hors combat et en pleine santé. Ceux qu'on a remontés reviennent à leur niveau quand l'option est coupée.
+// - Or et sorts suivent : l'or ramassé sur un monstre remonté est multiplié par le rapport entre l'or moyen des monstres
+//   normaux de son nouveau niveau et de son niveau d'origine ; ses sorts (dégâts directs, sur la durée, soins) par le
+//   rapport des dégâts de base de ces deux niveaux, comme sa mêlée. Les sorts à dégâts d'arme suivent déjà la mêlée.
 // Addon : « 1 » ou « 0 » (préfixe SolAzerothEchelle).
 
 #include "SolAzeroth.h"
@@ -16,11 +19,16 @@
 #include "Creature.h"
 #include "DatabaseEnv.h"
 #include "GridNotifiersImpl.h"
+#include "LootMgr.h"
+#include "ObjectAccessor.h"
+#include "ObjectMgr.h"
+#include "SpellInfo.h"
 #include "Map.h"
 #include "Player.h"
 #include "DBCStores.h"
 #include "QuestDef.h"
 #include "ScriptMgr.h"
+#include <array>
 #include <list>
 
 using namespace Acore::ChatCommands;
@@ -40,7 +48,52 @@ namespace
     struct Remonte : DataMap::Base
     {
         bool oui = false;
+        uint8 origine = 0;
     };
+
+    // Rapport des dégâts de base entre le niveau actuel d'un monstre remonté et son niveau d'origine (1 sinon).
+    float Rapport(Unit* u)
+    {
+        Creature* c = u ? u->ToCreature() : nullptr;
+        if (!c)
+            return 1.0f;
+        Remonte* marque = c->CustomData.Get<Remonte>("solazeroth_echelle");
+        if (!marque || !marque->oui || !marque->origine || marque->origine >= c->GetLevel())
+            return 1.0f;
+        CreatureTemplate const* modele = c->GetCreatureTemplate();
+        float avant = sObjectMgr->GetCreatureBaseStats(marque->origine, modele->unit_class)->BaseDamage[modele->expansion];
+        float apres = sObjectMgr->GetCreatureBaseStats(c->GetLevel(), modele->unit_class)->BaseDamage[modele->expansion];
+        return avant > 0.0f && apres > avant ? apres / avant : 1.0f;
+    }
+
+    // Les dégâts d'arme suivent déjà la mêlée du monstre.
+    bool DegatsArme(SpellInfo const* sort)
+    {
+        return sort && (sort->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE) || sort->HasEffect(SPELL_EFFECT_NORMALIZED_WEAPON_DMG)
+            || sort->HasEffect(SPELL_EFFECT_WEAPON_PERCENT_DAMAGE) || sort->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL));
+    }
+
+    // Or moyen des monstres normaux par niveau (calculé une fois, d'après creature_template ; trous comblés).
+    std::array<float, DEFAULT_MAX_LEVEL + 1> const& OrMoyen()
+    {
+        static std::array<float, DEFAULT_MAX_LEVEL + 1> const moyen = []
+        {
+            std::array<float, DEFAULT_MAX_LEVEL + 1> somme{}, nombre{}, m{};
+            for (auto const& [entree, modele] : *sObjectMgr->GetCreatureTemplates())
+            {
+                uint32 niveau = (modele.minlevel + modele.maxlevel) / 2;
+                if (modele.rank != CREATURE_ELITE_NORMAL || !modele.maxgold || niveau < 1 || niveau > DEFAULT_MAX_LEVEL)
+                    continue;
+                somme[niveau] += (modele.mingold + modele.maxgold) / 2.0f;
+                nombre[niveau] += 1.0f;
+            }
+            float dernier = 0.0f;
+            for (uint32 n = 1; n <= DEFAULT_MAX_LEVEL; ++n)
+                m[n] = dernier = nombre[n] > 0.0f ? std::max(somme[n] / nombre[n], dernier) : dernier;
+            return m;
+        }();
+        return moyen;
+    }
 
     bool Actif(Player* player)
     {
@@ -141,10 +194,14 @@ public:
     {
         uint8 cible = Cible(c, JoueurProche(c));
         bool remonte = cible && niveau < cible;
+        if (remonte || c->CustomData.Get<Remonte>("solazeroth_echelle"))
+        {
+            Remonte* marque = c->CustomData.GetDefault<Remonte>("solazeroth_echelle");
+            marque->oui = remonte;
+            marque->origine = niveau;
+        }
         if (remonte)
             niveau = cible;
-        if (remonte || c->CustomData.Get<Remonte>("solazeroth_echelle"))
-            c->CustomData.GetDefault<Remonte>("solazeroth_echelle")->oui = remonte;
     }
 };
 
@@ -152,7 +209,8 @@ class solazeroth_echelle_joueur : public PlayerScript
 {
 public:
     solazeroth_echelle_joueur() : PlayerScript("solazeroth_echelle_joueur", {
-        PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_LEVEL_CHANGED, PLAYERHOOK_ON_QUEST_COMPUTE_EXP }) { }
+        PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_LEVEL_CHANGED, PLAYERHOOK_ON_QUEST_COMPUTE_EXP,
+        PLAYERHOOK_ON_BEFORE_LOOT_MONEY }) { }
 
     void OnPlayerLogin(Player* player) override
     {
@@ -192,6 +250,47 @@ public:
         float apres = XPBrute(quete, niveau, player->GetLevel());
         if (avant > 0.0f && apres > avant)
             xp = uint32(xp * apres / avant);
+    }
+
+    // Or d'un monstre remonté : celui d'un monstre normal de son nouveau niveau.
+    void OnPlayerBeforeLootMoney(Player* player, Loot* loot) override
+    {
+        if (!loot->gold || !player->GetLootGUID().IsCreatureOrVehicle())
+            return;
+        Creature* c = ObjectAccessor::GetCreature(*player, player->GetLootGUID());
+        Remonte* marque = c ? c->CustomData.Get<Remonte>("solazeroth_echelle") : nullptr;
+        if (!marque || !marque->oui || !marque->origine || c->GetLevel() > DEFAULT_MAX_LEVEL)
+            return;
+        auto const& moyen = OrMoyen();
+        float avant = moyen[marque->origine];
+        float apres = moyen[c->GetLevel()];
+        if (avant > 0.0f && apres > avant)
+            loot->gold = uint32(loot->gold * apres / avant);
+    }
+};
+
+// Sorts d'un monstre remonté : dégâts et soins au même rapport que sa mêlée.
+class solazeroth_echelle_sorts : public UnitScript
+{
+public:
+    solazeroth_echelle_sorts() : UnitScript("solazeroth_echelle_sorts", true, {
+        UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN, UNITHOOK_MODIFY_PERIODIC_DAMAGE_AURAS_TICK, UNITHOOK_MODIFY_HEAL_RECEIVED }) { }
+
+    void ModifySpellDamageTaken(Unit* /*cible*/, Unit* attaquant, int32& degats, SpellInfo const* sort) override
+    {
+        if (degats > 0 && !DegatsArme(sort))
+            degats = int32(degats * Rapport(attaquant));
+    }
+
+    void ModifyPeriodicDamageAurasTick(Unit* /*cible*/, Unit* attaquant, uint32& degats, SpellInfo const* sort) override
+    {
+        if (!DegatsArme(sort))
+            degats = uint32(degats * Rapport(attaquant));
+    }
+
+    void ModifyHealReceived(Unit* /*cible*/, Unit* soigneur, uint32& soin, SpellInfo const* /*sort*/) override
+    {
+        soin = uint32(soin * Rapport(soigneur));
     }
 };
 
@@ -244,5 +343,6 @@ void AddSC_solazeroth_echelle()
 {
     new solazeroth_echelle_creature();
     new solazeroth_echelle_joueur();
+    new solazeroth_echelle_sorts();
     new solazeroth_echelle_commandes();
 }
