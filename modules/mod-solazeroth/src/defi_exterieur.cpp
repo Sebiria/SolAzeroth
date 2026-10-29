@@ -155,6 +155,22 @@ public:
     void ModifyMeleeDamage(Unit* cible, Unit* attaquant, uint32& degats) override { Appliquer(cible, attaquant, degats); }
     void ModifySpellDamageTaken(Unit* cible, Unit* attaquant, int32& degats, SpellInfo const* /*sort*/) override { Appliquer(cible, attaquant, degats); }
     void ModifyPeriodicDamageAurasTick(Unit* cible, Unit* attaquant, uint32& degats, SpellInfo const* /*sort*/) override { Appliquer(cible, attaquant, degats); }
+
+    // Les « PV » du défi et des rangs de menace divisent les dégâts reçus par le monstre : la rage d'un coup blanc,
+    // calculée sur ces dégâts réduits, est complétée comme si le monstre avait simplement plus de vie.
+    uint32 DealDamage(Unit* attaquant, Unit* cible, uint32 degats, DamageEffectType type) override
+    {
+        Player* joueur = attaquant ? attaquant->ToPlayer() : nullptr;
+        if (type != DIRECT_DAMAGE || !degats || !joueur || !joueur->HasActivePowerType(POWER_RAGE)
+            || !cible || !cible->IsCreature() || JoueurDe(cible))
+            return degats;
+        float pv = SolAzeroth::ModificateursMenace(cible->ToCreature()).pv;
+        if (uint8 n = NiveauActif(joueur))
+            pv *= Valeur(reglages.pv, n);
+        if (pv > 1.0f)
+            joueur->RewardRage(uint32(degats * (pv - 1.0f)), 0, true);
+        return degats;
+    }
 };
 
 class solazeroth_defi_exterieur_joueur : public PlayerScript
