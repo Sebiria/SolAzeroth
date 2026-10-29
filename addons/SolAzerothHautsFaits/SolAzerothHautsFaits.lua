@@ -59,7 +59,8 @@ titre:SetText("Hauts faits du compte")
 local fermer = CreateFrame("Button", nil, cadre, "UIPanelCloseButton")
 fermer:SetPoint("TOPRIGHT", -6, -6)
 
-local resumeTexte = cadre:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+local resumeTexte = cadre:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+resumeTexte:SetTextColor(0.3, 0.18, 0.07)
 resumeTexte:SetPoint("TOPLEFT", 26, -38)
 resumeTexte:SetWidth(560)
 resumeTexte:SetJustifyH("LEFT")
@@ -114,14 +115,15 @@ for i = 1, LIGNES do
 end
 
 -- Onglet Bonus : une ligne par bonus permanent, avec sa valeur actuelle.
-local bonusTexte = cadre:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+local bonusTexte = cadre:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+bonusTexte:SetTextColor(0.3, 0.18, 0.07)
 bonusTexte:SetPoint("TOPLEFT", 160, -90)
 bonusTexte:SetWidth(420)
 bonusTexte:SetJustifyH("LEFT")
 bonusTexte:SetSpacing(8)
 
 local function Rafraichir()
-    resumeTexte:SetText(string.format("Obtenus : |cffffd100%d / %d|r     Points de talent gagnés : |cffffd100%d|r  (utilisables à ton niveau : %d)",
+    resumeTexte:SetText(string.format("Obtenus : |cff7a2e1e%d / %d|r     Points de talent gagnés : |cff7a2e1e%d|r  (utilisables à ton niveau : %d)",
         resume.obtenus, resume.total, resume.talents, resume.utilisables))
     for _, b in ipairs(boutonsCategorie) do
         if b.categorie == categorie then b:LockHighlight() else b:UnlockHighlight() end
@@ -133,7 +135,7 @@ local function Rafraichir()
         local morceaux = {}
         for _, ligne in ipairs(bonus) do
             local nom, reste = ligne:match("^(.-) : (.*)$")
-            morceaux[#morceaux + 1] = nom and ("|cffffd100" .. nom .. " :|r " .. reste) or ligne
+            morceaux[#morceaux + 1] = nom and ("|cff7a2e1e" .. nom .. " :|r " .. reste) or ligne
         end
         bonusTexte:SetText(#morceaux > 0 and table.concat(morceaux, "\n") or "Chargement...")
         bonusTexte:Show()

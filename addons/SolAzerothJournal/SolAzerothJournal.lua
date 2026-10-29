@@ -49,7 +49,8 @@ titre:SetText("Journal de collection")
 local fermer = CreateFrame("Button", nil, cadre, "UIPanelCloseButton")
 fermer:SetPoint("TOPRIGHT", -6, -6)
 
-local resumeTexte = cadre:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+local resumeTexte = cadre:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+resumeTexte:SetTextColor(0.3, 0.18, 0.07)
 resumeTexte:SetPoint("TOPLEFT", 26, -38)
 
 local caseObtenus = CreateFrame("CheckButton", "SolAzerothJournalMasquer", cadre, "UICheckButtonTemplate")
@@ -78,7 +79,7 @@ for i = 1, LIGNES_INSTANCES do
     b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
     b.fond = b:CreateTexture(nil, "BACKGROUND")
     b.fond:SetAllPoints()
-    b.fond:SetTexture(0, 0, 0, 0.35)
+    b.fond:SetTexture(0, 0, 0, 0.6)
     b.nom = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     b.nom:SetPoint("LEFT", 4, 0)
     b.nom:SetWidth(140)
@@ -97,7 +98,8 @@ local contenu = CreateFrame("Frame", nil, zone)
 contenu:SetSize(480, 450)
 zone:SetScrollChild(contenu)
 
-local vide = cadre:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+local vide = cadre:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+vide:SetTextColor(0.3, 0.18, 0.07)
 vide:SetPoint("CENTER", zone, "CENTER")
 vide:SetText("Choisis une instance à gauche.")
 
@@ -105,6 +107,7 @@ local titresBoss, cases = {}, {}
 local function TitreBoss(i)
     if not titresBoss[i] then
         local t = contenu:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        t:SetTextColor(0.42, 0.14, 0.06)
         t:SetJustifyH("LEFT")
         t:SetWidth(460)
         titresBoss[i] = t
@@ -184,7 +187,7 @@ end
 
 local affichees = {}
 local function RafraichirInstances()
-    resumeTexte:SetText(string.format("Collection du compte : |cffffd100%d / %d|r objets", resume.obtenus, resume.total))
+    resumeTexte:SetText(string.format("Collection du compte : |cff7a2e1e%d / %d|r objets", resume.obtenus, resume.total))
     if raids then boutonRaids:LockHighlight() boutonDonjons:UnlockHighlight()
     else boutonDonjons:LockHighlight() boutonRaids:UnlockHighlight() end
     affichees = {}

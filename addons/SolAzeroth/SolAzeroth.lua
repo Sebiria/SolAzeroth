@@ -114,23 +114,17 @@ parchemin:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Parchment-Hori
 parchemin:SetPoint("TOPLEFT", 4, -4)
 parchemin:SetPoint("BOTTOMRIGHT", -4, 4)
 
--- En-tête des pages sur parchemin : lettrine et titre
--- Positions fixes depuis le haut du parchemin : ancré à la lettrine, le titre sortait du cadre.
--- Sur un cadre à part, au-dessus des pages : leur fond recouvrait la lettrine.
+-- En-tête des pages sur parchemin : titre complet, sur un cadre à part au-dessus des pages (leur fond le recouvrait).
+-- Pas de lettrine : dans ce client, la grande lettre isolée ne s'affichait pas (titre lu « odex », retour du 29/10/2026).
 local entetePage = CreateFrame("Frame", nil, contenu)
 entetePage:SetAllPoints()
 entetePage:SetFrameLevel(contenu:GetFrameLevel() + 30)
-local lettrine = entetePage:CreateFontString(nil, "OVERLAY")
--- 30 au plus : en 34, la lettrine ne s'affichait pas.
-lettrine:SetFont("Fonts\\MORPHEUS.TTF", 30)
-lettrine:SetTextColor(0.48, 0.18, 0.1)
-lettrine:SetPoint("TOPLEFT", 18, -10)
 local titrePage = entetePage:CreateFontString(nil, "OVERLAY")
-titrePage:SetFont("Fonts\\MORPHEUS.TTF", 20)
-titrePage:SetTextColor(0.23, 0.11, 0.04)
-titrePage:SetPoint("TOPLEFT", 46, -16)
+titrePage:SetFont("Fonts\\MORPHEUS.TTF", 22)
+titrePage:SetTextColor(0.42, 0.14, 0.06)
+titrePage:SetPoint("TOPLEFT", 18, -12)
 local sousTitre = entetePage:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-sousTitre:SetTextColor(0.42, 0.29, 0.15)
+sousTitre:SetTextColor(0.3, 0.18, 0.07)
 sousTitre:SetPoint("TOPLEFT", titrePage, "BOTTOMLEFT", 0, -2)
 local filet = contenu:CreateTexture(nil, "ARTWORK")
 filet:SetTexture(0.55, 0.42, 0.24, 0.8)
@@ -611,11 +605,10 @@ Selectionner = function(numSection, numPage, depuisAddon)
     local surParchemin = section.parchemin
     Montrer(parchemin, surParchemin)
     contenu:SetBackdropColor(0.08, 0.06, 0.04, surParchemin and 1 or 0.9)
-    for _, r in ipairs({ lettrine, titrePage, sousTitre, filet }) do Montrer(r, surParchemin) end
+    for _, r in ipairs({ titrePage, sousTitre, filet }) do Montrer(r, surParchemin) end
     Montrer(boutonNatif, page.hautsFaits or false)
     if surParchemin then
-        lettrine:SetText(page.nom:sub(1, 1))
-        titrePage:SetText(page.nom:sub(2))
+        titrePage:SetText(page.nom)
         sousTitre:SetText(page.sousTitre or "")
     end
     vide:SetText(page.vide or "")

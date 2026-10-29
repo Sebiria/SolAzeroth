@@ -1127,6 +1127,11 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
       - Intendant : il ne restait que « Niveau 45 ». Le nom venait du cache Sol'Azeroth, donc l'objet n'était plus chargé par le client, et son emplacement et son type restaient inconnus. L'objet est maintenant chargé tant que `GetItemInfo` ne répond pas ;
       - la lettrine ne s'affichait toujours pas. Sa police passe de 34 à 30 (hypothèse : taille trop grande pour le client), à confirmer en jeu.
   - **Validée en jeu par l'utilisateur le 29/10/2026.** Retour : objectifs à rendre sans ambiguïté. Migration 055 : les hauts faits disent maintenant « au rang de menace 3 **ou plus** » et « en défi extérieur de niveau 5 **ou plus** », comme les contrats (« rang de menace X ou plus »). Les hauts faits natifs et le patch sont régénérés avec ces textes.
+  - **Retour du 29/10/2026 sur la Collection**, corrigé :
+    - la première lettre du titre ne s'affichait pas (« odex et Renom »). La lettrine est abandonnée : le titre s'écrit en entier en Morpheus rouge brique ;
+    - les textes posés directement sur le parchemin étaient gris pâle ou blancs, donc à peine lisibles. Ils passent en brun foncé, les chiffres en rouge brique, les titres dorés en rouge brique ;
+    - dans les lignes à fond sombre, les gris (« À venir », heures, points) deviennent beige clair ;
+    - les boutons d'instance du journal ont un fond plus sombre.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
     - étape 6, connexion sans mot de passe : elle demanderait d'écrire le mot de passe dans un fichier du client ou de changer le serveur de connexion. **Décision à prendre par l'utilisateur.**

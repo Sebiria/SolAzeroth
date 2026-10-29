@@ -71,6 +71,7 @@ pageRenom:Hide()
 local barresFins = {}
 for i, f in ipairs(FINS) do
     local nom = pageCodex:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    nom:SetTextColor(0.42, 0.14, 0.06)
     nom:SetPoint("TOPLEFT", 26, -40 - (i - 1) * 24)
     nom:SetWidth(170)
     nom:SetJustifyH("LEFT")
@@ -81,7 +82,8 @@ for i, f in ipairs(FINS) do
     barresFins[i] = b
 end
 
-local aide = pageCodex:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+local aide = pageCodex:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+aide:SetTextColor(0.3, 0.18, 0.07)
 aide:SetPoint("TOPLEFT", 26, -112)
 aide:SetWidth(600)
 aide:SetJustifyH("LEFT")
@@ -129,7 +131,7 @@ local function Rafraichir()
         l.donnees = d
         if d then
             local f = FINS[d.fin] or FINS[3]
-            l.nom:SetText(string.format("%s |cff999999(%d h, fin « %s »)|r", d.nom, d.heures, f.nom))
+            l.nom:SetText(string.format("%s |cffc9b88f(%d h, fin « %s »)|r", d.nom, d.heures, f.nom))
             l.detail:SetText(d.detail)
             l.barre:SetValue(d.pourcent)
             l.barre:SetStatusBarColor(unpack(d.pourcent >= 100 and { 0.2, 0.8, 0.2 } or f.couleur))
@@ -150,14 +152,16 @@ end
 local renom = { rang = 0, points = 0, suivant = 100, affixe = 0, rangs = {} }
 local renomEnCours = {}
 local AFFIXES = { [0] = "celui de la semaine", [1] = "Fortifié (monstres hors boss plus résistants et plus forts)", [2] = "Tyrannique (boss plus résistants et plus forts)" }
-local ETATS = { [0] = "|cff808080À venir|r", [1] = "|cff40ff40Acquis|r", [3] = "|cff40ff40Réclamé|r", [4] = "|cff808080Plus tard|r" }
+local ETATS = { [0] = "|cffc9b88fÀ venir|r", [1] = "|cff40ff40Acquis|r", [3] = "|cff40ff40Réclamé|r", [4] = "|cffc9b88fPlus tard|r" }
 
 local renomTitre = pageRenom:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+renomTitre:SetTextColor(0.42, 0.14, 0.06)
 renomTitre:SetPoint("TOPLEFT", 26, -40)
 local renomBarre = Barre(pageRenom, 600, 16)
 renomBarre:SetPoint("TOPLEFT", 26, -66)
 renomBarre:SetStatusBarColor(1, 0.82, 0)
-local renomAide = pageRenom:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+local renomAide = pageRenom:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+renomAide:SetTextColor(0.3, 0.18, 0.07)
 renomAide:SetPoint("TOPLEFT", 26, -90)
 renomAide:SetWidth(600)
 renomAide:SetJustifyH("LEFT")
@@ -200,7 +204,7 @@ local function RafraichirRenom()
     for i, l in ipairs(lignesRenom) do
         local r = renom.rangs[i]
         if r then
-            l.nom:SetText(string.format("Rang %d : %s |cff999999(%d points)|r", r.rang, r.nom, r.seuil))
+            l.nom:SetText(string.format("Rang %d : %s |cffc9b88f(%d points)|r", r.rang, r.nom, r.seuil))
             l.texte:SetText(r.texte)
             local acquis = r.etat == 1 or r.etat == 2 or r.etat == 3
             l:SetBackdropColor(acquis and 0.1 or 0.08, acquis and 0.25 or 0.08, acquis and 0.1 or 0.08, 0.85)
