@@ -817,6 +817,8 @@ public:
             "SELECT c.zoneId, t.type, t.minlevel, t.maxlevel, t.faction, COUNT(*) FROM creature c "
             "JOIN creature_template t ON t.entry = c.id WHERE c.map IN (0, 1, 530, 571) AND c.zoneId <> 0 "
             "AND t.`rank` = 0 AND t.type IN (1, 2, 3, 4, 5, 6, 7, 9) AND t.npcflag = 0 "
+            // ni inattaquable, ni inciblable, ni insensible aux joueurs ; ni civil, ni déclencheur
+            "AND (t.unit_flags & 0x02000102) = 0 AND (t.flags_extra & 0x82) = 0 "
             "GROUP BY c.zoneId, t.type, t.minlevel, t.maxlevel, t.faction"))
         {
             do
@@ -832,6 +834,36 @@ public:
                 chasses[{ f[0].Get<uint32>(), f[1].Get<uint32>() }].push_back(
                     { f[2].Get<uint8>(), f[3].Get<uint8>(), uint32(f[5].Get<uint64>()) });
             } while (r->NextRow());
+        }
+        // Monstres égarés : un groupe loin du niveau typique (médian) de sa zone ne compte pas, comme les faucons
+        // de niveau 5 à 7 du Fjord hurlant (retour de l'utilisateur du 30/10/2026).
+        std::map<uint32, std::vector<std::pair<uint32, uint32>>> niveaux;   // zone -> (niveau moyen, nombre)
+        for (auto const& [cle, groupes] : chasses)
+            for (Groupe const& g : groupes)
+                niveaux[cle.first].push_back({ (g.min + g.max) / 2u, g.nombre });
+        std::map<uint32, uint32> median;
+        for (auto& [zone, liste] : niveaux)
+        {
+            std::sort(liste.begin(), liste.end());
+            uint32 total = 0, cumul = 0;
+            for (auto const& [n, nombre] : liste)
+                total += nombre;
+            for (auto const& [n, nombre] : liste)
+                if ((cumul += nombre) * 2 >= total)
+                {
+                    median[zone] = n;
+                    break;
+                }
+        }
+        for (auto it = chasses.begin(); it != chasses.end();)
+        {
+            uint32 m = median[it->first.first];
+            std::erase_if(it->second, [m](Groupe const& g)
+            {
+                uint32 n = (g.min + g.max) / 2u;
+                return n + 10 < m || n > m + 10;
+            });
+            it = it->second.empty() ? chasses.erase(it) : std::next(it);
         }
 
         if (QueryResult r = WorldDatabase.Query("SELECT DISTINCT lastEncounterDungeon FROM instance_encounters WHERE lastEncounterDungeon > 0"))
