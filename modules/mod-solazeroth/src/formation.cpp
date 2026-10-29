@@ -701,6 +701,35 @@ public:
             player->UpdateSkillsToMaxSkillsForLevel();
             ChatHandler(player->GetSession()).SendSysMessage("Maîtrises d'armes et d'armures réparées.");
         }
+        RaciauxManquants(player);
+    }
+
+    // Raciaux à une version par classe (Torrent arcanique, Don des Naaru, Fureur sanguinaire) : le jeu ne les donne
+    // qu'aux classes qui existaient pour cette race. Une combinaison ouverte par mod-arac (elfe de sang guerrier…) reçoit
+    // la version la plus proche de sa classe (retour de l'utilisateur, 29/10/2026).
+    static void RaciauxManquants(Player* player)
+    {
+        struct Racial { uint8 race; std::vector<uint32> versions; uint32 physique, magique, hybride; };
+        static std::vector<Racial> const RACIAUX =
+        {
+            { RACE_BLOODELF, { 28730, 25046, 50613 }, 28730, 28730, 28730 },                 // version mana : silence
+            { RACE_DRAENEI, { 28880, 59542, 59543, 59544, 59545, 59547, 59548 }, 28880, 59548, 59547 },
+            { RACE_ORC, { 20572, 33697, 33702 }, 20572, 33702, 33697 },
+        };
+        for (Racial const& r : RACIAUX)
+        {
+            if (player->getRace() != r.race)
+                continue;
+            bool connu = false;
+            for (uint32 sort : r.versions)
+                connu = connu || player->HasSpell(sort);
+            if (connu)
+                continue;
+            uint8 classe = player->getClass();
+            uint32 sort = (classe == CLASS_WARRIOR || classe == CLASS_ROGUE || classe == CLASS_HUNTER || classe == CLASS_DEATH_KNIGHT)
+                ? r.physique : (classe == CLASS_PALADIN || classe == CLASS_DRUID || classe == CLASS_SHAMAN) ? r.hybride : r.magique;
+            player->learnSpell(sort, false);
+        }
     }
 };
 
