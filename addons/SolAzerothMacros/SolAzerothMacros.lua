@@ -153,7 +153,7 @@ local function Champ(largeur, hauteur, x, y, multiligne)
 end
 
 -- Liste des macros existantes (colonne de gauche)
-Texte("GameFontNormal", "Tes macros", 24, -36)
+Texte("GameFontNormal", "Tes macros (glisse-les sur tes barres)", 24, -36)
 local listeMacros = {}
 local pageMacros = 1
 local LIGNES_MACROS = 14
@@ -172,6 +172,11 @@ for i = 1, LIGNES_MACROS do
     b.choisi = b:CreateTexture(nil, "BACKGROUND")
     b.choisi:SetAllPoints()
     b.choisi:SetTexture(1, 0.82, 0, 0.25)
+    -- Glisser la macro vers une barre d'action (hors combat).
+    b:RegisterForDrag("LeftButton")
+    b:SetScript("OnDragStart", function(self)
+        if self.indice and not InCombatLockdown() then PickupMacro(self.indice) end
+    end)
     listeMacros[i] = b
 end
 local macrosPrec = Bouton("<", 30, 22, -424, function() pageMacros = pageMacros - 1 SolAzerothMacrosAfficher() end)
@@ -206,11 +211,18 @@ end
 -- Grille d'icônes (colonne de droite, en bas)
 Texte("GameFontNormal", "Icône", 236, -236)
 local champRecherche = Champ(150, 24, 300, -230)
-local rechercheAide = Texte("GameFontDisableSmall", "recherche (nom anglais : sword, fire…)", 456, -238)
+Texte("GameFontDisableSmall", "recherche (nom anglais : sword, fire…)", 456, -238)
 
-local menuCategorie = CreateFrame("Frame", "SolAzerothMacrosCategorie", cadre, "UIDropDownMenuTemplate")
-menuCategorie:SetPoint("TOPLEFT", 216, -256)
-UIDropDownMenu_SetWidth(menuCategorie, 170)
+-- Catégories : un panneau de boutons sur trois colonnes, posé sur la grille (un menu déroulant sortait de l'écran).
+local boutonCategorie = Bouton("Catégorie : Toutes", 220, 232, -260, function() end)
+local panneau = CreateFrame("Frame", nil, cadre)
+panneau:SetPoint("TOPLEFT", 232, -286)
+panneau:SetSize(510, 276)
+panneau:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                      tile = true, tileSize = 16, edgeSize = 12, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+panneau:SetBackdropColor(0.05, 0.05, 0.05, 0.97)
+panneau:EnableMouse(true)
+panneau:Hide()
 
 local grille = {}
 for i = 1, PAR_PAGE do
@@ -250,21 +262,27 @@ local function Filtrer()
     page = 1
 end
 
-UIDropDownMenu_Initialize(menuCategorie, function()
-    for i, c in ipairs(CATEGORIES) do
-        local info = UIDropDownMenu_CreateInfo()
-        info.text = c[1]
-        info.checked = (i == categorie)
-        info.func = function()
-            categorie = i
-            UIDropDownMenu_SetText(menuCategorie, c[1])
-            Filtrer()
-            SolAzerothMacrosAfficher()
-        end
-        UIDropDownMenu_AddButton(info)
-    end
+local LIGNES_CATEGORIES = math.ceil(#CATEGORIES / 3)
+for i, c in ipairs(CATEGORIES) do
+    local b = CreateFrame("Button", nil, panneau)
+    b:SetSize(162, 20)
+    b:SetPoint("TOPLEFT", 10 + math.floor((i - 1) / LIGNES_CATEGORIES) * 166, -10 - ((i - 1) % LIGNES_CATEGORIES) * 21)
+    b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+    local t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    t:SetPoint("LEFT", 6, 0)
+    t:SetText(c[1])
+    b:SetScript("OnClick", function()
+        categorie = i
+        boutonCategorie:SetText("Catégorie : " .. c[1])
+        panneau:Hide()
+        Filtrer()
+        SolAzerothMacrosAfficher()
+    end)
+end
+boutonCategorie:SetScript("OnClick", function()
+    if panneau:IsShown() then panneau:Hide() else panneau:Show() end
 end)
-UIDropDownMenu_SetText(menuCategorie, CATEGORIES[1][1])
+panneau:SetFrameLevel(cadre:GetFrameLevel() + 10)
 
 champRecherche:SetScript("OnTextChanged", function(self)
     recherche = strtrim(self:GetText() or ""):lower()
@@ -307,6 +325,7 @@ function SolAzerothMacrosAfficher()
         if nom then
             b.icone:SetTexture(texture)
             b.nom:SetText(nom .. (indice > MACROS_COMPTE and " |cff8080ff(perso)|r" or ""))
+            b.indice = indice
             b:SetScript("OnClick", function() Choisir(indice) end)
             if indice == selection.macro then b.choisi:Show() else b.choisi:Hide() end
             b:Show()
