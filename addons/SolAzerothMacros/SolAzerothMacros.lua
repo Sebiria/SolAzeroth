@@ -388,7 +388,14 @@ local function Enregistrer()
     if nom == "" then return Dire("Il faut un nom.", true) end
     local corps = champTexte:GetText() or ""
     if selection.macro then
-        local index = EditMacro(selection.macro, nom, selection.icone, corps)
+        -- Sans nouvelle icône choisie, on renvoie l'actuelle : une icône vide effaçait celle de la macro.
+        local icone = selection.icone or IndiceIcone(select(2, GetMacroInfo(selection.macro)))
+        local index
+        if icone then
+            index = EditMacro(selection.macro, nom, icone, corps)
+        else
+            index = EditMacro(selection.macro, nil, nil, corps)
+        end
         selection.macro = index or selection.macro
         Dire("Macro enregistrée.")
     else
