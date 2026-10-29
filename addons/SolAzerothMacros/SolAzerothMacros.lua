@@ -262,11 +262,27 @@ local function Filtrer()
     page = 1
 end
 
+-- Affichage par ordre alphabétique (accents ignorés), « Toutes » en tête, colonne par colonne. L'ordre de la table
+-- CATEGORIES reste celui de la recherche des motifs.
+local function CleTri(texte)
+    local cle = texte:lower()
+    for accent, lettre in pairs({ ["à"] = "a", ["â"] = "a", ["é"] = "e", ["è"] = "e", ["ê"] = "e", ["î"] = "i",
+                                  ["ô"] = "o", ["û"] = "u", ["ç"] = "c", ["É"] = "e" }) do
+        cle = cle:gsub(accent, lettre)
+    end
+    return cle
+end
+local ordre = {}
+for i = 2, #CATEGORIES do ordre[#ordre + 1] = i end
+table.sort(ordre, function(a, b) return CleTri(CATEGORIES[a][1]) < CleTri(CATEGORIES[b][1]) end)
+table.insert(ordre, 1, 1)
+
 local LIGNES_CATEGORIES = math.ceil(#CATEGORIES / 3)
-for i, c in ipairs(CATEGORIES) do
+for place, i in ipairs(ordre) do
+    local c = CATEGORIES[i]
     local b = CreateFrame("Button", nil, panneau)
     b:SetSize(162, 20)
-    b:SetPoint("TOPLEFT", 10 + math.floor((i - 1) / LIGNES_CATEGORIES) * 166, -10 - ((i - 1) % LIGNES_CATEGORIES) * 21)
+    b:SetPoint("TOPLEFT", 10 + math.floor((place - 1) / LIGNES_CATEGORIES) * 166, -10 - ((place - 1) % LIGNES_CATEGORIES) * 21)
     b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
     local t = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     t:SetPoint("LEFT", 6, 0)
