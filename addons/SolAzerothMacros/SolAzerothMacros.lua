@@ -388,16 +388,15 @@ local function Enregistrer()
     local nom = strtrim(champNom:GetText() or "")
     if nom == "" then return Dire("Il faut un nom.", true) end
     local corps = champTexte:GetText() or ""
+    -- Comme la fenêtre des macros du jeu (Blizzard_MacroUI) : nom et icône d'abord, sans texte, puis le texte seul.
+    -- En un seul appel, l'icône restait vide (essai en jeu du 29/10/2026).
     if selection.macro then
-        -- Sans nouvelle icône choisie, on renvoie l'actuelle : une icône vide effaçait celle de la macro.
+        -- Sans nouvelle icône choisie, on renvoie l'actuelle.
         local icone = selection.icone or IndiceIcone(select(2, GetMacroInfo(selection.macro)))
-        local index
         if icone then
-            index = EditMacro(selection.macro, nom, icone, corps)
-        else
-            index = EditMacro(selection.macro, nil, nil, corps)
+            selection.macro = EditMacro(selection.macro, nom, icone) or selection.macro
         end
-        selection.macro = index or selection.macro
+        EditMacro(selection.macro, nil, nil, corps)
         Dire("Macro enregistrée.")
     else
         if not selection.icone then return Dire("Choisis une icône dans la grille.", true) end
@@ -405,7 +404,8 @@ local function Enregistrer()
         if (parPerso:GetChecked() and perso >= 18) or (not parPerso:GetChecked() and compte >= MACROS_COMPTE) then
             return Dire("Plus de place pour ce type de macro : supprimes-en une ou change la case « Propre à ce personnage ».", true)
         end
-        selection.macro = CreateMacro(nom, selection.icone, corps, parPerso:GetChecked() and 1 or nil)
+        selection.macro = CreateMacro(nom, selection.icone, nil, parPerso:GetChecked() and 1 or nil)
+        if selection.macro then EditMacro(selection.macro, nil, nil, corps) end
         Dire("Macro créée. « Sur la barre » pour la poser.")
     end
     selection.icone = nil
