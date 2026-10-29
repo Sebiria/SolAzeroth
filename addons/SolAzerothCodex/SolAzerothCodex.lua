@@ -95,7 +95,7 @@ for i = 1, LIGNES do
     local l = CreateFrame("Frame", nil, pageCodex)
     l:SetSize(610, HAUTEUR - 3)
     l:SetPoint("TOPLEFT", 24, -130 - (i - 1) * HAUTEUR)
-    l:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    l:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
                     edgeSize = 10, insets = { left = 2, right = 2, top = 2, bottom = 2 } })
     l:SetBackdropColor(0.1, 0.1, 0.1, 0.8)
     l.nom = l:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -172,7 +172,7 @@ for i = 1, 10 do
     local l = CreateFrame("Frame", nil, pageRenom)
     l:SetSize(610, 40)
     l:SetPoint("TOPLEFT", 24, -110 - (i - 1) * 43)
-    l:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    l:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
                     edgeSize = 10, insets = { left = 2, right = 2, top = 2, bottom = 2 } })
     l.nom = l:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     l.nom:SetPoint("TOPLEFT", 8, -5)

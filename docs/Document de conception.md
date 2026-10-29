@@ -1135,6 +1135,7 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
   - **Second retour du 29/10/2026 (capture du Codex)**, corrigé :
     - les lignes du Codex, du Renom et des hauts faits du compte laissaient voir le parchemin, car leur fond d'infobulle est à moitié transparent. Elles ont maintenant un **fond sombre plein**, sur lequel l'or, le blanc et le beige se lisent ;
     - le titre de page passe en Friz Quadrata, plus épaisse que Morpheus, et en rouge brique plus foncé. Même rouge pour les titres posés sur le parchemin.
+  - **Troisième retour du 29/10/2026 (capture des hauts faits du compte)**, corrigé : les descriptions et « +1 point de talent » étaient brun foncé sur fond sombre. La fenêtre unique passe à l'encre brune tous les textes des pages sur parchemin ; elle n'éclaircit que les lignes à fond d'infobulle. Le fond sombre plein les faisait sortir de cet habillage. Les lignes du Codex, du Renom et des hauts faits reprennent leur fond d'infobulle et deviennent des lignes claires à encre brune, comme les cartes de spécialisation. À revoir en jeu.
 - **Défis du personnage (retour du 29/10/2026)** : le choix se fermait au niveau 2. Il se ferme maintenant au **premier point d'expérience** (`lua_scripts/defis.lua`, `Eligible`). Le chevalier de la mort le garde au niveau 55 de départ, tant qu'il n'a pas d'expérience. « Plus tard » ne repousse donc le choix que jusqu'au premier gain d'expérience.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
