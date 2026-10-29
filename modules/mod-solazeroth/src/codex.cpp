@@ -7,7 +7,8 @@
 // - meilleur résultat du compte, tous personnages confondus.
 // Addon SolAzerothCodex (préfixe SOLCODEX) : « .solcodex » -> « L;fin;nom;heures;pourcent;détail » pour chaque ligne,
 //   puis « FINS;histoire;maître;cent ».
-// Enregistre aussi les raids terminés (solazeroth_raids_reussis) et les élites rares tuées (compteur « elites_rares »).
+// Enregistre aussi les raids terminés (solazeroth_raids_reussis) et les élites rares tuées (solazeroth_rares_tues, une
+// ligne par créature différente).
 // Les hauts faits des fins (critère 6, hauts_faits.cpp) lisent PourcentFinCodex.
 
 #include "SolAzeroth.h"
@@ -82,17 +83,20 @@ namespace
 
     float Part(uint32 fait, uint32 total) { return total ? std::min(1.0f, float(fait) / float(total)) : 0.0f; }
 
-    // Part de l'expérience vers le niveau 80 (le chevalier de la mort commence au niveau 55).
+    // Part des niveaux vers le niveau 80, la barre du niveau en cours comprise (le chevalier de la mort commence au
+    // niveau 55). Calibrage final (29/10/2026) : avant, c'était la part de l'XP, qui n'affichait que 14 % au niveau 60
+    // alors que la moitié du temps de montée était faite ; la barre doit avancer chaque soir.
     float PartExperience(uint8 classe, uint8 niveau, uint32 xp)
     {
         if (xpCumul.size() <= 80)
             return 0.0f;
-        uint64 depart = classe == CLASS_DEATH_KNIGHT ? xpCumul[55] : 0;
+        uint8 depart = classe == CLASS_DEATH_KNIGHT ? 55 : 1;
         niveau = std::clamp<uint8>(niveau, 1, 80);
-        uint64 actuel = niveau >= 80 ? xpCumul[80] : xpCumul[niveau] + xp;
-        if (actuel <= depart)
-            return 0.0f;
-        return std::min(1.0f, float(double(actuel - depart) / double(xpCumul[80] - depart)));
+        if (niveau >= 80)
+            return 1.0f;
+        uint64 besoin = xpCumul[niveau + 1] - xpCumul[niveau];
+        float avance = (niveau - depart) + (besoin ? std::min(1.0f, float(double(xp) / double(besoin))) : 0.0f);
+        return std::clamp(avance / float(80 - depart), 0.0f, 1.0f);
     }
 
     // Réputation de départ d'une faction pour une race et une classe (comme le jeu).
@@ -160,6 +164,9 @@ namespace
                 compteurs[(*r)[0].Get<std::string>()] = (*r)[1].Get<uint32>();
             while (r->NextRow());
         }
+        // Élites rares : créatures différentes tuées (calibrage final : tuer 100 fois le même rare ne compte plus 100).
+        if (QueryResult r = CharacterDatabase.Query("SELECT COUNT(*) FROM solazeroth_rares_tues WHERE account = {}", compte))
+            compteurs["elites_rares"] = uint32((*r)[0].Get<uint64>());
 
         std::set<uint32> sorts = Liste(CharacterDatabase.Query("SELECT DISTINCT s.spell FROM character_spell s "
             "JOIN characters c ON c.guid = s.guid WHERE c.account = {}", compte));
@@ -408,7 +415,8 @@ public:
             return;
         uint32 rang = tue->GetCreatureTemplate()->rank;
         if (rang == CREATURE_ELITE_RARE || rang == CREATURE_ELITE_RAREELITE)
-            SolAzeroth::AjouterCompteur(player, "elites_rares");
+            CharacterDatabase.Execute("INSERT IGNORE INTO solazeroth_rares_tues (account, entry) VALUES ({}, {})",
+                player->GetSession()->GetAccountId(), tue->GetEntry());
     }
 };
 

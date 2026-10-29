@@ -14,14 +14,17 @@
 #    SolAzeroth.Menace.DonjonsPourDebloquer Nombre de donjons différents à réussir au rang N pour débloquer N + 1
 #    SolAzeroth.Menace.PlafondClassiqueBC  Rang maximal des donjons Classic et Burning Crusade
 #    SolAzeroth.Menace.PlafondWotLK        Rang maximal des donjons Wrath of the Lich King
+#    SolAzeroth.Menace.PlafondRaid         Rang maximal des raids (calibrage final, 29/10/2026 : rang de menace en raid,
+#                                          sans affixes de mécanique ; les réussites de raid ne débloquent pas de rang)
 
 SolAzeroth.Menace.Enable = 1
 SolAzeroth.Menace.PVParRang = 0.12
-SolAzeroth.Menace.DegatsParRang = 0.08
-SolAzeroth.Menace.OrParRang = 0.10
+SolAzeroth.Menace.DegatsParRang = 0.10
+SolAzeroth.Menace.OrParRang = 0.15
 SolAzeroth.Menace.DonjonsPourDebloquer = 2
 SolAzeroth.Menace.PlafondClassiqueBC = 5
 SolAzeroth.Menace.PlafondWotLK = 10
+SolAzeroth.Menace.PlafondRaid = 5
 
 ###################################################################################################
 # AFFIXES (section 4.4) : Fortifié les semaines paires, Tyrannique les semaines impaires
@@ -40,17 +43,20 @@ SolAzeroth.Affixes.Tyrannique.Degats = 0.15
 #
 #    SolAzeroth.Solo.<Classe>.<Arbre> = "dégâts soins réduction"
 #        Trois pourcentages : dégâts infligés en plus, soins reçus en plus, dégâts subis en moins.
-#        La spécialisation est l'arbre de talents qui a le plus de points. Absent = "0 0 0".
+#        La spécialisation est l'arbre de talents de sa propre classe qui a le plus de points (les talents d'une autre
+#        classe ne comptent pas). Absent = "0 0 0".
+#        Calibrage final (29/10/2026) : 15 % pour toutes les spés tank ; plus de bonus pour les soigneurs (le soin est un
+#        confort pris en arbre secondaire, on ne monte pas de niveau en soigneur).
 
-SolAzeroth.Solo.Guerrier.Protection = "30 0 0"
-SolAzeroth.Solo.Paladin.Sacre = "50 0 0"
-SolAzeroth.Solo.Paladin.Protection = "25 0 0"
-SolAzeroth.Solo.Pretre.Discipline = "40 0 0"
-SolAzeroth.Solo.Pretre.Sacre = "50 0 0"
+SolAzeroth.Solo.Guerrier.Protection = "15 0 0"
+SolAzeroth.Solo.Paladin.Sacre = "0 0 0"
+SolAzeroth.Solo.Paladin.Protection = "15 0 0"
+SolAzeroth.Solo.Pretre.Discipline = "0 0 0"
+SolAzeroth.Solo.Pretre.Sacre = "0 0 0"
 SolAzeroth.Solo.ChevalierMort.Sang = "15 0 0"
-SolAzeroth.Solo.Chaman.Restauration = "50 0 0"
-SolAzeroth.Solo.Druide.Farouche = "10 0 0"
-SolAzeroth.Solo.Druide.Restauration = "50 0 0"
+SolAzeroth.Solo.Chaman.Restauration = "0 0 0"
+SolAzeroth.Solo.Druide.Farouche = "15 0 0"
+SolAzeroth.Solo.Druide.Restauration = "0 0 0"
 
 ###################################################################################################
 # AJUSTEMENTS PAR CRÉATURE (valables partout, rang de menace ou non)
@@ -85,34 +91,34 @@ SolAzeroth.Bonus.PourcentParRang = 0.03
 
 SolAzeroth.DefisBoss.Enable = 1
 SolAzeroth.DefisBoss.Marques = 3
-SolAzeroth.DefisBoss.Chrono = 60
+SolAzeroth.DefisBoss.Chrono = 90
 SolAzeroth.DefisBoss.SeuilPV = 50
 
 #    SolAzeroth.Specialisations.Prix  Prix des emplacements de spécialisation 2 à 5, en pièces d'or
 
-SolAzeroth.Specialisations.Prix = "50 250 1000 2500"
+SolAzeroth.Specialisations.Prix = "50 250 1000 4000"
 
-#    SolAzeroth.DefiExterieur.PV       Résistance des monstres extérieurs, par niveau (1 à 5) : dégâts subis divisés par la valeur
+#    SolAzeroth.DefiExterieur.PV       Résistance des monstres extérieurs, par niveau (1 à 7) : dégâts subis divisés par la valeur
 #    SolAzeroth.DefiExterieur.Degats   Dégâts des monstres extérieurs, par niveau : multipliés par la valeur
 #    SolAzeroth.DefiExterieur.XP       XP gagnée hors instance, par niveau : multipliée par la valeur
 #    SolAzeroth.DefiExterieur.Or       Or ramassé hors instance, par niveau : multiplié par la valeur
 #    SolAzeroth.DefiExterieur.Marques  Marques des quêtes rendues, par niveau : multipliées par la valeur
 #    Le nombre de niveaux est celui de la plus courte liste (10 au plus). Niveau 5 : deux monstres à la fois demandent de la tactique.
 
-SolAzeroth.DefiExterieur.PV = "1.15 1.35 1.55 1.75 2.00"
-SolAzeroth.DefiExterieur.Degats = "1.10 1.25 1.45 1.70 2.00"
-SolAzeroth.DefiExterieur.XP = "1.10 1.20 1.35 1.50 1.75"
-SolAzeroth.DefiExterieur.Or = "1.10 1.20 1.35 1.50 1.75"
-SolAzeroth.DefiExterieur.Marques = "1.10 1.20 1.30 1.40 1.50"
+SolAzeroth.DefiExterieur.PV = "1.15 1.35 1.55 1.75 2.00 2.30 2.60"
+SolAzeroth.DefiExterieur.Degats = "1.10 1.25 1.45 1.70 2.00 2.30 2.60"
+SolAzeroth.DefiExterieur.XP = "1.10 1.20 1.35 1.50 1.75 1.90 2.00"
+SolAzeroth.DefiExterieur.Or = "1.10 1.20 1.35 1.50 1.75 1.90 2.00"
+SolAzeroth.DefiExterieur.Marques = "1.10 1.20 1.30 1.40 1.50 1.60 1.70"
 
 #    SolAzeroth.Intendant.MarquesBase       Prix en Marques d'un objet d'intendant : base + MarquesParNiveau × niveau requis
 #    SolAzeroth.Intendant.MarquesParNiveau
 #    SolAzeroth.Intendant.OrFacteur         Prix en or : niveau requis² × facteur, en pièces de cuivre (25 : 4 po au niveau 40)
 #    SolAzeroth.Intendant.Rang              Rang de menace des objets achetés (enchantement de bonus)
 
-SolAzeroth.Intendant.MarquesBase = 40
-SolAzeroth.Intendant.MarquesParNiveau = 1.5
-SolAzeroth.Intendant.OrFacteur = 25
+SolAzeroth.Intendant.MarquesBase = 50
+SolAzeroth.Intendant.MarquesParNiveau = 2.0
+SolAzeroth.Intendant.OrFacteur = 75
 SolAzeroth.Intendant.Rang = 3
 
 #    SolAzeroth.Contrats.ParJour      Contrats ajoutés à la réserve du compte chaque jour (à 6 h)
@@ -125,9 +131,9 @@ SolAzeroth.Intendant.Rang = 3
 
 SolAzeroth.Contrats.ParJour = 3
 SolAzeroth.Contrats.ReserveMax = 9
-SolAzeroth.Contrats.Marques = 15
-SolAzeroth.Contrats.OrFacteur = 50
-SolAzeroth.Contrats.ChanceObjet = 25
+SolAzeroth.Contrats.Marques = 20
+SolAzeroth.Contrats.OrFacteur = 80
+SolAzeroth.Contrats.ChanceObjet = 15
 SolAzeroth.Contrats.ChasseMin = 15
 SolAzeroth.Contrats.ChasseMax = 25
 
@@ -173,8 +179,8 @@ SolAzeroth.Ambiance.Campements = 2
 #    SolAzeroth.Raids.Reduction        Baisse du butin rare une fois épuisé (0.5 : -50 %)
 
 SolAzeroth.Raids.Epuisement = 1
-SolAzeroth.Raids.PassagesParJour = 3
-SolAzeroth.Raids.Reduction = 0.5
+SolAzeroth.Raids.PassagesParJour = 1
+SolAzeroth.Raids.Reduction = 0.75
 
 #    SolAzeroth.Malchance.Seuil         % : un objet de boss (donjon ou raid) laissé à cette chance ou moins est « rare » et protégé
 #    SolAzeroth.Malchance.PalierDouble  Tirages ratés à partir desquels sa chance double
@@ -184,9 +190,9 @@ SolAzeroth.Raids.Reduction = 0.5
 
 SolAzeroth.Malchance.Seuil = 3
 SolAzeroth.Malchance.PalierDouble = 20
-SolAzeroth.Malchance.PalierCinq = 40
-SolAzeroth.Malchance.Garantie = 60
-SolAzeroth.Eclats.Prix = 30
+SolAzeroth.Malchance.PalierCinq = 50
+SolAzeroth.Malchance.Garantie = 80
+SolAzeroth.Eclats.Prix = 40
 
 #    SolAzeroth.Formation.MultiplicateurAutresClasses  Prix des sorts des autres classes : prix d'entraîneur × valeur (section 3.9)
 
@@ -237,12 +243,12 @@ SolAzeroth.Codex.Mascottes = 100
 #    SolAzeroth.BonusHF.XpCodex              XP de quête en plus = pourcentage de la fin Histoire du Codex × cette valeur
 
 SolAzeroth.BonusHF.VitesseParContinent = 5
-SolAzeroth.BonusHF.OrContrats = "25:10 50:20 100:100"
+SolAzeroth.BonusHF.OrContrats = "25:10 50:20 100:40"
 SolAzeroth.BonusHF.PalierDefis = 10
 SolAzeroth.BonusHF.PvParPalier = 2
 SolAzeroth.BonusHF.PvMax = 20
 SolAzeroth.BonusHF.RecolteCompetence = 375
-SolAzeroth.BonusHF.XpCodex = 1
+SolAzeroth.BonusHF.XpCodex = 0.3
 
 ###################################################################################################
 # Écart d'équipement (section 5, V5, valeurs provisoires)
@@ -264,7 +270,7 @@ SolAzeroth.Ecart.MalusMax = 20
 SolAzeroth.Ecart.SubisParPoint = 1
 SolAzeroth.Ecart.SubisMax = 20
 SolAzeroth.Ecart.BonusParPoint = 0.5
-SolAzeroth.Ecart.BonusMax = 10
+SolAzeroth.Ecart.BonusMax = 5
 
 ###################################################################################################
 # Affixes de mécanique à cocher (section 4.4, V5, valeurs provisoires) : fenêtre du rang (/rang)
@@ -285,16 +291,16 @@ SolAzeroth.Ecart.BonusMax = 10
 
 SolAzeroth.Mecanique.Enable = 1
 SolAzeroth.Mecanique.Enrage.Points = 1
-SolAzeroth.Mecanique.Renforcant.Points = 1
+SolAzeroth.Mecanique.Renforcant.Points = 2
 SolAzeroth.Mecanique.Volcanique.Points = 2
-SolAzeroth.Mecanique.Explosif.Points = 2
+SolAzeroth.Mecanique.Explosif.Points = 1
 SolAzeroth.Mecanique.Enrage.Seuil = 30
 SolAzeroth.Mecanique.Enrage.Degats = 0.5
 SolAzeroth.Mecanique.Renforcant.ParCumul = 0.2
 SolAzeroth.Mecanique.Renforcant.Portee = 30
-SolAzeroth.Mecanique.Volcanique.Intervalle = 10
-SolAzeroth.Mecanique.Volcanique.Degats = 0.15
-SolAzeroth.Mecanique.Explosif.Intervalle = 12
+SolAzeroth.Mecanique.Volcanique.Intervalle = 8
+SolAzeroth.Mecanique.Volcanique.Degats = 0.20
+SolAzeroth.Mecanique.Explosif.Intervalle = 10
 SolAzeroth.Mecanique.Explosif.Delai = 6
-SolAzeroth.Mecanique.Explosif.PV = 0.05
+SolAzeroth.Mecanique.Explosif.PV = 0.12
 SolAzeroth.Mecanique.Explosif.Degats = 0.15

@@ -1,10 +1,13 @@
 // Équilibrage solo par spécialisation (section 3.5 du document de conception)
-// La spécialisation est l'arbre de talents qui a le plus de points.
+// La spécialisation est l'arbre de talents de sa propre classe qui a le plus de points : les talents pris dans l'arbre
+// d'une autre classe (talents_etrangers.cpp) ne comptent pas (calibrage final, 29/10/2026 ; avant, ils comptaient pour
+// l'arbre de même position et donnaient par exemple le bonus des soigneurs à un chaman 51 points en Vindicte).
 // Réglage par arbre dans mod_solazeroth.conf : SolAzeroth.Solo.<Classe>.<Arbre> = "dégâts soins réduction"
 // (trois pourcentages : dégâts infligés en plus, soins reçus en plus, dégâts subis en moins).
 
 #include "SolAzeroth.h"
 #include "Config.h"
+#include "DBCStores.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include <array>
@@ -43,15 +46,35 @@ namespace
         { CLASS_DRUID,        "Druide",        { "Equilibre", "Farouche", "Restauration" } },
     };
 
+    // Arbre de sa classe qui a le plus de points (comme Player::GetMostPointsTalentTree, sans les arbres étrangers) ;
+    // 3 si aucun point n'est dépensé dans ses propres arbres.
+    uint8 ArbrePrincipal(Player const* player)
+    {
+        std::array<uint32, 3> points = { 0, 0, 0 };
+        for (auto const& [sort, talent] : player->GetTalentMap())
+            if (talent->State != PLAYERSPELL_REMOVED && talent->IsInSpec(player->GetActiveSpec()))
+                if (TalentEntry const* t = sTalentStore.LookupEntry(talent->talentID))
+                    if (TalentTabEntry const* onglet = sTalentTabStore.LookupEntry(t->TalentTab))
+                        if (onglet->tabpage < 3 && (onglet->ClassMask & player->getClassMask()))
+                            for (uint8 rang = 0; rang < MAX_TALENT_RANK; ++rang)
+                                if (t->RankID[rang] == sort)
+                                {
+                                    points[onglet->tabpage] += rang + 1;
+                                    break;
+                                }
+        uint8 arbre = 0;
+        for (uint8 i = 1; i < 3; ++i)
+            if (points[i] > points[arbre])
+                arbre = i;
+        return points[arbre] ? arbre : 3;
+    }
+
     Bonus const* BonusDe(Unit const* unite)
     {
         Player const* player = unite ? unite->ToPlayer() : nullptr;
         if (!player || player->getClass() >= bonus.size())
             return nullptr;
-        // Sans aucun talent dépensé, GetMostPointsTalentTree renvoie le premier arbre : pas de spécialisation.
-        if (player->GetFreeTalentPoints() >= player->CalculateTalentsPoints())
-            return nullptr;
-        uint8 arbre = player->GetMostPointsTalentTree();
+        uint8 arbre = ArbrePrincipal(player);
         if (arbre > 2)
             return nullptr;
         return &bonus[player->getClass()][arbre];

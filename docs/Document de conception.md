@@ -207,7 +207,7 @@ Le joueur lance quand il veut un personnage de saison avec une règle. Huit sema
 
 ### 3.4 Bonus de compte (V1)
 
-- **XP :** +25 % pour les personnages secondaires, par classe déjà montée au niveau 80, plafonné à +150 %. Fait en ALE (`compte_bonus.lua`) : mod-individual-xp ne gère pas ce bonus. **V6 :** plus +5 % par chapitre de l'histoire terminé par un autre personnage du compte (4.7).
+- **XP :** +10 % pour les personnages secondaires, par classe déjà montée au niveau 80, plafonné à +50 % (calibrage final du 29/10/2026 ; +25 % et +150 % avant). Fait en ALE (`compte_bonus.lua`) : mod-individual-xp ne gère pas ce bonus. **V6 :** plus +2 % par chapitre de l'histoire terminé par un autre personnage du compte (4.7 ; +5 % avant le calibrage final).
 - **Vitesse d'XP au choix :** mod-individual-xp, commande `.xp set 1` à `10`. Le joueur garde la vitesse d'origine ou l'accélère.
 - **Réputation :** doublée sur les autres personnages une fois une faction exaltée.
 
@@ -462,6 +462,8 @@ Chaque instance garde son niveau d'origine, est ramenée à 1 joueur, et se joue
 - « Tuer l'adjoint en premier » et « ne pas bouger » sont écartés pour l'instant : trop dépendants de chaque boss.
 
 ### 4.7 Raids
+
+- **Rang de menace en raid (calibrage final, décision de l'utilisateur du 29/10/2026)** : rangs 0 à 5 (`SolAzeroth.Menace.PlafondRaid`). Mêmes formules qu'en donjon (PV, dégâts, or, Fortifié / Tyrannique dès le rang 2), sans affixes de mécanique. Choisi à l'avance et verrouillé au premier combat. Les objets d'équipement ramassés sur un boss de raid reçoivent l'enchantement de bonus du rang (4.5). Au rang 0, les PV et dégâts des raids restent ceux d'origine pour un joueur seul. Les réussites de raid ne débloquent pas de rang (seuls les donjons le font). But : à terme, du contenu au-delà du Roi-liche en fera un défi tactique (équipement très haut, talents optimisés, connaissance des stratégies).
 
 - Même système que les donjons : niveau d'origine, ramenés à 1 joueur, rang de menace de 0 à 5. Le butin des raids plafonne donc à +5 ilvl.
 - **Bonus solo** sur les boss trop difficiles seul, par affaiblissement ciblé. Module à évaluer : **mod-zone-difficulty**. C'est un module de soutien à mod-progression-system : vérifier qu'il fonctionne seul avant de s'en servir.
@@ -1044,6 +1046,60 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
   - les réglages de `mod_solazeroth.conf` et d'autobalance.
 - **Règle** : viser **dur**, puis adoucir seulement ce qui se révèle vraiment infaisable. Cela couvre la difficulté des monstres, des boss et des rangs de menace, les gains et les prix en or et en Marques, le coût des sorts, des spés et des réinitialisations.
 - **Résultat attendu** : une liste de réglages argumentée, validée par l'utilisateur, appliquée par config et SQL.
+- **Fait le 29/10/2026.** Cinq agents (combat, or, Marques, progression, builds) ont rendu 101 propositions. La synthèse et les décisions de l'utilisateur sont dans `Calibrage final — propositions.md`.
+  - Les temps de Sebiria n'ont pas servi : elle a avancé avec des commandes MJ.
+  - Construit et appliqué ce jour, à valider en jeu :
+    - **Failles corrigées** :
+      - le bonus solo ne compte que les arbres de sa classe ;
+      - les objets d'héritage sont neutres pour l'écart d'équipement ;
+      - `.xp set` est retiré (mod-individual-xp désactivé) ;
+      - Connexion n'est plus vendue hors démoniste ;
+      - les élites rares du Codex sont comptées par créature différente (migration 057).
+    - **Rien ne compte sur un boss gris** : réussite de rang, Marques de boss, Marques et compteurs des défis de boss, hauts faits « Défis de boss » (migration 056). Le haut fait n° 1 accepte « Ragefeu ou Prison » (chaque donjon est dans la capitale de l'autre camp).
+    - **Raids** :
+      - PV et dégâts inchangés ;
+      - mana des lanceurs de sorts rendu (×15) ;
+      - or réduit selon le nombre de places (`RewardScaling.Money`, ×3) ;
+      - 1 passage par jour, puis −75 % ; l'épuisement réduit aussi l'or et coupe les Éclats ;
+      - **rang de menace en raid, de 0 à 5** (voir 4.7).
+    - **Donjons** :
+      - dégâts par rang 0,10 ;
+      - points d'affixes plafonnés au rang pour le palier de butin ;
+      - Explosif 12 % des PV toutes les 10 s, pour 1 point ;
+      - Volcanique toutes les 8 s à 20 % ;
+      - Renforçant à 2 points ;
+      - chrono des défis de boss à 90 s ;
+      - défi extérieur niveaux 6 et 7 (×2,30 et ×2,60) ;
+      - bonus de l'écart à +5 % ;
+      - bonus solo de 15 % pour toutes les spés tank, **aucun pour les soigneurs** ;
+      - Remix ×1,5 d'XP, +0,5 % par niveau, 0 point de défi.
+    - **XP** :
+      - bonus de compte +10 % par classe (plafond +50 %), +2 % par chapitre ;
+      - bonus du Codex sur l'XP de quête 0,3 ;
+      - **aucun repos gagné hors d'une auberge ou d'une ville** ;
+      - chapitre 4 au niveau 55 ;
+      - barre « Histoire » du Codex mesurée en niveaux.
+    - **Or** :
+      - or par rang 0,15 ;
+      - intendant 75 × niveau² ;
+      - maîtrises : armes 10 po, ambidextrie 30, bouclier 20, mailles 60, plaques 150 ;
+      - 5e spécialisation 4 000 po ;
+      - contrats 80 ;
+      - bonus du 100e contrat +40 % ;
+      - défi Légende au niveau 60 : 300 po de base ;
+      - réparations ×1,5 ;
+      - transmogrification ×2 ;
+      - l'or des quêtes suit le défi extérieur ;
+      - vol artisan 3 000 po.
+    - **Marques** :
+      - Éclats 40 ;
+      - garantie de la malchance 80 (palier 5 : 50) ;
+      - intendant 50 + 2 × niveau ;
+      - contrats : 15 % d'objet, 20 Marques ;
+      - Renom rangs 8 et 9 : 250 et 500 Marques.
+    - **Spécialisations** : changement en 10 s d'incantation (sort 100004, migration 058), interrompu par le mouvement et les dégâts, sans délai entre deux.
+  - Laissés en l'état sur décision de l'utilisateur : immunités et défenses empruntées (elles coûtent déjà du temps de DPS), prix des sorts d'autres classes (×10).
+  - À construire ensuite : Marques pour monter le rang d'un objet, défi de vagues dans l'arène des Croisés (récompense du rang 10 du Renom), chapitre d'histoire vers 45-48.
 
 ### 10.2 Chantier d'interface à prévoir (demande de l'utilisateur du 27/10/2026)
 

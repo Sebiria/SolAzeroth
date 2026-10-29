@@ -33,6 +33,8 @@ namespace SolAzeroth
     // Donne un objet obtenu au rang de menace « rang », avec son enchantement de bonus (bonus.cpp).
     // nullptr si les sacs sont pleins.
     Item* DonnerObjetDeRang(Player* player, unsigned int objet, unsigned char rang);
+    // Pose l'enchantement de bonus du rang sur un objet déjà reçu (butin de boss de raid ; bonus.cpp).
+    void AppliquerRangObjet(Player* player, Item* item, unsigned char rang);
 
     // Intendant (intendant.cpp) : articles visibles « objet:niveau:marques:cuivre:emplacement:classe:sous-classe »,
     // et achat au rang 3.
@@ -57,9 +59,11 @@ namespace SolAzeroth
     // Rang de menace choisi pour une instance (0 si aucun) et nom de l'affixe de la semaine.
     unsigned char RangInstance(unsigned int instanceId);
     // Affixes de mécanique cochés pour une instance (bits : 1 Enragé, 2 Renforçant, 4 Volcanique, 8 Explosif), et palier
-    // de butin = rang + points des affixes, plafonné au rang maximal du donjon (menace.cpp).
+    // de butin = rang + points des affixes (au plus autant que le rang, minimum 1), plafonné au rang maximal (menace.cpp).
     unsigned char AffixesInstance(unsigned int instanceId);
     unsigned char PalierButin(Map const* map);
+    // Personnage épuisé dans le raid où il se trouve (raids.cpp) : butin rare, or et Éclats réduits ou coupés.
+    bool EpuiseRaid(Player const* player);
     // Affixes de mécanique (affixes_mecanique.cpp) : points d'une combinaison, lignes « bit;nom;points;description »
     // pour la fenêtre du rang, et noms lisibles.
     unsigned int PointsAffixes(unsigned char affixes);

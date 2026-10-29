@@ -5,6 +5,9 @@
 //   qui le verrouille. Un changement ensuite ne touche que le prochain donjon réinitialisé.
 // - Formules : la créature subit les dégâts divisés par (1 + 0,12 × rang), inflige (1 + 0,08 × rang) de dégâts.
 // - Affixes à partir du rang 2 : Fortifié (monstres) et Tyrannique (boss), en alternance chaque semaine.
+// - Raids (calibrage final, 29/10/2026) : rang 0 à 5 (SolAzeroth.Menace.PlafondRaid), mêmes formules, sans affixes de
+//   mécanique. Une réussite de raid ne débloque pas de rang (seuls les donjons comptent). L'équipement ramassé sur un
+//   boss de raid reçoit l'enchantement de bonus du rang (bonus.cpp).
 // Toutes les valeurs sont dans mod_solazeroth.conf.
 
 #include "SolAzeroth.h"
@@ -12,6 +15,7 @@
 #include "Config.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "Formulas.h"
 #include "GameTime.h"
 #include "LootMgr.h"
 #include "Map.h"
@@ -40,6 +44,7 @@ namespace
         uint32 donjonsPourDebloquer = 3;
         uint32 plafondAncien = 5;
         uint32 plafondWotlk = 10;
+        uint32 plafondRaid = 5;
         uint32 affixeRangMin = 2;
         float fortifiePv = 0.20f;
         float fortifieDegats = 0.20f;
@@ -69,8 +74,16 @@ namespace
         return map && map->IsDungeon() && !map->IsRaid();
     }
 
+    // Donjon ou raid : là où le rang de menace s'applique.
+    bool EstInstance(Map const* map)
+    {
+        return map && map->IsDungeon();
+    }
+
     uint8 Plafond(Map const* map)
     {
+        if (map->IsRaid())
+            return reglages.plafondRaid;
         return map->GetEntry()->Expansion() >= 2 ? reglages.plafondWotlk : reglages.plafondAncien;
     }
 
@@ -136,9 +149,12 @@ namespace
         return resultat ? (*resultat)[0].Get<uint8>() : 0;
     }
 
+    // Les points des affixes de mécanique comptent au plus autant que le rang (au moins 1) : au rang 0, cocher les
+    // quatre affixes donnait déjà le palier maximal (calibrage final, 29/10/2026).
     uint8 Palier(uint8 rang, uint8 affixes, uint8 plafond)
     {
-        return uint8(std::min<uint32>(rang + SolAzeroth::PointsAffixes(affixes), plafond));
+        uint32 points = std::min<uint32>(SolAzeroth::PointsAffixes(affixes), std::max<uint32>(rang, 1));
+        return uint8(std::min<uint32>(rang + points, plafond));
     }
 
     // État pour l'addon : « MECA;bit;nom;points;description » par affixe de mécanique, puis
@@ -148,7 +164,7 @@ namespace
     {
         uint32 compte = player->GetSession()->GetAccountId();
         Map* map = player->GetMap();
-        bool donjon = map && map->IsDungeon() && !map->IsRaid();
+        bool donjon = EstInstance(map);
         uint8 rang = 0, plafond = reglages.plafondWotlk;
         bool verrouille = false;
         // Hors donjon : l'affixe que prendra le prochain donjon (choix du Renom, ou celui de la semaine).
@@ -163,7 +179,7 @@ namespace
             verrouille = etat.verrouille;
             affixe = etat.affixe;
             affixes = etat.affixes;
-            plafond = map->GetEntry()->Expansion() >= 2 ? reglages.plafondWotlk : reglages.plafondAncien;
+            plafond = Plafond(map);
         }
         for (std::string const& ligne : SolAzeroth::ListeAffixesMecanique())
             SolAzeroth::EnvoyerAddon(player, PREFIXE, "MECA;" + ligne);
@@ -198,7 +214,7 @@ unsigned char SolAzeroth::AffixesInstance(unsigned int instanceId)
 
 unsigned char SolAzeroth::PalierButin(Map const* map)
 {
-    if (!EstDonjon(map))
+    if (!EstInstance(map))
         return 0;
     uint8 rang, affixes;
     {
@@ -233,7 +249,7 @@ SolAzeroth::Modificateurs SolAzeroth::ModificateursMenace(Creature const* creatu
     if (!reglages.active)
         return m;
     Map const* map = creature->GetMap();
-    if (!EstDonjon(map))
+    if (!EstInstance(map))
         return m;
 
     uint8 rang = 0, affixe = 0;
@@ -324,6 +340,13 @@ public:
             Player* player = ref.GetSource();
             if (!player)
                 continue;
+            // Dernier boss gris pour ce personnage : la réussite ne compte pas (déblocage des rangs, hauts faits, Codex).
+            // Calibrage final, 29/10/2026 : un personnage trop haut débloquait les rangs sans risque.
+            if (unite->GetLevel() <= Acore::XP::GetGrayLevel(player->GetLevel()))
+            {
+                Dire(player, "|cffa0a0a0Donjon trop bas pour toi : la réussite ne compte pas pour le rang de menace.|r");
+                continue;
+            }
             uint32 compte = player->GetSession()->GetAccountId();
             uint8 avant = RangDebloque(compte);
             CharacterDatabase.DirectExecute("INSERT INTO solazeroth_menace_reussites (account, donjon, map_id, rang_max) VALUES ({}, {}, {}, {}) "
@@ -344,17 +367,17 @@ public:
     solazeroth_menace_joueur() : PlayerScript("solazeroth_menace_joueur", {
         PLAYERHOOK_ON_MAP_CHANGED, PLAYERHOOK_ON_PLAYER_ENTER_COMBAT, PLAYERHOOK_ON_BEFORE_LOOT_MONEY }) { }
 
-    // Entrée dans un donjon : une instance neuve prend le rang réglé à l'avance, et la fenêtre s'ouvre.
+    // Entrée dans un donjon ou un raid : une instance neuve prend le rang réglé à l'avance, et la fenêtre s'ouvre.
     void OnPlayerMapChanged(Player* player) override
     {
         Map* map = player->GetMap();
-        if (!reglages.active || !EstDonjon(map))
+        if (!reglages.active || !EstInstance(map))
             return;
 
         uint32 compte = player->GetSession()->GetAccountId();
         uint8 voulu = std::min({ RangProchain(compte), RangDebloque(compte), Plafond(map) });
         uint8 affixe = SolAzeroth::AffixeChoisi(compte);
-        uint8 affixes = AffixesProchain(compte);
+        uint8 affixes = map->IsRaid() ? 0 : AffixesProchain(compte);   // pas d'affixes de mécanique en raid
         bool ouvrir;
         uint8 rang;
         {
@@ -372,7 +395,7 @@ public:
             rang = etat.rang;
         }
         Dire(player, Acore::StringFormat(ouvrir
-            ? "|cffffd100Rang de menace {} pour ce donjon.|r Modifiable jusqu'au premier combat (/rang)."
+            ? "|cffffd100Rang de menace {} pour cette instance.|r Modifiable jusqu'au premier combat (/rang)."
             : "Rang de menace de cette instance : {} (verrouillé).", rang));
         EnvoyerEtat(player, ouvrir);
     }
@@ -381,7 +404,7 @@ public:
     void OnPlayerEnterCombat(Player* player, Unit* ennemi) override
     {
         Map* map = player->GetMap();
-        if (!reglages.active || !EstDonjon(map) || !ennemi || !ennemi->IsCreature())
+        if (!reglages.active || !EstInstance(map) || !ennemi || !ennemi->IsCreature())
             return;
 
         uint8 rang;
@@ -403,7 +426,7 @@ public:
     void OnPlayerBeforeLootMoney(Player* player, Loot* loot) override
     {
         Map* map = player->GetMap();
-        if (!reglages.active || !EstDonjon(map) || !loot || !loot->gold)
+        if (!reglages.active || !EstInstance(map) || !loot || !loot->gold)
             return;
         uint8 rang;
         {
@@ -430,6 +453,7 @@ public:
         reglages.donjonsPourDebloquer = std::max<uint32>(1, sConfigMgr->GetOption<uint32>("SolAzeroth.Menace.DonjonsPourDebloquer", 3));
         reglages.plafondAncien = sConfigMgr->GetOption<uint32>("SolAzeroth.Menace.PlafondClassiqueBC", 5);
         reglages.plafondWotlk = sConfigMgr->GetOption<uint32>("SolAzeroth.Menace.PlafondWotLK", 10);
+        reglages.plafondRaid = sConfigMgr->GetOption<uint32>("SolAzeroth.Menace.PlafondRaid", 5);
         reglages.affixeRangMin = sConfigMgr->GetOption<uint32>("SolAzeroth.Affixes.RangMin", 2);
         reglages.fortifiePv = sConfigMgr->GetOption<float>("SolAzeroth.Affixes.Fortifie.PV", 0.20f);
         reglages.fortifieDegats = sConfigMgr->GetOption<float>("SolAzeroth.Affixes.Fortifie.Degats", 0.20f);
@@ -530,7 +554,7 @@ public:
 
         Map* map = player->GetMap();
         std::string ici;
-        if (EstDonjon(map))
+        if (EstInstance(map))
         {
             std::lock_guard<std::mutex> garde(verrou);
             EtatInstance& etat = instances[map->GetInstanceId()];
@@ -539,10 +563,10 @@ public:
                 etat.rang = std::min(rang, Plafond(map));
                 etat.initialise = true;
                 SauverInstance(map->GetInstanceId(), etat);
-                ici = Acore::StringFormat(" Appliqué à ce donjon : rang {}.", etat.rang);
+                ici = Acore::StringFormat(" Appliqué à cette instance : rang {}.", etat.rang);
             }
             else
-                ici = " Ce donjon reste à son rang verrouillé ; le nouveau rang vaudra pour le prochain.";
+                ici = " Cette instance reste à son rang verrouillé ; le nouveau rang vaudra pour la prochaine.";
         }
         handler->SendSysMessage(Acore::StringFormat("|cffffd100Rang de menace réglé sur {}.|r{}", rang, ici));
         EnvoyerEtat(player, false);
@@ -585,7 +609,7 @@ public:
             handler->SendSysMessage(Acore::StringFormat("Donjons réussis : {}.", (*resultat)[0].Get<uint32>()));
 
         Map* map = player->GetMap();
-        if (EstDonjon(map))
+        if (EstInstance(map))
         {
             std::lock_guard<std::mutex> garde(verrou);
             EtatInstance const& etat = instances[map->GetInstanceId()];

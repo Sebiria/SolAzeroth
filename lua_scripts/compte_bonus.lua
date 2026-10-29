@@ -1,13 +1,15 @@
 -- Bonus de compte (section 3.4)
--- XP : +25 % par classe déjà montée au niveau 80 sur un autre personnage du compte, plafond +150 %.
+-- XP : +10 % par classe déjà montée au niveau 80 sur un autre personnage du compte, plafond +50 %.
 -- Réputation : doublée pour une faction déjà exaltée sur un autre personnage du compte.
 -- Histoire (V6, décision de l'utilisateur du 28/10/2026) : +5 % d'XP par chapitre du « fil du Fléau » (quêtes 900200 à
 -- 900215, histoire.cpp) déjà terminé par un autre personnage du compte, en plus du bonus des classes (16 chapitres :
--- +80 %, provisoire).
+-- +32 %).
+-- Calibrage final (29/10/2026) : bonus réduits (classes +25 % → +10 %, plafond +150 % → +50 %, chapitres +5 % → +2 %),
+-- car ils se multipliaient avec le bonus du Codex sur l'XP de quête (un 2e personnage montait 1-80 en ~20 h).
 
-local BONUS_XP_PAR_CLASSE = 0.25
-local BONUS_XP_MAX = 1.50
-local BONUS_XP_PAR_CHAPITRE = 0.05
+local BONUS_XP_PAR_CLASSE = 0.10
+local BONUS_XP_MAX = 0.50
+local BONUS_XP_PAR_CHAPITRE = 0.02
 local PREMIER_CHAPITRE, DERNIER_CHAPITRE = 900200, 900215
 local NIVEAU_MAX = 80
 local RANG_EXALTE = 7

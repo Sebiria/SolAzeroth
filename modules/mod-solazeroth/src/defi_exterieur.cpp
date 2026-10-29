@@ -166,10 +166,17 @@ public:
         PLAYERHOOK_ON_CREATURE_KILL_CREDIT }) { }
 
     // Compteurs des hauts faits (section 7.4) : quêtes rendues en défi 3 ou plus, monstres non gris tués en défi 5.
+    // L'or de la quête suit aussi le multiplicateur d'or du niveau de défi pris à l'acceptation (calibrage final,
+    // 29/10/2026 : seul l'or des monstres comptait, soit 3 à 5 % du revenu ; la récompense du risque était invisible).
     void OnPlayerCompleteQuest(Player* player, Quest const* quete) override
     {
-        if (NiveauQuete(player, quete->GetQuestId()) >= 3)
+        uint8 n = NiveauQuete(player, quete->GetQuestId());
+        if (n >= 3)
             SolAzeroth::AjouterCompteur(player, "quetes_defi3");
+        int32 argent = quete->GetRewOrReqMoney(player->GetLevel());
+        if (n && argent > 0)
+            if (int32 bonus = int32(argent * (Valeur(reglages.gainOr, n) - 1.0f)); bonus > 0)
+                player->ModifyMoney(bonus);
     }
 
     void OnPlayerCreatureKillCredit(Player* player, Creature* tue) override

@@ -4,6 +4,8 @@
 // personnage est « épuisé » dans ce raid : le butin rare baisse de 50 %.
 // - Butin des boss : les références de butin (les objets épiques des raids) donnent deux fois moins d'objets, et
 //   chaque objet bleu ou mieux a deux fois moins de chances de tomber.
+// - Calibrage final (29/10/2026) : 1 passage par jour (au lieu de 3), baisse de 75 % (au lieu de 50 %), et l'épuisement
+//   réduit aussi l'or ramassé et coupe les Éclats (malchance.cpp).
 // - Affichage : un message à chaque entrée (« passage 2 sur 3 aujourd'hui ») et, une fois épuisé, l'aura « Épuisement
 //   spectral » (44867, une aura sans effet ; son vrai nom viendra avec le patch client de V7).
 
@@ -77,7 +79,15 @@ namespace
 class solazeroth_raids_joueur : public PlayerScript
 {
 public:
-    solazeroth_raids_joueur() : PlayerScript("solazeroth_raids_joueur", { PLAYERHOOK_ON_MAP_CHANGED, PLAYERHOOK_ON_LOGOUT }) { }
+    solazeroth_raids_joueur() : PlayerScript("solazeroth_raids_joueur", {
+        PLAYERHOOK_ON_MAP_CHANGED, PLAYERHOOK_ON_LOGOUT, PLAYERHOOK_ON_BEFORE_LOOT_MONEY }) { }
+
+    // Épuisé : l'or ramassé baisse comme le butin rare.
+    void OnPlayerBeforeLootMoney(Player* player, Loot* loot) override
+    {
+        if (loot && loot->gold && player->GetMap() && player->GetMap()->IsRaid() && Epuise(player))
+            loot->gold = uint32(loot->gold * (1.0f - reglages.reduction));
+    }
 
     void OnPlayerMapChanged(Player* player) override
     {
@@ -107,7 +117,7 @@ public:
         Noter(player, epuise);
         ChatHandler handler(player->GetSession());
         if (epuise)
-            handler.PSendSysMessage("|cffff8000Raid épuisé : passage {} aujourd'hui (plus de {}). Le butin rare baisse de {:.0f} % jusqu'à demain.|r",
+            handler.PSendSysMessage("|cffff8000Raid épuisé : passage {} aujourd'hui (plus de {}). Le butin rare et l'or baissent de {:.0f} %, sans Éclats, jusqu'à demain.|r",
                 passages, reglages.passages, reglages.reduction * 100.0f);
         else
             handler.PSendSysMessage("|cff00ccffRaid : passage {} sur {} aujourd'hui avant l'épuisement.|r", passages, reglages.passages);
@@ -158,6 +168,11 @@ public:
         reglages.reduction = sConfigMgr->GetOption<float>("SolAzeroth.Raids.Reduction", 0.5f);
     }
 };
+
+bool SolAzeroth::EpuiseRaid(Player const* player)
+{
+    return Epuise(player);
+}
 
 void AddSC_solazeroth_raids()
 {

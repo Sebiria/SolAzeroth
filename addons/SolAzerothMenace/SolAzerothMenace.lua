@@ -71,7 +71,7 @@ local effet = Texte("GameFontHighlight", -196)
 effet:SetHeight(60)
 effet:SetJustifyV("TOP")
 
--- Affixes de mécanique à cocher : leurs points s'ajoutent au rang pour le palier de butin.
+-- Affixes de mécanique à cocher : leurs points s'ajoutent au rang pour le palier de butin (au plus autant que le rang).
 local titreMeca = Texte("GameFontNormal", -262)
 titreMeca:SetText("Affixes de mécanique (leurs points s'ajoutent au rang pour le butin)")
 local BITS = { 1, 2, 4, 8 }
@@ -103,7 +103,7 @@ end
 local palier = Texte("GameFontHighlight", -340)
 
 local aide = Texte("GameFontDisableSmall", -400)
-aide:SetText("Le rang réglé s'applique à chaque donjon réinitialisé (.reinitialiser), puis se verrouille au premier combat.\nRéussir un rang dans 3 donjons différents débloque le suivant.")
+aide:SetText("Le rang réglé s'applique à chaque donjon ou raid réinitialisé (.reinitialiser), puis se verrouille au premier combat.\nRéussir un rang dans 2 donjons différents débloque le suivant. En raid : rang 5 au plus, sans affixes de mécanique.")
 
 local function Effet(rang)
     if rang == 0 then return "Rang 0 : difficulté de base." end
@@ -119,12 +119,12 @@ end
 local function Rafraichir()
     if etat.donjon then
         if etat.verrouille then
-            situation:SetText(string.format("Ce donjon : |cffff8040rang %d, verrouillé|r. Ton réglage vaudra pour le prochain.", etat.rang))
+            situation:SetText(string.format("Cette instance : |cffff8040rang %d, verrouillé|r. Ton réglage vaudra pour la prochaine.", etat.rang))
         else
-            situation:SetText(string.format("Ce donjon : |cff00ff00rang %d|r, modifiable jusqu'au premier combat.", etat.rang))
+            situation:SetText(string.format("Cette instance : |cff00ff00rang %d|r, modifiable jusqu'au premier combat.", etat.rang))
         end
     else
-        situation:SetText(string.format("Prochain donjon réinitialisé : |cff00ff00rang %d|r.", etat.prochain))
+        situation:SetText(string.format("Prochain donjon ou raid réinitialisé : |cff00ff00rang %d|r.", etat.prochain))
     end
     debloque:SetText(string.format("Rang débloqué sur le compte : %d", etat.debloque))
     affixe:SetText(string.format("Affixe de la semaine, dès le rang %d : %s", etat.rangAffixe, etat.affixe))
@@ -145,7 +145,7 @@ local function Rafraichir()
         c:SetChecked(bit.band(etat.affixes, c.bit) ~= 0)
         if figees then c:Disable() else c:Enable() end
     end
-    palier:SetText(string.format("Palier de butin : |cff00ff00%d|r (rang + points des affixes, plafonné au rang maximal du donjon)", etat.palier))
+    palier:SetText(string.format("Palier de butin : |cff00ff00%d|r (rang + points des affixes, ceux-ci au plus égaux au rang, minimum 1)", etat.palier))
 end
 
 ------------------------------------------------------------------------

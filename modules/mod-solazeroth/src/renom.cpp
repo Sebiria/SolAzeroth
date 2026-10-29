@@ -55,8 +55,9 @@ namespace
         { "Renommé",     1600,  AFFIXE,   0,     "Affixe au menu : Fortifié ou Tyrannique au choix pour tes donjons" },
         { "Héros",       2500,  CONTRAT,  0,     "Un contrat de plus par jour (4 au lieu de 3)" },
         { "Champion",    4000,  SAC,      41600, "Sac glaciaire (22 places), à réclamer pour chaque personnage" },
-        { "Légende",     6000,  MARQUES,  500,   "500 Marques du voyageur, une fois" },
-        { "Mythe",       8200,  MARQUES,  1000,  "1 000 Marques du voyageur, une fois" },
+        // Rangs 8 et 9 : 500 et 1 000 Marques avant le calibrage final (29/10/2026).
+        { "Légende",     6000,  MARQUES,  250,   "250 Marques du voyageur, une fois" },
+        { "Mythe",       8200,  MARQUES,  500,   "500 Marques du voyageur, une fois" },
         { "Éternel",     12000, VOL,      0,     "Vol en Kalimdor et dans les Royaumes de l'Est (plus tard, V8+)" },
     };
     uint8 const RANG_MAX = 10;

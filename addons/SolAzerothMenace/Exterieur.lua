@@ -4,6 +4,7 @@
 -- Ouverture : clic droit sur le bouton de la minicarte du rang de menace, ou /exterieur.
 
 local PREFIXE = "SOLEXT"
+local BOUTONS_MAX = 7   -- niveaux 6 et 7 ajoutés au calibrage final (29/10/2026)
 
 local etat = { niveau = 0, max = 5, repos = false, pv = {}, degats = {}, xp = {}, gainOr = {}, marques = {} }
 
@@ -46,10 +47,10 @@ local actuel = cadre:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 actuel:SetPoint("TOP", 0, -72)
 
 local boutons = {}
-for i = 0, 5 do
+for i = 0, BOUTONS_MAX do
     local b = CreateFrame("Button", nil, cadre, "UIPanelButtonTemplate")
-    b:SetSize(52, 26)
-    b:SetPoint("TOPLEFT", 31 + i * 62, -100)
+    b:SetSize(44, 26)
+    b:SetPoint("TOPLEFT", 26 + i * 48, -100)
     b:SetText(i == 0 and "Aucun" or tostring(i))
     b:SetScript("OnClick", function() Commande(".solext choisir " .. i) end)
     boutons[i] = b
@@ -73,7 +74,7 @@ local function Effets(n)
         Pourcent(etat.pv, n), Pourcent(etat.degats, n), Pourcent(etat.xp, n), Pourcent(etat.gainOr, n), Pourcent(etat.marques, n))
 end
 
-for i = 0, 5 do
+for i = 0, BOUTONS_MAX do
     boutons[i]:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText(i == 0 and "Aucun défi" or ("Niveau " .. i), 1, 0.82, 0)
@@ -92,7 +93,7 @@ end
 local function Rafraichir()
     local n = etat.niveau
     actuel:SetText(n == 0 and "Niveau actuel : aucun" or ("Niveau actuel : " .. n))
-    for i = 0, 5 do
+    for i = 0, BOUTONS_MAX do
         local b = boutons[i]
         if i > etat.max then b:Hide() else b:Show() end
         if i == n or not etat.repos then b:Disable() else b:Enable() end

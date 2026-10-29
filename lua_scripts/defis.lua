@@ -26,7 +26,8 @@ local INCOMPATIBLES = { { 0, 1 }, { 4, 5 } }
 local DESTIN = 100
 local POINTS_DESTIN = 4
 -- Ligues V8 : indice -> réglage de la source SOURCE et points (provisoires).
-local LIGUES = { [101] = { reglage = 4, points = 1 }, [102] = { reglage = 5, points = 2 } }
+-- Remix ne rapporte aucun point : en donjon et en raid, c'est un bonus pur (calibrage final, 29/10/2026).
+local LIGUES = { [101] = { reglage = 4, points = 0 }, [102] = { reglage = 5, points = 2 } }
 local DELAI_TIRAGE = 24 * 3600
 local RACES = { [1] = "Humain", [2] = "Orc", [3] = "Nain", [4] = "Elfe de la nuit", [5] = "Mort-vivant", [6] = "Tauren",
                 [7] = "Gnome", [8] = "Troll", [10] = "Elfe de sang", [11] = "Draeneï" }
@@ -40,7 +41,7 @@ local PALIERS = {   -- du plus haut au plus bas
     { nom = "Argent", note = 6,  multiplicateur = 2, titre = 142 },  -- « l'increvable »
     { nom = "Bronze", note = 3,  multiplicateur = 1 },
 }
-local OR_PAR_NIVEAU = { [20] = 20, [40] = 100, [60] = 400, [80] = 1000 }   -- en po, palier Bronze
+local OR_PAR_NIVEAU = { [20] = 20, [40] = 100, [60] = 300, [80] = 1000 }   -- en po, palier Bronze (60 : 400 → 300 au calibrage)
 local NIVEAUX = { 20, 40, 60, 80 }
 local JETONS_PAR_POINT = 10   -- Marques du voyageur à chaque niveau récompensé, par point de note
 local MARQUE = 37711   -- Marque du voyageur, monnaie (migration 035)

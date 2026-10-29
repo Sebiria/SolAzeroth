@@ -18,7 +18,7 @@ local DEFIS = {
     { index = 5, nom = "XP très lente",           desc = "Expérience gagnée ×0,25.",                             points = 2, icone = "INV_Misc_PocketWatch_02" },
     { index = 6, nom = "XP de quêtes uniquement", desc = "Aucune expérience en tuant des monstres.",              points = 2, icone = "INV_Misc_Note_01" },
     { index = 100, nom = "Destin",                desc = "",                                                      points = 4, icone = "INV_Misc_Dice_01" },
-    { index = 101, nom = "Ligue Remix",           desc = "Monstres toujours à ton niveau. XP ×2 et +1 % de dégâts et de vie par niveau.", points = 1, icone = "Spell_Nature_TimeStop" },
+    { index = 101, nom = "Ligue Remix",           desc = "Monstres toujours à ton niveau. XP ×1,5 et +0,5 % de dégâts et de vie par niveau. Ne rapporte aucun point.", points = 0, icone = "Spell_Nature_TimeStop" },
     { index = 102, nom = "Ligue Chaos",           desc = "Chaque jour, une mutation tirée au sort change les règles : dégâts, soins, XP, or...", points = 2, icone = "Spell_Shadow_Charm" },
 }
 local CHAOS = 102

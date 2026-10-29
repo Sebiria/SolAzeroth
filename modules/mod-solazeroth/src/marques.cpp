@@ -11,6 +11,7 @@
 #include "Creature.h"
 #include "DBCStores.h"
 #include "DatabaseEnv.h"
+#include "Formulas.h"
 #include "Map.h"
 #include "Player.h"
 #include "QuestDef.h"
@@ -113,6 +114,10 @@ public:
         {
             Player* player = ref.GetSource();
             if (!player)
+                continue;
+            // Boss gris pour ce personnage : rien, et le rang n'est pas noté comme payé (il pourra l'être au bon niveau,
+            // sur un autre personnage). Calibrage final, 29/10/2026.
+            if (boss->GetLevel() <= Acore::XP::GetGrayLevel(player->GetLevel()))
                 continue;
             int32 paye = -1;
             if (QueryResult r = CharacterDatabase.Query("SELECT rang FROM solazeroth_marques_boss WHERE guid = {} AND boss = {}",

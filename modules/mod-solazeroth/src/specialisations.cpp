@@ -3,6 +3,8 @@
 // L'emplacement actif vit dans les tables normales du jeu (talents, glyphes, barres d'action de la spé active).
 // Changer d'emplacement : on recopie l'actif dans nos tables, on réinitialise les talents gratuitement, puis on
 // réapprend les talents, glyphes et barres d'action de l'emplacement choisi. Hors combat seulement.
+// Calibrage final (29/10/2026) : le changement demande 10 s d'incantation (sort 100004, migration 058), interrompue par
+// le mouvement et les dégâts ; il se fait à la fin de l'incantation (SpellScript plus bas). Pas de délai entre deux.
 // Addon SolAzerothSpes : messages « SPE;actif;possédés;prix_suivant_po;nom|a/b/c;… » (préfixe SOLSPE).
 
 #include "SolAzeroth.h"
@@ -12,6 +14,8 @@
 #include "DBCStores.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "SpellScript.h"
+#include "SpellScriptLoader.h"
 #include "StringFormat.h"
 #include "WorldSession.h"
 #include <algorithm>
@@ -25,9 +29,13 @@ namespace
 {
     char const* const PREFIXE = "SOLSPE";
     uint8 const EMPLACEMENTS = 5;
+    uint32 const SORT_CHANGEMENT = 100004;   // « Changement de spécialisation », 10 s d'incantation
+
+    // Emplacement demandé, en attendant la fin de l'incantation.
+    struct Attente : DataMap::Base { uint8 slot = 0; };
 
     // Prix des emplacements 2 à 5, en pièces d'or.
-    std::array<uint32, EMPLACEMENTS - 1> prix = { 50, 250, 1000, 2500 };
+    std::array<uint32, EMPLACEMENTS - 1> prix = { 50, 250, 1000, 4000 };
 
     struct Etat
     {
@@ -207,6 +215,21 @@ namespace
         }
     }
 
+    // Change d'emplacement tout de suite (fin de l'incantation). Revérifie les conditions : l'état a pu changer.
+    void Activer(Player* player, uint8 slot)
+    {
+        Etat etat = LireEtat(player);
+        if (slot < 1 || slot > etat.possedes || slot == etat.actif || player->IsInCombat() || !player->IsAlive())
+            return;
+        Sauver(player, etat.actif);
+        Charger(player, slot);
+        etat.actif = slot;
+        EcrireEtat(player, etat);
+        player->SaveToDB(false, false);
+        ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat("|cff00ff00Spécialisation {} activée.|r", slot));
+        EnvoyerEtat(player);
+    }
+
     std::string Nettoyer(std::string nom)
     {
         nom.erase(std::remove_if(nom.begin(), nom.end(), [](char c) { return c == ';' || c == '|'; }), nom.end());
@@ -255,14 +278,9 @@ public:
             return true;
         }
 
-        Sauver(player, etat.actif);
-        Charger(player, slot);
-        etat.actif = slot;
-        EcrireEtat(player, etat);
-        player->SaveToDB(false, false);
-
-        handler->SendSysMessage(Acore::StringFormat("|cff00ff00Spécialisation {} activée.|r", slot));
-        EnvoyerEtat(player);
+        player->CustomData.GetDefault<Attente>("solazeroth_spe_attente")->slot = slot;
+        if (player->CastSpell(player, SORT_CHANGEMENT, false) != SPELL_CAST_OK)
+            handler->SendSysMessage("Impossible de lancer le changement de spécialisation maintenant (immobile, hors combat).");
         return true;
     }
 
@@ -301,6 +319,29 @@ public:
     }
 };
 
+// Fin de l'incantation « Changement de spécialisation » : le changement se fait juste après le sort, pour ne pas
+// réinitialiser les talents pendant qu'il se termine.
+class spell_solazeroth_changement_spe : public SpellScript
+{
+    PrepareSpellScript(spell_solazeroth_changement_spe);
+
+    void Fin()
+    {
+        Player* player = GetCaster() ? GetCaster()->ToPlayer() : nullptr;
+        if (!player)
+            return;
+        uint8 slot = player->CustomData.GetDefault<Attente>("solazeroth_spe_attente")->slot;
+        player->CustomData.GetDefault<Attente>("solazeroth_spe_attente")->slot = 0;
+        if (slot)
+            player->m_Events.AddEventAtOffset([player, slot]() { Activer(player, slot); }, 1ms);
+    }
+
+    void Register() override
+    {
+        AfterCast += SpellCastFn(spell_solazeroth_changement_spe::Fin);
+    }
+};
+
 class solazeroth_specialisations_monde : public WorldScript
 {
 public:
@@ -308,7 +349,7 @@ public:
 
     void OnAfterConfigLoad(bool /*rechargement*/) override
     {
-        std::istringstream flux(sConfigMgr->GetOption<std::string>("SolAzeroth.Specialisations.Prix", "50 250 1000 2500"));
+        std::istringstream flux(sConfigMgr->GetOption<std::string>("SolAzeroth.Specialisations.Prix", "50 250 1000 4000"));
         for (uint32& p : prix)
             flux >> p;
     }
@@ -318,4 +359,5 @@ void AddSC_solazeroth_specialisations()
 {
     new solazeroth_specialisations_commandes();
     new solazeroth_specialisations_monde();
+    RegisterSpellScript(spell_solazeroth_changement_spe);
 }

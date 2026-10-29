@@ -87,7 +87,12 @@ namespace
             Item* objet = player->GetItemByPos(INVENTORY_SLOT_BAG_0, emplacement);
             if (!objet)
                 continue;
-            somme += objet->GetTemplate()->ItemLevel * (1.0f + reglages.pourcentParRang * RangObjet(objet->GetGUID().GetCounter()));
+            // Objet d'héritage : son modèle dit niveau d'objet 1, il suit en fait le niveau du joueur. Compté au niveau
+            // d'objet attendu à ce niveau, donc neutre (calibrage final, 29/10/2026 : il déclenchait « Sous-équipé »).
+            if (objet->GetTemplate()->Quality == ITEM_QUALITY_HEIRLOOM)
+                somme += attendu[std::clamp<int32>(player->GetLevel(), 1, NIVEAU_MAX)];
+            else
+                somme += objet->GetTemplate()->ItemLevel * (1.0f + reglages.pourcentParRang * RangObjet(objet->GetGUID().GetCounter()));
             ++nombre;
         }
         return nombre ? somme / nombre : 0.0f;

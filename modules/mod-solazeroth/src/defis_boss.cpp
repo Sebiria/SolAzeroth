@@ -176,15 +176,20 @@ public:
         for (auto const& ref : unite->GetMap()->GetPlayers())
             if (Player* player = ref.GetSource())
             {
+                SolAzeroth::AjouterCompteur(player, "defis_boss");
+                // Boss gris pour ce personnage : rien ne compte (calibrage final, 29/10/2026 ; un 80 farmait les Marques,
+                // les hauts faits et le Codex sur les boss de Ragefeu sans aucun risque).
+                if (unite->GetLevel() <= Acore::XP::GetGrayLevel(player->GetLevel()))
+                {
+                    ChatHandler(player->GetSession()).SendSysMessage("|cffa0a0a0Boss trop bas pour toi : le défi ne rapporte rien.|r");
+                    continue;
+                }
                 SolAzeroth::DonnerMarques(player, reglages.marques, Acore::StringFormat("défi « {} »", Nom(defi.type)));
                 // Boss dont le défi est réussi au moins une fois (ligne « Défis de base » du Codex).
                 CharacterDatabase.DirectExecute("INSERT IGNORE INTO solazeroth_defis_reussis (account, boss) VALUES ({}, {})",
                     player->GetSession()->GetAccountId(), unite->GetEntry());
-                // Compteurs des hauts faits (section 7.4).
-                SolAzeroth::AjouterCompteur(player, "defis_boss");
-                // Bonus de points de vie (bonus_hauts_faits.cpp) : seulement si le boss n'est pas gris pour ce personnage.
-                if (unite->GetLevel() > Acore::XP::GetGrayLevel(player->GetLevel()))
-                    SolAzeroth::AjouterCompteur(player, "defis_boss_niveau");
+                // Compteurs des hauts faits (section 7.4) et du bonus de points de vie (bonus_hauts_faits.cpp).
+                SolAzeroth::AjouterCompteur(player, "defis_boss_niveau");
                 if (defi.type == SANS_SOIN)
                     SolAzeroth::AjouterCompteur(player, "defis_sans_filet");
             }

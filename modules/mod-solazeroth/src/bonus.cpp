@@ -14,7 +14,9 @@
 #include "Config.h"
 #include "DatabaseEnv.h"
 #include "DBCStores.h"
+#include "Creature.h"
 #include "Item.h"
+#include "Map.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
@@ -95,6 +97,44 @@ Item* SolAzeroth::DonnerObjetDeRang(Player* player, unsigned int objet, unsigned
     return item;
 }
 
+void SolAzeroth::AppliquerRangObjet(Player* player, Item* item, unsigned char rang)
+{
+    ItemTemplate const* modele = item ? item->GetTemplate() : nullptr;
+    if (!modele || !rang || item->GetItemRandomPropertyId() || modele->RandomProperty || modele->RandomSuffix)
+        return;
+    uint32 valeur = 0;
+    uint32 bonus = ChoisirSuffixe(modele, rang, valeur);
+    if (!bonus)
+        return;
+    item->SetItemRandomProperties(int32(bonus));
+    item->SetState(ITEM_CHANGED, player);
+    CharacterDatabase.Execute("REPLACE INTO solazeroth_objets_rang (item_guid, rang, enchantement) VALUES ({}, {}, {})",
+        item->GetGUID().GetCounter(), rang, bonus);
+    SolAzeroth::NoterRangObjet(item->GetGUID().GetCounter(), rang);
+}
+
+// Butin d'un boss de raid ramassé : l'équipement prend l'enchantement de bonus du rang de menace de l'instance
+// (calibrage final, 29/10/2026). Les donjons à 5 passent par le butin choisi (butin.cpp).
+class solazeroth_bonus_raid : public PlayerScript
+{
+public:
+    solazeroth_bonus_raid() : PlayerScript("solazeroth_bonus_raid", { PLAYERHOOK_ON_LOOT_ITEM }) { }
+
+    void OnPlayerLootItem(Player* player, Item* item, uint32 /*nombre*/, ObjectGuid source) override
+    {
+        Map* map = player->GetMap();
+        if (!item || !map || !map->IsRaid() || !source.IsCreature())
+            return;
+        ItemTemplate const* modele = item->GetTemplate();
+        if (!modele || (modele->Class != ITEM_CLASS_WEAPON && modele->Class != ITEM_CLASS_ARMOR) || modele->Quality < ITEM_QUALITY_UNCOMMON)
+            return;
+        Creature* boss = map->GetCreature(source);
+        if (!boss || !boss->IsDungeonBoss())
+            return;
+        SolAzeroth::AppliquerRangObjet(player, item, SolAzeroth::PalierButin(map));
+    }
+};
+
 class solazeroth_bonus_monde : public WorldScript
 {
 public:
@@ -129,4 +169,5 @@ public:
 void AddSC_solazeroth_bonus()
 {
     new solazeroth_bonus_monde();
+    new solazeroth_bonus_raid();
 }

@@ -1,7 +1,7 @@
 // Ligues Remix et Chaos (section 3.3, V8 ; décisions de l'utilisateur du 30/10/2026). Choisies au niveau 1 dans la
 // fenêtre des défis (lua_scripts/defis.lua, réglages 4 et 5 de la source « solazeroth-defis »), comme Destin.
-// - Remix : monde à ton niveau imposé (echelle.cpp, l'option ne se coupe pas), XP ×2, et chaque niveau donne
-//   1 % de dégâts et de vie en plus (cumulés : +80 % au niveau 80).
+// - Remix : monde à ton niveau imposé (echelle.cpp, l'option ne se coupe pas), XP ×1,5, et chaque niveau donne
+//   0,5 % de dégâts et de vie en plus (cumulés : +40 % au niveau 80). Calibrage final (29/10/2026) : ×2 et 1 % avant.
 // - Chaos : chaque jour (minuit, heure du serveur), une mutation tirée au sort pour ce personnage s'applique : dégâts,
 //   soins, XP, or ou une école de magie renforcée. Annoncée à la connexion et au changement de jour, et par .solchaos.
 // Addon : « CHAOS;nom;règle » (préfixe SOLDEFI), sur demande « .solchaos etat ».
@@ -23,8 +23,8 @@ namespace
     char const* const SOURCE = "solazeroth-defis";
     uint8 const REGLAGE_REMIX = 4;
     uint8 const REGLAGE_CHAOS = 5;
-    float const REMIX_XP = 2.0f;
-    float const REMIX_PAR_NIVEAU = 1.0f;   // % de dégâts et de vie par niveau
+    float const REMIX_XP = 1.5f;              // calibrage final (29/10/2026) : 2.0 → 1.5
+    float const REMIX_PAR_NIVEAU = 0.5f;   // % de dégâts et de vie par niveau (calibrage final : 1.0 → 0.5)
 
     struct Mutation
     {

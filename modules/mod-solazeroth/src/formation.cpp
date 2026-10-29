@@ -65,15 +65,22 @@ namespace
     std::array<std::vector<Entree>, MAX_CLASSES> sortsDeClasse;
     std::vector<Entree> metiers;     // catégories M et R
 
+    // Prix relevés au calibrage final (29/10/2026) : une maîtrise change le build (plaques sur un lanceur de sorts) et
+    // coûtait 0,5 à 3 h de revenu. Armes et cuir 2 → 10 po, ambidextrie 10 → 30, mailles 20 → 60, plaques 50 → 150,
+    // bouclier 5 → 20 po et niveau 1 → 10.
     struct Maitrise { uint32 sort; uint8 niveau; uint32 cout; uint32 avec; };
     std::vector<Maitrise> const MAITRISES =
     {
-        { 9077, 1, 2 * PO, 0 },  { 8737, 40, 20 * PO, 0 }, { 750, 40, 50 * PO, 0 }, { 9116, 1, 5 * PO, 107 },
-        { 1180, 1, 2 * PO, 0 },  { 15590, 1, 2 * PO, 0 },  { 201, 1, 2 * PO, 0 },   { 196, 1, 2 * PO, 0 },
-        { 198, 1, 2 * PO, 0 },   { 202, 1, 2 * PO, 0 },    { 197, 1, 2 * PO, 0 },   { 199, 1, 2 * PO, 0 },
-        { 200, 1, 2 * PO, 0 },   { 227, 1, 2 * PO, 0 },    { 264, 1, 2 * PO, 0 },   { 266, 1, 2 * PO, 0 },
-        { 5011, 1, 2 * PO, 0 },  { 2567, 1, 2 * PO, 0 },   { 5009, 1, 2 * PO, 0 },  { 674, 10, 10 * PO, 0 },
+        { 9077, 1, 10 * PO, 0 },  { 8737, 40, 60 * PO, 0 }, { 750, 40, 150 * PO, 0 }, { 9116, 10, 20 * PO, 107 },
+        { 1180, 1, 10 * PO, 0 },  { 15590, 1, 10 * PO, 0 }, { 201, 1, 10 * PO, 0 },   { 196, 1, 10 * PO, 0 },
+        { 198, 1, 10 * PO, 0 },   { 202, 1, 10 * PO, 0 },   { 197, 1, 10 * PO, 0 },   { 199, 1, 10 * PO, 0 },
+        { 200, 1, 10 * PO, 0 },   { 227, 1, 10 * PO, 0 },   { 264, 1, 10 * PO, 0 },   { 266, 1, 10 * PO, 0 },
+        { 5011, 1, 10 * PO, 0 },  { 2567, 1, 10 * PO, 0 },  { 5009, 1, 10 * PO, 0 },  { 674, 10, 30 * PO, 0 },
     };
+
+    // Sorts jamais vendus aux autres classes. Connexion (démoniste) : PV → mana, donc soin sans fin pour un soigneur
+    // (calibrage final, 29/10/2026).
+    std::set<uint32> const EXCLUS_AUTRES_CLASSES = { 1454, 1455, 1456, 11687, 11688, 11689, 27222, 57946 };
 
     // Pioche, couteau à dépecer, marteau, clé plate, bâtonnet runique, trousse de joaillier,
     // coffret de calligraphie, canne à pêche, silex et amadou.
@@ -229,8 +236,9 @@ namespace
         {
             Envoi envoi(player, 'X');
             for (Entree const& e : sortsDeClasse[classe])
-                envoi.Ajouter(Acore::StringFormat("{}:{}:{}:{}:{}", e.sort, e.niveau, e.cout * multiplicateurAutresClasses,
-                    uint32(EtatSort(player, e, true)), e.formes.empty() ? 0 : e.formes.front()));
+                if (!EXCLUS_AUTRES_CLASSES.count(e.sort))
+                    envoi.Ajouter(Acore::StringFormat("{}:{}:{}:{}:{}", e.sort, e.niveau, e.cout * multiplicateurAutresClasses,
+                        uint32(EtatSort(player, e, true)), e.formes.empty() ? 0 : e.formes.front()));
         }
         EnvoyerAddon(player, "XFIN");
     }
@@ -584,7 +592,9 @@ public:
                 {
                     if (e.sort != id)
                         continue;
-                    if (EtatSort(player, e, true) != DISPONIBLE)
+                    if (EXCLUS_AUTRES_CLASSES.count(e.sort))
+                        handler->SendSysMessage("|cffff0000Ce sort ne s'apprend pas hors de sa classe.|r");
+                    else if (EtatSort(player, e, true) != DISPONIBLE)
                         handler->SendSysMessage("|cffff0000Pas encore disponible.|r");
                     else if (Payer(player, e.cout * multiplicateurAutresClasses))
                         Enseigner(player, e.sort);

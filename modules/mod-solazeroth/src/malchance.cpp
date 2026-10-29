@@ -210,6 +210,13 @@ public:
             Player* player = ref.GetSource();
             if (!player)
                 continue;
+            // Épuisé dans ce raid (raids.cpp) : pas d'Éclat (calibrage final, 29/10/2026 ; la réinitialisation libre
+            // donnait un épique au choix en 2 h).
+            if (SolAzeroth::EpuiseRaid(player))
+            {
+                ChatHandler(player->GetSession()).SendSysMessage("|cffa0a0a0Raid épuisé : pas d'Éclat aujourd'hui pour ce boss.|r");
+                continue;
+            }
             uint32 compte = player->GetSession()->GetAccountId();
             CharacterDatabase.DirectExecute("INSERT INTO solazeroth_eclats (account, boss, eclats) VALUES ({}, {}, 1) "
                 "ON DUPLICATE KEY UPDATE eclats = eclats + 1", compte, unite->GetEntry());

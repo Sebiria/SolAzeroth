@@ -22,6 +22,9 @@ $reglages = [ordered]@{
         'Instance.IgnoreRaid'             = '1'
         'AccountInstancesPerHour'         = '1000'
         'Guild.AllowMultipleGuildMaster'  = '1'
+        # Calibrage final (29/10/2026) : pas de repos hors auberge ou ville, réparations plus chères
+        'Rate.Rest.Offline.InWilderness'  = '0'
+        'Rate.RepairCost'                 = '1.5'
     }
     'authserver.conf' = [ordered]@{
         'BindIP'  = '"127.0.0.1"'
@@ -43,10 +46,21 @@ $reglages = [ordered]@{
         'AutoBalance.LevelScaling'                     = '0'
         'AutoBalance.RewardScaling.Method'             = '"fixed"'
         'AutoBalance.RewardScaling.XP.Modifier'        = '2.5'
-        'AutoBalance.RewardScaling.Money'              = '0'
+        # Calibrage final : l'or des instances suit le nombre de places (un raid seul ne donne plus tout son or)
+        'AutoBalance.RewardScaling.Money'              = '1'
+        'AutoBalance.RewardScaling.Money.Modifier'     = '3.0'
+        # Calibrage final : les lanceurs de sorts de raid retrouvent leur mana (PV et dégâts des raids inchangés)
+        'AutoBalance.StatModifierRaid.Mana'            = '15.0'
+        'AutoBalance.StatModifierRaid.Boss.Mana'       = '15.0'
+        'AutoBalance.StatModifierRaidHeroic.Mana'      = '15.0'
+        'AutoBalance.StatModifierRaidHeroic.Boss.Mana' = '15.0'
+
         'AutoBalance.PlayerChangeNotify'               = '0'
     }
     'modules\challenge_modes.conf' = [ordered]@{ 'IronMan.Enable' = '0' }
+    # Calibrage final : pas de choix du taux d'XP (.xp set retiré)
+    'modules\individual_xp.conf'   = [ordered]@{ 'IndividualXp.Enabled' = 'false' }
+    'modules\transmog.conf'        = [ordered]@{ 'Transmogrification.ScaledCostModifier' = '2.0' }
     'modules\mod_ale.conf'         = [ordered]@{ 'ALE.ScriptPath' = '"C:/SolAzeroth/lua_scripts"' }
     'modules\mod_solazeroth.conf'  = [ordered]@{}
 }
