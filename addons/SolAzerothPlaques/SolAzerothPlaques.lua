@@ -4,6 +4,9 @@
 -- on ajoute nom, texte de vie et affaiblissements. Réglages : « /plaques » (gardés pour le compte).
 -- Les affaiblissements d'un monstre ne sont lisibles que quand il est cible, focalisation ou sous la souris. On les
 -- garde donc par GUID, et le journal de combat tient à jour ceux qu'on pose soi-même quand il n'est plus ciblé.
+-- Monstres de quête (demande de l'utilisateur du 29/10/2026) : un point d'exclamation devant le nom des monstres encore
+-- utiles à une quête du journal. Le serveur en donne la liste (« .solcibles ») à chaque changement du journal ; la marque
+-- disparaît quand l'objectif est rempli, même si la quête n'est pas encore rendue.
 
 local BORDURE = "Interface\\Tooltips\\Nameplate-Border"
 local TEXTURES = {
@@ -14,7 +17,7 @@ local TEXTURES = {
 local TEXTES_VIE = { "Aucun", "Pourcentage", "Valeur", "Valeur et pourcentage" }
 local DEFAUTS = {
     largeur = 120, hauteur = 10, texture = 1, texteVie = 2, police = 9, icone = 20, maxIcones = 6,
-    mesSeuls = true, niveau = true, ennemisAuto = true,
+    mesSeuls = true, niveau = true, ennemisAuto = true, quetes = true,
 }
 
 local db
@@ -22,6 +25,8 @@ local plaques = {}   -- cadre de plaque -> true
 local auras = {}     -- GUID -> { [sort] = { icone, nb, duree, fin, mien } }
 local noms = {}      -- GUID -> nom (pour retrouver une plaque au nom unique)
 local durees = {}    -- sort -> durée vue sur une cible (le journal de combat ne la donne pas)
+local cibles = {}    -- nom de monstre -> true s'il sert encore à une quête
+local recues         -- liste en cours de réception
 
 ------------------------------------------------------------------------
 -- Affaiblissements
@@ -94,6 +99,7 @@ local function Habiller(p)
     s.texteVie:SetFont(police, db.police, "OUTLINE")
     s.niveau:SetFont(police, db.police, "OUTLINE")
     s.niveau:SetAlpha(db.niveau and 1 or 0)
+    s.quete:SetSize(db.police + 6, db.police + 6)
     s.incant:SetStatusBarTexture(tex)
     for _, ic in ipairs(s.icones) do ic:SetSize(db.icone, db.icone) end
     s.largeur, s.hauteur = db.largeur, db.hauteur
@@ -134,6 +140,10 @@ local function Adopter(p)
 
     s.nom = vie:CreateFontString(nil, "OVERLAY")
     s.nom:SetPoint("BOTTOM", vie, "TOP", 0, 2)
+    s.quete = vie:CreateTexture(nil, "OVERLAY")
+    s.quete:SetTexture("Interface\\GossipFrame\\AvailableQuestIcon")
+    s.quete:SetPoint("RIGHT", s.nom, "LEFT", -1, 0)
+    s.quete:Hide()
     s.texteVie = vie:CreateFontString(nil, "OVERLAY")
     s.texteVie:SetPoint("CENTER", vie, "CENTER", 0, 0)
     niveau:ClearAllPoints()
@@ -238,6 +248,7 @@ local function MettreAJour(p, maintenant, cible, nomsVisibles)
 
     local nom = s.nomOrig:GetText()
     s.nom:SetText(nom)
+    if db.quetes and nom and cibles[nom] then s.quete:Show() else s.quete:Hide() end
     -- Le jeu peut réafficher le nom d'origine quand il recycle une plaque : on le recache à chaque passage.
     s.nomOrig:SetAlpha(0)
     s.nomOrig:Hide()
@@ -298,7 +309,7 @@ end)
 -- Fenêtre de réglages
 ------------------------------------------------------------------------
 local fen = CreateFrame("Frame", "SolAzerothPlaquesCadre", UIParent)
-fen:SetSize(320, 460)
+fen:SetSize(320, 486)
 fen:SetPoint("CENTER", 0, 60)
 fen:SetFrameStrata("DIALOG")
 fen:SetBackdrop({
@@ -380,6 +391,7 @@ Choix("texteVie", "Texte de vie", TEXTES_VIE, function(t) return t end)
 Case("mesSeuls", "Seulement mes affaiblissements")
 Case("niveau", "Afficher le niveau")
 Case("ennemisAuto", "Toujours afficher les plaques ennemies")
+Case("quetes", "Marquer les monstres de quête")
 
 local defaut = CreateFrame("Button", nil, fen, "UIPanelButtonTemplate")
 defaut:SetPoint("TOP", 0, y - 12)  -- sous la dernière case, pour ne pas la chevaucher
@@ -398,7 +410,23 @@ SlashCmdList["SOLAZEROTHPLAQUES"] = function() if fen:IsShown() then fen:Hide() 
 ------------------------------------------------------------------------
 -- Événements
 ------------------------------------------------------------------------
+-- Demande de la liste des monstres de quête, regroupée : le journal change souvent plusieurs fois de suite.
+local demande = CreateFrame("Frame")
+demande:Hide()
+demande:SetScript("OnUpdate", function(self, ecoule)
+    self.reste = self.reste - ecoule
+    if self.reste > 0 then return end
+    self:Hide()
+    SendChatMessage(".solcibles", "SAY")
+end)
+local function Demander(delai)
+    demande.reste = math.max(demande:IsShown() and demande.reste or 0, delai)
+    demande:Show()
+end
+
 local ev = CreateFrame("Frame")
+ev:RegisterEvent("QUEST_LOG_UPDATE")
+ev:RegisterEvent("CHAT_MSG_ADDON")
 ev:RegisterEvent("ADDON_LOADED")
 ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 ev:RegisterEvent("PLAYER_TARGET_CHANGED")
@@ -422,7 +450,19 @@ ev:SetScript("OnEvent", function(_, evenement, a1, a2, a3, a4, a5, a6, a7, a8, a
         SolAzerothPlaquesDB = SolAzerothPlaquesDB or {}
         db = SolAzerothPlaquesDB
         for k, v in pairs(DEFAUTS) do if db[k] == nil then db[k] = v end end
+    elseif evenement == "QUEST_LOG_UPDATE" then
+        Demander(0.5)
+    elseif evenement == "CHAT_MSG_ADDON" then
+        if a1 ~= "SolAzerothCibles" or a4 ~= UnitName("player") then return end
+        if a2 == "DEBUT" then
+            recues = {}
+        elseif a2 == "FIN" then
+            if recues then cibles, recues = recues, nil end
+        elseif recues then
+            for nom in a2:gmatch("[^;]+") do recues[nom] = true end
+        end
     elseif evenement == "PLAYER_ENTERING_WORLD" then
         if db and db.ennemisAuto then SetCVar("nameplateShowEnemies", 1) end
+        Demander(3)
     end
 end)
