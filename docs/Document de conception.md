@@ -1126,6 +1126,7 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
     - **5e vidéo (29/10/2026)** : note du Codex et « Raids anciens » sur une ligne, comme prévu. Restait :
       - Intendant : il ne restait que « Niveau 45 ». Le nom venait du cache Sol'Azeroth, donc l'objet n'était plus chargé par le client, et son emplacement et son type restaient inconnus. L'objet est maintenant chargé tant que `GetItemInfo` ne répond pas ;
       - la lettrine ne s'affichait toujours pas. Sa police passe de 34 à 30 (hypothèse : taille trop grande pour le client), à confirmer en jeu.
+  - **Validée en jeu par l'utilisateur le 29/10/2026.** Retour : objectifs à rendre sans ambiguïté. Migration 055 : les hauts faits disent maintenant « au rang de menace 3 **ou plus** » et « en défi extérieur de niveau 5 **ou plus** », comme les contrats (« rang de menace X ou plus »). Les hauts faits natifs et le patch sont régénérés avec ces textes.
   - **Pas faits** :
     - sous-onglet « Raids » : aucune fenêtre n'existe encore, les passages du jour restent annoncés à l'entrée ;
     - étape 6, connexion sans mot de passe : elle demanderait d'écrire le mot de passe dans un fichier du client ou de changer le serveur de connexion. **Décision à prendre par l'utilisateur.**
