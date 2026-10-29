@@ -1,9 +1,10 @@
 """Sol'Azeroth : plus d'icônes pour les macros (demande de l'utilisateur du 29/10/2026).
 
-La fenêtre des macros du jeu propose les icônes de SpellIcon.dbc, puis celles des objets (ItemDisplayInfo.dbc).
-Les archives du client contiennent environ deux fois plus d'icônes (Interface\\Icons) : hauts faits, montures,
-familiers, boss... Ce script ajoute à SpellIcon.dbc chaque icône du client absente des deux listes, et écrit le
-résultat dans patch-client\\fichiers\\DBFilesClient\\SpellIcon.dbc. Le serveur n'utilise pas ce fichier.
+Une macro ne peut prendre qu'une icône de SpellIcon.dbc (GetMacroIconInfo) : une icône de la liste des objets
+(GetMacroItemIconInfo, ItemDisplayInfo.dbc) reste vide sur une macro (essai en jeu du 29/10/2026). Ce script ajoute
+à SpellIcon.dbc les icônes des objets et celles des archives du client (Interface\\Icons : hauts faits, montures,
+boss...) qui n'y sont pas encore, et écrit le résultat dans patch-client\\fichiers\\DBFilesClient\\SpellIcon.dbc.
+Le serveur n'utilise pas ce fichier.
 
 Usage : py outils\\icones_macros.py   puis   py outils\\construire_patch.py
 """
@@ -39,14 +40,16 @@ def nom_court(chemin):
 def main():
     sorts = dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "SpellIcon.dbc"))
     connues = {nom_court(sorts.texte(e[1])) for e in sorts.enregistrements}
+    candidates = icones_du_client()
     objets = dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "ItemDisplayInfo.dbc"))
     for e in objets.enregistrements:
-        if e[5]:   # InventoryIcon_1
-            connues.add(nom_court(objets.texte(e[5])))
+        if e[5]:   # InventoryIcon_1 : l'icône existe dans le client même si les archives ne la listent pas
+            nom = objets.texte(e[5]).replace("/", "\\").split("\\")[-1]
+            candidates.setdefault(nom.lower(), nom)
 
     prochain = max(e[0] for e in sorts.enregistrements) + 1
     ajoutees = 0
-    for bas, nom in sorted(icones_du_client().items()):
+    for bas, nom in sorted(candidates.items()):
         if bas in connues:
             continue
         sorts.enregistrements.append([prochain, sorts.ajouter_texte("Interface\\Icons\\" + nom)])

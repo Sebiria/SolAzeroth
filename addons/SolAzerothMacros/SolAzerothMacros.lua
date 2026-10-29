@@ -1,7 +1,8 @@
 -- Macros (demande de l'utilisateur du 29/10/2026) : créer et modifier les macros du jeu, avec les icônes triées par
 -- catégorie (d'après leur nom de fichier) et une recherche, et des modèles pour les commandes de Sol'Azeroth.
--- Les icônes sont celles de la fenêtre des macros du jeu : SpellIcon.dbc, enrichi par le patch client
--- (outils\icones_macros.py), puis celles des objets. Création et modification impossibles en combat.
+-- Les icônes sont celles de SpellIcon.dbc, enrichi par le patch client de toutes les icônes du jeu
+-- (outils\icones_macros.py) : une icône de la liste des objets reste vide sur une macro. Création et modification
+-- impossibles en combat.
 
 local COLONNES, LIGNES = 12, 6
 local PAR_PAGE = COLONNES * LIGNES
@@ -69,9 +70,8 @@ end
 
 local function ChargerIcones()
     if #icones > 0 then return end
-    local nbSorts = GetNumMacroIcons()
-    for i = 1, nbSorts + GetNumMacroItemIcons() do
-        local texture = i <= nbSorts and GetMacroIconInfo(i) or GetMacroItemIconInfo(i - nbSorts)
+    for i = 1, GetNumMacroIcons() do
+        local texture = GetMacroIconInfo(i)
         if texture then
             local nom = texture:lower():match("([^\\/]+)$") or ""
             icones[#icones + 1] = { indice = i, texture = texture, nom = nom, categorie = Categorie(nom) }
@@ -153,7 +153,8 @@ local function Champ(largeur, hauteur, x, y, multiligne)
 end
 
 -- Liste des macros existantes (colonne de gauche)
-Texte("GameFontNormal", "Tes macros (glisse-les sur tes barres)", 24, -36)
+Texte("GameFontNormal", "Tes macros", 24, -36)
+Texte("GameFontDisableSmall", "à glisser sur tes barres", 104, -38)
 local listeMacros = {}
 local pageMacros = 1
 local LIGNES_MACROS = 14

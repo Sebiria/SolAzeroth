@@ -1112,7 +1112,7 @@ Une première version complète et amusante arrive en V1, avec les seuls modules
   - **Macros (demande de l'utilisateur du 29/10/2026)** : addon `SolAzerothMacros` (`/macros`, page « Macros » des Réglages de /sol).
     - Créer, modifier, supprimer une macro et la poser sur la barre (bouton, ou glisser-déposer depuis la liste) ; icônes triées par catégorie (panneau de boutons sur trois colonnes, un menu déroulant sortait de l'écran) (classes, écoles de magie, armes, armures, montures, familiers, hauts faits, métiers…) et recherche par nom de fichier.
     - Modèles prêts pour les commandes de Sol'Azeroth (`/sol`, `/rang`, `.coffre`…).
-    - 513 icônes du client ajoutées à la liste des macros du jeu (`outils/icones_macros.py`, SpellIcon.dbc du patch client) : hauts faits, montures, boss… absentes de la fenêtre d'origine.
+    - Une macro ne peut prendre qu'une icône de SpellIcon.dbc : une icône de la liste des objets restait vide (essai en jeu du 29/10/2026). `outils/icones_macros.py` ajoute donc à SpellIcon.dbc (patch client) toutes les icônes des objets et des archives du client : 6 443 icônes de macro au lieu de 3 226 ; la grille ne montre que celles-là.
   - À construire ensuite : défi de vagues dans l'arène des Croisés (récompense du rang 10 du Renom).
 
 ### 10.2 Chantier d'interface à prévoir (demande de l'utilisateur du 27/10/2026)
