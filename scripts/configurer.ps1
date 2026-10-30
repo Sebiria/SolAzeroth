@@ -31,6 +31,8 @@ $reglages = [ordered]@{
         'LogsDir' = '"C:/SolAzeroth/logs"'
     }
     'modules\AutoBalance.conf' = [ordered]@{
+        # v3 (31/10/2026) : la force des monstres vient de leur puissance (Sol'Azeroth), plus de cet équilibrage
+        'AutoBalance.Enable.Global'                    = '0'
         'AutoBalance.StatModifier.Health'              = '2.45'
         'AutoBalance.StatModifier.Mana'                = '8.0'
         'AutoBalance.StatModifier.Damage'              = '2.0'

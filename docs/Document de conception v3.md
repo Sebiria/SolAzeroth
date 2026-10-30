@@ -165,6 +165,15 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   | formation (achat des sorts), mod-autobalance, mod-individual-xp | hauts faits, codex, ambiance |
 
 - Les personnages v2 ne sont plus jouables en v3 : on repart de nouveaux personnages, après sauvegarde.
+- **Construit le 31/10/2026** :
+  - sauvegarde complète permanente dans `backups2-final` (bases et réglages) ;
+  - `SolAzeroth.Version = 3` : le chargeur du module ne charge plus les 15 systèmes v2 (`mod_solazeroth_loader.cpp`) ;
+  - `AutoBalance.Enable.Global = 0` (mod-individual-xp était déjà coupé) ;
+  - 8 addons v2 rangés dans `addons-v2` et retirés du jeu par le lanceur : Écart, Formation, Grimoire, Menace, Spécialisations, Talents, Ressources, Défis ;
+  - leurs pages sont retirées de `/sol` et du menu de la minicarte ;
+  - le cache des rangs d'objets, utilisé par les améliorations, se charge maintenant de lui-même, sans le système d'écart.
+
+  Au démarrage, la base signale encore des commandes et des scripts v2 sans code : c'est attendu, on fera le ménage plus tard.
 
 ### F1. Niveau caché et fixe
 - **Joueur** : tout nouveau personnage commence directement au niveau 80, sans expérience à gagner. Les conditions de niveau des objets sont alors toujours remplies.

@@ -1,6 +1,0 @@
-## Interface: 30300
-## Title: Sol'Azeroth - Défis
-## Notes: Fenêtre de choix des défis du personnage (bouton de la minicarte ou /defis).
-## Version: 1.1
-## SavedVariablesPerCharacter: SolAzerothDefisDB
-SolAzerothDefis.lua

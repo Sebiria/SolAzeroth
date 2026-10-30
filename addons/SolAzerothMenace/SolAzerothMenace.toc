@@ -1,7 +1,0 @@
-## Interface: 30300
-## Title: Sol'Azeroth - Rang de menace
-## Notes: Régler le rang de menace des donjons à l'avance (bouton de la minicarte ou /rang), et suivre les défis de boss.
-## Version: 1.2
-## SavedVariablesPerCharacter: SolAzerothMenaceDB
-SolAzerothMenace.lua
-Exterieur.lua

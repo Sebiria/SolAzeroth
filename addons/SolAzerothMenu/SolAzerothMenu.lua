@@ -3,18 +3,11 @@
 -- vers toutes les fenêtres. Le menu appelle les commandes des addons (SlashCmdList) : les fenêtres ne changent pas.
 
 local ENTREES = {
-    { texte = "Apprentissage",               commande = "SOLAZEROTHFORMATION" },
-    { texte = "Grimoire des autres classes", commande = "SOLAZEROTHGRIMOIRE" },
-    { texte = "Talents d'une autre classe",  commande = "SOLAZEROTHTALENTS" },
-    { texte = "Spécialisations",             commande = "SOLAZEROTHSPES" },
     { texte = "Contrats",                    commande = "SOLAZEROTHCONTRATS" },
     { texte = "Amélioration des objets",     commande = "SOLAZEROTHAMELIORER" },
     { texte = "Codex et Renom",              commande = "SOLAZEROTHCODEX" },
     { texte = "Journal de collection",       commande = "SOLAZEROTHJOURNAL" },
     { texte = "Hauts faits du compte",       commande = "SOLAZEROTHHAUTSFAITS" },
-    { texte = "Rang de menace",              commande = "SOLAZEROTHMENACE" },
-    { texte = "Défi en extérieur",           commande = "SOLAZEROTHEXTERIEUR" },
-    { texte = "Défis du personnage",         commande = "SOLAZEROTHDEFIS" },
     { texte = "Sacs",                        commande = "SOLAZEROTHSACS" },
     { texte = "Choix de butin en attente",   commande = "SOLAZEROTHBUTIN" },
     { texte = "Plaques de nom",              commande = "SOLAZEROTHPLAQUES" },

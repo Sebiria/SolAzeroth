@@ -1,6 +1,0 @@
-## Interface: 30300
-## Title: Sol'Azeroth - Écart d'équipement
-## Notes: Affiche « Sous-équipé » ou « Bien équipé » face au monstre ciblé ou combattu (déplaçable à la souris).
-## Version: 1.0
-## SavedVariablesPerCharacter: SolAzerothEcartDB
-SolAzerothEcart.lua

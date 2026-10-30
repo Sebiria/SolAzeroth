@@ -24,6 +24,7 @@
 #include "StringFormat.h"
 #include <algorithm>
 #include <array>
+#include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
 
@@ -63,8 +64,26 @@ namespace
         return player->CustomData.GetDefault<Ecart>("solazeroth_ecart");
     }
 
+    // Rangs des objets améliorés, lus une fois à la première demande : les améliorations (bonus.cpp) en ont besoin
+    // même en v3, où le reste de l'écart n'est pas chargé.
+    void ChargerRangs()
+    {
+        static std::once_flag fait;
+        std::call_once(fait, []
+        {
+            if (QueryResult r = CharacterDatabase.Query("SELECT item_guid, rang FROM solazeroth_objets_rang"))
+            {
+                std::unique_lock<std::shared_mutex> garde(verrouRangs);
+                do
+                    rangs[(*r)[0].Get<uint32>()] = (*r)[1].Get<uint8>();
+                while (r->NextRow());
+            }
+        });
+    }
+
     uint8 RangObjet(uint32 guid)
     {
+        ChargerRangs();
         std::shared_lock<std::shared_mutex> garde(verrouRangs);
         auto it = rangs.find(guid);
         return it == rangs.end() ? 0 : it->second;
@@ -209,6 +228,7 @@ unsigned char SolAzeroth::RangDObjet(unsigned int guid)
 
 void SolAzeroth::NoterRangObjet(unsigned int guid, unsigned char rang)
 {
+    ChargerRangs();
     std::unique_lock<std::shared_mutex> garde(verrouRangs);
     rangs[guid] = rang;
 }
@@ -331,13 +351,7 @@ public:
             attendu[niveau] = total ? somme / total : float(niveau);
         }
 
-        if (QueryResult r = CharacterDatabase.Query("SELECT item_guid, rang FROM solazeroth_objets_rang"))
-        {
-            std::unique_lock<std::shared_mutex> garde(verrouRangs);
-            do
-                rangs[(*r)[0].Get<uint32>()] = (*r)[1].Get<uint8>();
-            while (r->NextRow());
-        }
+        ChargerRangs();
         LOG_INFO("module", "Sol'Azeroth écart d'équipement : ilvl attendu {:.0f} au niveau 20, {:.0f} au 60, {:.0f} au 70, {:.0f} au 80 ; {} objets de rang",
             attendu[20], attendu[60], attendu[70], attendu[80], rangs.size());
     }

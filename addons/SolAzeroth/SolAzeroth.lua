@@ -10,16 +10,9 @@ local ENTETE_PARCHEMIN = 58
 
 -- page : cadre accueilli (nom global) et commande qui le remplit, ou fonction de construction (pages simples).
 local SECTIONS = {
-    { nom = "Personnage", icone = "Interface\\Icons\\Achievement_Character_Human_Male", pages = {
-        { nom = "Apprentissage", cadre = "SolAzerothFormationCadre", commande = "SOLAZEROTHFORMATION" },
-        { nom = "Grimoire", cadre = "SolAzerothGrimoireCadre", commande = "SOLAZEROTHGRIMOIRE", securise = true },
-        { nom = "Talents d'une autre classe", cadre = "SolAzerothTalentsCadre", commande = "SOLAZEROTHTALENTS" },
-        { nom = "Spécialisations", cadre = "SolAzerothSpesCadre", commande = "SOLAZEROTHSPES" },
-        { nom = "Défis", cadre = "SolAzerothDefisCadre", commande = "SOLAZEROTHDEFIS" },
-    } },
+    -- v3 (31/10/2026) : la section Personnage (apprentissage, grimoire, talents, spécialisations, défis) et les pages
+    -- Rang de menace et Défi extérieur sont retirées avec leurs addons.
     { nom = "Aventure", icone = "Interface\\Icons\\INV_Misc_Map_01", pages = {
-        { nom = "Rang de menace", cadre = "SolAzerothMenaceCadre", commande = "SOLAZEROTHMENACE" },
-        { nom = "Défi extérieur", cadre = "SolAzerothExterieurCadre", commande = "SOLAZEROTHEXTERIEUR" },
         { nom = "Contrats", cadre = "SolAzerothContratsCadre", commande = "SOLAZEROTHCONTRATS" },
         { nom = "Amélioration", cadre = "SolAzerothAmeliorationCadre", commande = "SOLAZEROTHAMELIORER" },
         { nom = "Butin", cadre = "SolAzerothButinCadre", commande = "SOLAZEROTHBUTIN", vide = "Aucun butin en attente.", pastille = true },

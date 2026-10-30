@@ -5,6 +5,17 @@
 [worldserver]
 
 ###################################################################################################
+# VERSION DU JEU (refonte v3 décidée le 30/10/2026)
+#
+#    SolAzeroth.Version                    3 = Sol'Azeroth v3 : les systèmes v2 bâtis sur les niveaux, les ressources
+#                                          et les talents (échelle, écart, défi extérieur, rangs de menace, affixes,
+#                                          spécialisations, formation, banque…) ne sont pas chargés.
+#                                          2 = ancienne v2 (repère v2-final du dépôt). Lu au démarrage du serveur.
+
+SolAzeroth.Version = 3
+
+
+###################################################################################################
 # RANG DE MENACE (sections 4.2 et 4.3)
 #
 #    SolAzeroth.Menace.Enable              1 = actif
