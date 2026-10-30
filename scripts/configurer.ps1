@@ -29,6 +29,9 @@ $reglages = [ordered]@{
         'StartPlayerLevel'                = '80'
         'StartHeroicPlayerLevel'          = '80'
         'Rate.Talent'                     = '0'
+        # v3 : plus de régénération de vie selon l'Esprit (instantanée avec les petites réserves de vie) ; v3_niveau.cpp
+        # la remplace par un pourcentage de la vie maximum, hors combat (SolAzeroth.V3.RegenVie)
+        'Rate.Health'                     = '0.001'
     }
     'authserver.conf' = [ordered]@{
         'BindIP'  = '"127.0.0.1"'

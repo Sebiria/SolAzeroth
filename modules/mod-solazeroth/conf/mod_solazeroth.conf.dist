@@ -14,6 +14,12 @@
 
 SolAzeroth.Version = 3
 
+#    SolAzeroth.V3.RegenVie                Pourcentage de la vie maximum rendu toutes les 2 secondes hors combat
+#                                          (v3 ; la régénération selon l'Esprit est coupée, Rate.Health = 0.001).
+#                                          Défaut : 3 (vie pleine en un peu plus d'une minute).
+
+SolAzeroth.V3.RegenVie = 3
+
 
 ###################################################################################################
 # RANG DE MENACE (sections 4.2 et 4.3)

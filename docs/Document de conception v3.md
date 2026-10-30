@@ -186,6 +186,11 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - migration 060 : les statistiques de base du niveau 80 (`player_class_stats`) deviennent celles du niveau 1. Le chevalier de la mort, qui n'a pas de niveau 1, prend celles du guerrier. Les anciennes valeurs sont gardées dans `solazeroth_v3_stats_80` pour l'annulation ;
   - `v3_niveau.cpp` : chaque créature garde les statistiques de son niveau d'origine, retenu comme sa puissance (`SolAzeroth::PuissanceCreature`), puis passe au niveau 80. Les familiers sont exclus. La puissance d'attaque des joueurs est calculée comme au niveau 1.
 
+  Premier test en jeu (31/10/2026) : un sanglier tué en 6 coups blancs, sans critique, pour moins de 10 % de vie perdue. La vie revenait aussitôt, car la régénération selon l'Esprit remplit en quelques secondes une réserve de 70 PV. Correction :
+  - cette régénération est coupée (`Rate.Health = 0.001`, le jeu refuse 0) ;
+  - hors combat, le joueur récupère `SolAzeroth.V3.RegenVie` = 3 % de sa vie maximum toutes les 2 secondes, soit la vie pleine en un peu plus d'une minute ;
+  - les familiers des joueurs ne régénèrent presque plus ; à revoir avec les classes à familier.
+
   Pas encore fait : la table des secteurs, et le masquage du niveau à l'écran (prévu en F4).
 
   À surveiller :

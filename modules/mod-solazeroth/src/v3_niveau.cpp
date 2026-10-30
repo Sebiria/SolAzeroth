@@ -4,8 +4,12 @@
 // - Les créatures gardent la vie, les dégâts et l'armure de leur niveau d'origine, qui devient leur « puissance »,
 //   puis passent au niveau 80 : à niveau égal, plus de bonus ni de malus de toucher, de critique ou d'esquive.
 // - La puissance d'attaque des joueurs ne compte plus le niveau (formule du niveau 1).
+// - Régénération de vie : celle du jeu, selon l'Esprit, est coupée (Rate.Health = 0.001) car elle remplissait les petites
+//   réserves de vie en quelques secondes ; hors combat, le joueur récupère SolAzeroth.V3.RegenVie % de sa vie maximum
+//   toutes les 2 secondes.
 
 #include "SolAzeroth.h"
+#include "Config.h"
 #include "Creature.h"
 #include "Player.h"
 #include "ScriptMgr.h"
@@ -14,9 +18,16 @@ namespace
 {
     uint8 const NIVEAU_FIXE = 80;
 
+    uint32 const TICK_REGEN = 2000;
+
     struct Puissance : DataMap::Base
     {
         uint8 valeur = 0;
+    };
+
+    struct Regen : DataMap::Base
+    {
+        uint32 attente = 0;
     };
 }
 
@@ -46,11 +57,25 @@ public:
 class solazeroth_v3_niveau_joueur : public PlayerScript
 {
 public:
-    solazeroth_v3_niveau_joueur() : PlayerScript("solazeroth_v3_niveau_joueur", { PLAYERHOOK_ON_BEFORE_UPDATE_ATTACK_POWER_AND_DAMAGE }) { }
+    solazeroth_v3_niveau_joueur() : PlayerScript("solazeroth_v3_niveau_joueur", {
+        PLAYERHOOK_ON_BEFORE_UPDATE_ATTACK_POWER_AND_DAMAGE, PLAYERHOOK_ON_UPDATE }) { }
 
     void OnPlayerBeforeUpdateAttackPowerAndDamage(Player* /*player*/, float& level, float& /*val2*/, bool /*ranged*/) override
     {
         level = 1.0f;
+    }
+
+    void OnPlayerUpdate(Player* player, uint32 diff) override
+    {
+        Regen* r = player->CustomData.GetDefault<Regen>("solazeroth_v3_regen");
+        r->attente += diff;
+        if (r->attente < TICK_REGEN)
+            return;
+        r->attente = 0;
+        if (!player->IsAlive() || player->IsInCombat() || player->GetHealth() >= player->GetMaxHealth())
+            return;
+        static float const pourcentage = sConfigMgr->GetOption<float>("SolAzeroth.V3.RegenVie", 3.0f);
+        player->ModifyHealth(std::max<int32>(1, int32(player->GetMaxHealth() * pourcentage / 100.0f)));
     }
 };
 
