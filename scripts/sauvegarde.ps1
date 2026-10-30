@@ -1,7 +1,7 @@
 ﻿# Sauvegarde des bases Sol'Azeroth
 #   -Type auto | manuelle | fermeture | avant-restauration : personnages + comptes,
 #         rangées dans backups\courantes (les 10 plus récentes sont gardées)
-#   -Type avant-maj : personnages + comptes + monde, rangées dans backups\avant-maj (toutes gardées)
+#   -Type avant-maj : personnages + comptes + monde, rangées dans backups\avant-maj (les 2 plus récentes sont gardées)
 param(
     [Parameter(Mandatory)][ValidateSet('auto', 'manuelle', 'fermeture', 'avant-restauration', 'avant-maj')][string]$Type,
     [int]$Garder = 10
@@ -32,9 +32,9 @@ foreach ($base in $bases) {
     }
 }
 
-if ($dossierType -eq 'courantes') {
-    Get-ChildItem "$racine\backups\courantes" -Directory | Sort-Object Name -Descending |
-        Select-Object -Skip $Garder | Remove-Item -Recurse -Force
-}
+# Les avant-maj contiennent aussi le monde (0,3 Go chacune) : on n'en garde que les 2 dernières.
+$garde = if ($dossierType -eq 'courantes') { $Garder } else { 2 }
+Get-ChildItem "$racine\backups\$dossierType" -Directory | Sort-Object Name -Descending |
+    Select-Object -Skip $garde | Remove-Item -Recurse -Force
 
 Write-Output "Sauvegarde $Type terminée : $destination"
