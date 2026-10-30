@@ -140,6 +140,49 @@ Ce brouillon sert de base de discussion : chiffres, noms et choix sont à repren
 - **Personnage de test** : guerrier, spécialisation tank.
 - **Rôle du test** : vérifier que le jeu est amusant et exigeant avant d'étendre la refonte au reste d'Azeroth. Il construit une première tranche de jeu, mais le contenu de Durotar visé reste toute la zone.
 
+## 6. Plan technique des fondations (proposé le 31/10/2026, à valider)
+
+Le principe : chaque étape se termine par une compilation, un démarrage propre du serveur et un essai en jeu par l'utilisateur. Le moteur d'AzerothCore reste intact tant qu'un point d'accroche existe. Quand il faut le modifier, la modification est gardée sous forme de patch, comme `patches\mod-challenge-modes.patch`. Le nouveau code va dans des fichiers `v3_*.cpp`, ce qui demande une seule reconfiguration de la compilation.
+
+### F0. Bascule en v3
+- Sauvegarde complète, puis réglage `SolAzeroth.Version = 3`.
+- On coupe les systèmes v2 qui contredisent la v3 :
+
+  | Coupés | Repris plus tard, adaptés |
+  | --- | --- |
+  | échelle du monde, écart de niveau, défi extérieur | contrats et primes |
+  | rangs de menace actuels | Marques et amélioration d'objets |
+  | spécialisations et talents v2 | butin, intendant |
+  | formation (achat des sorts), mod-autobalance, mod-individual-xp | hauts faits, codex, ambiance |
+
+- Les personnages v2 ne sont plus jouables en v3 : on repart de nouveaux personnages, après sauvegarde.
+
+### F1. Niveau caché et fixe
+- **Joueur** : tout nouveau personnage commence directement au niveau 80, sans expérience à gagner. Les conditions de niveau des objets sont alors toujours remplies.
+- **Monstres** : ils sont tous au niveau 80, et leur vie et leurs dégâts viennent de la **puissance conseillée de leur zone** (nouvelle table `solazeroth_v3_zones`). Le moteur offre l'accroche pour fixer le niveau (`OnBeforeCreatureSelectLevel`).
+- **Interface** : le niveau n'est plus affiché nulle part.
+- **Vérification** : un nouveau guerrier niveau 80 et un sanglier de Durotar au niveau 80 se battent à armes égales. Ni l'un ni l'autre n'écrase l'autre.
+
+### F2. Règles de combat
+- **Plus de raté, d'esquive, de parade ni de blocage** : tout coup porte, et seul le critique reste. Pour la mêlée, le moteur offre l'accroche `OnBeforeRollMeleeOutcomeAgainst`. Pour les sorts, c'est à vérifier ; à défaut, petit patch du moteur.
+- **Armure = réduction fixe** : le pourcentage d'armure du moteur est neutralisé et remplacé par une réduction fixe, retirée de chaque coup.
+- **Plus de ressource** : rage, énergie, mana, runes et combos ne sont plus ni utilisés ni affichés.
+- **Puissance du personnage** : moyenne des objets, chiffre envoyé à l'interface. Elle sert aussi à calculer le malus hors zone.
+
+### F3. Kit du guerrier tank
+- **Les 16 techniques** sont créées comme sorts propres (outil existant `auras_nommees.py` : Spell.dbc du client et table `spell_dbc` du serveur). Chacune a un coût nul, un temps de recharge, des valeurs fixes et aucune posture requise.
+- **Le passif Rempart** est écrit dans le module : bouclier rempli par les coups reçus, et consommé par Riposte et Second souffle.
+- **Le panel** : 8 techniques équipées sur les deux barres, et le choix des autres au repos.
+
+### F4. Interface v3 dans les fichiers du jeu
+- **Nos propres fichiers sont ajoutés à FrameXML.** Le test du 30/10 a montré que ce code garde les droits de Blizzard en combat.
+- **Les cadres de Blizzard inutiles sont cachés** : barres d'action, cadres du joueur et de la cible, mana, expérience…
+- **L'écran de combat de la maquette Synthèse est construit** : arcs de vie et de Rempart, deux barres de 4, grand cadre de cible, suivi de zone.
+
+### F5. Premier essai jouable à Durotar
+- Les monstres de la Vallée des épreuves et de Durotar sont remis à l'échelle, et le Gouffre de Ragefeu s'ouvre à 60 %, même si le contenu de la zone est encore incomplet.
+- **Vérification** : l'utilisateur joue son guerrier tank et dit si c'est exigeant et amusant. Les chiffres se calibrent à partir de là.
+
 ## 5. Questions pour les prochaines séries
 
 1. **Réputation des donjons** : la liste des techniques actives et passives d'entrée, et les paliers d'emplacements.
