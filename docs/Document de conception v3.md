@@ -34,6 +34,15 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
 - **Nettoyer la zone prépare son donjon** :
   - à 60 % (quêtes, primes, contrats…), on l'aborde correctement, « pas comme un touriste » ;
   - à 100 %, on l'aborde sereinement.
+- **Ce qui compte dans le pourcentage** (série 6) : tout. Quêtes de la zone, primes et contrats, lieux nettoyés (camps, grottes, repaires, chef compris), exploration et secrets.
+- **Les paliers** (série 6) :
+  - **60 % ouvre l'accès au donjon de la zone**, et rien d'autre ;
+  - **100 %** n'apporte pas de bonus en soi : c'est le meilleur équipement gagné en chemin qui rend le donjon bien plus serein qu'à 60 %.
+- **Les défis difficiles de zone** (série 6) :
+  - **les reliques cachées** un peu partout, à toutes récolter ; une carte qui dévoile leur position s'achète ;
+  - **des élites renforcés**, rares et bien plus forts que la zone, avec leurs propres techniques ;
+  - **des vagues** de monstres de plus en plus dures, avec un classement de la vague atteinte ;
+  - **du contre-la-montre** : nettoyer un lieu ou tuer une cible en temps limité, avec médaille bronze, argent ou or.
 
 ### 2.3 Combat
 - **Plus aucune ressource** (rage, énergie, mana, runes, points de combo) : seulement des temps de recharge, à la manière de Riven dans League of Legends.
@@ -130,12 +139,8 @@ Ce brouillon sert de base de discussion : chiffres, noms et choix sont à repren
 4. **Kit du guerrier tank** : relire et corriger le brouillon de la partie 3. Il reste aussi à fixer :
    - l'ordre de déblocage du panel ;
    - les deux autres spécialisations du guerrier.
-5. **Durotar** :
-   - ce qui compte dans le pourcentage de nettoyage ;
-   - les primes et contrats propres à la zone ;
-   - les défis difficiles ;
-   - les récompenses.
-6. **Interface v3** : quels cadres de Blizzard on garde, on refait ou on supprime, avec une maquette.
+5. **Durotar** : la liste concrète des quêtes gardées, des lieux à nettoyer, des primes et contrats, des reliques, des élites, du lieu de vagues et des épreuves contre la montre, avec leurs récompenses.
+6. **Interface v3** : 5 maquettes demandées (série 6), à départager, puis la liste des cadres de Blizzard à garder, refaire ou supprimer.
 7. **Monstres** :
    - leurs dégâts et leur vie à niveau fixe ;
    - les techniques des monstres et des boss face à un joueur sans ressource.
