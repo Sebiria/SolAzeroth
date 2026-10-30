@@ -16,6 +16,18 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
 
 **Interface épurée et moderne** (série 4) : peu d'éléments à l'écran. Restent bien visibles le cadre de la cible et les buffs et débuffs.
 
+**Écran de combat validé le 31/10/2026** : maquette « 6 · Synthèse », sur la toile de maquettes https://claude.ai/artifact/5nV5Cc2JHM94pFnHtGe4Py (privée).
+- **Personnage**, repris de la maquette Immersif :
+  - vie et Rempart en deux arcs fins autour du guerrier ;
+  - losange du passif ;
+  - buffs en petites pastilles ;
+  - puissance « 142 / 140 » sous le Rempart ;
+  - deux petites barres de 4 techniques translucides en bas au centre, chaque recharge sous un voile avec les secondes ;
+  - un halo sur une technique mise en avant.
+- **Cible**, reprise de la maquette Tactique : grand cadre en haut au centre, avec élite, vie en chiffres et en %, incantation très visible, et débuffs grands et chronométrés.
+- **Zone**, reprise de la maquette Arène, en haut à droite : suivi de zone (pourcentage, reliques), mini-carte et menu.
+- **Allure** : fond graphite, police Inter seule, un seul ambre pour le Rempart.
+
 **Vérifié le 30/10/2026 : l'interface peut être entièrement remplacée.** Le client charge des fichiers d'interface Blizzard (FrameXML, GlueXML) modifiés dans notre patch, et ce code garde les droits de Blizzard en combat. Un test a pu cacher le cadre protégé du portrait en plein combat. L'interface v3 se fait donc directement dans ces fichiers, et non en addons.
 
 ## 2. Décisions de fond (séries de questions du 30/10/2026)
@@ -140,7 +152,7 @@ Ce brouillon sert de base de discussion : chiffres, noms et choix sont à repren
    - l'ordre de déblocage du panel ;
    - les deux autres spécialisations du guerrier.
 5. **Durotar** : la liste concrète des quêtes gardées, des lieux à nettoyer, des primes et contrats, des reliques, des élites, du lieu de vagues et des épreuves contre la montre, avec leurs récompenses.
-6. **Interface v3** : 5 maquettes demandées (série 6), à départager, puis la liste des cadres de Blizzard à garder, refaire ou supprimer.
+6. **Interface v3** : l'écran de combat est choisi. Il reste à concevoir les fenêtres (sac et inventaire de collection, panel de techniques, équipement et puissance, carte, réputation et rang d'aventurier), puis à dresser la liste des cadres de Blizzard à garder, refaire ou supprimer.
 7. **Monstres** :
    - leurs dégâts et leur vie à niveau fixe ;
    - les techniques des monstres et des boss face à un joueur sans ressource.
