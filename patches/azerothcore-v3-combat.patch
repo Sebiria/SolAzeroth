@@ -1,0 +1,138 @@
+diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
+index 89c9cf4..05f204d 100644
+--- a/src/server/game/Entities/Object/Object.cpp
++++ b/src/server/game/Entities/Object/Object.cpp
+@@ -3544,6 +3544,11 @@ SpellMissInfo WorldObject::MagicSpellHitResult(Unit* victim, SpellInfo const* sp
+     if (!victim->IsAlive() && !victim->IsPlayer())
+         return SPELL_MISS_NONE;
+ 
++    bool alwaysHit = false;
++    sScriptMgr->OnSpellHitRoll(this, victim, spellInfo, alwaysHit);
++    if (alwaysHit)
++        return SPELL_MISS_NONE;
++
+     Unit const* unitCaster = ToUnit();
+ 
+     // vehicles cant miss
+diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
+index 3e1ac32..fa90a66 100644
+--- a/src/server/game/Entities/Unit/Unit.cpp
++++ b/src/server/game/Entities/Unit/Unit.cpp
+@@ -2301,7 +2301,9 @@ uint32 Unit::CalcArmorReducedDamage(Unit const* attacker, Unit const* victim, co
+     if (tmpvalue > 0.75f)
+         tmpvalue = 0.75f;
+ 
+-    return uint32(std::ceil(std::max(damage * (1.0f - tmpvalue), 0.0f)));
++    uint32 reducedDamage = uint32(std::ceil(std::max(damage * (1.0f - tmpvalue), 0.0f)));
++    sScriptMgr->OnAfterCalcArmorReducedDamage(attacker, victim, damage, armor, reducedDamage);
++    return reducedDamage;
+ }
+ 
+ float Unit::GetEffectiveResistChance(Unit const* owner, SpellSchoolMask schoolMask, Unit const* victim, SpellInfo const* spellInfo /*= nullptr*/, uint8 casterLevel /*= 0*/)
+@@ -3379,6 +3381,11 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit* victim, SpellInfo const* spellInfo
+     else
+         attackerWeaponSkill = int32(GetWeaponSkillValue(attType, victim));
+ 
++    bool alwaysHit = false;
++    sScriptMgr->OnSpellHitRoll(this, victim, spellInfo, alwaysHit);
++    if (alwaysHit)
++        return SPELL_MISS_NONE;
++
+     int32 skillDiff = attackerWeaponSkill - int32(victim->GetMaxSkillValueForLevel(this));
+ 
+     uint32 roll = urand (0, 10000);
+diff --git a/src/server/game/Scripting/ScriptDefines/UnitScript.cpp b/src/server/game/Scripting/ScriptDefines/UnitScript.cpp
+index eb365fd..ab37dd0 100644
+--- a/src/server/game/Scripting/ScriptDefines/UnitScript.cpp
++++ b/src/server/game/Scripting/ScriptDefines/UnitScript.cpp
+@@ -69,6 +69,21 @@ void ScriptMgr::OnBeforeRollMeleeOutcomeAgainst(Unit const* attacker, Unit const
+     CALL_ENABLED_HOOKS(UnitScript, UNITHOOK_ON_BEFORE_ROLL_MELEE_OUTCOME_AGAINST, script->OnBeforeRollMeleeOutcomeAgainst(attacker, victim, attType, attackerMaxSkillValueForLevel, victimMaxSkillValueForLevel, attackerWeaponSkill, victimDefenseSkill, crit_chance, miss_chance, dodge_chance, parry_chance, block_chance));
+ }
+ 
++void ScriptMgr::OnSpellHitRoll(WorldObject const* caster, Unit const* victim, SpellInfo const* spellInfo, bool& alwaysHit)
++{
++    CALL_ENABLED_HOOKS(UnitScript, UNITHOOK_ON_SPELL_HIT_ROLL, script->OnSpellHitRoll(caster, victim, spellInfo, alwaysHit));
++}
++
++void ScriptMgr::OnAfterCalcArmorReducedDamage(Unit const* attacker, Unit const* victim, uint32 damage, float armor, uint32& reducedDamage)
++{
++    CALL_ENABLED_HOOKS(UnitScript, UNITHOOK_ON_AFTER_CALC_ARMOR_REDUCED_DAMAGE, script->OnAfterCalcArmorReducedDamage(attacker, victim, damage, armor, reducedDamage));
++}
++
++void ScriptMgr::OnSpellPowerCost(WorldObject const* caster, SpellInfo const* spellInfo, int32& cost)
++{
++    CALL_ENABLED_HOOKS(UnitScript, UNITHOOK_ON_SPELL_POWER_COST, script->OnSpellPowerCost(caster, spellInfo, cost));
++}
++
+ void ScriptMgr::OnAuraApply(Unit* unit, Aura* aura)
+ {
+     CALL_ENABLED_HOOKS(UnitScript, UNITHOOK_ON_AURA_APPLY, script->OnAuraApply(unit, aura));
+diff --git a/src/server/game/Scripting/ScriptDefines/UnitScript.h b/src/server/game/Scripting/ScriptDefines/UnitScript.h
+index 8df6eea..941de8e 100644
+--- a/src/server/game/Scripting/ScriptDefines/UnitScript.h
++++ b/src/server/game/Scripting/ScriptDefines/UnitScript.h
+@@ -44,10 +44,14 @@ enum UnitHook
+     UNITHOOK_ON_UNIT_EXIT_COMBAT,
+     UNITHOOK_ON_UNIT_DEATH,
+     UNITHOOK_ON_UNIT_SET_SHAPESHIFT_FORM,
++    UNITHOOK_ON_SPELL_HIT_ROLL,
++    UNITHOOK_ON_AFTER_CALC_ARMOR_REDUCED_DAMAGE,
++    UNITHOOK_ON_SPELL_POWER_COST,
+     UNITHOOK_END
+ };
+ 
+ enum ReputationRank : uint8;
++class WorldObject;
+ class ByteBuffer;
+ struct BuildValuesCachePosPointers;
+ 
+@@ -110,6 +114,15 @@ public:
+     virtual void OnUnitExitCombat(Unit* /*unit*/) { }
+     virtual void OnUnitDeath(Unit* /*unit*/, Unit* /*killer*/) { }
+     virtual void OnUnitSetShapeshiftForm(Unit* /*unit*/, uint8 /*form*/) { }
++
++    // Called before the miss/resist/dodge/parry/block roll of a melee, ranged or magic spell; set alwaysHit to skip it
++    virtual void OnSpellHitRoll(WorldObject const* /*caster*/, Unit const* /*victim*/, SpellInfo const* /*spellInfo*/, bool& /*alwaysHit*/) { }
++
++    // Called at the end of Unit::CalcArmorReducedDamage; armor is the victim's armor after penetration
++    virtual void OnAfterCalcArmorReducedDamage(Unit const* /*attacker*/, Unit const* /*victim*/, uint32 /*damage*/, float /*armor*/, uint32& /*reducedDamage*/) { }
++
++    // Called when a spell's power cost is computed
++    virtual void OnSpellPowerCost(WorldObject const* /*caster*/, SpellInfo const* /*spellInfo*/, int32& /*cost*/) { }
+ };
+ 
+ #endif
+diff --git a/src/server/game/Scripting/ScriptMgr.h b/src/server/game/Scripting/ScriptMgr.h
+index ce301a1..4d1c064 100644
+--- a/src/server/game/Scripting/ScriptMgr.h
++++ b/src/server/game/Scripting/ScriptMgr.h
+@@ -583,6 +583,9 @@ public: /* UnitScript */
+     void OnUnitExitCombat(Unit* unit);
+     void OnUnitDeath(Unit* unit, Unit* killer);
+     void OnUnitSetShapeshiftForm(Unit* unit, uint8 form);
++    void OnSpellHitRoll(WorldObject const* caster, Unit const* victim, SpellInfo const* spellInfo, bool& alwaysHit);
++    void OnAfterCalcArmorReducedDamage(Unit const* attacker, Unit const* victim, uint32 damage, float armor, uint32& reducedDamage);
++    void OnSpellPowerCost(WorldObject const* caster, SpellInfo const* spellInfo, int32& cost);
+ 
+ public: /* MovementHandlerScript */
+     void OnPlayerMove(Player* player, MovementInfo movementInfo, uint32 opcode);
+diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
+index ebc0ab1..433e33c 100644
+--- a/src/server/game/Spells/Spell.cpp
++++ b/src/server/game/Spells/Spell.cpp
+@@ -3647,6 +3647,7 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
+     OnSpellLaunch();
+ 
+     m_powerCost = m_CastItem ? 0 : m_spellInfo->CalcPowerCost(m_caster, m_spellSchoolMask, this);
++    sScriptMgr->OnSpellPowerCost(m_caster, m_spellInfo, m_powerCost);
+ 
+     // Set combo point requirement
+     if (HasTriggeredCastFlag(TRIGGERED_IGNORE_COMBO_POINTS) || m_CastItem)
+@@ -7117,6 +7118,7 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
+ 
+     // xinef: Calculate power cost here, so funciton checking power can work properly and dont return bad results
+     m_powerCost = m_spellInfo->CalcPowerCost(m_caster, m_spellSchoolMask, this);
++    sScriptMgr->OnSpellPowerCost(m_caster, m_spellInfo, m_powerCost);
+ 
+     // cooldown
+     if (Creature const* creatureCaster = unitCaster->ToCreature())

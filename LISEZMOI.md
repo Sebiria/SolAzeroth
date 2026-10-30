@@ -44,7 +44,7 @@ Pas de bots, pas de recherche de groupe, pas d'hôtel des ventes. Chaque donjon 
 | `addons` | Addons du client (copiés dans le jeu par le lanceur) |
 | `scripts` | Lanceur, migrations, sauvegardes, configuration du serveur (PowerShell) |
 | `outils` | Outils Python : lire et écrire les fichiers MPQ et DBC, construire le patch client |
-| `patches` | Correctif local de mod-challenge-modes |
+| `patches` | Correctifs locaux : mod-challenge-modes, et accroches de combat v3 ajoutées au moteur AzerothCore |
 | `docs` | Document de conception et guide des raids en solo |
 
 Aucun fichier de Blizzard n'est fourni : il faut son propre client 3.3.5a (build 12340).

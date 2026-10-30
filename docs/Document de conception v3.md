@@ -206,6 +206,19 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **Plus de ressource** : rage, énergie, mana, runes et combos ne sont plus ni utilisés ni affichés.
 - **Puissance du personnage** : moyenne des objets, chiffre envoyé à l'interface. Elle sert aussi à calculer le malus hors zone.
 
+  **Construite le 31/10/2026**, pas encore vérifiée en jeu :
+  - **patch du moteur** `patches\azerothcore-v3-combat.patch` : trois accroches ajoutées au moteur (ratés des sorts, armure, coût des sorts), sur 6 fichiers ;
+  - `v3_combat.cpp` :
+    - **tout coup porte**, en mêlée, à distance et pour les sorts. Les effets comme l'étourdissement ne sont plus résistés. Plus de coup érafle ni de coup écrasant, même face à un boss. Le critique reste. L'immunité, le renvoi de sort et la fuite d'un monstre (évasion) restent aussi ;
+    - **armure** : chaque coup physique perd armure ÷ 20 points de dégâts (`SolAzeroth.V3.ArmureParPoint`), mais garde au moins 25 % de sa valeur (`SolAzeroth.V3.ArmureMinimum`). Les sorts magiques ne passent pas par l'armure ;
+    - **ressources** : plus aucun sort ne coûte de mana, de rage, d'énergie ou de puissance runique, pour les joueurs comme pour les monstres. Les sorts payés en vie gardent leur coût. Les barres restent affichées jusqu'à l'interface v3 (F4) ;
+    - **puissance** : moyenne des niveaux d'objet équipés (chemise et tabard exclus), +3 % par rang d'amélioration. C'est provisoire, en attendant les chiffres par qualité et origine (question 3). Elle part toutes les 2 secondes vers l'interface (message `SOLPUISSANCE`), et la commande `.puissance` l'affiche avec celle de la cible ;
+    - **malus** : face à un monstre plus fort, les dégâts du joueur et de ses familiers baissent de 2 % par point de puissance manquant, au plus 75 % (`SolAzeroth.V3.MalusParPoint`, `SolAzeroth.V3.MalusMax`).
+
+  À surveiller :
+  - les attaques qui consomment toute la rage restante (Exécution…) gardent ce comportement jusqu'au kit v3 (F3) ;
+  - les points de combo et les runes ne sont pas encore traités : on les verra avec les classes concernées.
+
 ### F3. Kit du guerrier tank
 - **Les 16 techniques** sont créées comme sorts propres (outil existant `auras_nommees.py` : Spell.dbc du client et table `spell_dbc` du serveur). Chacune a un coût nul, un temps de recharge, des valeurs fixes et aucune posture requise.
 - **Le passif Rempart** est écrit dans le module : bouclier rempli par les coups reçus, et consommé par Riposte et Second souffle.

@@ -20,6 +20,20 @@ SolAzeroth.Version = 3
 
 SolAzeroth.V3.RegenVie = 3
 
+#    SolAzeroth.V3.ArmureParPoint          Armure = réduction fixe (v3) : chaque coup physique perd armure / cette valeur
+#                                          points de dégâts. Défaut : 20 (100 d'armure retirent 5 points par coup).
+#    SolAzeroth.V3.ArmureMinimum           Part du coup qui passe toujours l'armure, en %. Défaut : 25.
+
+SolAzeroth.V3.ArmureParPoint = 20
+SolAzeroth.V3.ArmureMinimum = 25
+
+#    SolAzeroth.V3.MalusParPoint           Malus hors de sa puissance (v3) : dégâts infligés en moins, en %, par point de
+#                                          puissance qui manque face au monstre combattu. Défaut : 2.
+#    SolAzeroth.V3.MalusMax                Plafond de ce malus, en %. Défaut : 75.
+
+SolAzeroth.V3.MalusParPoint = 2
+SolAzeroth.V3.MalusMax = 75
+
 
 ###################################################################################################
 # RANG DE MENACE (sections 4.2 et 4.3)
