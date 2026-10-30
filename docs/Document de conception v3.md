@@ -39,8 +39,17 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
 
 ### 2.2 Monde et zones
 - **Monde ouvert**, chaque zone ayant une puissance conseillée.
+- **Une zone couvre une plage de puissance, découpée en secteurs** (précision de l'utilisateur, 31/10/2026). Par exemple, Durotar va de 1 à 10 :
+  - la Vallée des épreuves vers 1 à 3 ;
+  - les alentours de Razor Hill vers 4 à 6 ;
+  - les camps du sud vers 8 à 10.
+
+  On avance dans la zone à mesure qu'on gagne en puissance.
+- **Puissance d'un monstre** : par défaut, son niveau d'origine chez Blizzard, qui gradue déjà les monstres de chaque zone ; en coulisses, il passe au niveau fixe.
+- **Puissance d'un secteur** : celle de ses monstres, corrigeable secteur par secteur dans une table.
 - **Malus hors de sa puissance** : dans une zone trop forte pour lui, le joueur subit un malus de dégâts proportionnel à son manque de puissance.
   - Il réduit seulement les dégâts que le joueur inflige ; les monstres restent normaux (série 5).
+  - Il se calcule face à la puissance du monstre combattu, et non face à celle de toute la zone.
   - Exemple de courbe, à calibrer : −2 % par point de puissance manquant, avec un plafond.
 - **Une zone se suffit à elle-même** : ses quêtes, ses primes et ses contrats sont en accès libre, avec des défis difficiles et de belles récompenses. Les quêtes qui envoient dans une autre zone sont écartées pour l'instant.
 - **Nettoyer la zone prépare son donjon** :
@@ -159,7 +168,7 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 
 ### F1. Niveau caché et fixe
 - **Joueur** : tout nouveau personnage commence directement au niveau 80, sans expérience à gagner. Les conditions de niveau des objets sont alors toujours remplies.
-- **Monstres** : ils sont tous au niveau 80, et leur vie et leurs dégâts viennent de la **puissance conseillée de leur zone** (nouvelle table `solazeroth_v3_zones`). Le moteur offre l'accroche pour fixer le niveau (`OnBeforeCreatureSelectLevel`).
+- **Monstres** : ils sont tous au niveau 80. Leur vie et leurs dégâts viennent de **leur puissance**, c'est-à-dire leur niveau d'origine, corrigeable par secteur dans une nouvelle table `solazeroth_v3_secteurs`. Le moteur offre l'accroche pour fixer le niveau (`OnBeforeCreatureSelectLevel`).
 - **Interface** : le niveau n'est plus affiché nulle part.
 - **Vérification** : un nouveau guerrier niveau 80 et un sanglier de Durotar au niveau 80 se battent à armes égales. Ni l'un ni l'autre n'écrase l'autre.
 
