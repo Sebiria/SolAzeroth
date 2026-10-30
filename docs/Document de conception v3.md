@@ -12,6 +12,10 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
   - l'interface du jeu.
 - **Les murs porteurs** : le programme du client (`Wow.exe`), avec l'affichage 3D, la caméra et les déplacements. On ne le modifierait qu'en dernier recours, avec l'accord de l'utilisateur.
 
+**La v3 remplace la v2 tout de suite** (série 4) : l'utilisateur ne veut pas maintenir la v2, il repart sur une dynamique propre. Un repère dans le dépôt GitHub garde la v2 en mémoire.
+
+**Interface épurée et moderne** (série 4) : peu d'éléments à l'écran. Restent bien visibles le cadre de la cible et les buffs et débuffs.
+
 **Vérifié le 30/10/2026 : l'interface peut être entièrement remplacée.** Le client charge des fichiers d'interface Blizzard (FrameXML, GlueXML) modifiés dans notre patch, et ce code garde les droits de Blizzard en combat. Un test a pu cacher le cadre protégé du portrait en plein combat. L'interface v3 se fait donc directement dans ces fichiers, et non en addons.
 
 ## 2. Décisions de fond (séries de questions du 30/10/2026)
@@ -48,14 +52,25 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
 ### 2.5 Donjons
 - **Façon Genshin Impact** : le premier passage a un accès gradué.
 - **Le rang d'aventurier** est un rang de compte qui monte avec tout ce qu'on accomplit : quêtes, primes, contrats, zones nettoyées, donjons réussis. Ses paliers débloquent des difficultés supplémentaires, avec des récompenses à la hauteur. Il ne donne pas de puissance.
-- **Chaque donjon a sa réputation**, qui monte :
-  - surtout en terminant le donjon ;
+- **Une réputation globale des donjons et raids**, commune à toutes les instances, qui monte :
+  - surtout en terminant un donjon ou un raid ;
   - un tout petit peu à chaque monstre tué, pour inciter à nettoyer le donjon entier.
+- **Ce qu'apporte cette réputation** (série 4) : des techniques actives et passives à choisir à l'entrée de chaque donjon. Plus le rang de réputation est haut, plus il y a de choix et d'emplacements d'amélioration.
 
 ### 2.6 Mort
 - **Retour à la pierre de foyer, sans aucune perte.**
 
-### 2.7 Ce qu'on recycle de la v2
+### 2.7 Rang d'aventurier : le confort de jeu (série 4)
+En plus des difficultés de donjon, ses paliers débloquent du confort :
+- la compétence de monte à un certain palier ;
+- des montures, que l'on peut aussi obtenir autrement ;
+- une pierre de foyer qui se recharge plus vite.
+
+### 2.8 Inventaire sans limite (série 4)
+- **Plus de banque.**
+- **Un inventaire complet des objets à collectionner** (composants, matériaux…), sans limite de quantité.
+
+### 2.9 Ce qu'on recycle de la v2
 - **Contrats et primes**, pour accumuler une monnaie.
 - **Améliorations d'objets** avec les Marques.
 - **Rangs de menace**, qui deviennent les difficultés des donjons.
@@ -68,12 +83,11 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
 
 ## 4. Questions pour les prochaines séries
 
-1. **Réputation de donjon** : que débloque-t-elle ? Des objets à acheter, des améliorations, des récompenses de fin, du confort ?
+1. **Réputation des donjons** : la liste des techniques actives et passives d'entrée, et les paliers d'emplacements.
 2. **Rang d'aventurier** :
    - combien de paliers ;
    - ce qu'apporte chaque action ;
-   - les difficultés ouvertes par palier ;
-   - ce qu'il débloque d'autre (confort de jeu, réputation « fonctionnalités » de la remarque n°13).
+   - les difficultés ouvertes par palier.
 3. **Puissance** :
    - la formule exacte ;
    - la façon de l'afficher ;
@@ -88,9 +102,7 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
    - les primes et contrats propres à la zone ;
    - les défis difficiles ;
    - les récompenses.
-6. **Interface v3** :
-   - quels cadres de Blizzard on garde, on refait ou on supprime ;
-   - l'allure générale.
+6. **Interface v3** : quels cadres de Blizzard on garde, on refait ou on supprime, avec une maquette.
 7. **Monstres** :
    - leurs dégâts et leur vie à niveau fixe ;
    - les techniques des monstres et des boss face à un joueur sans ressource.
@@ -100,4 +112,3 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
    - le bouton de téléportation en fin de donjon (n°9).
 
    Les bugs de la v2 (n°1 à 4, 8 et 12) ne valent la peine d'être corrigés que si l'on continue de jouer à la v2 en attendant.
-9. **Sort de la v2** : on la laisse telle quelle à côté, ou la v3 la remplace directement ?
