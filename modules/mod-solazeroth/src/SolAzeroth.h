@@ -22,6 +22,9 @@ namespace SolAzeroth
     float IlvlEquipe(Player* player);
     float IlvlAttenduNiveau(unsigned char niveau);
 
+    // v3 : puissance d'une créature = son niveau d'origine, avant d'être affichée au niveau 80 (v3_niveau.cpp).
+    unsigned char PuissanceCreature(Creature const* creature);
+
     // Ajoute une ligne au journal de donjon de cette carte, s'il y en a un (journal.cpp)
     void Journaliser(Map const* map, std::string const& ligne);
 
@@ -154,5 +157,6 @@ void AddSC_solazeroth_addon();
 void AddSC_solazeroth_echelle();
 void AddSC_solazeroth_ligues();
 void AddSC_solazeroth_raids_anciens();
+void AddSC_solazeroth_v3_niveau();
 
 #endif

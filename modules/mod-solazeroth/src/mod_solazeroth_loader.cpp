@@ -25,6 +25,8 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_echelle();
         AddSC_solazeroth_ligues();
     }
+    else
+        AddSC_solazeroth_v3_niveau();
     AddSC_solazeroth_reinitialisation();
     AddSC_solazeroth_butin();
     AddSC_solazeroth_journal();

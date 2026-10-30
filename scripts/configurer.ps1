@@ -25,6 +25,10 @@ $reglages = [ordered]@{
         # Calibrage final (29/10/2026) : pas de repos hors auberge ou ville, réparations plus chères
         'Rate.Rest.Offline.InWilderness'  = '0'
         'Rate.RepairCost'                 = '1.5'
+        # v3 (31/10/2026) : niveau caché et fixe, tout le monde est niveau 80 sans talents ; la force vient de l'équipement
+        'StartPlayerLevel'                = '80'
+        'StartHeroicPlayerLevel'          = '80'
+        'Rate.Talent'                     = '0'
     }
     'authserver.conf' = [ordered]@{
         'BindIP'  = '"127.0.0.1"'

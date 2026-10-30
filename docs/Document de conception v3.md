@@ -181,6 +181,20 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **Interface** : le niveau n'est plus affiché nulle part.
 - **Vérification** : un nouveau guerrier niveau 80 et un sanglier de Durotar au niveau 80 se battent à armes égales. Ni l'un ni l'autre n'écrase l'autre.
 
+  **Construite le 31/10/2026**, pas encore vérifiée en jeu :
+  - `configurer.ps1` : `StartPlayerLevel` et `StartHeroicPlayerLevel` = 80, `Rate.Talent = 0` (plus aucun point de talent) ;
+  - migration 060 : les statistiques de base du niveau 80 (`player_class_stats`) deviennent celles du niveau 1. Le chevalier de la mort, qui n'a pas de niveau 1, prend celles du guerrier. Les anciennes valeurs sont gardées dans `solazeroth_v3_stats_80` pour l'annulation ;
+  - `v3_niveau.cpp` : chaque créature garde les statistiques de son niveau d'origine, retenu comme sa puissance (`SolAzeroth::PuissanceCreature`), puis passe au niveau 80. Les familiers sont exclus. La puissance d'attaque des joueurs est calculée comme au niveau 1.
+
+  Pas encore fait : la table des secteurs, et le masquage du niveau à l'écran (prévu en F4).
+
+  À surveiller :
+  - les quêtes basses s'affichent en gris ;
+  - l'or des quêtes suit le niveau 80 ;
+  - les sorts des monstres qui grandissent avec le niveau du lanceur peuvent frapper un peu plus fort.
+
+  On calibrera tout cela plus tard.
+
 ### F2. Règles de combat
 - **Plus de raté, d'esquive, de parade ni de blocage** : tout coup porte, et seul le critique reste. Pour la mêlée, le moteur offre l'accroche `OnBeforeRollMeleeOutcomeAgainst`. Pour les sorts, c'est à vérifier ; à défaut, petit patch du moteur.
 - **Armure = réduction fixe** : le pourcentage d'armure du moteur est neutralisé et remplacé par une réduction fixe, retirée de chaque coup.
