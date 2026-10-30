@@ -23,10 +23,13 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
 ### 2.1 Niveau et puissance
 - **Le niveau est caché et fixe en coulisses**, par exemple tout le monde au niveau 80, monstres compris. Le joueur ne voit jamais de niveau.
 - **La progression passe par la puissance**, qui vient surtout de l'équipement (niveau d'objet et rang d'amélioration), avec une petite part tirée des autres systèmes de progression.
+- **Calcul de la puissance** (série 5) : chaque objet porte un chiffre de puissance, qui dépend de sa qualité, de son origine et de son rang d'amélioration. La puissance du personnage est la moyenne de ses objets, plus un petit bonus des autres systèmes. Un seul chiffre, comme un niveau d'objet moyen.
 
 ### 2.2 Monde et zones
 - **Monde ouvert**, chaque zone ayant une puissance conseillée.
 - **Malus hors de sa puissance** : dans une zone trop forte pour lui, le joueur subit un malus de dégâts proportionnel à son manque de puissance.
+  - Il réduit seulement les dégâts que le joueur inflige ; les monstres restent normaux (série 5).
+  - Exemple de courbe, à calibrer : −2 % par point de puissance manquant, avec un plafond.
 - **Une zone se suffit à elle-même** : ses quêtes, ses primes et ses contrats sont en accès libre, avec des défis difficiles et de belles récompenses. Les quêtes qui envoient dans une autre zone sont écartées pour l'instant.
 - **Nettoyer la zone prépare son donjon** :
   - à 60 % (quêtes, primes, contrats…), on l'aborde correctement, « pas comme un touriste » ;
@@ -42,6 +45,7 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
   - les spécialisations hybrides se soignent en infligeant des dégâts ;
   - les classes qui avaient une spécialisation de soin gardent un sort de soin à fort temps de recharge.
 - **Pas de chance de toucher** : tout coup porte.
+- **Plus de menace** (série 5) : en solo, les monstres n'ont que le joueur à frapper. Le tank se définit par sa résistance, sa capacité à regrouper les monstres et à en tenir beaucoup à la fois. Les provocations deviennent des techniques qui attirent les monstres à soi.
 
 ### 2.4 Caractéristiques de l'équipement
 - **Jeu simplifié et lisible**. Premières pistes : Puissance (dégâts), Vie, Armure, Critique, Hâte (réduit les temps de recharge) et Vol de vie.
@@ -75,28 +79,57 @@ En plus des difficultés de donjon, ses paliers débloquent du confort :
 - **Améliorations d'objets** avec les Marques.
 - **Rangs de menace**, qui deviennent les difficultés des donjons.
 
-## 3. Première zone : Durotar
+## 3. Guerrier tank : brouillon de kit (proposition de Claude, à valider)
+
+Ce brouillon sert de base de discussion : chiffres, noms et choix sont à reprendre ensemble. La ressource est remplacée par les temps de recharge. Un temps de recharge global de 1 seconde sépare deux techniques. L'attaque automatique reste.
+
+### 3.1 Passif d'identité : Rempart
+- Chaque coup encaissé, après l'armure, verse **25 % de ses dégâts dans le Rempart**.
+- **Le Rempart est un bouclier** qui absorbe les coups suivants. Il est plafonné à 30 % de la vie maximale et se vide doucement hors combat.
+- **Certaines techniques consomment le Rempart** pour frapper ou se soigner.
+- **Le choix permanent** : garder le Rempart pour se protéger, ou le dépenser pour rendre les coups.
+
+### 3.2 Les 8 techniques de départ
+| Technique | Recharge | Effet |
+| --- | --- | --- |
+| Frappe du bouclier | 6 s | Gros dégâts à la cible, remplit le Rempart d'un montant fixe |
+| Coup de tonnerre | 8 s | Dégâts autour de soi ; les ennemis touchés frappent 20 % moins vite pendant 10 s |
+| Charge | 15 s | Bond sur la cible, étourdit 1 s |
+| Cri de défi | 12 s | Attire vers soi tous les ennemis à moins de 15 m (regroupement) |
+| Riposte du rempart | 10 s | Consomme le Rempart : 150 % du montant consommé en dégâts à la cible et autour |
+| Second souffle | 45 s | Consomme le Rempart : soigne de 100 % du montant consommé |
+| Ravage | 10 s | Dégâts autour de soi, +10 % par ennemi touché (jusqu'à +50 %) |
+| Mur protecteur | 90 s | −50 % de dégâts subis pendant 8 s |
+
+### 3.3 Techniques du panel, débloquées en progressant
+| Technique | Recharge | Effet |
+| --- | --- | --- |
+| Heurt de bouclier | 12 s | Interrompt une incantation et réduit au silence 3 s |
+| Fracasser armure | 8 s | Réduit l'armure de la cible (cumulable 3 fois) |
+| Onde de choc | 20 s | Cône devant soi, étourdit 2 s |
+| Bond héroïque | 20 s | Saut vers un point, dégâts à l'arrivée |
+| Dernier rempart | 120 s | +30 % de vie maximale pendant 15 s, et le Rempart est rempli |
+| Renvoi de sort | 20 s | Renvoie le prochain sort reçu |
+| Désarmement | 30 s | La cible inflige 50 % de dégâts en moins pendant 6 s |
+| Vengeance | 8 s | Utilisable seulement si le Rempart est plein : gros dégâts, ne consomme pas le Rempart |
+
+## 4. Première zone : Durotar
 
 - **But de la première zone** : nettoyer tout Durotar, Vallée des épreuves comprise. Le Gouffre de Ragefeu en est l'aboutissement.
 - **Personnage de test** : guerrier, spécialisation tank.
 - **Rôle du test** : vérifier que le jeu est amusant et exigeant avant d'étendre la refonte au reste d'Azeroth. Il construit une première tranche de jeu, mais le contenu de Durotar visé reste toute la zone.
 
-## 4. Questions pour les prochaines séries
+## 5. Questions pour les prochaines séries
 
 1. **Réputation des donjons** : la liste des techniques actives et passives d'entrée, et les paliers d'emplacements.
 2. **Rang d'aventurier** :
    - combien de paliers ;
    - ce qu'apporte chaque action ;
    - les difficultés ouvertes par palier.
-3. **Puissance** :
-   - la formule exacte ;
-   - la façon de l'afficher ;
-   - la courbe du malus de dégâts hors zone.
-4. **Kit du guerrier tank** :
-   - le passif d'identité ;
-   - le panel de techniques ;
-   - les 8 de départ ;
-   - la façon de tenir les monstres (menace) sans rage.
+3. **Puissance** : les chiffres par qualité et origine d'objet, et la courbe exacte du malus.
+4. **Kit du guerrier tank** : relire et corriger le brouillon de la partie 3. Il reste aussi à fixer :
+   - l'ordre de déblocage du panel ;
+   - les deux autres spécialisations du guerrier.
 5. **Durotar** :
    - ce qui compte dans le pourcentage de nettoyage ;
    - les primes et contrats propres à la zone ;
