@@ -24,6 +24,8 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_histoire();
         AddSC_solazeroth_echelle();
         AddSC_solazeroth_ligues();
+        AddSC_solazeroth_metiers();         // métiers partagés : en v3, plus de niveau de métier
+        AddSC_solazeroth_hauts_faits();     // hauts faits v2 (points de talent, Marques) : retirés en v3 le 31/10/2026
     }
     else
     {
@@ -43,11 +45,9 @@ void Addmod_solazerothScripts()
     AddSC_solazeroth_marques();
     AddSC_solazeroth_bonus();
     AddSC_solazeroth_defis_boss();
-    AddSC_solazeroth_metiers();
     AddSC_solazeroth_intendant();
     AddSC_solazeroth_contrats();
     AddSC_solazeroth_malchance();
-    AddSC_solazeroth_hauts_faits();
     AddSC_solazeroth_codex();
     AddSC_solazeroth_renom();
     AddSC_solazeroth_journal_collection();

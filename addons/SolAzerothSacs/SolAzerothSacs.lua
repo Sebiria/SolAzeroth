@@ -1,7 +1,6 @@
 -- Sacs unifiés (écrit pour Sol'Azeroth, inspiré du principe de Bagnon) :
 -- - une fenêtre pour le sac à dos et les 4 sacs, une fenêtre pour la banque et ses 7 sacs ;
 -- - recherche par nom (les objets qui ne correspondent pas sont assombris) ;
--- - l'infobulle d'un objet indique combien en ont tes autres personnages (sacs et banque).
 -- Les boutons d'objet reprennent le modèle du jeu (ContainerFrameItemButtonTemplate) : clic droit,
 -- glisser, vendre, utiliser fonctionnent comme d'habitude.
 
@@ -198,22 +197,8 @@ local function Memoriser(ids, cle)
     perso[cle] = contenu
 end
 
-GameTooltip:HookScript("OnTooltipSetItem", function(self)
-    local _, lien = self:GetItem()
-    local objet = lien and tonumber(strmatch(lien, "item:(%d+)"))
-    if not objet or not SolAzerothSacsDB or not SolAzerothSacsDB[royaume] then return end
-    for nom, perso in pairs(SolAzerothSacsDB[royaume]) do
-        local s = perso.sacs and perso.sacs[objet] or 0
-        local b = perso.banque and perso.banque[objet] or 0
-        if s + b > 0 then
-            local detail = {}
-            if s > 0 then table.insert(detail, s .. " dans les sacs") end
-            if b > 0 then table.insert(detail, b .. " à la banque") end
-            self:AddDoubleLine(nom, table.concat(detail, ", "), 0.6, 0.8, 1, 1, 1, 1)
-        end
-    end
-    self:Show()
-end)
+-- L'infobulle ne liste plus les autres personnages (31/10/2026, demande de l'utilisateur : la Collection v3
+-- remplace le partage des sacs).
 
 ------------------------------------------------------------------------
 -- Remplacement des sacs et de la banque du jeu

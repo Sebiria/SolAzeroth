@@ -41,6 +41,11 @@ namespace
     // Herboristerie et minage de grand maître, sorts de récolte de grand maître (le minage n'a plus besoin de pioche :
     // migration 073).
     std::pair<uint16, uint32> const RECOLTE[] = { { 182, 50300 }, { 186, 50310 } };
+    // Bonus des métiers de Blizzard, appris avec la compétence : Robustesse du minage (+60 Endurance au rang 6),
+    // Sang-de-vie de l'herboristerie. Retirés (31/10/2026 : 713 points de vie au lieu d'une centaine).
+    uint32 const BONUS_METIERS[] = { 53120, 53121, 53122, 53123, 53124, 53040,
+                                     55428, 55480, 55500, 55501, 55502, 55503 };
+    uint16 const DEPECAGE = 393;   // plus de dépeçage : la compétence (et Maître en anatomie) est retirée
 
     struct Collection : DataMap::Base
     {
@@ -125,6 +130,11 @@ public:
             if (!player->HasSpell(sort))
                 player->learnSpell(sort);
         }
+        for (uint32 sort : BONUS_METIERS)
+            if (player->HasSpell(sort))
+                player->removeSpell(sort, SPEC_MASK_ALL, false);
+        if (player->HasSkill(DEPECAGE))
+            player->SetSkill(DEPECAGE, 0, 0, 0);
         Collection* c = CollectionDe(player);
         if (QueryResult r = CharacterDatabase.Query("SELECT objet, nombre FROM solazeroth_v3_collection WHERE guid = {}",
             player->GetGUID().GetCounter()))

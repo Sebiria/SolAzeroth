@@ -583,6 +583,11 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Plus de dépeçage** (avance sur F6) : au démarrage, le serveur retire le butin de dépeçage des modèles de créature et le garde en mémoire. À la mort, le cuir et les peaux s'ajoutent au butin du corps, donc à la Collection.
     - **Quêtes à prendre sur la carte du monde** : le serveur (v3_carte.cpp) relit toutes les 3 s les quêtes que le personnage peut accepter sur son continent (niveau, quête précédente, classe, réputation…). Un « ! » marque chaque donneur ; le survol donne les titres et leur niveau.
     - **Cadre de cible** : la vie s'affiche dans la barre ; le pourcentage de dégâts garde sa place à droite.
+  - **Dixième série (31/10/2026)**, pas encore vérifiée en jeu :
+    - **Systèmes de la v2 retirés en v3** : les hauts faits du compte (avec leurs points de talent et leurs Marques) et les métiers partagés sur le compte ne sont plus chargés. Les métiers à 450 avaient débloqué quatre hauts faits de métier. Ils sont retirés du personnage Test, avec les 30 Marques qu'ils avaient données.
+    - **Bonus des métiers retirés** : Robustesse du minage (+60 Endurance, d'où 713 points de vie) et Sang-de-vie de l'herboristerie. Le dépeçage est retiré, et Maître en anatomie avec lui.
+    - **Puissance des quêtes** : un chiffre devant chaque quête, dans le suivi, le journal et sur la carte. Nos quêtes restent au niveau du joueur, car à leur niveau d'origine le client cacherait leur « ! ». Leur puissance vient donc de `SolUI_Puissances.lua`, généré par `quetes_durotar.py`.
+    - **Infobulles** : celle d'un objet n'affiche plus les autres personnages qui le possèdent (addon des sacs). Un objet à collectionner n'affiche que son nom, coloré selon son type : vert pour les herbes, bleu pour les métaux et les pierres, orange pour les cuirs. Ces couleurs servent aussi dans la Collection.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :

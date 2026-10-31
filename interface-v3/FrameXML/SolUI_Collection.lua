@@ -26,10 +26,37 @@ local Maj
 
 -- Collection du serveur : objet -> nombre. « LISTE;objet:nombre,… » en morceaux puis « FIN » ; « MAJ;objet;total;changement ».
 local ranges, complete = {}, false
-local NOMS = {}
+local NOMS, CATEGORIES = {}, {}
 for _, c in ipairs(S.CATALOGUE) do
-    for _, o in ipairs(c.objets) do NOMS[o[1]] = o end
+    for _, o in ipairs(c.objets) do NOMS[o[1]], CATEGORIES[o[1]] = o, c.nom end
 end
+
+-- Teinte d'un objet à collectionner (31/10/2026, demande de l'utilisateur) : vert pour les herbes, bleu pour les
+-- métaux et les pierres, orange pour les cuirs ; les autres gardent la couleur de leur qualité.
+local TEINTES = {
+    ["Herbes"] = { 0.35, 0.85, 0.35 },
+    ["Métaux et pierres"] = { 0.4, 0.65, 1 },
+    ["Cuirs et peaux"] = { 1, 0.55, 0.2 },
+}
+local function Teinte(id)
+    local t = TEINTES[CATEGORIES[id] or ""]
+    if t then return t[1], t[2], t[3] end
+    local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[NOMS[id] and NOMS[id][3] or 1]
+    if c then return c.r, c.g, c.b end
+    return S.Couleur("texte")
+end
+
+-- Infobulle d'un objet à collectionner, partout dans le jeu : son nom seul, à sa teinte.
+local function InfobulleCollection(self)
+    local _, lien = self:GetItem()
+    local id = lien and tonumber(lien:match("item:(%d+)"))
+    if not id or not NOMS[id] then return end
+    self:ClearLines()
+    self:AddLine(NOMS[id][2], Teinte(id))
+    self:Show()
+end
+GameTooltip:HookScript("OnTooltipSetItem", InfobulleCollection)
+ItemRefTooltip:HookScript("OnTooltipSetItem", InfobulleCollection)
 
 local function Nombre(id) return (ranges[id] or 0) + (GetItemCount(id, true) or 0) end
 
@@ -214,12 +241,6 @@ end
 ------------------------------------------------------------------------
 -- Mise à jour
 ------------------------------------------------------------------------
-local function Couleur(qualite)
-    local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[qualite]
-    if c then return c.r, c.g, c.b end
-    return S.Couleur("texte")
-end
-
 local function Visibles()
     local liste = {}
     for _, o in ipairs(S.CATALOGUE[categorie].objets) do
@@ -261,7 +282,7 @@ function Maj()
             t.icone:SetDesaturated(not a)
             t.icone:SetAlpha(a and 1 or 0.45)
             t.nom:SetText(o[2])
-            if a then t.nom:SetTextColor(Couleur(o[3])) else t.nom:SetTextColor(S.Couleur("gris", 0.8)) end
+            if a then t.nom:SetTextColor(Teinte(o[1])) else t.nom:SetTextColor(S.Couleur("gris", 0.8)) end
             t.nombre:SetText(a and ("× " .. nombre) or "Manquant")
             t.nombre:SetTextColor(S.Couleur(a and "ambreClair" or "gris", a and 1 or 0.7))
             t:SetBackdropColor(0.11, 0.118, 0.133, a and 1 or 0.4)

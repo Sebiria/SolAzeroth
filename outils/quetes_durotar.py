@@ -25,6 +25,7 @@ HISTOIRE = os.path.join(os.path.expanduser("~"), "Documents", "Claude", "Sol'Aze
 MIGRATION = r"C:\SolAzeroth\sql\migrations\063_v3_quetes_durotar"
 ITEM_DBC_ORIGINE = r"C:\SolAzeroth\data\dbc\Item.dbc"
 ITEM_DBC_PATCH = r"C:\SolAzeroth\patch-client\fichiers\DBFilesClient\Item.dbc"
+PUISSANCES = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Puissances.lua"
 
 QUETE = 910000          # D01 = 910001
 MARQUE = 37711          # monnaie des Marques (marques.cpp)
@@ -374,5 +375,18 @@ def nom_pnj(entree):
     return _noms[entree]
 
 
+def puissances():
+    """Puissance de chaque quête pour l'interface (SolUI_Quetes.lua). Les quêtes restent au niveau du joueur
+    (QuestLevel -1) : à leur niveau d'origine, le client les jugerait trop faciles et cacherait leur « ! »."""
+    lignes = ["-- Généré par outils\\quetes_durotar.py : ne pas modifier à la main.",
+              "-- Quête -> puissance conseillée (document de Durotar).",
+              "SolUI.PUISSANCES_QUETES = {"]
+    lignes += ["    [%d] = %d," % (QUETE + n, q["p"]) for n, q in sorted(Q.items())]
+    lignes.append("}")
+    with open(PUISSANCES, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lignes) + "\n")
+
+
 if __name__ == "__main__":
     construire()
+    puissances()

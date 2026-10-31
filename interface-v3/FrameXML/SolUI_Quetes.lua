@@ -28,11 +28,11 @@ local function Lire()
     end
     local liste = {}
     for i = 1, GetNumQuestLogEntries() do
-        local titre, _, _, _, enTete, _, complete, _, id = GetQuestLogTitle(i)
+        local titre, niveau, _, _, enTete, _, complete, _, id = GetQuestLogTitle(i)
         if titre then
             local objectifs = enTete and 0 or GetNumQuestLeaderBoards(i)
             table.insert(liste, {
-                index = i, titre = titre, enTete = enTete, id = id,
+                index = i, titre = titre, enTete = enTete, id = id, niveau = niveau,
                 -- 1 : terminée ; -1 : échouée ; une quête sans objectif (aller parler à quelqu'un) est prête d'office.
                 complete = complete == 1 or (not enTete and complete ~= -1 and objectifs == 0),
                 echouee = complete == -1, suivie = not enTete and IsQuestWatched(i),
@@ -40,6 +40,18 @@ local function Lire()
         end
     end
     return liste
+end
+
+-- Titre précédé de la puissance de la quête (son niveau d'origine), comme sur la carte du monde.
+-- Nos quêtes restent au niveau du joueur : leur puissance vient de SolUI_Puissances.lua.
+function S.PuissanceQuete(id, niveau)
+    return S.PUISSANCES_QUETES and S.PUISSANCES_QUETES[id or 0] or niveau
+end
+
+function S.TitreQuete(q)
+    local puissance = S.PuissanceQuete(q.id, q.niveau)
+    if puissance and puissance > 0 then return string.format("[%d] %s", puissance, q.titre) end
+    return q.titre
 end
 
 -- « Sanglier tacheté tué : 3/10 » -> « 3/10 », « Sanglier tacheté tué ».
@@ -163,7 +175,7 @@ local function MajSuivi(liste)
             local r = Rangee(nr)
             r.index = q.index
             r.couleur = q.complete and "vertClair" or (q.echouee and "rougeClair" or "clair")
-            r.titre:SetText(q.titre)
+            r.titre:SetText(S.TitreQuete(q))
             r.titre:SetTextColor(S.Couleur(r.couleur))
             MajObjet(r, q.index)
             r:ClearAllPoints()
@@ -374,7 +386,7 @@ local function MajDetail(q)
     SelectQuestLogEntry(q.index)
     local recit, resume = GetQuestLogQuestText()
     local y = 0
-    contenu.titre:SetText(q.titre)
+    contenu.titre:SetText(S.TitreQuete(q))
     y = Poser(contenu.titre, y)
     if q.complete or q.echouee then
         contenu.etat:SetText(q.echouee and "Échouée" or "Terminée : retourne la rendre")
@@ -500,7 +512,7 @@ local function MajJournal(liste)
         if q then
             local e = Entree(n)
             e.enTete, e.id = q.enTete, q.id
-            e.texte:SetText(q.enTete and q.titre:upper() or q.titre)
+            e.texte:SetText(q.enTete and q.titre:upper() or S.TitreQuete(q))
             S.Police(e.texte, q.enTete and "SemiBold" or "Regular", q.enTete and 11 or 13)
             e.texte:SetTextColor(S.Couleur(q.enTete and "gris" or "texte"))
             e.etat:SetText(q.complete and "Prête" or (q.echouee and "Échouée" or ""))
@@ -794,8 +806,7 @@ local function Marque(n)
         WorldMapTooltip:SetOwner(self, "ANCHOR_RIGHT")
         WorldMapTooltip:AddLine("Quêtes à prendre", 1, 0.82, 0)
         for _, q in ipairs(self.quetes) do
-            local c = GetQuestDifficultyColor(q.niveau)
-            WorldMapTooltip:AddLine(string.format("[%d] %s", q.niveau, q.titre), c.r, c.g, c.b)
+            WorldMapTooltip:AddLine(string.format("[%d] %s", q.niveau, q.titre), 1, 1, 1)
         end
         WorldMapTooltip:Show()
     end)
@@ -835,7 +846,8 @@ S.Message("SOLQDISPO", function(champs)
     if champs[1] == "DEBUT" then
         recues = { carte = tonumber(champs[2]) }
     elseif champs[1] == "Q" then
-        table.insert(recues, { id = tonumber(champs[2]), niveau = tonumber(champs[3]) or 1, x = tonumber(champs[4]),
+        local id = tonumber(champs[2])
+        table.insert(recues, { id = id, niveau = S.PuissanceQuete(id, tonumber(champs[3]) or 1), x = tonumber(champs[4]),
             y = tonumber(champs[5]), titre = table.concat(champs, ";", 6) })
     elseif champs[1] == "FIN" then
         disponibles = recues
