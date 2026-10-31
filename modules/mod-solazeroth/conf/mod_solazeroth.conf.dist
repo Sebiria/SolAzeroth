@@ -39,12 +39,13 @@ SolAzeroth.V3.MalusMax = 75
 #                                          apparition, donc au prochain redémarrage). Défaut : 2.
 #    SolAzeroth.V3.MonstresDegats          Dégâts des monstres contre le joueur et ses familiers, multipliés avant l'armure :
 #                                          mêlée et techniques physiques. Défaut : 4.
-#    SolAzeroth.V3.MonstresDegatsSorts     Même chose pour leurs sorts magiques et leurs dégâts sur la durée, qui ne passent
-#                                          pas par l'armure. Défaut : 2.
+#    SolAzeroth.V3.MonstresDegatsSorts     Même chose pour leurs sorts magiques, qui ne passent pas par l'armure. Défaut : 2.
+#    SolAzeroth.V3.MonstresDegatsDuree     Même chose pour leurs dégâts sur la durée (Corruption, saignements…). Défaut : 1.5.
 
 SolAzeroth.V3.MonstresVie = 2
 SolAzeroth.V3.MonstresDegats = 4
 SolAzeroth.V3.MonstresDegatsSorts = 2
+SolAzeroth.V3.MonstresDegatsDuree = 1.5
 
 #    SolAzeroth.V3.Rempart.Part            Kit du guerrier tank (v3, F3) : part des dégâts encaissés, après l'armure, versée
 #                                          dans le Rempart, en %. Défaut : 40.

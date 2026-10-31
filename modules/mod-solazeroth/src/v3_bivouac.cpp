@@ -8,10 +8,16 @@
 //   2 s, et au bout de 60 s le Repos au coin du feu (100031, vie maximale +5 % pendant 30 minutes) et les potions.
 // - Repos au coin du feu : hors combat, REGEN_REPOS % de la vie maximale par seconde (demande du 31/10/2026 ; à
 //   améliorer par rang avec F7, comme le bonus de vie).
-// L'interface reçoit « ETAT;charges;max;secondes avant le Repos » (préfixe SOLBIV) : compte à rebours du feu.
+// - Arbre du camp (31/10/2026, proposition de l'utilisateur ; la suite de l'arbre reste à débattre) : premier nœud,
+//   NOEUD_FEU_1 Marques (.camp acheter), le Repos au coin du feu donne en plus +10 % de dégâts (sort 100032, lancé à
+//   la place de 100031). Rang gardé dans solazeroth_v3_bivouac.rang_feu.
+// L'interface reçoit « ETAT;charges;max;secondes avant le Repos;rang du feu » (préfixe SOLBIV) : compte à rebours du
+// feu et arbre du camp.
 // Les sorts sont générés par outils\bivouac_v3.py (migration 067) ; les améliorations par rang viendront avec F7.
 
 #include "SolAzeroth.h"
+#include "Chat.h"
+#include "CommandScript.h"
 #include "DatabaseEnv.h"
 #include "GameObject.h"
 #include "ObjectAccessor.h"
@@ -22,12 +28,16 @@
 #include "StringFormat.h"
 #include <cmath>
 
+using namespace Acore::ChatCommands;
+
 namespace
 {
     char const* const PREFIXE = "SOLBIV";
     uint32 const POTION = 100029;
     uint32 const FEU = 100030;
     uint32 const REPOS = 100031;
+    uint32 const REPOS_FLAMME = 100032;     // Repos avec +10 % de dégâts : premier nœud de l'arbre du camp
+    uint32 const NOEUD_FEU_1 = 15;          // Marques
     uint32 const FEU_DOUILLET = 7353;       // aura du piège lié au feu de Blizzard
     uint32 const OBJET_FEU = 29784;
     uint32 const TICK = 2000;
@@ -44,6 +54,7 @@ namespace
     struct Bivouac : DataMap::Base
     {
         uint8 charges = CHARGES;
+        uint8 rangFeu = 0;
         uint32 attente = 0;
         uint32 depuisEnvoi = RENVOI;
         uint32 attenteFeu = 0;
@@ -61,8 +72,10 @@ namespace
 
     void Sauver(Player* player)
     {
-        CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_bivouac (guid, charges) VALUES ({}, {})",
-            player->GetGUID().GetCounter(), BivouacDe(player)->charges);
+        Bivouac* b = BivouacDe(player);
+        CharacterDatabase.Execute("INSERT INTO solazeroth_v3_bivouac (guid, charges, rang_feu) VALUES ({}, {}, {}) "
+            "ON DUPLICATE KEY UPDATE charges = VALUES(charges), rang_feu = VALUES(rang_feu)",
+            player->GetGUID().GetCounter(), b->charges, b->rangFeu);
     }
 
     void Envoyer(Player* player, bool force = false)
@@ -70,7 +83,7 @@ namespace
         Bivouac* b = BivouacDe(player);
         // Dernier champ : secondes avant le Repos au coin du feu (0 hors du feu), pour le compte à rebours de l'interface.
         uint32 restant = b->allume && b->feu && b->assis < ASSIS_POUR_REPOS ? (ASSIS_POUR_REPOS - b->assis) / 1000 : 0;
-        std::string message = Acore::StringFormat("ETAT;{};{};{}", b->charges, CHARGES, restant);
+        std::string message = Acore::StringFormat("ETAT;{};{};{};{}", b->charges, CHARGES, restant, b->rangFeu);
         if (!force && message == b->envoye)
             return;
         b->envoye = message;
@@ -184,9 +197,12 @@ public:
     void OnPlayerLogin(Player* player) override
     {
         Bivouac* b = BivouacDe(player);
-        if (QueryResult r = CharacterDatabase.Query("SELECT charges FROM solazeroth_v3_bivouac WHERE guid = {}",
+        if (QueryResult r = CharacterDatabase.Query("SELECT charges, rang_feu FROM solazeroth_v3_bivouac WHERE guid = {}",
             player->GetGUID().GetCounter()))
+        {
             b->charges = std::min<uint8>((*r)[0].Get<uint8>(), CHARGES);
+            b->rangFeu = (*r)[1].Get<uint8>();
+        }
         for (uint32 sort : { POTION, FEU })
             if (!player->HasSpell(sort))
                 player->learnSpell(sort);
@@ -235,12 +251,14 @@ public:
             player->ModifyHealth(int32(std::lround(player->GetMaxHealth() * REGEN_FEU / 100.0f)));
             if (avant && b->assis >= ASSIS_POUR_REPOS)
             {
-                player->CastSpell(player, REPOS, true);
+                player->RemoveAurasDueToSpell(REPOS);
+                player->RemoveAurasDueToSpell(REPOS_FLAMME);
+                player->CastSpell(player, b->rangFeu >= 1 ? REPOS_FLAMME : REPOS, true);
                 FixerCharges(player, CHARGES);
             }
         }
 
-        if (player->HasAura(REPOS) && !player->IsInCombat() && player->IsAlive() && !player->IsFullHealth())
+        if ((player->HasAura(REPOS) || player->HasAura(REPOS_FLAMME)) && !player->IsInCombat() && player->IsAlive() && !player->IsFullHealth())
             player->ModifyHealth(int32(std::lround(player->GetMaxHealth() * REGEN_REPOS * TICK / 1000 / 100.0f)));
 
         Envoyer(player, b->depuisEnvoi >= RENVOI);
@@ -252,9 +270,52 @@ public:
     }
 };
 
+class solazeroth_v3_bivouac_commandes : public CommandScript
+{
+public:
+    solazeroth_v3_bivouac_commandes() : CommandScript("solazeroth_v3_bivouac_commandes") { }
+
+    ChatCommandTable GetCommands() const override
+    {
+        static ChatCommandTable camp =
+        {
+            { "acheter", HandleAcheter, SEC_PLAYER, Console::No },
+        };
+        static ChatCommandTable commandes =
+        {
+            { "camp", camp },
+        };
+        return commandes;
+    }
+
+    // .camp acheter : achète le nœud suivant de l'arbre du camp (pour l'instant, le premier seulement).
+    static bool HandleAcheter(ChatHandler* handler)
+    {
+        Player* player = handler->GetPlayer();
+        Bivouac* b = BivouacDe(player);
+        if (b->rangFeu >= 1)
+        {
+            handler->SendSysMessage("Camp : ce nœud est déjà acquis.");
+            return true;
+        }
+        if (SolAzeroth::Marques(player) < NOEUD_FEU_1 || !SolAzeroth::RetirerMarques(player, NOEUD_FEU_1))
+        {
+            handler->PSendSysMessage("Camp : il faut {} Marques du voyageur (tu en as {}).", NOEUD_FEU_1,
+                SolAzeroth::Marques(player));
+            return true;
+        }
+        b->rangFeu = 1;
+        Sauver(player);
+        Envoyer(player, true);
+        handler->SendSysMessage("Camp : le Repos au coin du feu donne maintenant aussi +10 % de dégâts.");
+        return true;
+    }
+};
+
 void AddSC_solazeroth_v3_bivouac()
 {
     new solazeroth_v3_bivouac_joueur();
+    new solazeroth_v3_bivouac_commandes();
     RegisterSpellScript(spell_solazeroth_v3_potion);
     RegisterSpellScript(spell_solazeroth_v3_feu);
 }

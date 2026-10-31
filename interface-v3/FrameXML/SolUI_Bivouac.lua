@@ -18,6 +18,9 @@ S.Message("SOLBIV", function(champs)
     -- Secondes avant le Repos au coin du feu (0 : pas assis près de son feu).
     local restant = tonumber(champs[4]) or 0
     S.etat.reposFin = restant > 0 and (GetTime() + restant) or nil
+    -- Nœuds achetés dans l'arbre du camp (.camp acheter).
+    S.etat.rangFeu = tonumber(champs[5]) or 0
+    S.Prevenir("camp")
 end)
 
 -- Compte à rebours au-dessus des techniques, tant qu'on est assis près de son feu (demande de l'utilisateur).

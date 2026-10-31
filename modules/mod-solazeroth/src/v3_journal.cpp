@@ -75,7 +75,8 @@ namespace
                 << sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureMinimum", 25.0f) << " % du coup passent toujours. Monstres : vie x"
                 << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresVie", 2.0f) << ", dégâts x"
                 << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 4.0f) << " (avant l'armure), sorts x"
-                << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsSorts", 2.0f) << ".\n";
+                << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsSorts", 2.0f) << ", sur la durée x"
+                << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsDuree", 1.5f) << ".\n";
         }
         return j;
     }

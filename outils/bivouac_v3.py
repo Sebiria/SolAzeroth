@@ -6,22 +6,24 @@ et retouchés comme les techniques (techniques_v3.technique) :
   vie maximale, charges) ;
 - Feu de camp : copie du Feu de camp simple (818), qui pose le même feu (objet 29784, foyer de cuisine), sans bois ni
   briquet. Le personnage s'assoit à côté ; se lever l'éteint (spell_solazeroth_v3_feu, v3_bivouac.cpp) ;
-- Repos au coin du feu : le bonus reçu après 60 s assis près du feu, qui rend aussi les potions.
+- Repos au coin du feu : le bonus reçu après 60 s assis près du feu, qui rend aussi les potions ;
+- Repos au coin du feu, premier nœud de l'arbre du camp (31/10/2026, choix de l'utilisateur : 15 Marques) : le même,
+  avec +DEGATS_REPOS % de dégâts infligés. v3_bivouac.cpp le lance à la place du premier quand le nœud est acheté.
 
 Appelé par auras_nommees.py, qui écrit le Spell.dbc du client et la migration 067.
 """
-from techniques_v3 import AURA, HORS_COMBAT, SOI, SOIN, VIE_POURCENT, effet, technique
+from techniques_v3 import AURA, DEGATS_INFLIGES, HORS_COMBAT, SOI, SOIN, VIE_POURCENT, effet, technique
 
 MIGRATION = r"C:\SolAzeroth\sql\migrations\067_v3_bivouac"
 
-POTION, FEU, REPOS = 100029, 100030, 100031
+POTION, FEU, REPOS, REPOS_FLAMME = 100029, 100030, 100031, 100032
 D2MIN, D30MIN = 4, 30               # SpellDuration.dbc : 120 s, 1800 s
 
 SCRIPTS = {POTION: "spell_solazeroth_v3_potion", FEU: "spell_solazeroth_v3_feu"}
 
 # Valeurs du rang de départ : les mêmes que v3_bivouac.cpp, pour les descriptions.
 SOIN_POTION, CHARGES, RECHARGE_POTION = 30, 1, 30
-REGEN_FEU, BONUS_VIE = 6, 5
+REGEN_FEU, BONUS_VIE, DEGATS_REPOS = 6, 5, 10
 
 
 def lignes(d, icones):
@@ -53,5 +55,15 @@ def lignes(d, icones):
                   duree=D30MIN)
     e[131] = 0
     effet(e, 0, AURA, BONUS_VIE, SOI, aura=VIE_POURCENT)
+    t.append(e)
+
+    e = technique(d, 12975, REPOS_FLAMME, "Repos au coin du feu",
+                  "Vie maximale +%d %% et dégâts infligés +%d %% pendant 30 minutes. Hors combat, rend 1 %% de la vie "
+                  "maximale par seconde." % (BONUS_VIE, DEGATS_REPOS), i["campfire_rootflame"], 0,
+                  "Vie maximale augmentée de %d %%, dégâts infligés de %d %%. Hors combat, 1 %% de la vie maximale rendu "
+                  "par seconde." % (BONUS_VIE, DEGATS_REPOS), duree=D30MIN)
+    e[131] = 0
+    effet(e, 0, AURA, BONUS_VIE, SOI, aura=VIE_POURCENT)
+    effet(e, 1, AURA, DEGATS_REPOS, SOI, aura=DEGATS_INFLIGES, misc=127)
     t.append(e)
     return t

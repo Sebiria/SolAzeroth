@@ -4,7 +4,8 @@
 --   Ctrl et Alt se combinent ; souris : bouton du milieu, 4, 5 et molette ; Échap annule, Suppr retire). Une touche
 --   déjà prise est retirée de son ancien usage, et la fenêtre le dit. Les touches sont celles du jeu (SetBinding), enregistrées à la fermeture.
 -- - Techniques équipées : 8 au plus parmi les techniques débloquées, hors combat (.kit equiper, v3_kit.cpp).
--- - Feu de camp et potion : leurs effets au rang de départ (v3_bivouac.cpp) ; les rangs viendront avec F7.
+-- - Feu de camp et potion : leurs effets au rang de départ (v3_bivouac.cpp), et l'arbre du camp (31/10/2026) : un
+--   premier nœud, +10 % de dégâts pendant le Repos au coin du feu, pour 15 Marques (.camp acheter). La suite est à débattre.
 
 local S = SolUI
 
@@ -419,7 +420,7 @@ local TEXTES = {
     [POTION] = { "Rend 30 % de la vie maximale.", "1 charge au départ, 30 s de recharge.",
         "Les charges reviennent avec le Repos au coin du feu, et en zone de repos." },
     [FEU] = { "Pose un feu pour 2 minutes ; le personnage s'assoit à côté.", "Se lever, entrer en combat ou mourir l'éteint. Recharge : 2 minutes.",
-        "Assis : 6 % de la vie toutes les 2 s. Au bout de 60 s : Repos au coin du feu (vie maximale +5 %, 30 minutes) et potions rendues." },
+        "Assis : 6 % de la vie toutes les 2 s. Au bout de 60 s : Repos au coin du feu (vie maximale +5 %, 1 % de vie par seconde hors combat, 30 minutes) et potions rendues." },
 }
 for n, sort in ipairs({ POTION, FEU }) do
     local c = CreateFrame("Frame", nil, p3)
@@ -450,7 +451,43 @@ for n, sort in ipairs({ POTION, FEU }) do
     fiches[n] = c
 end
 
+-- Arbre du camp : le premier nœud, puis la suite à venir.
+local COUT_NOEUD_1 = 15
+local arbre = S.Texte(p3, "Bold", 11, "gris")
+arbre:SetPoint("TOPLEFT", 24, -340)
+arbre:SetText("ARBRE DU CAMP")
+local noeud = CreateFrame("Frame", nil, p3)
+noeud:SetSize(466, 96)
+noeud:SetPoint("TOPLEFT", 24, -362)
+S.Panneau(noeud, 0.6, "bordCreux")
+noeud.icone = noeud:CreateTexture(nil, "ARTWORK")
+noeud.icone:SetSize(48, 48)
+noeud.icone:SetPoint("LEFT", 20, 0)
+noeud.icone:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+noeud.nom = S.Texte(noeud, "Bold", 15, "clair")
+noeud.nom:SetPoint("TOPLEFT", noeud.icone, "TOPRIGHT", 14, -2)
+noeud.nom:SetText("Flamme du guerrier")
+noeud.texte = S.Texte(noeud, "Regular", 13, "texte")
+noeud.texte:SetPoint("TOPLEFT", noeud.nom, "BOTTOMLEFT", 0, -6)
+noeud.texte:SetWidth(220)
+noeud.texte:SetJustifyH("LEFT")
+noeud.texte:SetText("Le Repos au coin du feu donne aussi +10 % de dégâts.")
+local acheter = S.BoutonPlat(noeud, "", 130, 36, 13)
+acheter:SetPoint("RIGHT", -18, 0)
+acheter:SetScript("OnClick", function() SendChatMessage(".camp acheter", "SAY") end)
+local suite = S.Texte(p3, "Regular", 13, "gris")
+suite:SetPoint("TOPLEFT", noeud, "TOPRIGHT", 16, -8)
+suite:SetWidth(450)
+suite:SetJustifyH("LEFT")
+suite:SetText("La suite de l'arbre est à venir : régénération, potion, durée du Repos…")
+
 local function MajFiches()
+    local acquis = (S.etat.rangFeu or 0) >= 1
+    noeud.icone:SetTexture(select(3, GetSpellInfo(FEU)))
+    noeud.icone:SetDesaturated(not acquis)
+    acheter.texte:SetText(acquis and "Acquis" or (COUT_NOEUD_1 .. " Marques"))
+    acheter:Choisir(acquis)
+    if acquis then acheter:Disable() else acheter:Enable() end
     for _, c in ipairs(fiches) do
         local nom, _, icone = GetSpellInfo(c.sort)
         c.nom:SetText(nom or "")
@@ -477,5 +514,6 @@ f:SetScript("OnHide", function()
     voile:Hide()
 end)
 S.Ecouter("UPDATE_BINDINGS", function() if f:IsShown() then Maj(); MajFiches() end end)
+S.Abonner("camp", function() if f:IsShown() then MajFiches() end end)
 S.Ecouter("ACTIONBAR_SLOT_CHANGED", function() if f:IsShown() then Maj() end end)
 Onglet(1)

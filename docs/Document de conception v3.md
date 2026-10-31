@@ -565,6 +565,18 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Migration 070 annulée et retirée.** Le ×2 à la cadence d'origine donne aux Familiers vils la même pression que le ×4 à demi-cadence de l'essai précédent, que l'utilisateur jugeait correct.
     - L'en-tête du journal de combat indique les deux multiplicateurs.
     - **Reste au calibrage final** : l'armure fixe des monstres contre les armes faibles du début de jeu.
+  - **Huitième série (31/10/2026)**, après plusieurs essais contre Yarrog :
+    - **Retour de l'utilisateur** :
+      - Yarrog a été battu au 2e ou 3e essai, mais seulement en jouant autour d'un pilier pour éviter Immolation, et la dernière fois à un coup blanc de la mort ;
+      - les ticks de Corruption ne sont pas négligeables ;
+      - jouer avec les murs n'est pas instinctif ;
+      - Sarkoth, qui ne fait que de la mêlée, a été facile ;
+      - réduire l'armure n'est pas la solution.
+    - **Dégâts sur la durée des monstres** : nouveau réglage `SolAzeroth.V3.MonstresDegatsDuree` = 1,5 ; les sorts directs restent à ×2.
+    - **Arbre du camp** (proposition de l'utilisateur) : les améliorations du feu de camp prennent la forme d'un arbre de talents. **Premier nœud, obligatoire** : « Flamme du guerrier », 15 Marques (environ 20 gagnées dans la vallée). Le Repos au coin du feu donne alors aussi +10 % de dégâts infligés.
+      - Le bonus vient avec le Repos, pas en permanent : on a une raison de faire un feu avant un chef. C'est le choix de l'utilisateur.
+      - Mise en œuvre : sort 100032 (copie du Repos avec l'aura 79, +10 % toutes écoles), lancé à la place de 100031 quand `solazeroth_v3_bivouac.rang_feu` ≥ 1 ; achat par `.camp acheter` ; affichage dans l'onglet « Feu de camp et potion » de la fenêtre Techniques et raccourcis.
+      - **La suite de l'arbre est à débattre**, ainsi que son lien avec la « liste de courses » de F7 (or, éclats, composants).
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :

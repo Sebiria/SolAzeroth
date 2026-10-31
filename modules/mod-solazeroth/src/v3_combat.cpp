@@ -14,7 +14,8 @@
 // - Calibrage (31/10/2026) : les dégâts des monstres contre le joueur et ses familiers sont multipliés par
 //   SolAzeroth.V3.MonstresDegats, avant l'armure (leur vie l'est dans v3_niveau.cpp). Leurs sorts magiques et leurs
 //   dégâts sur la durée, qui ne passent pas par l'armure, le sont par SolAzeroth.V3.MonstresDegatsSorts (×2 : Yarrog
-//   Plaie-d'ombre tuait en 12 s à coups de Corruption à 40 par tick, journal du 31/10/2026).
+//   Plaie-d'ombre tuait en 12 s à coups de Corruption à 40 par tick, journal du 31/10/2026), et leurs dégâts sur la durée
+//   par SolAzeroth.V3.MonstresDegatsDuree (×1,5, accord de l'utilisateur après d'autres essais contre Yarrog).
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -45,6 +46,7 @@ namespace
         float pourcentParRang = 0.03f;
         float degatsMonstres = 4.0f;
         float degatsSorts = 2.0f;
+        float degatsDuree = 1.5f;
     } reglages;
 
     struct Puissance : DataMap::Base
@@ -231,7 +233,7 @@ public:
     void ModifyPeriodicDamageAurasTick(Unit* cible, Unit* attaquant, uint32& degats, SpellInfo const* sort) override
     {
         degats = uint32(std::lround(degats * EchelleSort(attaquant, sort)));
-        Appliquer(cible, attaquant, degats, reglages.degatsSorts);
+        Appliquer(cible, attaquant, degats, reglages.degatsDuree);
     }
     // Soins des monstres (sur eux ou leurs alliés) : même rapport.
     void ModifyHealReceived(Unit* /*cible*/, Unit* soigneur, uint32& soin, SpellInfo const* sort) override
@@ -277,6 +279,7 @@ public:
         reglages.pourcentParRang = sConfigMgr->GetOption<float>("SolAzeroth.Bonus.PourcentParRang", 0.03f);
         reglages.degatsMonstres = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 4.0f);
         reglages.degatsSorts = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsSorts", 2.0f);
+        reglages.degatsDuree = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsDuree", 1.5f);
     }
 };
 
