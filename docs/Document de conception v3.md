@@ -92,6 +92,14 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
     - un objet gagné va-t-il directement dans l'arsenal, sans passer par le sac ?
     - que deviennent les objets en double ou dépassés : recyclés en matériaux d'amélioration ?
 
+### 2.4 bis Métiers (idée de l'utilisateur, 31/10/2026, pour plus tard)
+- **Métiers de récolte** (minerais, plantes…) :
+  - **connus dès le départ**, sans apprentissage ni niveau de compétence ;
+  - on garde les modèles du jeu pour les filons et les plantes, mais leurs **icônes sont remplacées par celles du jeu actuel** (retail).
+- **Nos propres recettes**, avec des icônes retail elles aussi.
+  - Cela supposera d'extraire beaucoup d'icônes depuis Wowhead, avec le même outil que pour les techniques (`outils\icones_retail.py`). Le téléchargement en masse se fera avec l'accord de l'utilisateur.
+- **Les autres métiers** viendront au compte-gouttes, plus tard.
+
 ### 2.5 Donjons
 - **Façon Genshin Impact** : le premier passage a un accès gradué.
 - **Le rang d'aventurier** est un rang de compte qui monte avec tout ce qu'on accomplit : quêtes, primes, contrats, zones nettoyées, donjons réussis. Ses paliers débloquent des difficultés supplémentaires, avec des récompenses à la hauteur. Il ne donne pas de puissance.
