@@ -88,7 +88,7 @@ SolUI.CATALOGUE = {
         { 44128, "Fourrure arctique", 3 },
         { 38425, "Cuir boréen lourd", 1 },
     } },
-    { nom = "Minerais, barres et pierres", objets = {
+    { nom = "Métaux et pierres", objets = {
         { 22203, "Grand éclat d'obsidienne", 1 },
         { 22202, "Petit éclat d'obsidienne", 1 },
         { 2835, "Pierre brute", 1 },

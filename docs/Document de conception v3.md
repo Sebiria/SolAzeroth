@@ -534,6 +534,15 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Feu de camp** : compte à rebours au-dessus des techniques avant le Repos et les potions.
     - **Raccourcis** : boutons de la souris (milieu, 4, 5) et molette.
     - **Quêtes suivies** : gardées par personnage et remises à la connexion.
+  - **Cinquième série (31/10/2026)**, après l'essai dans la vallée des Épreuves ; pas encore vérifiée en jeu :
+    - **Journal de combat** : la Boule de feu du Familier vil frappe pour environ 24 avant le Rempart (6 × 4). Elle passe outre l'armure. Elle partait toutes les 5 à 7 s, alors qu'un combat dure deux fois plus longtemps qu'à l'origine, puisque la vie des monstres est doublée. Un diablotin tient 44 s contre le personnage Test, de puissance 1,7 contre 4, et deux diablotins le tuent.
+    - **Sorts des monstres normaux** (migration 070) : leurs sorts répétés en combat (SmartAI) partent deux fois moins souvent, ce qui touche 4 027 sorts. La Boule de feu du Familier vil part désormais toutes les 10 à 14 s.
+    - **PNJ d'ambiance dans la grotte de la Lame ardente** (migration 071) : ils suivaient les trajets de patrouille des Familiers vils, dont la faction 7 avait été prise pour une faction non hostile. 32 trajets de monstres hostiles ont été retirés des routes d'ambiance ; il en reste 462.
+    - **Pierre de foyer** : troisième bouton, à droite du feu de camp. Sa touche se règle dans la fenêtre des raccourcis, sous le nom « PF ».
+    - **Repos au coin du feu** : hors combat, il rend 1 % de la vie maximale par seconde. Ce taux s'améliorera par rang avec F7, comme le bonus de vie.
+    - **Touches de souris abrégées** sur les boutons : S4 pour le bouton 4, MH et MB pour la molette.
+    - **Collection** : la grille passe à 4 colonnes plus larges. Les tuiles affichent « Manquant ». La catégorie s'appelle désormais « Métaux et pierres », et la croix de fermeture ne recouvre plus le filtre « Manquants ».
+    - **Discussion** : la zone de saisie s'appelle `ChatFrame1EditBox` en 3.3.5. Le nom `ChatFrameEditBox` provoquait une erreur au chargement (FrameXML.log).
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :

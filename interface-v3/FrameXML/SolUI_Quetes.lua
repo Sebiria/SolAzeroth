@@ -100,8 +100,8 @@ local function Rangee(n)
     o.recharge = CreateFrame("Cooldown", nil, o, "CooldownFrameTemplate")
     o.recharge:SetAllPoints(o.icone)
     o:SetScript("OnClick", function(self)
-        if IsModifiedClick("CHATLINK") and ChatFrameEditBox:IsVisible() then
-            ChatFrameEditBox:Insert((GetQuestLogSpecialItemInfo(self.index)))
+        if IsModifiedClick("CHATLINK") and ChatFrame1EditBox:IsVisible() then
+            ChatFrame1EditBox:Insert((GetQuestLogSpecialItemInfo(self.index)))
         else
             UseQuestLogSpecialItem(self.index)
         end

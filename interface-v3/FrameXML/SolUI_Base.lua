@@ -207,6 +207,16 @@ function S.Duree(secondes)
     return math.ceil(secondes) .. " s"
 end
 
+-- Touche abrégée pour un bouton : « a-A », et pour la souris « S4 » (bouton 4), « MH » et « MB » (molette), car
+-- « Bouton de souris 4 » débordait du bouton (capture du 31/10/2026).
+local SOURIS = { MOUSEWHEELUP = "MH", MOUSEWHEELDOWN = "MB", BUTTON3 = "S3", BUTTON4 = "S4", BUTTON5 = "S5" }
+function S.ToucheCourte(touche)
+    if not touche then return "" end
+    local modificateurs, base = touche:match("^(.-)([^-]+)$")
+    if not base or not SOURIS[base] then return GetBindingText(touche, "KEY_", 1) end
+    return modificateurs:gsub("ALT%-", "a-"):gsub("CTRL%-", "c-"):gsub("SHIFT%-", "s-") .. SOURIS[base]
+end
+
 ------------------------------------------------------------------------
 -- Événements et messages du serveur
 ------------------------------------------------------------------------

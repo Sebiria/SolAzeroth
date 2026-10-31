@@ -80,7 +80,7 @@ chat:SetID(1)   -- réglages de la fenêtre 1 du jeu (taille de police des icôn
 
 -- Le fond n'apparaît que sous la souris ou pendant la saisie : le reste du temps, seuls les messages se voient.
 local function Fond()
-    local visible = bloc:IsMouseOver() or ChatFrameEditBox:IsShown() or S.EnEdition()
+    local visible = bloc:IsMouseOver() or ChatFrame1EditBox:IsShown() or S.EnEdition()
     fond:SetAlpha(visible and 1 or 0)
 end
 bloc:SetScript("OnUpdate", Fond)
@@ -146,17 +146,17 @@ S.Ranger(ChatFrameMenuButton)
 ChatFrame1.AddMessage = function(_, ...) chat:AddMessage(...) end
 
 -- Zone de saisie : sous la fenêtre, avec nos couleurs.
-ChatFrameEditBox:SetParent(S.racine)
-ChatFrameEditBox:ClearAllPoints()
-ChatFrameEditBox:SetPoint("TOPLEFT", bloc, "BOTTOMLEFT", 0, -2)
-ChatFrameEditBox:SetPoint("TOPRIGHT", bloc, "BOTTOMRIGHT", 0, -2)
-ChatFrameEditBox:SetHeight(28)
-for _, region in ipairs({ ChatFrameEditBox:GetRegions() }) do
+ChatFrame1EditBox:SetParent(S.racine)
+ChatFrame1EditBox:ClearAllPoints()
+ChatFrame1EditBox:SetPoint("TOPLEFT", bloc, "BOTTOMLEFT", 0, -2)
+ChatFrame1EditBox:SetPoint("TOPRIGHT", bloc, "BOTTOMRIGHT", 0, -2)
+ChatFrame1EditBox:SetHeight(28)
+for _, region in ipairs({ ChatFrame1EditBox:GetRegions() }) do
     if region:GetObjectType() == "Texture" then region:SetAlpha(0) end
 end
-local fondSaisie = CreateFrame("Frame", nil, ChatFrameEditBox)
+local fondSaisie = CreateFrame("Frame", nil, ChatFrame1EditBox)
 fondSaisie:SetAllPoints()
-fondSaisie:SetFrameLevel(math.max(0, ChatFrameEditBox:GetFrameLevel() - 1))
+fondSaisie:SetFrameLevel(math.max(0, ChatFrame1EditBox:GetFrameLevel() - 1))
 S.Panneau(fondSaisie, 0.9)
 fondSaisie:SetBackdropBorderColor(S.Couleur("ambre", 0.7))
 

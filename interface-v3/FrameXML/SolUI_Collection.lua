@@ -6,8 +6,8 @@
 
 local S = SolUI
 
-local COLONNES, LIGNES = 5, 8
-local TUILE_L, TUILE_H, ECART = 124, 52, 8
+local COLONNES, LIGNES = 4, 8
+local TUILE_L, TUILE_H, ECART = 157, 52, 8
 
 local f = S.Fenetre("SolUICollection", 1100, 680, "Collection")
 
@@ -78,7 +78,7 @@ total:SetPoint("LEFT", jauge, "RIGHT", 10, 0)
 
 local champ = CreateFrame("EditBox", "SolUICollectionRecherche", f.barre)
 champ:SetSize(260, 32)
-champ:SetPoint("RIGHT", -300, 0)
+champ:SetPoint("RIGHT", -340, 0)
 champ:SetAutoFocus(false)
 champ:SetTextInsets(12, 12, 0, 0)
 S.Police(champ, "Regular", 13)
@@ -123,6 +123,8 @@ for i, c in ipairs(S.CATALOGUE) do
     b:SetPoint("TOPLEFT", 16, -72 - (i - 1) * 46)
     b.texte:ClearAllPoints()
     b.texte:SetPoint("LEFT", 12, 0)
+    b.texte:SetPoint("RIGHT", -64, 0)
+    b.texte:SetJustifyH("LEFT")
     b.compte = S.Texte(b, "Regular", 11, "gris")
     b.compte:SetPoint("RIGHT", -10, 0)
     b:SetScript("OnClick", function() categorie = i; decalage = 0; choisi = nil; Maj() end)
@@ -161,10 +163,12 @@ for n = 1, COLONNES * LIGNES do
     t.nom:SetJustifyV("TOP")
     t.nombre = S.Texte(t, "SemiBold", 11, "ambreClair")
     t.nombre:SetPoint("BOTTOMLEFT", t.icone, "BOTTOMRIGHT", 8, -1)
+    t.nombre:SetWidth(TUILE_L - 60)
+    t.nombre:SetJustifyH("LEFT")
     t:SetScript("OnClick", function(self)
-        if IsModifiedClick("CHATLINK") and ChatFrameEditBox:IsVisible() then
+        if IsModifiedClick("CHATLINK") and ChatFrame1EditBox:IsVisible() then
             local _, lien = GetItemInfo(self.id)
-            if lien then ChatFrameEditBox:Insert(lien) end
+            if lien then ChatFrame1EditBox:Insert(lien) end
             return
         end
         choisi = self.objet
@@ -258,7 +262,7 @@ function Maj()
             t.icone:SetAlpha(a and 1 or 0.45)
             t.nom:SetText(o[2])
             if a then t.nom:SetTextColor(Couleur(o[3])) else t.nom:SetTextColor(S.Couleur("gris", 0.8)) end
-            t.nombre:SetText(a and ("× " .. nombre) or "Pas encore trouvé")
+            t.nombre:SetText(a and ("× " .. nombre) or "Manquant")
             t.nombre:SetTextColor(S.Couleur(a and "ambreClair" or "gris", a and 1 or 0.7))
             t:SetBackdropColor(0.11, 0.118, 0.133, a and 1 or 0.4)
             t:SetBackdropBorderColor(S.Couleur(choisi == o and "ambre" or "bord"))

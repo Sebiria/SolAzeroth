@@ -6,6 +6,8 @@
 //   Feu douillet de Blizzard (+4 esprit, piège lié au feu). Le personnage s'assoit aussitôt ; se lever, entrer en
 //   combat ou mourir éteint le feu (31/10/2026, demande de l'utilisateur). Assis : REGEN_FEU % de la vie toutes les
 //   2 s, et au bout de 60 s le Repos au coin du feu (100031, vie maximale +5 % pendant 30 minutes) et les potions.
+// - Repos au coin du feu : hors combat, REGEN_REPOS % de la vie maximale par seconde (demande du 31/10/2026 ; à
+//   améliorer par rang avec F7, comme le bonus de vie).
 // L'interface reçoit « ETAT;charges;max;secondes avant le Repos » (préfixe SOLBIV) : compte à rebours du feu.
 // Les sorts sont générés par outils\bivouac_v3.py (migration 067) ; les améliorations par rang viendront avec F7.
 
@@ -37,6 +39,7 @@ namespace
     uint8 const CHARGES = 1;
     float const SOIN_POTION = 30.0f;
     float const REGEN_FEU = 6.0f;
+    float const REGEN_REPOS = 1.0f;         // par seconde, hors combat
 
     struct Bivouac : DataMap::Base
     {
@@ -236,6 +239,9 @@ public:
                 FixerCharges(player, CHARGES);
             }
         }
+
+        if (player->HasAura(REPOS) && !player->IsInCombat() && player->IsAlive() && !player->IsFullHealth())
+            player->ModifyHealth(int32(std::lround(player->GetMaxHealth() * REGEN_REPOS * TICK / 1000 / 100.0f)));
 
         Envoyer(player, b->depuisEnvoi >= RENVOI);
     }

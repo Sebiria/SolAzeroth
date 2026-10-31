@@ -20,7 +20,7 @@ MIGRATION = r"C:\SolAzeroth\sql\migrations\069_v3_collection"
 CATEGORIES = [
     ("Tissus", [(7, 5)]),
     ("Cuirs et peaux", [(7, 6)]),
-    ("Minerais, barres et pierres", [(7, 7)]),
+    ("Métaux et pierres", [(7, 7)]),
     ("Herbes", [(7, 9)]),
     ("Éléments", [(7, 10)]),
     ("Gemmes", [(3, s) for s in range(9)] + [(7, 4)]),

@@ -9,7 +9,7 @@
 local S = SolUI
 
 local TAILLE = 64
-local POTION, FEU = 100029, 100030
+local POTION, FEU, PIERRE = 100029, 100030, 6948
 local MODIFICATEURS = { LSHIFT = true, RSHIFT = true, LCTRL = true, RCTRL = true, LALT = true, RALT = true,
     UNKNOWN = true }
 
@@ -44,6 +44,8 @@ for _, sort in ipairs({ POTION, FEU }) do
     table.insert(ENTREES, { place = sort == POTION and "P" or "F", commande = "CLICK SolUIBivouac" .. sort .. ":LeftButton",
         nom = function() return (GetSpellInfo(sort)) end, icone = function() return select(3, GetSpellInfo(sort)) end })
 end
+table.insert(ENTREES, { place = "PF", commande = "CLICK SolUIBivouac" .. PIERRE .. ":LeftButton",
+    nom = function() return GetItemInfo(PIERRE) or "Pierre de foyer" end, icone = function() return GetItemIcon(PIERRE) end })
 local FENETRES = {
     { nom = function() return "Techniques et raccourcis" end, commande = "CLICK SolUIOuvrirRaccourcis:LeftButton" },
     { nom = function() return "Collection" end, commande = "CLICK SolUIOuvrirCollection:LeftButton" },
@@ -52,7 +54,7 @@ local FENETRES = {
 
 local function Touche(commande)
     local touche = GetBindingKey(commande)
-    return touche and GetBindingText(touche, "KEY_", 1) or nil
+    return touche and S.ToucheCourte(touche) or nil
 end
 
 local function NomCommande(commande)
@@ -123,7 +125,7 @@ aide:SetText("Clique un bouton, puis appuie sur la touche voulue. Les boutons so
 
 local plateau = CreateFrame("Frame", nil, p1)
 plateau:SetPoint("TOPLEFT", 24, -40)
-plateau:SetSize(560, 220)
+plateau:SetSize(576, 220)
 plateau:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
 plateau:SetBackdropColor(S.Couleur("creux", 0.9))
 plateau:SetBackdropBorderColor(S.Couleur("bordCreux"))
@@ -149,15 +151,15 @@ local function Touchette(parent)
     return t
 end
 
--- Disposition de l'écran : en haut 5 à 8 puis le feu, en bas 1 à 4 puis la potion.
-local PLACES = { [5] = { 0, 0 }, [6] = { 1, 0 }, [7] = { 2, 0 }, [8] = { 3, 0 }, [10] = { 4, 0 },
+-- Disposition de l'écran : en haut 5 à 8, le feu et la pierre de foyer, en bas 1 à 4 puis la potion.
+local PLACES = { [5] = { 0, 0 }, [6] = { 1, 0 }, [7] = { 2, 0 }, [8] = { 3, 0 }, [10] = { 4, 0 }, [11] = { 5, 0 },
     [1] = { 0, 1 }, [2] = { 1, 1 }, [3] = { 2, 1 }, [4] = { 3, 1 }, [9] = { 4, 1 } }
 local cases = {}
 for n, e in ipairs(ENTREES) do
     local colonne, ligne = PLACES[n][1], PLACES[n][2]
     local b = CreateFrame("Button", nil, plateau)
     b:SetSize(TAILLE, TAILLE)
-    b:SetPoint("TOPLEFT", 54 + colonne * 90 + (colonne == 4 and 24 or 0), -22 - ligne * 104)
+    b:SetPoint("TOPLEFT", 40 + colonne * 84 + (colonne >= 4 and 24 or 0), -22 - ligne * 104)
     b:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
     b.icone = b:CreateTexture(nil, "ARTWORK")
     b.icone:SetPoint("TOPLEFT", 6, -6)
@@ -241,9 +243,9 @@ local function Ligne(e, y)
     table.insert(lignes, l)
 end
 Titre("BOUTONS DE COMBAT", -14)
-for n, e in ipairs(ENTREES) do Ligne(e, -32 - (n - 1) * 36) end
-Titre("FENÊTRES", -32 - #ENTREES * 36 - 8)
-for n, e in ipairs(FENETRES) do Ligne(e, -32 - #ENTREES * 36 - 26 - (n - 1) * 36) end
+for n, e in ipairs(ENTREES) do Ligne(e, -32 - (n - 1) * 34) end
+Titre("FENÊTRES", -32 - #ENTREES * 34 - 8)
+for n, e in ipairs(FENETRES) do Ligne(e, -32 - #ENTREES * 34 - 26 - (n - 1) * 34) end
 
 function Maj()
     for n, e in ipairs(ENTREES) do

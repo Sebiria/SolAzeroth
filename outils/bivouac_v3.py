@@ -47,8 +47,10 @@ def lignes(d, icones):
     t.append(e)
 
     e = technique(d, 12975, REPOS, "Repos au coin du feu",
-                  "Vie maximale +%d %% pendant 30 minutes." % BONUS_VIE, i["campfire_rootflame"], 0,
-                  "Vie maximale augmentée de %d %%." % BONUS_VIE, duree=D30MIN)
+                  "Vie maximale +%d %% pendant 30 minutes. Hors combat, rend 1 %% de la vie maximale par seconde."
+                  % BONUS_VIE, i["campfire_rootflame"], 0,
+                  "Vie maximale augmentée de %d %%. Hors combat, 1 %% de la vie maximale rendu par seconde." % BONUS_VIE,
+                  duree=D30MIN)
     e[131] = 0
     effet(e, 0, AURA, BONUS_VIE, SOI, aura=VIE_POURCENT)
     t.append(e)

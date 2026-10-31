@@ -1,11 +1,12 @@
 -- Sol'Azeroth v3 (31/10/2026) : potion et feu de camp, deux boutons à droite des barres de techniques, dans le même
 -- style (demande de l'utilisateur). Ils lancent directement les sorts du module (v3_bivouac.cpp) : la Potion de soins
 -- montre ses charges, le Feu de camp sa recharge.
+-- Pierre de foyer (demande du 31/10/2026) : un troisième bouton, à droite du feu, qui utilise l'objet.
 
 local S = SolUI
 
 local TAILLE, ECART = 46, 8
-local POTION, FEU = 100029, 100030
+local POTION, FEU, PIERRE = 100029, 100030, 6948
 
 S.etat.charges, S.etat.chargesMax = nil, 0
 
@@ -44,15 +45,21 @@ local function MajRebours()
     reboursBarre:SetWidth(math.max(1, 280 * (1 - math.min(reste, DUREE_AVANT_REPOS) / DUREE_AVANT_REPOS)))
 end
 
-local function NouveauBouton(sort, ligne)
-    local nom = GetSpellInfo(sort)
+-- objet : la Pierre de foyer, utilisée comme objet et non comme sort.
+local function NouveauBouton(sort, colonne, ligne, objet)
     local b = CreateFrame("Button", "SolUIBivouac" .. sort, SolUITechniques, "SecureActionButtonTemplate")
     b:SetSize(TAILLE, TAILLE)
-    -- À droite de la barre de techniques : même rangées, une colonne de plus.
-    b:SetPoint("BOTTOMLEFT", SolUITechniques, "BOTTOMLEFT", 26 + 18 + 4 * (TAILLE + ECART) + 10, ligne * (TAILLE + ECART))
-    b.nom = nom
-    b:SetAttribute("type", "spell")
-    b:SetAttribute("spell", nom)
+    -- À droite de la barre de techniques : même rangées, une ou deux colonnes de plus.
+    b:SetPoint("BOTTOMLEFT", SolUITechniques, "BOTTOMLEFT", 26 + 18 + (3 + colonne) * (TAILLE + ECART) + 10, ligne * (TAILLE + ECART))
+    b.objet = objet or false
+    if objet then
+        b:SetAttribute("type", "item")
+        b:SetAttribute("item", "item:" .. sort)
+    else
+        b.nom = GetSpellInfo(sort)
+        b:SetAttribute("type", "spell")
+        b:SetAttribute("spell", b.nom)
+    end
     b:RegisterForClicks("AnyUp")
 
     b.fond = S.Texture(b, "BORDER", "Bouton")
@@ -61,7 +68,7 @@ local function NouveauBouton(sort, ligne)
     b.icone:SetSize(TAILLE - 12, TAILLE - 12)
     b.icone:SetPoint("CENTER")
     b.icone:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    b.icone:SetTexture(select(3, GetSpellInfo(sort)))
+    b.icone:SetTexture(objet and GetItemIcon(sort) or select(3, GetSpellInfo(sort)))
     b.voile = S.Texture(b, "OVERLAY", "Bouton", 0.031, 0.031, 0.039, 0.66)
     b.voile:SetAllPoints()
     b.bord = S.Texture(b, "OVERLAY", "BoutonBord")
@@ -80,7 +87,7 @@ local function NouveauBouton(sort, ligne)
 
     b:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetHyperlink("spell:" .. sort)
+        GameTooltip:SetHyperlink((objet and "item:" or "spell:") .. sort)
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
     b:SetScript("OnMouseDown", function(self) self.enfonce = true end)
@@ -88,21 +95,22 @@ local function NouveauBouton(sort, ligne)
     return b
 end
 
-local potion = NouveauBouton(POTION, 0)
-local feu = NouveauBouton(FEU, 1)
+local potion = NouveauBouton(POTION, 1, 0)
+local feu = NouveauBouton(FEU, 1, 1)
+local pierre = NouveauBouton(PIERRE, 2, 1, true)
 
 -- Touches réglées dans la fenêtre « Techniques et raccourcis ».
 local function MajTouches()
-    for _, b in ipairs({ potion, feu }) do
-        local touche = GetBindingKey(b.commande)
-        b.touche:SetText(touche and GetBindingText(touche, "KEY_", 1) or "")
+    for _, b in ipairs({ potion, feu, pierre }) do
+        b.touche:SetText(S.ToucheCourte(GetBindingKey(b.commande)))
     end
 end
 S.Ecouter("UPDATE_BINDINGS", MajTouches)
 S.Ecouter("PLAYER_ENTERING_WORLD", MajTouches)
 
 local function Etat(b, vide)
-    local debut, duree, active = GetSpellCooldown(b.nom)
+    local debut, duree, active
+    if b.objet then debut, duree, active = GetItemCooldown(PIERRE) else debut, duree, active = GetSpellCooldown(b.nom) end
     local reste = (active == 1 and duree and duree > 1.5) and (debut + duree - GetTime()) or 0
     local enRecharge = reste > 0
     S.Montrer(b.voile, enRecharge)
@@ -114,7 +122,7 @@ local function Etat(b, vide)
         b.fond:SetVertexColor(S.Couleur("texte", b.enfonce and 0.22 or 0.08))
         b.bord:SetVertexColor(S.Couleur("texte", b.enfonce and 0.9 or 0.6))
     end
-    local utilisable = IsUsableSpell(b.nom)
+    local utilisable = b.objet and GetItemCount(PIERRE) > 0 or (not b.objet and IsUsableSpell(b.nom))
     local eteint = vide or not utilisable
     b.icone:SetVertexColor(eteint and 0.45 or 1, eteint and 0.45 or 1, eteint and 0.45 or 1)
     b.icone:SetAlpha(enRecharge and 0.6 or 0.9)
@@ -129,5 +137,6 @@ potion:SetScript("OnUpdate", function(self, ecoule)
     potion.nombre:SetText(charges or "")
     Etat(potion, charges == 0)
     Etat(feu, false)
+    Etat(pierre, false)
     MajRebours()
 end)

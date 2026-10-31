@@ -62,9 +62,7 @@ local function SortDe(emplacement)
 end
 
 local function Touche(id)
-    local touche = GetBindingKey("ACTIONBUTTON" .. id)
-    if not touche then return "" end
-    return GetBindingText(touche, "KEY_", 1)
+    return S.ToucheCourte(GetBindingKey("ACTIONBUTTON" .. id))
 end
 
 local function NouveauBouton(id)
