@@ -4,6 +4,8 @@ DROP TABLE IF EXISTS acore_world.solazeroth_v3_zone_parts;
 CREATE TABLE acore_world.solazeroth_v3_zone_parts (zone INT UNSIGNED NOT NULL, genre TINYINT UNSIGNED NOT NULL, cle INT UNSIGNED NOT NULL, part INT UNSIGNED NOT NULL, nom VARCHAR(100) NOT NULL, PRIMARY KEY (zone, genre, cle));
 DROP TABLE IF EXISTS acore_world.solazeroth_v3_lieux_monstres;
 CREATE TABLE acore_world.solazeroth_v3_lieux_monstres (lieu INT UNSIGNED NOT NULL, creature INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, PRIMARY KEY (lieu, creature));
+DROP TABLE IF EXISTS acore_world.solazeroth_v3_lieux_chefs;
+CREATE TABLE acore_world.solazeroth_v3_lieux_chefs (lieu INT UNSIGNED NOT NULL PRIMARY KEY, origine INT UNSIGNED NOT NULL, renforce INT UNSIGNED NOT NULL);
 CREATE TABLE IF NOT EXISTS acore_characters.solazeroth_v3_lieux (guid INT UNSIGNED NOT NULL, lieu INT UNSIGNED NOT NULL, creature INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, PRIMARY KEY (guid, lieu, creature));
 INSERT INTO acore_world.solazeroth_v3_zone_parts VALUES
 (14, 1, 910001, 100, 'La terre rouge'),
@@ -69,20 +71,16 @@ INSERT INTO acore_world.solazeroth_v3_zone_parts VALUES
 INSERT INTO acore_world.solazeroth_v3_lieux_monstres VALUES
 (1, 3102, 16),
 (1, 3101, 21),
-(1, 3183, 1),
 (2, 3128, 28),
 (2, 3129, 17),
-(2, 3192, 1),
 (3, 3111, 15),
 (3, 3112, 18),
 (4, 3115, 11),
 (4, 3116, 9),
 (5, 3119, 12),
 (5, 3120, 7),
-(5, 5808, 1),
 (6, 3206, 13),
 (6, 3207, 15),
-(6, 3205, 1),
 (7, 3113, 12),
 (7, 3114, 19),
 (7, 5826, 1),
@@ -92,5 +90,10 @@ INSERT INTO acore_world.solazeroth_v3_lieux_monstres VALUES
 (9, 3117, 15),
 (9, 3118, 18),
 (10, 3197, 19),
-(10, 3198, 13),
-(10, 3204, 1);
+(10, 3198, 13);
+INSERT INTO acore_world.solazeroth_v3_lieux_chefs VALUES
+(1, 3183, 910010),
+(2, 3192, 910011),
+(5, 5808, 910012),
+(6, 3205, 910013),
+(10, 3204, 910014);

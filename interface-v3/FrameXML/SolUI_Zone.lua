@@ -63,7 +63,7 @@ S.Message("SOLZONE", function(champs)
         recu.explorees, recu.sousZones = tonumber(champs[2]), tonumber(champs[3])
     elseif genre == "LIEU" then
         table.insert(recu.lieux, { nom = champs[3], tues = tonumber(champs[4]), requis = tonumber(champs[5]),
-            part = tonumber(champs[6]) })
+            part = tonumber(champs[6]), fait = champs[7] == "1" })
     elseif genre == "FINZONE" then
         progres = recu
         MajPourcent()
@@ -82,7 +82,7 @@ suivi:SetScript("OnEnter", function(self)
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine("Lieux à nettoyer", 1, 0.82, 0)
     for _, l in ipairs(progres.lieux) do
-        local fait = l.tues >= l.requis
+        local fait = l.fait
         local r, g, b = 0.75, 0.75, 0.75
         if fait then r, g, b = 0.4, 1, 0.4 end
         GameTooltip:AddDoubleLine(l.nom, fait and ("nettoyé, " .. Pour(l.part)) or string.format("%d / %d", l.tues, l.requis),

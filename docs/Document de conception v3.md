@@ -402,7 +402,17 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **F5e** : pourcentage de zone, lieux à nettoyer et exploration.
   - **Construit le 31/10/2026, pas encore vérifié en jeu** : `outils\zone_durotar.py` lit les parts dans le document de Durotar et écrit la migration 074 : 26 quêtes (50 %), 24 sous-zones (6 %) et 10 lieux (19 %). Le serveur (`v3_zone.cpp`) compte les quêtes rendues, les sous-zones découvertes et les monstres de chaque lieu tués dans la zone, y compris pour les quêtes.
   - **Interface** : le suivi de zone affiche le pourcentage et une jauge. Au survol, il détaille histoire, exploration et annexes, et donne l'avancée de chaque lieu.
-  - **Reste à faire** : les chefs renforcés (en attendant, le chef d'origine compte pour 1 monstre du lieu), puis les primes, contrats, défis et reliques (25 %). Les annexes du document de Durotar restent à valider par l'utilisateur.
+  - **Chefs renforcés** (A01, A02, A05, A06, A10 ; migration 075, à la demande de l'utilisateur) :
+    - **Copies** : chaque chef est une copie de l'original, avec les mêmes statistiques, le même butin et les mêmes scripts. Sa mort compte pour l'original : la quête d'histoire est validée.
+    - **Apparition** : quand la troupe est tombée et que le joueur approche (120 m), le chef d'origine s'efface et la copie apparaît à sa place. Sa mort clôt le lieu, puis la troupe repart à zéro pour le prochain nettoyage.
+    - **Techniques** (lignes SmartAI) :
+      - T1 : Yarrog appelle 2 Vils quasits toutes les 20 s ;
+      - T2 : Benedict appelle 4 Soldats de marine à 50 % ;
+      - T3 : Kolkanis lance Piétinement (2 s) et Choc martial toutes les 15 s, puis appelle 2 Estafettes à 50 % ;
+      - T4 : Zalazane lance Maléfice (5 s, faute d'une version à 3 s) toutes les 25 s, et pose une Garde guérisseuse toutes les 30 s ;
+      - T5 : Gazz'uz lance Pluie de feu toutes les 15 s, puis appelle 2 Fanatiques à 30 %.
+    - Les renforts apparaissent à côté du joueur. Mouchette (A07) reste un monstre ordinaire du lieu, en attendant sa prime A15.
+  - **Reste à faire** : les primes, contrats, défis et reliques (25 %). Les annexes du document de Durotar restent à valider par l'utilisateur.
 - **F5f** : accès au Gouffre de Ragefeu à 60 %.
 
 **Validation de l'histoire de Durotar (31/10/2026)** : l'utilisateur valide le brouillon relu (`Durotar — Histoire et quêtes (brouillon).md`) et toutes les recommandations du relecteur, sauf la répartition des activités secondaires :
