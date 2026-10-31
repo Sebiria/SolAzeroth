@@ -3,6 +3,9 @@
 Chaque zone a ses plats : les recettes de cuisine de Blizzard dont un ingrédient au moins tombe sur les monstres de la
 zone (viande, poisson, dard…) et dont les autres s'y trouvent aussi (butin ou marchand de la zone). Les plats de fête
 sont écartés. Une recette déjà prise par une zone précédente de ZONES n'est pas reprise.
+Trois composants au moins (31/10/2026, demande de l'utilisateur : les recettes étaient trop simples) : à ceux de
+Blizzard s'ajoutent une herbe de la zone (l'une des HERBES plus répandues, chaque plat la sienne à tour de rôle) et un
+assaisonnement vendu dans la zone (ASSAISONNEMENTS, de même).
 
 Un plat donne pendant 30 minutes la caractéristique de la spécialisation (Force, Agilité ou Intelligence), d'autant de
 points que la puissance moyenne de la zone : moyenne des niveaux d'origine de ses monstres ordinaires, entre le 5e et
@@ -32,6 +35,9 @@ CARACTERISTIQUES = [(0, "Force"), (1, "Agilité"), (3, "Intelligence")]   # misc
 BIEN_NOURRI = 19705                 # sort de Blizzard copié (icône du repas)
 D30MIN = 30                         # SpellDuration.dbc : 1800 s
 PREMIER_PLAT, PREMIER_BUFF = 101000, 101500
+HERBES = 3                          # les plus répandues de la zone
+# Épices douces, eau de source fraîche, lait glacé, farine simple, sel : vendus toute l'année (pas de fête).
+ASSAISONNEMENTS = [2678, 159, 1179, 30817, 4289]
 SCRIPT = "spell_solazeroth_v3_plat"
 
 
@@ -76,6 +82,13 @@ def plats():
         vente = {int(e) for (e,) in requete(
             "SELECT DISTINCT v.item FROM creature c JOIN npc_vendor v ON v.entry = c.id WHERE c.zoneId = %d" % zone)}
         puissance = puissance_moyenne(zone)
+        herbes = [int(e) for (e, _) in requete(
+            "SELECT l.Item, COUNT(DISTINCT g.guid) n FROM gameobject g JOIN gameobject_template gt ON gt.entry = g.id "
+            "JOIN gameobject_loot_template l ON l.Entry = gt.Data1 JOIN item_template i ON i.entry = l.Item "
+            "WHERE g.zoneId = %d AND gt.type = 3 AND i.class = 7 AND i.subclass = 9 AND l.Reference = 0 "
+            "GROUP BY l.Item ORDER BY n DESC, l.Item LIMIT %d" % (zone, HERBES))]
+        assaisonnements = [a for a in ASSAISONNEMENTS if a in vente]
+        dans_la_zone = 0
         for sort, plat, composants in recettes:
             objets = [o for o, _ in composants]
             if plat in pris or plat in fetes or not any(o in butin for o in objets) \
@@ -83,6 +96,9 @@ def plats():
                 continue
             pris.add(plat)
             n = len(sortie)
+            ajouts = [herbes[dans_la_zone % len(herbes)], assaisonnements[dans_la_zone % len(assaisonnements)]]
+            composants = composants + [(o, 1) for o in ajouts if o not in objets]
+            dans_la_zone += 1
             sortie.append({"objet": plat, "nom": noms.get(plat, str(plat)), "composants": composants, "zone": zone,
                            "nom_zone": nom_zone, "puissance": puissance, "sort": PREMIER_PLAT + n,
                            "buffs": [PREMIER_BUFF + 3 * n + k for k in range(3)]})

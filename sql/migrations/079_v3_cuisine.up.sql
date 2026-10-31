@@ -28,7 +28,7 @@ DROP TABLE IF EXISTS solazeroth_v3_plats, solazeroth_v3_plats_composants;
 CREATE TABLE solazeroth_v3_plats (objet INT UNSIGNED NOT NULL PRIMARY KEY, zone INT UNSIGNED NOT NULL, puissance TINYINT UNSIGNED NOT NULL, sort INT UNSIGNED NOT NULL, force_ INT UNSIGNED NOT NULL, agilite INT UNSIGNED NOT NULL, intelligence INT UNSIGNED NOT NULL);
 CREATE TABLE solazeroth_v3_plats_composants (objet INT UNSIGNED NOT NULL, composant INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, PRIMARY KEY (objet, composant));
 INSERT INTO solazeroth_v3_plats VALUES (2681, 14, 6, 101000, 101500, 101501, 101502), (3662, 14, 6, 101001, 101503, 101504, 101505), (5473, 14, 6, 101002, 101506, 101507, 101508), (787, 14, 6, 101003, 101509, 101510, 101511), (5095, 14, 6, 101004, 101512, 101513, 101514);
-INSERT INTO solazeroth_v3_plats_composants VALUES (2681, 769, 1), (3662, 2924, 1), (5473, 5466, 1), (787, 6303, 1), (5095, 6361, 1);
+INSERT INTO solazeroth_v3_plats_composants VALUES (2681, 769, 1), (2681, 2447, 1), (2681, 2678, 1), (3662, 2924, 1), (3662, 765, 1), (3662, 159, 1), (5473, 5466, 1), (5473, 2449, 1), (5473, 1179, 1), (787, 6303, 1), (787, 2447, 1), (787, 30817, 1), (5095, 6361, 1), (5095, 765, 1), (5095, 4289, 1);
 CREATE TABLE IF NOT EXISTS solazeroth_v3_plats_origine (entry INT UNSIGNED NOT NULL PRIMARY KEY, spellid_1 INT NOT NULL, description VARCHAR(255) NOT NULL);
 INSERT IGNORE INTO solazeroth_v3_plats_origine SELECT entry, spellid_1, description FROM item_template WHERE entry IN (2681, 3662, 5473, 787, 5095);
 UPDATE item_template SET spellid_1 = 101000, description = '' WHERE entry = 2681;

@@ -7,7 +7,8 @@
 //   (solazeroth_v3_lieux_monstres). Les monstres tués pour une quête comptent aussi.
 // Chef renforcé (A01, A02, A05, A06, A10 ; solazeroth_v3_lieux_chefs, créatures de la migration 075) : quand la
 // troupe est tombée et que le joueur est à moins de PROCHE m de la place du chef, le chef d'origine disparaît et sa
-// copie renforcée apparaît. C'est sa mort qui clôt le lieu ; la troupe repart alors à zéro, pour que le chef revienne
+// copie renforcée apparaît, annoncée dans la discussion avec sa distance (essai du 31/10/2026 : bloqué à 45/46 au fort de
+// Tiragarde sans savoir que le chef attendait en haut). C'est sa mort qui clôt le lieu ; la troupe repart alors à zéro, pour que le chef revienne
 // au prochain nettoyage (défis à venir).
 // Les autres annexes (primes, contrats, défis, reliques) viendront ensuite.
 // Interface (SolUI_Zone.lua, préfixe SOLZONE), quand ça change et qu'on est dans une zone qui a des parts :
@@ -15,6 +16,7 @@
 // pour chaque lieu (le chef renforcé compte dans « requis »), puis « FINZONE ». Hors de ces zones : « POURCENT;-1 ».
 
 #include "SolAzeroth.h"
+#include "Chat.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
 #include "DBCStores.h"
@@ -105,7 +107,7 @@ namespace
     }
 
     // Troupe tombée et joueur près de la place : le chef d'origine s'efface devant sa copie renforcée.
-    void FaireApparaitre(Player* player, Progres* p, uint32 lieu, Chef const& chef)
+    void FaireApparaitre(Player* player, Progres* p, uint32 lieu, std::string const& nomLieu, Chef const& chef)
     {
         auto [tues, requis] = Troupe(p, lieu);
         if (tues < requis || player->GetMapId() != chef.carte || player->GetDistance(chef.place) > PROCHE)
@@ -117,6 +119,11 @@ namespace
             if (!renforce)
                 return;
             p->invoques[lieu] = renforce->GetGUID();
+            float hauteur = renforce->GetPositionZ() - player->GetPositionZ();
+            ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat(
+                "|cffff8000{} : le chef est apparu, {} à {:.0f} m{}.|r", nomLieu,
+                renforce->GetNameForLocaleIdx(player->GetSession()->GetSessionDbLocaleIndex()),
+                player->GetExactDist(renforce), hauteur > 5.0f ? ", plus haut" : hauteur < -5.0f ? ", plus bas" : ""));
         }
         if (renforce->IsAlive())
             if (Creature* origine = renforce->FindNearestCreature(chef.origine, PROCHE, true); origine && !origine->IsInCombat())
@@ -149,7 +156,7 @@ namespace
                 auto [tues, requis] = Troupe(p, part.cle);
                 if (auto c = chefs.find(part.cle); c != chefs.end())
                 {
-                    FaireApparaitre(player, p, part.cle, c->second);
+                    FaireApparaitre(player, p, part.cle, part.nom, c->second);
                     ++requis;
                 }
                 lieux.push_back(Acore::StringFormat("LIEU;{};{};{};{};{};{}", part.cle, part.nom, tues, requis, part.part,

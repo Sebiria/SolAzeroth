@@ -17,6 +17,8 @@
 #include "CommandScript.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
+#include "MotionMaster.h"
+#include "MovementTypedefs.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "SpellAuraEffects.h"
@@ -344,15 +346,24 @@ class spell_solazeroth_v3_frappe_bouclier : public SpellScript
     }
 };
 
-// Cri de défi : chaque ennemi attiré remplit le Rempart.
+// Cri de défi : chaque ennemi attiré remplit le Rempart. Il atterrit au contact, de son côté, et non sur le guerrier
+// (l'attraction du moteur le posait sur sa tête, essai du 31/10/2026).
 class spell_solazeroth_v3_cri_defi : public SpellScript
 {
     PrepareSpellScript(spell_solazeroth_v3_cri_defi);
 
-    void Remplir(SpellEffIndex /*effet*/)
+    void Remplir(SpellEffIndex effet)
     {
-        if (Unit* lanceur = GetCaster())
-            Ajouter(lanceur, int32(std::lround(lanceur->GetMaxHealth() * reglages.criDefi / 100.0f)));
+        Unit* lanceur = GetCaster();
+        Unit* cible = GetHitUnit();
+        if (!lanceur || !cible)
+            return;
+        PreventHitDefaultEffect(effet);
+        float x, y, z;
+        lanceur->GetContactPoint(cible, x, y, z, 1.0f);
+        float vitesse = GetSpellInfo()->Effects[effet].MiscValue * 0.1f;
+        cible->GetMotionMaster()->MoveJump(x, y, z, vitesse, cible->GetExactDist(x, y, z) / vitesse * 0.5f * Movement::gravity);
+        Ajouter(lanceur, int32(std::lround(lanceur->GetMaxHealth() * reglages.criDefi / 100.0f)));
     }
 
     void Register() override

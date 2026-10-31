@@ -648,6 +648,11 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
       - un plat donne, pendant 30 minutes, la caractéristique de la spécialisation (Force pour le guerrier tank, sinon celle de la classe), d'autant de points que la puissance moyenne de la zone : 6 à Durotar (moyenne des niveaux de ses monstres ordinaires, entre le 5e et le 90e centile). Un seul repas à la fois ;
       - fabrication dans la fenêtre Équipement, catégorie Cuisine, près d'un feu (le Feu de camp v3 compte, et l'on cuisine assis sans l'éteindre), en 5 s ;
       - simulation (fin de vallée, +6 Force) : combats 15 à 25 % plus courts. Contre le Sanglier tacheté redoutable (puissance 7), vie restante de 27 à 42 %.
+    - **Après l'essai au fort de Tiragarde** :
+      - **recettes de cuisine à 3 composants** : l'ingrédient de Blizzard, plus une herbe de la zone (Pacifique, Feuillargent ou Terrestrine à Durotar) et un assaisonnement vendu dans la zone (épices douces, eau de source, lait, farine ou sel), attribués à tour de rôle ;
+      - **Cri de défi** posait les monstres sur la tête du guerrier (attraction du moteur) : ils atterrissent maintenant au contact, de leur côté ;
+      - **blocage à 45/46** : la troupe était tombée, et le 46e est le chef renforcé (Lieutenant Benedict), qui apparaît à la place du chef d'origine, en haut du fort, sans rien dire. Son apparition est maintenant annoncée dans la discussion, avec sa distance et « plus haut » ou « plus bas » ;
+      - **silhouettes d'ambiance de l'Alliance dans le fort** (migration 080) : elles suivaient le trajet d'un Fusilier de Kul Tiras. Les monstres des lieux à nettoyer ne servent plus de routes d'ambiance. La faction ne suffisait pas à trier : d'autres PNJ de faction 123 sont de vrais gardes.
     - **Puissance du personnage, décision de l'utilisateur** : elle reste la moyenne des seules pièces portées, sans compter les emplacements vides pour 0. Une pièce proche de la moyenne ne la change donc presque pas : un pantalon de niveau 5 sur une moyenne de 4,86 la porte à 4,88.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
