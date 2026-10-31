@@ -25,7 +25,7 @@ FRAMEXML = os.path.join(FICHIERS, "Interface", "FrameXML")
 
 # Ordre de chargement de notre code dans FrameXML.toc.
 CODE = ["SolUI_Base.lua", "SolUI_Cacher.lua", "SolUI_Perso.lua", "SolUI_Techniques.lua", "SolUI_Cible.lua",
-        "SolUI_Zone.lua"]
+        "SolUI_Zone.lua", "SolUI_Reglages.lua"]
 
 GRAISSES = {"Light": 300, "Regular": 400, "SemiBold": 600, "Bold": 700}
 

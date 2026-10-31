@@ -344,6 +344,18 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - Le cadre de la cible suit sa largeur : barre, graduations et incantation s'étirent, et le nombre de débuffs affichés (6 au plus) est celui qui tient.
 - Les barres verte et rouge vues sous le personnage sont des WeakAuras de la v2 propres au joueur, et non l'interface v3.
 
+**Réglages de l'interface (31/10/2026)** :
+- **Mode édition** (`SolUI_Reglages.lua`) : chaque bloc se couvre d'un calque ambre.
+  - On le déplace à la souris : il garde son point d'ancrage, et seul son décalage change.
+  - La molette change son échelle, de 60 à 160 %. Maj + molette change la largeur de la cible, de 420 à 1100.
+  - Un bandeau rappelle les gestes. Le mode se ferme avec Terminer, Échap ou l'entrée en combat.
+  - Sans cible, le cadre de la cible montre un aperçu vide pour qu'on puisse le placer.
+- **Page /sol > Réglages > Interface** :
+  - bouton du mode édition et bouton « Tout réinitialiser » ;
+  - un curseur d'échelle et un bouton « Réinitialiser » par bloc ;
+  - un curseur pour la largeur de la cible.
+- **Sauvegarde** : la disposition est gardée dans `SolAzerothDB.interface` (addon SolAzeroth, commune au compte) et reprise au chargement. Les valeurs sont bornées et les champs inconnus ignorés.
+
 ### F5. Premier essai jouable à Durotar
 - Les monstres de la Vallée des épreuves et de Durotar sont remis à l'échelle, et le Gouffre de Ragefeu s'ouvre à 60 %, même si le contenu de la zone est encore incomplet.
 - **Vérification** : l'utilisateur joue son guerrier tank et dit si c'est exigeant et amusant. Les chiffres se calibrent à partir de là.

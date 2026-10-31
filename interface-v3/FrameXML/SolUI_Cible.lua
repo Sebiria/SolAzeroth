@@ -291,7 +291,24 @@ end)
 
 local function MajTout()
     if not UnitExists("target") then
-        cible:Hide()
+        -- Mode édition de l'interface : un aperçu vide, pour placer le cadre sans cible.
+        if S.EnEdition and S.EnEdition() then
+            etiquette:Hide()
+            nom:ClearAllPoints()
+            nom:SetPoint("TOPLEFT", cible, "TOPLEFT", MARGE, -16)
+            nom:SetText("Cible")
+            puissance:SetText("")
+            vie:SetText("")
+            pourcent:SetText("")
+            barre:SetMinMaxValues(0, 1)
+            barre:SetValue(1)
+            incantation:Hide()
+            rangee:Hide()
+            Disposer()
+            cible:Show()
+        else
+            cible:Hide()
+        end
         return
     end
     MajEntete()
@@ -312,6 +329,7 @@ cible:SetScript("OnSizeChanged", function(self, largeur)
 end)
 cible:GetScript("OnSizeChanged")(cible, cible:GetWidth())
 
+S.RafraichirCible = MajTout
 S.Ecouter("PLAYER_TARGET_CHANGED", MajTout)
 S.Ecouter("PLAYER_ENTERING_WORLD", MajTout)
 S.Ecouter("UNIT_HEALTH", function(_, unite) if unite == "target" then MajVie() end end)

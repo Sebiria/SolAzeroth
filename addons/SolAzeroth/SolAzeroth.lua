@@ -30,6 +30,8 @@ local SECTIONS = {
           sousTitre = "Ils valent pour tout le compte, et figurent aussi dans la fenêtre Hauts faits du jeu.", hautsFaits = true },
     } },
     { nom = "Réglages", icone = "Interface\\Icons\\INV_Misc_Gear_01", pages = {
+        -- v3, F4 : disposition de l'écran de combat (Interface\FrameXML\SolUI_Reglages.lua).
+        { nom = "Interface", construire = "Interface" },
         { nom = "Plaques de nom", cadre = "SolAzerothPlaquesCadre", commande = "SOLAZEROTHPLAQUES" },
         { nom = "Macros", cadre = "SolAzerothMacrosCadre", commande = "SOLAZEROTHMACROS" },
         { nom = "Barres et sacs", construire = "BarresEtSacs" },
@@ -513,7 +515,79 @@ local function Carte(parent, y, hauteur, icone, titreCarte, texte)
     return c
 end
 
+-- Curseur sans graduations : la valeur s'affiche à droite ; « change » reçoit la valeur choisie par le joueur.
+local function Curseur(parent, x, y, largeur, min, max, pas, format, change)
+    local c = CreateFrame("Slider", nil, parent, "OptionsSliderTemplate")
+    c:SetWidth(largeur)
+    c:SetPoint("TOPLEFT", x, y)
+    c:SetMinMaxValues(min, max)
+    c:SetValueStep(pas)
+    for _, region in ipairs({ c:GetRegions() }) do
+        if region:GetObjectType() == "FontString" then region:SetText("") end
+    end
+    c.valeur = c:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    c.valeur:SetPoint("LEFT", c, "RIGHT", 10, 0)
+    c:SetScript("OnValueChanged", function(self, valeur)
+        valeur = math.floor(valeur / pas + 0.5) * pas
+        self.valeur:SetText(string.format(format, valeur))
+        if not self.silence then change(valeur) end
+    end)
+    function c:Fixer(valeur)
+        self.silence = true
+        self:SetValue(valeur)
+        self.valeur:SetText(string.format(format, valeur))
+        self.silence = false
+    end
+    return c
+end
+
 local CONSTRUCTEURS = {
+    -- v3, F4 : l'écran de combat est paramétrable. Le code de l'interface (FrameXML) place les blocs ; cette page
+    -- règle échelle et largeur, ouvre le mode édition (déplacement à la souris) et garde la disposition.
+    Interface = function(p)
+        local S = SolUI
+        if not S then
+            Texte(p, "GameFontHighlight", "L'interface v3 n'est pas chargée (patch du client).", 20, -20)
+            return
+        end
+        local edition = Carte(p, -20, 110, "Interface\\Icons\\INV_Misc_Spyglass_02", "Disposition de l'écran",
+            "Déplace chaque bloc à la souris ; la molette change sa taille (Maj + molette : largeur de la cible). "
+            .. "Hors combat seulement. La disposition est gardée d'une session à l'autre.")
+        local basculer = Bouton(edition, "Déplacer les blocs", 180, 60, -70, function()
+            S.ModeEdition(not S.EnEdition())
+        end)
+        Bouton(edition, "Tout réinitialiser", 160, 250, -70, function() S.Reinitialiser() end)
+
+        local blocs = Carte(p, -146, 230, "Interface\\Icons\\INV_Misc_Gear_02", "Taille des blocs", "")
+        local curseurs = {}
+        local y = -46
+        for _, nom in ipairs({ "perso", "techniques", "cible", "zone" }) do
+            Texte(blocs, "GameFontNormal", S.NOMS_BLOCS[nom], 60, y - 2):SetWidth(110)
+            curseurs[nom] = Curseur(blocs, 180, y, 220, 60, 160, 5, "%d %%", function(v)
+                S.Modifier(nom, "echelle", v / 100)
+            end)
+            Bouton(blocs, "Réinitialiser", 110, 470, y + 4, function() S.Reinitialiser(nom) end)
+            y = y - 36
+        end
+        Texte(blocs, "GameFontNormal", "Largeur de la cible", 60, y - 2):SetWidth(120)
+        local largeur = Curseur(blocs, 180, y, 220, S.LIMITES.largeur[1], S.LIMITES.largeur[2], 20, "%d", function(v)
+            S.Modifier("cible", "largeur", v)
+        end)
+
+        local function Lire()
+            for nom, c in pairs(curseurs) do c:Fixer(math.floor(S.DISPOSITION[nom].echelle * 100 + 0.5)) end
+            largeur:Fixer(S.DISPOSITION.cible.largeur)
+            basculer:SetText(S.EnEdition() and "Terminer" or "Déplacer les blocs")
+        end
+        p:SetScript("OnShow", Lire)
+        S.surEdition = function() if p:IsShown() then Lire() end end
+        local enregistrer = S.surChangement
+        S.surChangement = function(d)
+            if enregistrer then enregistrer(d) end
+            if p:IsShown() then Lire() end
+        end
+        Lire()
+    end,
     BarresEtSacs = function(p)
         local barres = Carte(p, -20, 110, "Interface\\Icons\\Ability_Warrior_DefensiveStance", "Barres de postures et de totems",
             "Déplace les deux barres à la souris, puis valide (commande /barres).")
@@ -746,6 +820,11 @@ evenements:SetScript("OnEvent", function(self, event, nom, fonction)
         if nom ~= "SolAzeroth" then return end
         SolAzerothDB = SolAzerothDB or {}
         SolAzerothDB.pages = SolAzerothDB.pages or {}
+        -- v3, F4 : disposition de l'écran de combat, reprise puis tenue à jour.
+        if SolUI then
+            SolUI.Appliquer(SolAzerothDB.interface)
+            SolUI.surChangement = function(disposition) SolAzerothDB.interface = disposition end
+        end
     elseif event == "PLAYER_LOGIN" then
         -- Tous les addons sont chargés : leurs fenêtres rejoignent celle-ci.
         for _, section in ipairs(SECTIONS) do
