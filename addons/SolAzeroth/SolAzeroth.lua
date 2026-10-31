@@ -865,7 +865,7 @@ evenements:SetScript("OnEvent", function(self, event, nom, fonction)
     elseif event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
         -- Mouchard : si l'erreur d'interface revient, le chat dit quel addon et quelle fonction l'ont causée.
         if nom and nom:find("^SolAzeroth") then
-            print(string.format("|cffff6060Sol'Azeroth :|r action bloquée en combat (%s, %s). Signale-le.", nom, tostring(fonction)))
+            print(string.format("|cffff6060Sol'Azeroth :|r action bloquée par le jeu (%s, %s). Signale-le.", nom, tostring(fonction)))
         end
     elseif fenetre:IsShown() then
         Rafraichir()

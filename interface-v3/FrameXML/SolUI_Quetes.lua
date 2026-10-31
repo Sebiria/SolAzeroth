@@ -114,9 +114,11 @@ local function Rangee(n)
     o.recharge:SetAllPoints(o.icone)
     o:SetScript("OnClick", function(self)
         if IsModifiedClick("CHATLINK") and ChatFrame1EditBox:IsVisible() then
-            ChatFrame1EditBox:Insert((GetQuestLogSpecialItemInfo(self.index)))
+            ChatFrame1EditBox:Insert((GetQuestLogSpecialItemInfo(self:GetID())))
         else
-            UseQuestLogSpecialItem(self.index)
+            -- Index lu par GetID, jamais dans un champ : le suivi est aussi mis à jour par l'addon SolAzeroth (quêtes
+            -- suivies), et une valeur écrite pendant cette mise à jour contamine le clic (« action bloquée », 01/11/2026).
+            UseQuestLogSpecialItem(self:GetID())
         end
     end)
     o:SetScript("OnEnter", function(self)
@@ -139,6 +141,7 @@ local function MajObjet(r, index)
     S.Montrer(o, lien ~= nil)
     if not lien then return end
     o.index = index
+    o:SetID(index)
     o.icone:SetTexture(icone)
     o.nombre:SetText(charges and charges > 1 and charges or "")
     local debut, duree, active = GetQuestLogSpecialItemCooldown(index)
