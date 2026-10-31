@@ -648,6 +648,7 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
       - un plat donne, pendant 30 minutes, la caractéristique de la spécialisation (Force pour le guerrier tank, sinon celle de la classe), d'autant de points que la puissance moyenne de la zone : 6 à Durotar (moyenne des niveaux de ses monstres ordinaires, entre le 5e et le 90e centile). Un seul repas à la fois ;
       - fabrication dans la fenêtre Équipement, catégorie Cuisine, près d'un feu (le Feu de camp v3 compte, et l'on cuisine assis sans l'éteindre), en 5 s ;
       - simulation (fin de vallée, +6 Force) : combats 15 à 25 % plus courts. Contre le Sanglier tacheté redoutable (puissance 7), vie restante de 27 à 42 %.
+    - **Puissance du personnage, décision de l'utilisateur** : elle reste la moyenne des seules pièces portées, sans compter les emplacements vides pour 0. Une pièce proche de la moyenne ne la change donc presque pas : un pantalon de niveau 5 sur une moyenne de 4,86 la porte à 4,88.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :
