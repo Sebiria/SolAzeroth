@@ -509,9 +509,17 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - les consommables qui rendent vie ou mana.
   
   Les objets liés à une quête restent, mais le sort de tout consommable de régénération est désactivé pour les joueurs. Les récompenses de quête ne sont pas touchées.
-- **À venir, sur maquette** :
-  - une fenêtre pour régler les techniques, leurs boutons, le feu de camp et la potion ;
-  - l'inventaire de collection exhaustif (§ 2.8).
+- **Maquettes à valider** (toile de maquettes, rangée « Fenêtres v3 ») :
+  - **7 · Techniques et raccourcis** : l'onglet Raccourcis passe en premier (demande de l'utilisateur).
+    - Les 10 boutons sont disposés comme à l'écran. On clique un bouton, puis on appuie sur la touche voulue.
+    - Maj, Ctrl et Alt se combinent avec la touche. Échap annule, Suppr retire le raccourci.
+    - Une touche déjà prise est retirée de son ancien bouton, et la fenêtre le signale.
+    - À droite, la liste de tous les raccourcis, avec ceux des fenêtres.
+    - Onglets suivants : techniques équipées, puis feu de camp et potion.
+  - **8 · Collection** : l'inventaire exhaustif du § 2.8.
+    - Catégories à gauche, avec une recherche et un filtre Tout, Possédés ou Manquants.
+    - Un objet possédé est en couleur, avec son nombre ; les autres sont grisés.
+    - Le détail de l'objet choisi est à droite.
 
 **Suite proposée par Claude** (après F5c à F5f) :
 - **F6, butin** : tables de butin réduites aux composants, cuir sans dépeçage, éclats cadavériques, or.
