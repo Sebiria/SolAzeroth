@@ -1,6 +1,6 @@
 -- Sol'Azeroth v3 (31/10/2026) : fenêtre « Techniques et raccourcis », d'après la maquette « 7 » (demande de
 -- l'utilisateur : régler les touches des boutons dans une fenêtre à part).
--- - Raccourcis : les 10 boutons disposés comme à l'écran. On en clique un, puis on appuie sur la touche voulue (Maj,
+-- - Raccourcis : les 12 boutons disposés comme à l'écran. On en clique un, puis on appuie sur la touche voulue (Maj,
 --   Ctrl et Alt se combinent ; souris : bouton du milieu, 4, 5 et molette ; Échap annule, Suppr retire). Une touche
 --   déjà prise est retirée de son ancien usage, et la fenêtre le dit. Les touches sont celles du jeu (SetBinding), enregistrées à la fermeture.
 -- - Techniques équipées : 8 au plus parmi les techniques débloquées, hors combat (.kit equiper, v3_kit.cpp).
@@ -47,6 +47,9 @@ for _, sort in ipairs({ POTION, FEU }) do
 end
 table.insert(ENTREES, { place = "PF", commande = "CLICK SolUIBivouac" .. PIERRE .. ":LeftButton",
     nom = function() return GetItemInfo(PIERRE) or "Pierre de foyer" end, icone = function() return GetItemIcon(PIERRE) end })
+table.insert(ENTREES, { place = "R", commande = "CLICK SolUIBivouacRepas:LeftButton",
+    nom = function() return S.Repas() and GetItemInfo(S.Repas()) or "Repas" end,
+    icone = function() return S.Repas() and GetItemIcon(S.Repas()) end })
 local FENETRES = {
     { nom = function() return "Techniques et raccourcis" end, commande = "CLICK SolUIOuvrirRaccourcis:LeftButton" },
     { nom = function() return "Collection" end, commande = "CLICK SolUIOuvrirCollection:LeftButton" },
@@ -153,9 +156,9 @@ local function Touchette(parent)
     return t
 end
 
--- Disposition de l'écran : en haut 5 à 8, le feu et la pierre de foyer, en bas 1 à 4 puis la potion.
+-- Disposition de l'écran : en haut 5 à 8, le feu et la pierre de foyer, en bas 1 à 4, la potion et le repas.
 local PLACES = { [5] = { 0, 0 }, [6] = { 1, 0 }, [7] = { 2, 0 }, [8] = { 3, 0 }, [10] = { 4, 0 }, [11] = { 5, 0 },
-    [1] = { 0, 1 }, [2] = { 1, 1 }, [3] = { 2, 1 }, [4] = { 3, 1 }, [9] = { 4, 1 } }
+    [1] = { 0, 1 }, [2] = { 1, 1 }, [3] = { 2, 1 }, [4] = { 3, 1 }, [9] = { 4, 1 }, [12] = { 5, 1 } }
 local cases = {}
 for n, e in ipairs(ENTREES) do
     local colonne, ligne = PLACES[n][1], PLACES[n][2]

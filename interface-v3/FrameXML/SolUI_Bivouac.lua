@@ -2,6 +2,8 @@
 -- style (demande de l'utilisateur). Ils lancent directement les sorts du module (v3_bivouac.cpp) : la Potion de soins
 -- montre ses charges, le Feu de camp sa recharge.
 -- Pierre de foyer (demande du 31/10/2026) : un troisième bouton, à droite du feu, qui utilise l'objet.
+-- Repas (demande du 31/10/2026) : un quatrième, à droite de la potion et sous la pierre de foyer. On y glisse un plat de
+-- la cuisine (SolUI_Cuisine.lua) ; vide, ou une fois le plat épuisé, il prend le premier plat des sacs.
 
 local S = SolUI
 
@@ -48,16 +50,17 @@ local function MajRebours()
     reboursBarre:SetWidth(math.max(1, 280 * (1 - math.min(reste, DUREE_AVANT_REPOS) / DUREE_AVANT_REPOS)))
 end
 
--- objet : la Pierre de foyer, utilisée comme objet et non comme sort.
-local function NouveauBouton(sort, colonne, ligne, objet)
-    local b = CreateFrame("Button", "SolUIBivouac" .. sort, SolUITechniques, "SecureActionButtonTemplate")
+-- objet : la Pierre de foyer ou un plat, utilisés comme objets et non comme sorts.
+local function NouveauBouton(sort, colonne, ligne, objet, nom)
+    nom = nom or ("SolUIBivouac" .. sort)
+    local b = CreateFrame("Button", nom, SolUITechniques, "SecureActionButtonTemplate")
     b:SetSize(TAILLE, TAILLE)
     -- À droite de la barre de techniques : même rangées, une ou deux colonnes de plus.
     b:SetPoint("BOTTOMLEFT", SolUITechniques, "BOTTOMLEFT", 26 + 18 + (3 + colonne) * (TAILLE + ECART) + 10, ligne * (TAILLE + ECART))
-    b.objet = objet or false
+    b.objet, b.id = objet or false, sort
     if objet then
         b:SetAttribute("type", "item")
-        b:SetAttribute("item", "item:" .. sort)
+        if sort then b:SetAttribute("item", "item:" .. sort) end
     else
         b.nom = GetSpellInfo(sort)
         b:SetAttribute("type", "spell")
@@ -71,7 +74,7 @@ local function NouveauBouton(sort, colonne, ligne, objet)
     b.icone:SetSize(TAILLE - 12, TAILLE - 12)
     b.icone:SetPoint("CENTER")
     b.icone:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    b.icone:SetTexture(objet and GetItemIcon(sort) or select(3, GetSpellInfo(sort)))
+    b.icone:SetTexture(objet and sort and GetItemIcon(sort) or not objet and select(3, GetSpellInfo(sort)) or nil)
     b.voile = S.Texture(b, "OVERLAY", "Bouton", 0.031, 0.031, 0.039, 0.66)
     b.voile:SetAllPoints()
     b.bord = S.Texture(b, "OVERLAY", "BoutonBord")
@@ -86,11 +89,17 @@ local function NouveauBouton(sort, colonne, ligne, objet)
     b.nombre:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -3, 3)
     b.touche = S.Texte(dessus, "Regular", 10, "texte", 0.8)
     b.touche:SetPoint("TOPLEFT", b, "TOPLEFT", 4, -2)
-    b.commande = "CLICK SolUIBivouac" .. sort .. ":LeftButton"
+    b.commande = "CLICK " .. nom .. ":LeftButton"
 
     b:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetHyperlink((objet and "item:" or "spell:") .. sort)
+        if self.id then
+            GameTooltip:SetHyperlink((objet and "item:" or "spell:") .. self.id)
+        else
+            GameTooltip:SetText("Repas")
+            GameTooltip:AddLine("Glisse ici un plat de la cuisine.", 1, 1, 1, true)
+            GameTooltip:Show()
+        end
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
     b:SetScript("OnMouseDown", function(self) self.enfonce = true end)
@@ -101,10 +110,62 @@ end
 local potion = NouveauBouton(POTION, 1, 0)
 local feu = NouveauBouton(FEU, 1, 1)
 local pierre = NouveauBouton(PIERRE, 2, 1, true)
+local repas = NouveauBouton(nil, 2, 0, true, "SolUIBivouacRepas")
+S.etat.repas = nil
+
+-- Plats de la cuisine (catégorie « feu » de SolUI.RECETTES).
+local function EstUnPlat(id)
+    for _, c in ipairs(S.RECETTES or {}) do
+        if c.feu then
+            for _, r in ipairs(c.recettes) do if r[1] == id then return true end end
+        end
+    end
+end
+
+-- Le code de FrameXML est de confiance : l'attribut change même en combat.
+local function ChoisirRepas(id)
+    repas.id = id
+    S.etat.repas = id
+    repas:SetAttribute("item", id and ("item:" .. id) or nil)
+    repas.icone:SetTexture(id and GetItemIcon(id) or nil)
+end
+function S.Repas() return S.etat.repas end
+
+local function Deposer()
+    local genre, id = GetCursorInfo()
+    if genre ~= "item" then return false end
+    if EstUnPlat(id) then
+        ChoisirRepas(id)
+    else
+        UIErrorsFrame:AddMessage("Seuls les plats de la cuisine vont ici.", 1, 0.3, 0.3)
+    end
+    ClearCursor()
+    return true
+end
+repas:SetScript("OnReceiveDrag", Deposer)
+-- Un plat lâché d'un clic ne doit pas aussi être mangé : le clic est alors retiré au bouton.
+repas:SetScript("PreClick", function(self)
+    if Deposer() then self:SetAttribute("type", nil) end
+end)
+repas:SetScript("PostClick", function(self) self:SetAttribute("type", "item") end)
+
+-- Plat épuisé ou bouton vide : le premier plat des sacs.
+local function RepasDesSacs()
+    if S.etat.repas and GetItemCount(S.etat.repas) > 0 then return end
+    for _, c in ipairs(S.RECETTES or {}) do
+        if c.feu then
+            for _, r in ipairs(c.recettes) do
+                if GetItemCount(r[1]) > 0 then ChoisirRepas(r[1]); return end
+            end
+        end
+    end
+end
+S.Ecouter("BAG_UPDATE", RepasDesSacs)
+S.Ecouter("PLAYER_ENTERING_WORLD", RepasDesSacs)
 
 -- Touches réglées dans la fenêtre « Techniques et raccourcis ».
 local function MajTouches()
-    for _, b in ipairs({ potion, feu, pierre }) do
+    for _, b in ipairs({ potion, feu, pierre, repas }) do
         b.touche:SetText(S.ToucheCourte(GetBindingKey(b.commande)))
     end
 end
@@ -113,7 +174,7 @@ S.Ecouter("PLAYER_ENTERING_WORLD", MajTouches)
 
 local function Etat(b, vide)
     local debut, duree, active
-    if b.objet then debut, duree, active = GetItemCooldown(PIERRE) else debut, duree, active = GetSpellCooldown(b.nom) end
+    if b.objet then debut, duree, active = GetItemCooldown(b.id or 0) else debut, duree, active = GetSpellCooldown(b.nom) end
     local reste = (active == 1 and duree and duree > 1.5) and (debut + duree - GetTime()) or 0
     local enRecharge = reste > 0
     S.Montrer(b.voile, enRecharge)
@@ -125,7 +186,7 @@ local function Etat(b, vide)
         b.fond:SetVertexColor(S.Couleur("texte", b.enfonce and 0.22 or 0.08))
         b.bord:SetVertexColor(S.Couleur("texte", b.enfonce and 0.9 or 0.6))
     end
-    local utilisable = b.objet and GetItemCount(PIERRE) > 0 or (not b.objet and IsUsableSpell(b.nom))
+    local utilisable = b.objet and b.id and GetItemCount(b.id) > 0 or (not b.objet and IsUsableSpell(b.nom))
     local eteint = vide or not utilisable
     b.icone:SetVertexColor(eteint and 0.45 or 1, eteint and 0.45 or 1, eteint and 0.45 or 1)
     b.icone:SetAlpha(enRecharge and 0.6 or 0.9)
@@ -141,5 +202,7 @@ potion:SetScript("OnUpdate", function(self, ecoule)
     Etat(potion, charges == 0)
     Etat(feu, false)
     Etat(pierre, false)
+    repas.nombre:SetText(S.etat.repas and GetItemCount(S.etat.repas) or "")
+    Etat(repas, not S.etat.repas)
     MajRebours()
 end)

@@ -667,6 +667,10 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
         | Arme à deux mains | Impact mineur, +2 aux dégâts | 4 Poussières, 2 Essences |
 
       - **Équilibre** (simulation, personnage de fin de vallée) : le jeu complet vaut à peu près un rang d'amélioration sur toutes les pièces. Contre le Tigre de Durotar (puissance 8), victoire de 59 à 98 % ; contre le Fouette-queue Griffesang, de 8 à 54 %. L'Endurance mineure des bottes (+10 points de vie) le doublait presque (85 %) : pas de bottes à Durotar. La panoplie enchantée est dans `tests_equilibrage.py`.
+    - **Retouches demandées ensuite** :
+      - **barre de fabrication** : elle est dans la fiche de la recette, au-dessus du bouton Fabriquer, et non plus au-dessus des barres d'action ;
+      - **bouton de repas** : à droite de la potion, sous la pierre de foyer. On y glisse un plat de la cuisine ; vide, ou quand le plat est épuisé, il prend le premier plat des sacs. Il a sa touche dans la fenêtre Techniques et raccourcis (« R ») ;
+      - **apparition d'un chef renforcé** : annoncée comme une alerte de raid, au milieu de l'écran et avec son bruit, et non plus dans la discussion.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :

@@ -53,6 +53,12 @@ end
 
 S.Message("SOLZONE", function(champs)
     local genre = champs[1]
+    -- Chef renforcé apparu (v3_zone.cpp) : alerte de raid avec son bruit, comme une annonce de raid.
+    if genre == "ALERTE" then
+        RaidNotice_AddMessage(RaidWarningFrame, champs[2] or "", ChatTypeInfo["RAID_WARNING"])
+        PlaySound("RaidWarning")
+        return
+    end
     if genre == "POURCENT" then
         if tonumber(champs[2]) < 0 then progres, recu = nil, nil; MajPourcent(); return end
         recu = { total = tonumber(champs[2]), histoire = tonumber(champs[3]), exploration = tonumber(champs[4]),

@@ -120,8 +120,9 @@ namespace
                 return;
             p->invoques[lieu] = renforce->GetGUID();
             float hauteur = renforce->GetPositionZ() - player->GetPositionZ();
-            ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat(
-                "|cffff8000{} : le chef est apparu, {} à {:.0f} m{}.|r", nomLieu,
+            // Alerte de raid au milieu de l'écran, avec son bruit (SolUI_Zone.lua), plutôt que dans la discussion.
+            SolAzeroth::EnvoyerAddon(player, "SOLZONE", Acore::StringFormat(
+                "ALERTE;{} : le chef est apparu, {} à {:.0f} m{}", nomLieu,
                 renforce->GetNameForLocaleIdx(player->GetSession()->GetSessionDbLocaleIndex()),
                 player->GetExactDist(renforce), hauteur > 5.0f ? ", plus haut" : hauteur < -5.0f ? ", plus bas" : ""));
         }

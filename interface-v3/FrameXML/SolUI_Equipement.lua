@@ -5,7 +5,8 @@
 -- - Amélioration : les pièces portées et celles des sacs, rangs 1 à 5, payées en éclats cadavériques et en or.
 -- Le serveur (v3_equipement.cpp, messages SOLEQUIP) dit si l'on est près d'une forge et liste les pièces améliorables
 -- avec leur coût ; il vérifie tout avant de fabriquer ou d'améliorer. L'achat se fait chez les marchands de Razor Hill.
--- Une pièce se fabrique en 10 s (31/10/2026) : barre de progression au-dessus des barres d'action ; bouger annule.
+-- Une pièce se fabrique en 10 s (31/10/2026) : barre de progression dans la fiche de la recette, au-dessus du bouton
+-- Fabriquer (demande de l'utilisateur, elle était au-dessus des barres d'action) ; bouger annule.
 -- Catégorie Cuisine (SolUI_Cuisine.lua, généré par outils\cuisine_v3.py) : les plats de la zone, près d'un feu, en 5 s.
 -- Désenchantement et Enchantement (31/10/2026, SolUI_Enchantements.lua, généré par outils\enchantement_v3.py) :
 -- désenchanter une pièce du sac (second clic pour confirmer) range poussières et essences dans la Collection ;
@@ -34,10 +35,9 @@ local armures, armuresRecues = {}, {}
 
 local function Demander() SendChatMessage(".equipement", "SAY") end
 
--- Barre de fabrication : « FABRIQUE;objet;secondes », puis « FINI » ou « ANNULE ».
-local progression = CreateFrame("StatusBar", nil, S.racine)
-progression:SetSize(360, 30)
-progression:SetPoint("BOTTOM", S.racine, "BOTTOM", 0, 230)
+-- Barre de fabrication : « FABRIQUE;objet;secondes », puis « FINI » ou « ANNULE ». Placée dans la fiche plus bas.
+local progression = CreateFrame("StatusBar", nil, f)
+progression:SetHeight(30)
 progression:SetStatusBarTexture(S.BLANC)
 progression:SetStatusBarColor(S.Couleur("ambre"))
 progression:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 2,
@@ -48,6 +48,8 @@ progression:SetMinMaxValues(0, 1)
 progression:Hide()
 local objetProgression = S.Texte(progression, "Bold", 14, "clair")
 objetProgression:SetPoint("LEFT", 12, 0)
+objetProgression:SetPoint("RIGHT", -60, 0)
+objetProgression:SetJustifyH("LEFT")
 local resteProgression = S.Texte(progression, "Bold", 14, "clair")
 local debut, duree = 0, 10
 resteProgression:SetPoint("RIGHT", -12, 0)
@@ -66,9 +68,11 @@ S.Message("SOLEQUIP", function(champs)
         objetProgression:SetText("Fabrication : " .. (GetItemInfo(id or 0) or ("objet " .. (id or "?"))))
         progression:SetValue(0)
         progression:Show()
+        Maj()
         return
     elseif champs[1] == "FINI" or champs[1] == "ANNULE" then
         progression:Hide()
+        Maj()
         return
     end
     if champs[1] == "FORGE" then
@@ -202,6 +206,9 @@ achat:SetPoint("BOTTOMLEFT", fabriquer, "TOPLEFT", 0, 14)
 achat:SetWidth(370)
 achat:SetJustifyH("LEFT")
 achat:SetText("Ces pièces s'achètent aussi, plus cher, chez les marchands de Razor Hill.")
+progression:SetParent(detail)
+progression:SetPoint("BOTTOMLEFT", fabriquer, "TOPLEFT", 0, 10)
+progression:SetPoint("RIGHT", detail, "RIGHT")
 
 local function MajFabrication()
     local c = S.RECETTES[categorie]
@@ -247,7 +254,7 @@ local function MajFabrication()
     end
     conditions:SetText(table.concat(lignes, "\n"))
     local tout = okPuissance and (forge or not c.forge) and (feu or not c.feu)
-    S.Montrer(achat, not c.feu)
+    S.Montrer(achat, not c.feu and not progression:IsShown())
     for n, ligne in ipairs(composants) do
         local comp = r[6][n]
         S.Montrer(ligne, comp)
