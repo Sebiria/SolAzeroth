@@ -161,5 +161,6 @@ void AddSC_solazeroth_ligues();
 void AddSC_solazeroth_raids_anciens();
 void AddSC_solazeroth_v3_niveau();
 void AddSC_solazeroth_v3_combat();
+void AddSC_solazeroth_v3_kit();
 
 #endif

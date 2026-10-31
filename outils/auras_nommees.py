@@ -8,6 +8,8 @@ import os
 import subprocess
 
 import dbc
+import icones_retail
+import techniques_v3
 from hauts_faits_natifs import DBC_CLIENT, DBC_SERVEUR, FRFR, IDENTIFIANTS, MASQUE, MYSQL, sql_texte
 
 MIGRATION = r"C:\SolAzeroth\sql\migrations\050_auras_nommees"
@@ -111,7 +113,8 @@ def main():
     modele = d.chercher(MODELE)
     lignes = [nouvelle_aura(d, modele, *a) for a in AURAS]
     incantations = [nouvelle_incantation(d, d.chercher(MODELE_INCANTATION), *i[:4]) for i in INCANTATIONS]
-    d.enregistrements.extend(lignes + incantations)
+    kit = techniques_v3.lignes(d, icones_retail.identifiants())
+    d.enregistrements.extend(lignes + incantations + kit)
     os.makedirs(DBC_CLIENT, exist_ok=True)
     d.enregistrer(os.path.join(DBC_CLIENT, "Spell.dbc"))
 
@@ -137,7 +140,16 @@ def main():
     sql = ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e)) for e in incantations]
     sql += ["INSERT INTO spell_script_names (spell_id, ScriptName) VALUES (%d, '%s');" % (i[0], i[4]) for i in INCANTATIONS]
     ecrire_migration(MIGRATION_INCANTATIONS, up, sql, ["-- Retire les sorts à incantation Sol'Azeroth.", "USE acore_world;", up[3], up[4]])
-    print(len(lignes), "auras et", len(incantations), "incantation(s) : Spell.dbc client, migrations 050 et 058 écrits.")
+    ids = ", ".join(str(e[0]) for e in kit)
+    up = ["-- v3, F3 : kit du guerrier tank. Généré par outils\\auras_nommees.py (techniques_v3.py) : ne pas modifier à la main.",
+          "-- Le client lit les mêmes sorts dans patch-frFR-4.MPQ ; le Rempart et les effets propres sont dans v3_kit.cpp.",
+          "USE acore_world;",
+          "DELETE FROM spell_dbc WHERE ID IN (%s);" % ids,
+          "DELETE FROM spell_script_names WHERE spell_id IN (%s);" % ids]
+    sql = ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e)) for e in kit]
+    sql += ["INSERT INTO spell_script_names (spell_id, ScriptName) VALUES (%d, '%s');" % s for s in sorted(techniques_v3.SCRIPTS.items())]
+    ecrire_migration(techniques_v3.MIGRATION, up, sql, ["-- Retire le kit du guerrier tank v3.", "USE acore_world;", up[3], up[4]])
+    print(len(lignes), "auras,", len(incantations), "incantation(s) et", len(kit), "techniques : Spell.dbc client, migrations 050, 058 et 061 écrits.")
 
 
 if __name__ == "__main__":

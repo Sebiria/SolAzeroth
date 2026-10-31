@@ -12,6 +12,7 @@ import glob
 import os
 
 import dbc
+import icones_retail
 import mpq
 
 DBC_SERVEUR = r"C:\SolAzeroth\data\dbc"
@@ -58,6 +59,8 @@ def main():
     os.makedirs(os.path.dirname(SORTIE), exist_ok=True)
     sorts.enregistrer(SORTIE)
     print(f"{ajoutees} icônes ajoutées ({len(sorts.enregistrements)} au total) : {SORTIE}")
+    # v3 : les icônes retail du kit gardent leur place dans le fichier réécrit.
+    icones_retail.ajouter_au_dbc(icones_retail.ICONES)
 
 
 if __name__ == "__main__":

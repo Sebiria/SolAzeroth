@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Sol'Azeroth - Techniques
+## Notes: v3 : choix de la spécialisation et des 8 techniques, jauge du Rempart (/kit ou /sol, page Techniques).
+## Version: 1.0
+SolAzerothKit.lua

@@ -2,5 +2,5 @@
 ## Title: Sol'Azeroth
 ## Notes: Fenêtre unique de Sol'Azeroth : Personnage, Aventure, Collection, Réglages (/sol)
 ## SavedVariables: SolAzerothDB
-## OptionalDeps: SolAzerothFormation, SolAzerothGrimoire, SolAzerothTalents, SolAzerothSpes, SolAzerothDefis, SolAzerothMenace, SolAzerothContrats, SolAzerothButin, SolAzerothCodex, SolAzerothJournal, SolAzerothHautsFaits, SolAzerothPlaques, SolAzerothBarres, SolAzerothSacs
+## OptionalDeps: SolAzerothKit, SolAzerothFormation, SolAzerothGrimoire, SolAzerothTalents, SolAzerothSpes, SolAzerothDefis, SolAzerothMenace, SolAzerothContrats, SolAzerothButin, SolAzerothCodex, SolAzerothJournal, SolAzerothHautsFaits, SolAzerothPlaques, SolAzerothBarres, SolAzerothSacs
 SolAzeroth.lua

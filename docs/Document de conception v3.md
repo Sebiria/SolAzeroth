@@ -224,6 +224,36 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **Le passif Rempart** est écrit dans le module : bouclier rempli par les coups reçus, et consommé par Riposte et Second souffle.
 - **Le panel** : 8 techniques équipées sur les deux barres, et le choix des autres au repos.
 
+  **Décisions de l'utilisateur (31/10/2026)** :
+  - le brouillon de la partie 3 est construit tel quel, et les chiffres se calibreront en jouant ;
+  - la spécialisation se choisit dès l'entrée en jeu ;
+  - on démarre avec le passif et 4 techniques, puis une technique se débloque tous les 5 points de puissance ;
+  - les icônes viennent de la version retail (Wowhead), pour un aspect plus moderne.
+
+  **Construite le 31/10/2026**, pas encore vérifiée en jeu :
+  - **sorts** 100009 à 100028 (`outils\techniques_v3.py`, appelé par `auras_nommees.py`, migration 061). Chaque technique copie un sort de Blizzard pour son visuel et son ciblage. Elle n'a ni coût, ni posture, ni arme ou bouclier requis. Elle a sa propre recharge et un temps de recharge global de 1 s. Elle sort de la famille du guerrier, si bien qu'aucun talent ni script de Blizzard ne s'y accroche ;
+  - **dégâts** : ce sont des pourcentages des dégâts de l'arme, pour suivre l'équipement. Frappe du bouclier 200 %, Coup de tonnerre 100 % à 8 m, Ravage 100 % (+10 % par ennemi), Onde de choc 150 %, Bond héroïque 100 %, Vengeance 300 %. Ces chiffres sont des propositions de Claude ;
+  - **icônes** : 17 icônes retail (`outils\icones_retail.py`, à lancer avec `py -3.11`), converties en BLP et ajoutées à `SpellIcon.dbc` sous `Interface\Icons\SolAzeroth_*` ;
+  - **`v3_kit.cpp`** :
+    - le Rempart est une aura d'absorption (100010). Les dégâts encaissés la remplissent, qu'ils soient absorbés ou non ;
+    - les réglages : `SolAzeroth.V3.Rempart.Part` = 25 %, `Plafond` = 30 % de la vie, `Fuite` = 1 % toutes les 2 s hors combat, `FrappeBouclier` = 5 % ;
+    - six SpellScripts : Frappe du bouclier, Riposte, Second souffle, Ravage, Vengeance, Dernier rempart ;
+    - les anciens sorts du guerrier (postures, Frappe héroïque…) sont retirés ;
+    - la table `solazeroth_v3_kit` garde la spécialisation et les techniques équipées (migration 062) ;
+    - commandes `.kit`, `.kit spe tank` et `.kit equiper <sorts>` (hors combat) ;
+  - **ordre de déblocage proposé**, à corriger :
+    - au départ : Frappe du bouclier, Coup de tonnerre, Charge, Riposte du rempart ;
+    - puis, à 5 points de puissance : Cri de défi ; à 10 : Second souffle ; à 15 : Ravage ; à 20 : Mur protecteur ; à 25 : Heurt de bouclier ; à 30 : Fracasser armure ; à 35 : Désarmement ; à 40 : Onde de choc ; à 45 : Bond héroïque ; à 50 : Renvoi de sort ; à 55 : Vengeance ; à 60 : Dernier rempart ;
+  - **addon `SolAzerothKit`**, provisoire jusqu'à F4 :
+    - une page Techniques (`/kit`, ou `/sol` section Personnage) pour choisir la spécialisation, puis cocher 8 techniques ;
+    - une jauge du Rempart sous le cadre du joueur.
+
+  Choix et limites :
+  - Charge devient utilisable en combat ;
+  - Désarmement ne désarme pas vraiment : il réduit les dégâts de 50 %, pour toucher aussi les monstres insensibles au désarmement ;
+  - Cri de défi tire les monstres jusque sur le guerrier, puis les provoque 6 s ;
+  - les dégâts du Bond héroïque partent dès le saut et arrivent avec un léger délai.
+
 ### F4. Interface v3 dans les fichiers du jeu
 - **Nos propres fichiers sont ajoutés à FrameXML.** Le test du 30/10 a montré que ce code garde les droits de Blizzard en combat.
 - **Les cadres de Blizzard inutiles sont cachés** : barres d'action, cadres du joueur et de la cible, mana, expérience…

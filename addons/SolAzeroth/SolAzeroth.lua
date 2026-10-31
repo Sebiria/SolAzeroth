@@ -12,6 +12,10 @@ local ENTETE_PARCHEMIN = 58
 local SECTIONS = {
     -- v3 (31/10/2026) : la section Personnage (apprentissage, grimoire, talents, spécialisations, défis) et les pages
     -- Rang de menace et Défi extérieur sont retirées avec leurs addons.
+    -- v3, F3 : la section Personnage revient avec la page Techniques (spécialisation et kit).
+    { nom = "Personnage", icone = "Interface\\Icons\\INV_Shield_06", pages = {
+        { nom = "Techniques", cadre = "SolAzerothKitCadre", commande = "SOLAZEROTHKIT" },
+    } },
     { nom = "Aventure", icone = "Interface\\Icons\\INV_Misc_Map_01", pages = {
         { nom = "Contrats", cadre = "SolAzerothContratsCadre", commande = "SOLAZEROTHCONTRATS" },
         { nom = "Amélioration", cadre = "SolAzerothAmeliorationCadre", commande = "SOLAZEROTHAMELIORER" },
