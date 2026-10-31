@@ -163,5 +163,6 @@ void AddSC_solazeroth_v3_niveau();
 void AddSC_solazeroth_v3_combat();
 void AddSC_solazeroth_v3_kit();
 void AddSC_solazeroth_v3_journal();
+void AddSC_solazeroth_v3_mort();
 
 #endif

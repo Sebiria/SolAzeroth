@@ -369,6 +369,27 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - Les monstres de la Vallée des épreuves et de Durotar sont remis à l'échelle, et le Gouffre de Ragefeu s'ouvre à 60 %, même si le contenu de la zone est encore incomplet.
 - **Vérification** : l'utilisateur joue son guerrier tank et dit si c'est exigeant et amusant. Les chiffres se calibrent à partir de là.
 
+**Décisions de l'utilisateur (31/10/2026)** :
+- **Les quêtes de Durotar sont réécrites.**
+  - L'histoire est cohérente et ne demande que des choses à faire dans Durotar, sans voyager ailleurs. Les quêtes d'origine sont retirées.
+  - Le fil de l'histoire mène à nettoyer le Gouffre de Ragefeu.
+  - Une équipe d'agents écrit puis relit l'histoire, et l'utilisateur la valide avant qu'on la construise.
+- **Pourcentage de la zone** :
+  - **les quêtes de l'histoire rapportent 50 %** ;
+  - **les activités secondaires, l'autre moitié** : tout aussi conséquentes, et faisables en parallèle selon l'envie du joueur.
+  - Pour ce premier essai, les activités secondaires comptées sont les lieux à nettoyer (une dizaine, proposés par Claude) et l'exploration des sous-zones. Primes, reliques et défis viendront ensuite.
+- **Le Gouffre de Ragefeu est bloqué sous 60 %** : le joueur est renvoyé dehors, avec un message qui donne son pourcentage.
+- **Les quêtes passent elles aussi par notre interface** : un journal et un suivi à nous, à la place de ceux de Blizzard. Les quêtes sont visibles sur la carte et la mini-carte, ainsi que la zone où remplir chaque objectif.
+- **Mort** : quand le joueur libère son esprit, il revient à sa pierre de foyer, vivant, sans fantôme, sans usure et sans course au cadavre.
+
+**Découpage de F5 (proposé par Claude)** :
+- **F5a** : mort v3.
+- **F5b** : histoire de Durotar, écrite et relue par l'équipe d'agents, puis validée par l'utilisateur.
+- **F5c** : construction des quêtes dans la base, et retrait des quêtes d'origine.
+- **F5d** : interface des quêtes (journal, suivi, carte et mini-carte).
+- **F5e** : pourcentage de zone, lieux à nettoyer et exploration.
+- **F5f** : accès au Gouffre de Ragefeu à 60 %.
+
 ## 5. Questions pour les prochaines séries
 
 1. **Réputation des donjons** : la liste des techniques actives et passives d'entrée, et les paliers d'emplacements.
