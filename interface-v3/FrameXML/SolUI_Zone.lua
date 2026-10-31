@@ -135,7 +135,8 @@ end
 local ENTREES = {
     { "Personnage", function() ToggleCharacter("PaperDollFrame") end },
     { "Sacs", function() ToggleBackpack() end },
-    { "Techniques", function() Slash("/kit") end },
+    { "Techniques et raccourcis", function() S.BasculerRaccourcis() end },
+    { "Collection", function() S.BasculerCollection() end },
     { "Sorts", function() ToggleSpellBook(BOOKTYPE_SPELL) end },
     { "Quêtes", function() S.BasculerJournal() end },
     { "Carte", function() ToggleFrame(WorldMapFrame) end },

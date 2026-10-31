@@ -520,6 +520,10 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - Catégories à gauche, avec une recherche et un filtre Tout, Possédés ou Manquants.
     - Un objet possédé est en couleur, avec son nombre ; les autres sont grisés.
     - Le détail de l'objet choisi est à droite.
+- **Construites le 31/10/2026** (pas encore vérifiées en jeu) ; elles s'ouvrent depuis le bouton Menu, ou par une touche réglée dans la fenêtre :
+  - `SolUI_Raccourcis.lua` : les touches sont celles du jeu, enregistrées à la fermeture. L'onglet Techniques équipées envoie `.kit equiper`. L'onglet Feu de camp et potion décrit le rang de départ.
+  - `SolUI_Collection.lua` et le catalogue `SolUI_Catalogue.lua` (`outils/collection_v3.py`) : 609 matériaux et gemmes qu'on peut obtenir, en 9 catégories. En attendant l'inventaire sans limite côté serveur, le nombre possédé est celui des sacs et de la banque.
+  - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :
 - **F6, butin** : tables de butin réduites aux composants, cuir sans dépeçage, éclats cadavériques, or.

@@ -46,6 +46,9 @@ local function NouveauBouton(sort, ligne)
     b.recharge:SetPoint("CENTER")
     b.nombre = S.Texte(dessus, "SemiBold", 11, "clair")
     b.nombre:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -3, 3)
+    b.touche = S.Texte(dessus, "Regular", 10, "texte", 0.8)
+    b.touche:SetPoint("TOPLEFT", b, "TOPLEFT", 4, -2)
+    b.commande = "CLICK SolUIBivouac" .. sort .. ":LeftButton"
 
     b:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -59,6 +62,16 @@ end
 
 local potion = NouveauBouton(POTION, 0)
 local feu = NouveauBouton(FEU, 1)
+
+-- Touches réglées dans la fenêtre « Techniques et raccourcis ».
+local function MajTouches()
+    for _, b in ipairs({ potion, feu }) do
+        local touche = GetBindingKey(b.commande)
+        b.touche:SetText(touche and GetBindingText(touche, "KEY_", 1) or "")
+    end
+end
+S.Ecouter("UPDATE_BINDINGS", MajTouches)
+S.Ecouter("PLAYER_ENTERING_WORLD", MajTouches)
 
 local function Etat(b, vide)
     local debut, duree, active = GetSpellCooldown(b.nom)

@@ -149,6 +149,57 @@ function S.Argent(cuivre)
     return table.concat(morceaux, "  ")
 end
 
+-- Fenêtre des maquettes « 7 » et « 8 » : panneau déplaçable par sa barre de titre, fermée par Échap.
+function S.Fenetre(nom, largeur, hauteur, titre)
+    local f = CreateFrame("Frame", nom, S.racine)
+    f:SetSize(largeur, hauteur)
+    f:SetPoint("CENTER", S.racine, "CENTER", 0, 10)
+    f:SetFrameStrata("HIGH")
+    f:SetToplevel(true)
+    f:EnableMouse(true)
+    f:SetMovable(true)
+    f:SetClampedToScreen(true)
+    S.Panneau(f, 0.97)
+    f:Hide()
+    tinsert(UISpecialFrames, nom)
+    local barre = CreateFrame("Frame", nil, f)
+    barre:SetPoint("TOPLEFT")
+    barre:SetPoint("TOPRIGHT")
+    barre:SetHeight(56)
+    barre:EnableMouse(true)
+    barre:RegisterForDrag("LeftButton")
+    barre:SetScript("OnDragStart", function() f:StartMoving() end)
+    barre:SetScript("OnDragStop", function() f:StopMovingOrSizing(); f:SetUserPlaced(false) end)
+    f.titre = S.Texte(barre, "Bold", 20, "clair")
+    f.titre:SetPoint("LEFT", 24, -2)
+    f.titre:SetText(titre)
+    f.barre = barre
+    local fermer = CreateFrame("Button", nil, barre, "UIPanelCloseButton")
+    fermer:SetPoint("RIGHT", -8, 0)
+    fermer:SetScript("OnClick", function() f:Hide() end)
+    return f
+end
+
+-- Bouton plat : filet gris, fond ambre quand il est choisi (b:Choisir(vrai)).
+function S.BoutonPlat(parent, texte, largeur, hauteur, taille)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(largeur, hauteur or 36)
+    b:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
+    b.texte = S.Texte(b, "SemiBold", taille or 13, "texte")
+    b.texte:SetPoint("CENTER")
+    b.texte:SetText(texte or "")
+    function b:Choisir(oui)
+        self.choisi = oui
+        self:SetBackdropColor(0.165, 0.129, 0.086, oui and 1 or 0)
+        self:SetBackdropBorderColor(S.Couleur(oui and "ambre" or "bord"))
+        self.texte:SetTextColor(S.Couleur(oui and "ambreClair" or "texte"))
+    end
+    b:SetScript("OnEnter", function(self) if not self.choisi then self:SetBackdropBorderColor(S.Couleur("gris", 0.8)) end end)
+    b:SetScript("OnLeave", function(self) self:Choisir(self.choisi) end)
+    b:Choisir(false)
+    return b
+end
+
 -- Durée restante : « 7 s », « 28 min », « 2 h ».
 function S.Duree(secondes)
     if secondes >= 3600 then return math.floor(secondes / 3600 + 0.5) .. " h" end
@@ -218,6 +269,11 @@ S.Message("SOLKIT", function(champs)
     if champs[1] == "ETAT" then
         S.etat.spe = tonumber(champs[2])
         if S.etat.spe ~= 1 then S.etat.rempart = nil end
+        -- « sort:état,… » dans l'ordre de déblocage ; état 0 verrouillée, 1 débloquée, 2 équipée.
+        S.etat.techniques = {}
+        for sort, etat in (champs[5] or ""):gmatch("(%d+):(%d)") do
+            table.insert(S.etat.techniques, { sort = tonumber(sort), etat = tonumber(etat) })
+        end
         Prevenir("kit")
     elseif champs[1] == "REMPART" then
         S.etat.rempart = tonumber(champs[2]) or 0
