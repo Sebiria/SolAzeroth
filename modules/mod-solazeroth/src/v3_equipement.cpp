@@ -52,8 +52,8 @@ namespace
     char const* const PREFIXE = "SOLEQUIP";
     uint32 const ECLAT = 910120;
     uint8 const RANG_MAX = 5;
-    uint32 const ECLATS_PAR_RANG[RANG_MAX] = { 5, 10, 20, 35, 60 };
-    uint32 const OR_PAR_RANG[RANG_MAX] = { 20, 40, 80, 160, 320 };   // en cuivre
+    uint32 const ECLATS_PAR_RANG[RANG_MAX] = { 15, 30, 60, 105, 180 };
+    uint32 const OR_PAR_RANG[RANG_MAX] = { 60, 120, 240, 480, 960 };   // en cuivre ; x3 le 01/11/2026 (outils\simulation_rangs.py)
     uint32 const ENCLUME = 1, FORGE = 3, FEU = 4;                    // spellFocus.focusId
     float const PORTEE_FORGE = 20.0f, PORTEE_FEU = 10.0f;
 
