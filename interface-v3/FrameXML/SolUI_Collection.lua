@@ -64,11 +64,23 @@ S.NombreCollection = Nombre
 function S.NomCollection(id) return NOMS[id] and NOMS[id][2] or ("objet " .. id) end
 S.TeinteCollection = Teinte
 
+local function Hex(id)
+    local r, g, b = Teinte(id)
+    return string.format("|cff%02x%02x%02x", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5),
+        math.floor(b * 255 + 0.5))
+end
+
 local function Lien(id)
     local o = NOMS[id]
-    local c = o and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[o[3]]
-    local couleur = c and c.hex or "|cffffffff"
-    return couleur .. "|Hitem:" .. id .. ":0:0:0:0:0:0:0:0|h[" .. (o and o[2] or ("objet " .. id)) .. "]|h|r"
+    return Hex(id) .. "|Hitem:" .. id .. ":0:0:0:0:0:0:0:0|h[" .. (o and o[2] or ("objet " .. id)) .. "]|h|r"
+end
+
+-- Dans la discussion aussi (31/10/2026, demande de l'utilisateur) : les liens d'objets à collectionner prennent leur
+-- teinte au lieu de la couleur de leur qualité (SolUI_Discussion.lua passe chaque message par ici).
+function S.TeinteLiens(texte)
+    return (texte:gsub("|c%x%x%x%x%x%x%x%x(|Hitem:(%d+)[^|]*|h)", function(lien, id)
+        if NOMS[tonumber(id)] then return Hex(tonumber(id)) .. lien end
+    end))
 end
 
 S.Message("SOLCOL", function(champs)

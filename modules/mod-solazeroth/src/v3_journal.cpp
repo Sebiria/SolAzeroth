@@ -116,7 +116,7 @@ namespace
     void FicheJoueur(Journal* j, Player* p)
     {
         j->fichier << Acore::StringFormat("  Joueur {} : puissance {:.1f}, vie {}/{}, armure {} (-{:.1f} par coup), force {:.0f}, "
-            "endurance {:.0f}, puissance d'attaque {:.0f}, arme {:.0f}-{:.0f} toutes les {:.2f} s, critique {:.1f} %, Rempart {}\n",
+            "endurance {:.0f}, puissance d'attaque {:.0f}, arme {:.1f}-{:.1f} toutes les {:.2f} s, critique {:.1f} %, Rempart {}\n",
             p->GetName(), SolAzeroth::PuissanceJoueur(p), p->GetHealth(), p->GetMaxHealth(), p->GetArmor(),
             p->GetArmor() / sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureParPoint", 20.0f),
             p->GetStat(STAT_STRENGTH), p->GetStat(STAT_STAMINA), p->GetTotalAttackPowerValue(BASE_ATTACK),

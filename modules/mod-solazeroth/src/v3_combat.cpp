@@ -56,6 +56,7 @@ namespace
         uint32 attente = TICK_PUISSANCE;
         uint8 renvoi = 0;
         std::string affiche;
+        ObjectGuid cible;   // dernière cible annoncée à l'interface
     };
 
     float CalculerPuissance(Player* player)
@@ -252,6 +253,12 @@ public:
     {
         Puissance* p = PuissanceDe(player);
         p->attente += diff;
+        // Nouvelle cible : sa puissance part tout de suite (31/10/2026 : elle mettait jusqu'à 2 s à s'afficher).
+        if (player->GetTarget() != p->cible)
+        {
+            p->cible = player->GetTarget();
+            Envoyer(player);
+        }
         if (p->attente < TICK_PUISSANCE)
             return;
         p->attente = 0;

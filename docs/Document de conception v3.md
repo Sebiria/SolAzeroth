@@ -622,6 +622,15 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Rangs 1 à 5** (onglet Amélioration) : chaque pièce existe en 6 versions, de +10 % de caractéristiques par rang. Le nom porte le rang (« … +2 »). Améliorer remplace l'objet à la même place, hors combat. Coût à Durotar : 5, 10, 20, 35 puis 60 éclats, et 20 c, 40 c, 80 c, 1 pa 60, 3 pa 20 ; davantage au-delà de la puissance 12. Les rangs 4 et 5 demanderont aussi un composant rare, avec la joaillerie (F8).
     - **Puissance du personnage** : le rang compte pour +10 % par rang (`SolAzeroth.V3.PuissanceParRang` = 0,1), au lieu des rangs de menace de la v2.
     - **Ouverture** : la fenêtre se règle dans « Techniques et raccourcis », section Fenêtres, comme la Collection.
+  - **Treizième série (31/10/2026)** :
+    - **Simulation de combats** (demande de l'utilisateur : tout équilibrage passe par des combats simulés entre un bot du joueur et un bot du monstre) :
+      - `outils/simulation_combat.py` reprend les règles du serveur (armure fixe, ×4 et ×1,5 des monstres, malus de puissance, kit du guerrier tank, Rempart, temps de réaction du joueur). Il rejoue les combats du journal, ou bâtit un monstre depuis la base avec la formule du moteur.
+      - `outils/tests_equilibrage.py` : la fidélité du modèle est bloquante (un monstre bâti depuis la base doit avoir la fiche du journal ; le combat de référence contre le Scorpide claquant doit être reproduit à 30 % près). Le rapport d'équilibrage est non bloquant : le personnage Test, avec quatre panoplies, contre dix monstres de Durotar.
+      - Fidélité actuelle : dégâts du joueur +16 %, du monstre -21 %, sur un seul combat réel. Le journal écrit désormais l'arme à une décimale, pour réduire l'écart.
+    - **Analyse du combat perdu contre le Scorpide claquant** (puissance 6 contre 3,2, malus de 6 % seulement) : son armure de 165 retire 8 points à chaque coup. La mêlée tombe à son plancher de 3 dégâts, et le joueur inflige 3,3 dégâts par seconde contre ses 240 points de vie. L'armure fixe des monstres écrase les armes faibles.
+    - **Premier rapport de simulation** : à puissance égale, les monstres de la vallée meurent en 7 à 15 s sans danger. Au-delà de la puissance 7, même la fin des quêtes de Durotar (puissance 9,3) perd contre un monstre de puissance 10 ou 11. **À calibrer** avec ces outils.
+    - **Cadre de cible** : la puissance s'affiche dès qu'on change de cible (elle attendait jusqu'à 2 s le prochain envoi du serveur). Un contour de 2 px prend la couleur de la difficulté : rouge à 5 points de puissance de plus, orange à 3, jaune de -2 à +2, vert jusqu'à -5, gris en dessous.
+    - **Discussion** : les liens des objets à collectionner prennent leur teinte, comme dans les infobulles et la Collection.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :

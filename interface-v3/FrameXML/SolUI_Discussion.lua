@@ -73,6 +73,12 @@ chat:SetScript("OnMouseWheel", function(self, sens)
     else self:ScrollDown(); self:ScrollDown() end
 end)
 chat:SetScript("OnHyperlinkClick", ChatFrame_OnHyperlinkShow)
+-- Liens des objets à collectionner : à leur teinte (S.TeinteLiens, SolUI_Collection.lua, chargé après ce fichier).
+local ajouter = chat.AddMessage
+chat.AddMessage = function(self, texte, ...)
+    if type(texte) == "string" and S.TeinteLiens then texte = S.TeinteLiens(texte) end
+    return ajouter(self, texte, ...)
+end
 -- Champs attendus par la mise en forme du jeu (ChatFrame_OnEvent).
 chat.channelList, chat.zoneChannelList, chat.messageTypeList = {}, {}, {}
 chat.tellTimer = GetTime()

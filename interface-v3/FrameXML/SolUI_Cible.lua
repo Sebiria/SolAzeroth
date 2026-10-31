@@ -29,6 +29,25 @@ nom:SetJustifyH("LEFT")
 local puissance = S.Texte(cible, "Regular", 13, "gris")
 puissance:SetPoint("BOTTOMLEFT", nom, "BOTTOMRIGHT", 12, 2)
 
+-- Contour de 2 px à la couleur de la difficulté (31/10/2026, demande de l'utilisateur), d'après l'écart entre la
+-- puissance du monstre et celle du personnage : gris (bien plus faible), vert, jaune (à sa mesure), orange, rouge.
+local contour = CreateFrame("Frame", nil, cible)
+contour:SetAllPoints()
+contour:SetBackdrop({ edgeFile = S.BLANC, edgeSize = 2 })
+contour:Hide()
+local DIFFICULTES = {
+    { 5, { 0.886, 0.243, 0.227 } },    -- rouge : 5 points de plus ou davantage
+    { 3, { 1, 0.502, 0.251 } },        -- orange
+    { -2, { 1, 0.82, 0 } },            -- jaune
+    { -5, { 0.251, 0.749, 0.251 } },   -- vert
+}
+function S.CouleurDifficulte(ecart)
+    for _, d in ipairs(DIFFICULTES) do
+        if ecart >= d[1] then return d[2][1], d[2][2], d[2][3] end
+    end
+    return 0.5, 0.5, 0.5
+end
+
 local pourcent = S.Texte(cible, "Bold", 24, "vertClair")
 pourcent:SetPoint("TOPRIGHT", cible, "TOPRIGHT", -MARGE, -14)
 
@@ -193,8 +212,11 @@ local function MajPuissance()
     local valeur = S.etat.ciblePuissance
     if not valeur or not UnitExists("target") or UnitIsPlayer("target") then
         puissance:SetText("")
+        contour:Hide()
         return
     end
+    contour:SetBackdropBorderColor(S.CouleurDifficulte(valeur - (S.etat.puissance or 0)))
+    contour:Show()
     local texte = "Puissance " .. S.Nombre(valeur)
     if S.etat.cibleMalus and S.etat.cibleMalus > 0 then
         texte = texte .. "   |cfff0918a−" .. S.Nombre(S.etat.cibleMalus) .. " % de dégâts|r"
@@ -335,6 +357,8 @@ end)
 cible:GetScript("OnSizeChanged")(cible, cible:GetWidth())
 
 S.RafraichirCible = MajTout
+-- La puissance reçue est celle de l'ancienne cible : on l'oublie jusqu'au message du serveur, qui part aussitôt.
+S.Ecouter("PLAYER_TARGET_CHANGED", function() S.etat.ciblePuissance, S.etat.cibleMalus = nil, 0 end)
 S.Ecouter("PLAYER_TARGET_CHANGED", MajTout)
 S.Ecouter("PLAYER_ENTERING_WORLD", MajTout)
 S.Ecouter("UNIT_HEALTH", function(_, unite) if unite == "target" then MajVie() end end)

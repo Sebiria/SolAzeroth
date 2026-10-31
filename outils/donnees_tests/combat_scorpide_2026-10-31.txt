@@ -1,0 +1,63 @@
+Journal de combat de Test (Sol'Azeroth v3). Armure : 20 points d'armure retirent 1 point par coup physique, 25 % du coup passent toujours. Monstres : vie x2, dégâts x4 (avant l'armure), sorts x2, sur la durée x1.5.
+
+=== Combat 1 à 20:20:46, zone 14, carte 1 (84, -4816)
+  Joueur Test : puissance 3.2, vie 73/73, armure 477 (-23.9 par coup), force 26, endurance 23, puissance d'attaque 41, arme 11-13 toutes les 2.60 s, critique 3.6 %, Rempart 0
+  Monstre Clattering Scorpid (entrée 3125) : puissance 6, vie 240/240, armure 165, coups 7-9 toutes les 2.00 s ; malus du joueur contre lui : 6 %
+    0.0 s  Test -> Clattering Scorpid | Frappe du bouclier (100011) | 10 | armure -8 | absorbé 0 | vie 230/240
+    0.1 s  Test -> Clattering Scorpid | mêlée | 3 | armure -6 | absorbé 0 | vie 227/240
+    1.6 s  Test -> Clattering Scorpid | Coup de tonnerre (100012) | 3 | armure -8 | absorbé 0 | vie 224/240
+    2.0 s  Clattering Scorpid -> Test | mêlée | 7 | armure -23 | absorbé 6 | vie 66/73 | Rempart 2
+    2.7 s  Test -> Clattering Scorpid | mêlée | 3 | armure -7 | absorbé 0 | vie 221/240
+    4.4 s  Clattering Scorpid -> Test | mêlée | 21 CRITIQUE | armure -23 | absorbé 5 | vie 45/73 | Rempart 2
+    5.3 s  Test -> Clattering Scorpid | mêlée | 3 | armure -8 | absorbé 0 | vie 218/240
+    6.5 s  Test -> Clattering Scorpid | Frappe du bouclier (100011) | 14 | armure -8 | absorbé 0 | vie 204/240
+    6.8 s  Clattering Scorpid -> Test | mêlée | 0 | armure -23 | absorbé 13 | vie 45/73 | Rempart 8
+    7.9 s  Test -> Clattering Scorpid | mêlée | 3 | armure -8 | absorbé 0 | vie 201/240
+    8.2 s  Clattering Scorpid -> Test | Poison (11918) [périodique] | 0 | armure -0 | absorbé 3 | vie 45/73 | Rempart 6
+    9.2 s  Clattering Scorpid -> Test | mêlée | 7 | armure -23 | absorbé 6 | vie 38/73 | Rempart 2
+   10.1 s  Test -> Clattering Scorpid | Coup de tonnerre (100012) | 3 | armure -7 | absorbé 0 | vie 198/240
+   10.5 s  Test -> Clattering Scorpid | mêlée | 3 | armure -8 | absorbé 0 | vie 195/240
+   11.2 s  Clattering Scorpid -> Test | Poison (11918) [périodique] | 0 | armure -0 | absorbé 3 | vie 38/73 | Rempart 3
+   11.6 s  Clattering Scorpid -> Test | mêlée | 4 | armure -21 | absorbé 3 | vie 34/73 | Rempart 1
+   13.1 s  Test -> Clattering Scorpid | mêlée | 3 | armure -7 | absorbé 0 | vie 192/240
+   14.0 s  Clattering Scorpid -> Test | mêlée | 10 | armure -23 | absorbé 3 | vie 24/73 | Rempart 1
+   14.2 s  Clattering Scorpid -> Test | Poison (11918) [périodique] | 0 | armure -0 | absorbé 3 | vie 24/73 | Rempart 3
+   15.2 s  Test -> Clattering Scorpid | Frappe du bouclier (100011) | 12 | armure -8 | absorbé 0 | vie 180/240
+   15.7 s  Test -> Clattering Scorpid | mêlée | 3 | armure -8 | absorbé 0 | vie 177/240
+   16.4 s  Clattering Scorpid -> Test | mêlée | 0 | armure -23 | absorbé 9 | vie 24/73 | Rempart 4
+   17.2 s  Clattering Scorpid -> Test | Poison (11918) [périodique] | 0 | armure -0 | absorbé 3 | vie 24/73 | Rempart 2
+   18.3 s  Test -> Clattering Scorpid | mêlée | 3 | armure -7 | absorbé 0 | vie 174/240
+   18.8 s  Clattering Scorpid -> Test | mêlée | 11 | armure -23 | absorbé 2 | vie 13/73 | Rempart 1
+   20.2 s  Clattering Scorpid -> Test | Poison (11918) [périodique] | 0 | armure -0 | absorbé 3 | vie 13/73 | Rempart 3
+   21.0 s  Clattering Scorpid -> Test | mêlée | 6 | armure -23 | absorbé 3 | vie 7/73 | Rempart 1
+   21.3 s  Test -> Clattering Scorpid | Coup de tonnerre (100012) | 3 | armure -8 | absorbé 0 | vie 171/240
+   22.1 s  Test -> Clattering Scorpid | mêlée | 3 | armure -7 | absorbé 0 | vie 168/240
+   22.2 s  Test -> Clattering Scorpid | Frappe du bouclier (100011) | 14 | armure -8 | absorbé 0 | vie 154/240
+   23.4 s  Clattering Scorpid -> Test | mêlée | 0 | armure -23 | absorbé 9 | vie 7/73 | Rempart 4
+   25.8 s  Clattering Scorpid -> Test | mêlée | 8 CRITIQUE | armure -18 | absorbé 4 | vie 0/73 | Rempart 2
+--- Bilan du combat 1 : 25.8 s, 0 monstre(s) tué(s), vie 7/73
+    infligés 86 (3.3/s) ; subis 74 (2.9/s), dont armure retirée 246 et absorbé 78 ; soins 0
+    Coup de tonnerre (100012) : 3 coup(s), 0 critique(s), total 9, moyenne 3, maximum 3
+    Frappe du bouclier (100011) : 4 coup(s), 0 critique(s), total 50, moyenne 12, maximum 14
+    mêlée : 9 coup(s), 0 critique(s), total 27, moyenne 3, maximum 3
+   25.8 s  MORT du joueur, tué par Clattering Scorpid
+
+=== Combat 2 à 20:22:07, zone 14, carte 1 (-618, -4445)
+  Joueur Test : puissance 3.2, vie 70/70, armure 477 (-23.9 par coup), force 26, endurance 23, puissance d'attaque 41, arme 10-12 toutes les 2.60 s, critique 3.6 %, Rempart 0
+  Monstre Mottled Boar (entrée 3098) : puissance 1, vie 84/84, armure 8, coups 2-2 toutes les 2.00 s ; malus du joueur contre lui : 0 %
+    0.0 s  Test -> Mottled Boar | Coup de tonnerre (100012) | 10 | armure -0 | absorbé 0 | vie 74/84
+    0.0 s  Test -> Mottled Boar | mêlée | 9 | armure -0 | absorbé 0 | vie 65/84
+    0.6 s  Test -> Mottled Boar | Frappe du bouclier (100011) | 20 | armure -0 | absorbé 0 | vie 45/84
+    2.3 s  Mottled Boar -> Test | mêlée | 0 CRITIQUE | armure -3 | absorbé 2 | vie 70/70 | Rempart 5
+    2.6 s  Test -> Mottled Boar | mêlée | 9 | armure -0 | absorbé 0 | vie 36/84
+    4.7 s  Mottled Boar -> Test | mêlée | 0 | armure -3 | absorbé 1 | vie 70/70 | Rempart 4
+    5.2 s  Test -> Mottled Boar | mêlée | 11 | armure -0 | absorbé 0 | vie 25/84
+    6.9 s  Test -> Mottled Boar | Frappe du bouclier (100011) | 18 | armure -0 | absorbé 0 | vie 7/84
+    7.1 s  Mottled Boar -> Test | mêlée | 0 | armure -3 | absorbé 1 | vie 70/70 | Rempart 9
+    7.8 s  Test -> Mottled Boar | mêlée | 11 | armure -0 | absorbé 0 | vie 0/84
+    7.8 s  Mottled Boar meurt
+--- Bilan du combat 2 : 7.8 s, 1 monstre(s) tué(s), vie 70/70
+    infligés 88 (11.2/s) ; subis 0 (0.0/s), dont armure retirée 9 et absorbé 4 ; soins 0
+    Coup de tonnerre (100012) : 1 coup(s), 0 critique(s), total 10, moyenne 10, maximum 10
+    Frappe du bouclier (100011) : 2 coup(s), 0 critique(s), total 38, moyenne 19, maximum 20
+    mêlée : 4 coup(s), 0 critique(s), total 40, moyenne 10, maximum 11
