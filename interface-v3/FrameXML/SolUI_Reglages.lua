@@ -6,7 +6,7 @@
 
 local S = SolUI
 
-local NOMS = { perso = "Personnage", techniques = "Techniques", cible = "Cible", zone = "Zone" }
+local NOMS = { perso = "Personnage", techniques = "Techniques", cible = "Cible", zone = "Zone", quetes = "Quêtes" }
 S.NOMS_BLOCS = NOMS
 S.LIMITES = { echelle = { 0.6, 1.6 }, largeur = { 420, 1100 } }
 
@@ -172,6 +172,7 @@ function S.ModeEdition(actif)
     S.Montrer(bandeau, enEdition)
     -- La cible n'existe qu'avec une cible : en édition, elle se montre quand même.
     if S.RafraichirCible then S.RafraichirCible() end
+    if S.MajQuetes then S.MajQuetes() end
     if S.surEdition then S.surEdition(enEdition) end
 end
 

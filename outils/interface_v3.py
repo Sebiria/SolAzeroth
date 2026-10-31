@@ -25,7 +25,8 @@ FRAMEXML = os.path.join(FICHIERS, "Interface", "FrameXML")
 
 # Ordre de chargement de notre code dans FrameXML.toc.
 CODE = ["SolUI_Base.lua", "SolUI_Cacher.lua", "SolUI_Perso.lua", "SolUI_Techniques.lua", "SolUI_Cible.lua",
-        "SolUI_Zone.lua", "SolUI_Reglages.lua"]
+        "SolUI_Zone.lua", "SolUI_Cartes.lua", "SolUI_Quetes.lua", "SolUI_Reglages.lua"]
+GENERES = {"SolUI_Cartes.lua"}   # écrits par ce script, pas copiés de interface-v3\FrameXML
 
 GRAISSES = {"Light": 300, "Regular": 400, "SemiBold": 600, "Bold": 700}
 
@@ -177,10 +178,29 @@ def toc_du_client():
     return contenu.decode("utf-8")
 
 
+def cartes():
+    """Taille en mètres du jeu de chaque carte de zone (WorldMapArea.dbc), pour placer les repères de la mini-carte."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import dbc
+    table = dbc.Dbc.ouvrir(os.path.join(RACINE, "data", "dbc", "WorldMapArea.dbc"))
+    lignes = ["-- Généré par outils\\interface_v3.py depuis WorldMapArea.dbc : ne pas modifier à la main.",
+              "-- Carte de zone (nom de fichier, GetMapInfo) -> largeur et hauteur en mètres du jeu.",
+              "SolUI.CARTES = {"]
+    for e in table.enregistrements:
+        gauche, droite, haut, bas = (dbc.flottant(v) for v in e[4:8])
+        if gauche != droite and haut != bas:
+            lignes.append("    [\"%s\"] = { %.1f, %.1f }," % (table.texte(e[3]), gauche - droite, haut - bas))
+    lignes.append("}")
+    with open(os.path.join(FRAMEXML, "SolUI_Cartes.lua"), "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lignes) + "\n")
+
+
 def code():
     os.makedirs(FRAMEXML, exist_ok=True)
     for nom in CODE:
-        shutil.copy2(os.path.join(SOURCES, "FrameXML", nom), os.path.join(FRAMEXML, nom))
+        if nom not in GENERES:
+            shutil.copy2(os.path.join(SOURCES, "FrameXML", nom), os.path.join(FRAMEXML, nom))
+    cartes()
     lignes = toc_du_client().splitlines()
     repere = next(i for i, l in enumerate(lignes) if l.startswith("## add new modules above here"))
     lignes[repere:repere] = ["# Sol'Azeroth v3 (F4) : interface"] + CODE + [""]

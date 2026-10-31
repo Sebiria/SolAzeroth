@@ -453,6 +453,15 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - les zones d'objectif sont dans `quest_poi`. Celles du Gouffre s'affichent à la faille, car le Gouffre n'a pas de carte ;
 - les récompenses du point 24 ont été corrigées comme recommandé.
 
+**Fêtes retirées (31/10/2026, décision de l'utilisateur)** : migration 064. 42 événements de fête ou de saison ne démarrent plus : fêtes du calendrier, foire de Sombrelune, Nouvel an, bière du mois, concours de pêche et poissons de saison. 743 quêtes de fête sont désactivées. Restent les événements qui ne sont pas des fêtes, comme les appels aux armes des champs de bataille ou les cycles de jour et de nuit.
+
+**F5d construite (31/10/2026)**, pas encore vérifiée en jeu : `SolUI_Quetes.lua` (et `SolUI_Cartes.lua`, généré depuis WorldMapArea.dbc).
+- **Suivi** sous la zone, déplaçable et réglable comme les autres blocs : les quêtes suivies et leurs objectifs. Clic : ouvre le journal ; clic droit : ne plus suivre. Une quête acceptée est suivie d'office.
+- **Journal** (touche du journal, menu Quêtes) : la liste à gauche, la quête à droite (objectifs, récit, récompenses), avec Suivre, Carte et Abandonner. Il remplace celui de Blizzard, qui reste chargé mais ouvre le nôtre.
+- **Mini-carte** : la zone d'objectif de chaque quête suivie, ou un point vert sur le PNJ à qui la rendre. Au bord de la mini-carte si c'est trop loin.
+- **Carte du monde** : celle de Blizzard, avec les objectifs de quête toujours affichés.
+- Les fenêtres d'acceptation et de rendu des quêtes restent celles de Blizzard pour l'instant.
+
 **Suite proposée par Claude** (après F5c à F5f) :
 - **F6, butin** : tables de butin réduites aux composants, cuir sans dépeçage, éclats cadavériques, or.
 - **F7, potion et camp** : les deux boutons du cadre du personnage, et leurs listes de courses.

@@ -558,10 +558,10 @@ local CONSTRUCTEURS = {
         end)
         Bouton(edition, "Tout réinitialiser", 160, 250, -70, function() S.Reinitialiser() end)
 
-        local blocs = Carte(p, -146, 230, "Interface\\Icons\\INV_Misc_Gear_02", "Taille des blocs", "")
+        local blocs = Carte(p, -146, 266,"Interface\\Icons\\INV_Misc_Gear_02", "Taille des blocs", "")
         local curseurs = {}
         local y = -46
-        for _, nom in ipairs({ "perso", "techniques", "cible", "zone" }) do
+        for _, nom in ipairs({ "perso", "techniques", "cible", "zone", "quetes" }) do
             Texte(blocs, "GameFontNormal", S.NOMS_BLOCS[nom], 60, y - 2):SetWidth(110)
             curseurs[nom] = Curseur(blocs, 180, y, 220, 60, 160, 5, "%d %%", function(v)
                 S.Modifier(nom, "echelle", v / 100)

@@ -124,7 +124,7 @@ local ENTREES = {
     { "Sacs", function() ToggleBackpack() end },
     { "Techniques", function() Slash("/kit") end },
     { "Sorts", function() ToggleSpellBook(BOOKTYPE_SPELL) end },
-    { "Quêtes", function() ToggleFrame(QuestLogFrame) end },
+    { "Quêtes", function() S.BasculerJournal() end },
     { "Carte", function() ToggleFrame(WorldMapFrame) end },
     { "Hauts faits", function() ToggleAchievementFrame() end },
     { "Social", function() ToggleFriendsFrame() end },
