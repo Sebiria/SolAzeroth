@@ -24,6 +24,7 @@
 #include "ScriptMgr.h"
 #include "SpellInfo.h"
 #include "StringFormat.h"
+#include <cmath>
 
 using namespace Acore::ChatCommands;
 
@@ -160,7 +161,7 @@ public:
     static void AppliquerMonstre(Unit* cible, Unit* attaquant, T& degats)
     {
         if (reglages.degatsMonstres != 1.0f && Monstre(attaquant) && cible && cible->GetCharmerOrOwnerPlayerOrPlayerItself())
-            degats = T(degats * reglages.degatsMonstres);
+            degats = T(std::lround(degats * reglages.degatsMonstres)); // arrondi : 1 x 2,5 donnait 2 (journal du 31/10/2026)
     }
 
     template <typename T>

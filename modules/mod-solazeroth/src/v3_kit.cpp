@@ -24,6 +24,7 @@
 #include "SpellScript.h"
 #include "SpellScriptLoader.h"
 #include "StringFormat.h"
+#include <cmath>
 #include <sstream>
 
 using namespace Acore::ChatCommands;
@@ -71,10 +72,10 @@ namespace
 
     struct Reglages
     {
-        float part = 25.0f;
+        float part = 40.0f;
         float plafond = 30.0f;
         float fuite = 1.0f;
-        float frappe = 5.0f;
+        float frappe = 8.0f;
     } reglages;
 
     struct Kit : DataMap::Base
@@ -293,7 +294,7 @@ class spell_solazeroth_v3_rempart : public AuraScript
     void Absorbe(AuraEffect* effet, DamageInfo& /*degats*/, uint32& absorbe)
     {
         Unit* cible = GetTarget();
-        int32 apport = int32(absorbe * reglages.part / 100.0f);
+        int32 apport = int32(std::lround(absorbe * reglages.part / 100.0f));
         effet->SetAmount(std::min(effet->GetAmount() + apport, Plafond(cible) + int32(absorbe)));
     }
 
@@ -310,7 +311,7 @@ class spell_solazeroth_v3_frappe_bouclier : public SpellScript
     void Remplir()
     {
         if (Unit* lanceur = GetCaster())
-            Ajouter(lanceur, int32(lanceur->GetMaxHealth() * reglages.frappe / 100.0f));
+            Ajouter(lanceur, int32(std::lround(lanceur->GetMaxHealth() * reglages.frappe / 100.0f)));
     }
 
     void Register() override
@@ -438,7 +439,7 @@ public:
     void OnDamage(Unit* attaquant, Unit* victime, uint32& degats) override
     {
         if (degats && attaquant && attaquant != victime && victime->IsAlive() && PorteLeRempart(victime))
-            Ajouter(victime, int32(degats * reglages.part / 100.0f));
+            Ajouter(victime, int32(std::lround(degats * reglages.part / 100.0f)));
     }
 };
 
@@ -505,10 +506,10 @@ public:
 
     void OnAfterConfigLoad(bool /*reload*/) override
     {
-        reglages.part = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.Part", 25.0f);
+        reglages.part = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.Part", 40.0f);
         reglages.plafond = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.Plafond", 30.0f);
         reglages.fuite = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.Fuite", 1.0f);
-        reglages.frappe = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.FrappeBouclier", 5.0f);
+        reglages.frappe = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.FrappeBouclier", 8.0f);
     }
 };
 

@@ -285,6 +285,12 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - l'en-tête du journal rappelle les deux multiplicateurs ;
   - les fiches des monstres donnent la vie multipliée, mais les coups avant multiplication.
 
+  **Deuxième réglage (journal Ezafz du 31/10/2026 à 02h29, accepté par l'utilisateur)** :
+  - le multiplicateur s'applique bien. Mais un coup brut de 1 × 2,5 était tronqué à 2, puis l'armure et le Rempart l'effaçaient : les sangliers de puissance 1 restaient inoffensifs ;
+  - un sanglier de puissance 2 tient 21,8 s et coûte la moitié de la vie, mais sans technique pendant les 15 premières secondes. Avec le kit, on estime 12 à 14 s, proche de la cible ;
+  - les dégâts des monstres et les apports du Rempart sont désormais arrondis au plus proche ;
+  - Rempart renforcé : `Rempart.Part` passe de 25 à 40 %, et `Rempart.FrappeBouclier` de 5 à 8 % de la vie maximale.
+
 ### F4. Interface v3 dans les fichiers du jeu
 - **Nos propres fichiers sont ajoutés à FrameXML.** Le test du 30/10 a montré que ce code garde les droits de Blizzard en combat.
 - **Les cadres de Blizzard inutiles sont cachés** : barres d'action, cadres du joueur et de la cible, mana, expérience…
