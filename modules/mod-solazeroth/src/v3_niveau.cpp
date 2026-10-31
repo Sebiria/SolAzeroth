@@ -7,13 +7,21 @@
 // - Régénération de vie : celle du jeu, selon l'Esprit, est coupée (Rate.Health = 0.001) car elle remplissait les petites
 //   réserves de vie en quelques secondes ; hors combat, le joueur récupère SolAzeroth.V3.RegenVie % de sa vie maximum
 //   toutes les 2 secondes.
+// - F4 (31/10/2026) : puissance conseillée de chaque zone, calculée au démarrage d'après ses monstres, et envoyée à
+//   l'interface v3 (préfixe SOLZONE, « ZONE;basse;haute ») au changement de zone et toutes les 10 s.
 
 #include "SolAzeroth.h"
 #include "Config.h"
 #include "Creature.h"
+#include "DatabaseEnv.h"
+#include "Log.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "StringFormat.h"
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
 
 namespace
 {
@@ -29,7 +37,38 @@ namespace
     struct Regen : DataMap::Base
     {
         uint32 attente = 0;
+        uint32 zone = 0;
+        uint8 renvoi = 0;
     };
+
+    // Puissance conseillée par zone : du 5e au 90e centile des puissances de ses monstres ordinaires (sans PNJ de
+    // service, élites ni bestioles). Durotar donne 1-10, les Tarides 11-22. Une zone trop disparate (capitale, plus de
+    // 25 d'écart) n'a pas de puissance conseillée.
+    std::unordered_map<uint32, std::pair<uint8, uint8>> puissanceDesZones;
+
+    void CalculerPuissanceDesZones()
+    {
+        puissanceDesZones.clear();
+        std::unordered_map<uint32, std::vector<uint8>> niveaux;
+        if (QueryResult resultat = WorldDatabase.Query("SELECT c.zoneId, t.minlevel FROM creature c "
+            "JOIN creature_template t ON t.entry = c.id WHERE c.zoneId <> 0 AND t.npcflag = 0 AND t.`rank` = 0 AND t.type <> 8"))
+        {
+            do
+            {
+                Field* champs = resultat->Fetch();
+                niveaux[champs[0].Get<uint32>()].push_back(champs[1].Get<uint8>());
+            } while (resultat->NextRow());
+        }
+        for (auto& [zone, liste] : niveaux)
+        {
+            std::sort(liste.begin(), liste.end());
+            uint8 bas = liste[size_t(0.05 * (liste.size() - 1))];
+            uint8 haut = liste[size_t(0.90 * (liste.size() - 1))];
+            if (haut - bas <= 25)
+                puissanceDesZones[zone] = { bas, haut };
+        }
+        LOG_INFO("module", "Sol'Azeroth v3 : puissance conseillée calculée pour {} zones", puissanceDesZones.size());
+    }
 }
 
 unsigned char SolAzeroth::PuissanceCreature(Creature const* creature)
@@ -80,6 +119,17 @@ public:
     }
 };
 
+class solazeroth_v3_niveau_monde : public WorldScript
+{
+public:
+    solazeroth_v3_niveau_monde() : WorldScript("solazeroth_v3_niveau_monde", { WORLDHOOK_ON_STARTUP }) { }
+
+    void OnStartup() override
+    {
+        CalculerPuissanceDesZones();
+    }
+};
+
 class solazeroth_v3_niveau_joueur : public PlayerScript
 {
 public:
@@ -98,6 +148,16 @@ public:
         if (r->attente < TICK_REGEN)
             return;
         r->attente = 0;
+
+        if (player->GetZoneId() != r->zone || ++r->renvoi >= 5)
+        {
+            r->zone = player->GetZoneId();
+            r->renvoi = 0;
+            auto zone = puissanceDesZones.find(r->zone);
+            SolAzeroth::EnvoyerAddon(player, "SOLZONE", zone == puissanceDesZones.end() ? std::string("ZONE;0;0")
+                : Acore::StringFormat("ZONE;{};{}", uint32(zone->second.first), uint32(zone->second.second)));
+        }
+
         if (!player->IsAlive() || player->IsInCombat() || player->GetHealth() >= player->GetMaxHealth())
             return;
         static float const pourcentage = sConfigMgr->GetOption<float>("SolAzeroth.V3.RegenVie", 3.0f);
@@ -108,5 +168,6 @@ public:
 void AddSC_solazeroth_v3_niveau()
 {
     new solazeroth_v3_niveau_creatures();
+    new solazeroth_v3_niveau_monde();
     new solazeroth_v3_niveau_joueur();
 }

@@ -485,6 +485,8 @@ public:
         if (kit->attente < TICK_KIT)
             return;
         kit->attente = 0;
+        // Le Rempart est renvoyé au moins toutes les 2 s : l'interface v3 (F4) le retrouve après un /reload.
+        kit->rempartEnvoye.clear();
         if (player->getClass() != CLASS_WARRIOR)
             return;
         if (!kit->debloquees || (kit->spe != SPE_AUCUNE && Debloquees(player) != kit->debloquees))

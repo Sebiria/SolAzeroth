@@ -301,6 +301,38 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **Les cadres de Blizzard inutiles sont cachés** : barres d'action, cadres du joueur et de la cible, mana, expérience…
 - **L'écran de combat de la maquette Synthèse est construit** : arcs de vie et de Rempart, deux barres de 4, grand cadre de cible, suivi de zone.
 
+**Décisions de l'utilisateur (31/10/2026)** :
+- **Touches** : aucune n'est imposée. Les deux barres reprennent les emplacements 1 à 8 de la barre d'action 1 de Blizzard. Chaque joueur les attribue dans le menu Raccourcis, et chaque bouton affiche la touche choisie.
+- **Suivi de zone réduit** en attendant F5 : nom de la zone, puissance conseillée et sous-zone. Le pourcentage et les reliques arriveront avec F5.
+- **Police Inter**, téléchargée depuis le dépôt officiel `rsms/inter` (v4.1, licence OFL). Le dépôt ne fournit plus de TTF statiques en dehors d'une archive de 33 Mo. On prend donc la police variable (880 Ko), dont l'outil tire quatre graisses statiques : Light, Regular, SemiBold et Bold.
+
+**Construction (31/10/2026)** :
+- **Code** : `interface-v3\FrameXML\SolUI_*.lua`, ajouté au `FrameXML.toc` du client par `outils\interface_v3.py`, puis mis dans le patch par `construire_patch.py`. Ce code garde donc les droits de Blizzard en combat.
+  - `Base` : polices, couleurs, racine à l'échelle de la maquette (900 unités de haut) et messages du serveur.
+  - `Cacher` : cadres de Blizzard remplacés, rangés sous un cadre caché.
+  - `Perso` : arcs, libellés, puissance et pastilles.
+  - `Techniques` : deux barres et losange du passif.
+  - `Cible` : cadre de la cible.
+  - `Zone` : suivi de zone, mini-carte et bouton Menu.
+- **Textures** (TGA 32 bits) tracées par l'outil : arcs, anneau, rond, bouton arrondi, halo, losange et bouclier.
+- **Barres** : chaque bouton clique le bouton de Blizzard correspondant (`ActionButton1` à `8`, caché mais chargé), avec l'action « click » des boutons sécurisés.
+  - On voit : la recharge sous un voile avec les secondes (le temps global ne voile pas), un point quand l'effet est actif, l'icône rougie hors de portée et la touche.
+  - On peut glisser-déposer les techniques comme sur les barres de Blizzard.
+  - La Riposte du rempart est mise en avant (halo ambre qui respire) quand le Rempart dépasse la moitié de son plafond.
+- **Cible** : étiquette ÉLITE, RARE ou BOSS, nom, puissance du monstre et malus du joueur contre lui (en rouge), vie en chiffres et en %, barre graduée aux quarts.
+  - L'incantation s'affiche en grand, avec une bordure grise si elle ne peut pas être interrompue.
+  - Jusqu'à 3 débuffs, avec cumuls, durée et temps restant.
+- **Menu** : il remplace le micro-menu. Il ouvre le personnage, les sacs, les techniques, les sorts, les quêtes, la carte, les hauts faits, le social, /sol et le menu du jeu.
+- **Serveur** :
+  - puissance envoyée avec une décimale ;
+  - message `SOLZONE` « ZONE;basse;haute » au changement de zone et toutes les 10 s ;
+  - Rempart renvoyé au moins toutes les 2 s, et puissance toutes les 10 s, pour qu'un /reload retrouve tout.
+- **Puissance conseillée d'une zone** : du 5e au 90e centile des niveaux d'origine de ses monstres ordinaires (sans PNJ de service, élites ni bestioles), calculée au démarrage.
+  - Exemples : Durotar 1–10, les Tarides 11–22.
+  - Une zone trop disparate (plus de 25 d'écart, comme une capitale) n'en a pas.
+- L'ancienne jauge du Rempart de l'addon SolAzerothKit est retirée.
+- **Pour revenir à l'interface de Blizzard** : supprimer `patch-client\fichiers\Interface\FrameXML`, puis relancer `construire_patch.py`.
+
 ### F5. Premier essai jouable à Durotar
 - Les monstres de la Vallée des épreuves et de Durotar sont remis à l'échelle, et le Gouffre de Ragefeu s'ouvre à 60 %, même si le contenu de la zone est encore incomplet.
 - **Vérification** : l'utilisateur joue son guerrier tank et dit si c'est exigeant et amusant. Les chiffres se calibrent à partir de là.

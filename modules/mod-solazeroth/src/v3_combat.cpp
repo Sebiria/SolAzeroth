@@ -47,6 +47,7 @@ namespace
     {
         float valeur = 0.0f;
         uint32 attente = TICK_PUISSANCE;
+        uint8 renvoi = 0;
         std::string affiche;
     };
 
@@ -89,7 +90,7 @@ namespace
     void Envoyer(Player* player)
     {
         Puissance* p = PuissanceDe(player);
-        std::string message = Acore::StringFormat("PUISSANCE;{:.0f}", p->valeur);
+        std::string message = Acore::StringFormat("PUISSANCE;{:.1f}", p->valeur);
         if (Creature* cible = Monstre(player->GetSelectedUnit()))
             message += Acore::StringFormat(";{};{:.0f}", uint32(SolAzeroth::PuissanceCreature(cible)), Malus(player, cible));
         if (message != p->affiche)
@@ -189,6 +190,12 @@ public:
             return;
         p->attente = 0;
         p->valeur = CalculerPuissance(player);
+        // Renvoi complet toutes les 10 s : l'interface v3 (F4) retrouve son état après un /reload.
+        if (++p->renvoi >= 5)
+        {
+            p->renvoi = 0;
+            p->affiche.clear();
+        }
         Envoyer(player);
     }
 };

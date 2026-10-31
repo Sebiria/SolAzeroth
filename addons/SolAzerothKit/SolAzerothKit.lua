@@ -1,9 +1,10 @@
--- v3, F3 (31/10/2026) : page Techniques (/sol ou /kit) et jauge du Rempart.
+-- v3, F3 (31/10/2026) : page Techniques (/sol ou /kit). La jauge du Rempart est passée dans l'interface v3 (F4,
+-- Interface\FrameXML\SolUI_Perso.lua).
 -- Le serveur (mod-solazeroth, v3_kit.cpp) envoie, préfixe SOLKIT :
 --   "ETAT;spe;puissance;prochain_palier;sort:etat,…" (etat : 0 verrouillée, 1 débloquée, 2 équipée ; palier 0 = tout
 --   est débloqué) ; "REMPART;montant;plafond".
 -- Commandes : ".kit" (état), ".kit spe tank", ".kit equiper <sort> …" (hors combat).
--- Provisoire : l'interface v3 (F4) remplacera cette page et la jauge.
+-- Provisoire : les fenêtres de la v3 remplaceront cette page.
 
 local PREFIXE = "SOLKIT"
 local EQUIPEES_MAX, DE_DEPART, PAR_TECHNIQUE = 8, 4, 5
@@ -187,23 +188,6 @@ aide:SetText("Clique pour équiper ou ranger une technique (8 au plus), puis val
     .. "se placent sur la barre d'action.")
 
 ------------------------------------------------------------------------
--- Jauge du Rempart, sous le cadre du joueur
-------------------------------------------------------------------------
-local jauge = CreateFrame("StatusBar", "SolAzerothKitRempart", PlayerFrame)
-jauge:SetSize(118, 12)
-jauge:SetPoint("TOPLEFT", PlayerFrame, "BOTTOMLEFT", 106, 24)
-jauge:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-jauge:SetStatusBarColor(0.95, 0.75, 0.2)
-jauge:SetMinMaxValues(0, 1)
-jauge:SetValue(0)
-local fondJauge = jauge:CreateTexture(nil, "BACKGROUND")
-fondJauge:SetAllPoints()
-fondJauge:SetTexture(0, 0, 0, 0.6)
-local texteJauge = jauge:CreateFontString(nil, "OVERLAY", "TextStatusBarText")
-texteJauge:SetPoint("CENTER")
-jauge:Hide()
-
-------------------------------------------------------------------------
 -- Messages du serveur
 ------------------------------------------------------------------------
 local ecoute = CreateFrame("Frame")
@@ -227,15 +211,9 @@ ecoute:SetScript("OnEvent", function(self, event, prefixe, message)
             etat.techniques[#etat.techniques + 1] = { sort = tonumber(sort), etat = tonumber(e) }
             if e == "2" then choix[tonumber(sort)] = true end
         end
-        Montrer(jauge, etat.spe == 1)
         Rafraichir()
         -- À l'entrée en jeu d'un guerrier sans spécialisation, la page s'ouvre d'elle-même.
         if premier and etat.spe == 0 and select(2, UnitClass("player")) == "WARRIOR" then cadre:Show() end
-    elseif champs[1] == "REMPART" then
-        local montant, plafond = tonumber(champs[2]) or 0, tonumber(champs[3]) or 1
-        jauge:SetMinMaxValues(0, math.max(1, plafond))
-        jauge:SetValue(montant)
-        texteJauge:SetText("Rempart " .. montant .. " / " .. plafond)
     end
 end)
 
