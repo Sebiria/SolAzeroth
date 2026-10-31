@@ -10,6 +10,7 @@ changement de chiffres (monstres, armure, équipement, kit), comme le demande l'
 
 py tests_equilibrage.py        (code de sortie 1 si la fidélité du modèle n'est plus tenue)
 """
+import glob
 import os
 import sys
 
@@ -67,7 +68,10 @@ def verdict(joueur, monstre, r):
 
 
 def rapport():
-    joueur = next(c["joueur"] for c in reversed(sim.lire_journal(sim.dernier_journal())) if c["joueur"])
+    # Fiche du personnage : le journal le plus récent qui en a une, sinon le combat de référence.
+    journaux = sorted(glob.glob(os.path.join(sim.JOURNAUX, "*.log")), key=os.path.getmtime, reverse=True)
+    fiches = (c["joueur"] for chemin in journaux + [REFERENCE] for c in reversed(sim.lire_journal(chemin)) if c["joueur"])
+    joueur = next(fiches)
     panoplies = {"équipement actuel": joueur}
     for nom, objets in PANOPLIES.items():
         panoplies[nom] = sim.equiper(joueur, objets, 20)

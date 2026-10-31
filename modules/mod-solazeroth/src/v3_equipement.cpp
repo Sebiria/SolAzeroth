@@ -10,6 +10,9 @@
 // - Messages d'addon SOLEQUIP : « FORGE;0|1 », puis « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or » pour chaque pièce
 //   améliorable (sac -1 : équipement porté, case 0 à 18 ; sac 0 à 4 : sacs du jeu, case à partir de 1) et « FIN ».
 // Commandes de l'interface : .equipement, .equipement fabriquer <objet>, .equipement ameliorer <sac> <case>.
+// - Fabrication en 10 s (31/10/2026, demande de l'utilisateur) : animation du métier (marteler à la forge, travailler
+//   debout sinon) et barre de progression de l'interface (« FABRIQUE;objet;secondes », puis « FINI » ou « ANNULE »).
+//   Bouger annule ; composants et or ne sont pris qu'à la fin, après une nouvelle vérification.
 
 #include "SolAzeroth.h"
 #include "CellImpl.h"
@@ -151,6 +154,78 @@ namespace
         ItemTemplate const* modele = sObjectMgr->GetItemTemplate(objet);
         return modele ? modele->Name1 : std::to_string(objet);
     }
+
+    uint32 const DUREE_FABRICATION = 10000;
+    char const* const CLE_FABRICATION = "solazeroth_v3_fabrication";
+
+    struct Fabrication : DataMap::Base
+    {
+        uint32 objet = 0;   // 0 : aucune fabrication en cours
+        uint32 reste = 0;
+        Position depart;
+    };
+
+    // Tout ce que demande la recette ; dest reçoit la place de l'objet dans le sac.
+    bool PeutFabriquer(Player* player, uint32 objet, ChatHandler& chat, ItemPosCountVec& dest)
+    {
+        auto it = recettes.find(objet);
+        if (it == recettes.end())
+        {
+            chat.SendErrorMessage("Recette inconnue.");
+            return false;
+        }
+        Recette const& recette = it->second;
+        bool mj = player->IsGameMaster();
+        if (!mj && SolAzeroth::PuissanceJoueur(player) + 0.05f < recette.puissance)
+        {
+            chat.SendErrorMessage("Il faut une puissance de {} pour cette recette.", recette.puissance);
+            return false;
+        }
+        if (recette.forge && !PresDUneForge(player))
+        {
+            chat.SendErrorMessage("La maille, les boucliers et les armes se forgent près d'une enclume ou d'une forge.");
+            return false;
+        }
+        for (auto const& [composant, nombre] : recette.composants)
+            if (Possede(player, composant) < nombre)
+            {
+                chat.SendErrorMessage("Il manque {} × {}.", nombre - Possede(player, composant), Nom(composant));
+                return false;
+            }
+        if (!player->HasEnoughMoney(recette.prix))
+        {
+            chat.SendErrorMessage("Pas assez d'or.");
+            return false;
+        }
+        if (player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, objet, 1) != EQUIP_ERR_OK)
+        {
+            chat.SendErrorMessage("Pas assez de place dans le sac.");
+            return false;
+        }
+        return true;
+    }
+
+    void ArreterFabrication(Player* player, Fabrication& fabrication, char const* fin)
+    {
+        fabrication.objet = 0;
+        player->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_ONESHOT_NONE);
+        SolAzeroth::EnvoyerAddon(player, PREFIXE, fin);
+    }
+
+    void TerminerFabrication(Player* player, uint32 objet)
+    {
+        ChatHandler chat(player->GetSession());
+        ItemPosCountVec dest;
+        if (!PeutFabriquer(player, objet, chat, dest))
+            return;
+        Recette const& recette = recettes.at(objet);
+        for (auto const& [composant, nombre] : recette.composants)
+            Prendre(player, composant, nombre);
+        player->ModifyMoney(-int32(recette.prix));
+        if (Item* item = player->StoreNewItem(dest, objet, true))
+            player->SendNewItem(item, 1, false, true);
+        Envoyer(player);
+    }
 }
 
 unsigned char SolAzeroth::RangEquipement(unsigned int entree)
@@ -230,47 +305,26 @@ public:
     static bool HandleFabriquer(ChatHandler* handler, uint32 objet)
     {
         Player* player = handler->GetPlayer();
-        auto it = recettes.find(objet);
-        if (it == recettes.end())
+        Fabrication* fabrication = player->CustomData.GetDefault<Fabrication>(CLE_FABRICATION);
+        if (fabrication->objet)
         {
-            handler->SendErrorMessage("Recette inconnue.");
-            return false;
-        }
-        Recette const& recette = it->second;
-        bool mj = player->IsGameMaster();
-        if (!mj && SolAzeroth::PuissanceJoueur(player) + 0.05f < recette.puissance)
-        {
-            handler->SendErrorMessage("Il faut une puissance de {} pour cette recette.", recette.puissance);
-            return false;
-        }
-        if (recette.forge && !PresDUneForge(player))
-        {
-            handler->SendErrorMessage("La maille, les boucliers et les armes se forgent près d'une enclume ou d'une forge.");
-            return false;
-        }
-        for (auto const& [composant, nombre] : recette.composants)
-            if (Possede(player, composant) < nombre)
-            {
-                handler->SendErrorMessage("Il manque {} × {}.", nombre - Possede(player, composant), Nom(composant));
-                return false;
-            }
-        if (!player->HasEnoughMoney(recette.prix))
-        {
-            handler->SendErrorMessage("Pas assez d'or.");
+            handler->SendErrorMessage("Une fabrication est déjà en cours.");
             return false;
         }
         ItemPosCountVec dest;
-        if (player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, objet, 1) != EQUIP_ERR_OK)
+        if (!PeutFabriquer(player, objet, *handler, dest))
+            return false;
+        if (player->isMoving())
         {
-            handler->SendErrorMessage("Pas assez de place dans le sac.");
+            handler->SendErrorMessage("Il faut rester immobile pour fabriquer.");
             return false;
         }
-        for (auto const& [composant, nombre] : recette.composants)
-            Prendre(player, composant, nombre);
-        player->ModifyMoney(-int32(recette.prix));
-        if (Item* item = player->StoreNewItem(dest, objet, true))
-            player->SendNewItem(item, 1, false, true);
-        Envoyer(player);
+        fabrication->objet = objet;
+        fabrication->reste = DUREE_FABRICATION;
+        fabrication->depart = player->GetPosition();
+        player->SetUInt32Value(UNIT_NPC_EMOTESTATE,
+            recettes.at(objet).forge ? EMOTE_STATE_WORK_MINING : EMOTE_STATE_USE_STANDING);
+        SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("FABRIQUE;{};{}", objet, DUREE_FABRICATION / 1000));
         return true;
     }
 
@@ -338,8 +392,36 @@ public:
     }
 };
 
+class solazeroth_v3_equipement_joueur : public PlayerScript
+{
+public:
+    solazeroth_v3_equipement_joueur() : PlayerScript("solazeroth_v3_equipement_joueur", { PLAYERHOOK_ON_UPDATE }) { }
+
+    void OnPlayerUpdate(Player* player, uint32 diff) override
+    {
+        Fabrication* fabrication = player->CustomData.Get<Fabrication>(CLE_FABRICATION);
+        if (!fabrication || !fabrication->objet)
+            return;
+        if (!player->IsAlive() || player->isMoving() || player->GetExactDist(&fabrication->depart) > 0.5f)
+        {
+            ArreterFabrication(player, *fabrication, "ANNULE");
+            ChatHandler(player->GetSession()).SendSysMessage("|cfff0918aFabrication annulée : il faut rester immobile.|r");
+            return;
+        }
+        if (fabrication->reste > diff)
+        {
+            fabrication->reste -= diff;
+            return;
+        }
+        uint32 objet = fabrication->objet;
+        ArreterFabrication(player, *fabrication, "FINI");
+        TerminerFabrication(player, objet);
+    }
+};
+
 void AddSC_solazeroth_v3_equipement()
 {
+    new solazeroth_v3_equipement_joueur();
     new solazeroth_v3_equipement_monde();
     new solazeroth_v3_equipement_commandes();
 }

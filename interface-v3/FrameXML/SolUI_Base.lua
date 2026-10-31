@@ -292,8 +292,21 @@ S.Message("SOLKIT", function(champs)
     end
 end)
 
--- SOLPUISSANCE (v3_combat.cpp) : « PUISSANCE;joueur[;puissance de la cible;malus en %] ».
+-- SOLPUISSANCE (v3_combat.cpp) : « PUISSANCE;joueur[;puissance de la cible;malus en %] », et « PROCHES;guid:puissance;… »
+-- pour les monstres à moins de 60 m, gardés ici pour afficher la puissance d'une cible dès qu'on la choisit.
+S.puissancesProches, S.nombreProches = {}, 0
 S.Message("SOLPUISSANCE", function(champs)
+    if champs[1] == "PROCHES" then
+        if S.nombreProches > 2000 then S.puissancesProches, S.nombreProches = {}, 0 end
+        for n = 2, #champs do
+            local guid, valeur = champs[n]:match("^(%x+):(%d+)$")
+            if guid then
+                if not S.puissancesProches[guid] then S.nombreProches = S.nombreProches + 1 end
+                S.puissancesProches[guid] = tonumber(valeur)
+            end
+        end
+        return
+    end
     if champs[1] ~= "PUISSANCE" then return end
     S.etat.puissance = tonumber(champs[2])
     S.etat.ciblePuissance = tonumber(champs[3])

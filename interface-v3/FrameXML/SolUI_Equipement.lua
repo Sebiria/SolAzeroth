@@ -5,6 +5,7 @@
 -- - Amélioration : les pièces portées et celles des sacs, rangs 1 à 5, payées en éclats cadavériques et en or.
 -- Le serveur (v3_equipement.cpp, messages SOLEQUIP) dit si l'on est près d'une forge et liste les pièces améliorables
 -- avec leur coût ; il vérifie tout avant de fabriquer ou d'améliorer. L'achat se fait chez les marchands de Razor Hill.
+-- Une pièce se fabrique en 10 s (31/10/2026) : barre de progression au-dessus des barres d'action ; bouger annule.
 
 local S = SolUI
 
@@ -28,8 +29,42 @@ local forge, pieces, recues = false, {}, {}
 
 local function Demander() SendChatMessage(".equipement", "SAY") end
 
+-- Barre de fabrication : « FABRIQUE;objet;secondes », puis « FINI » ou « ANNULE ».
+local progression = CreateFrame("StatusBar", nil, S.racine)
+progression:SetSize(360, 30)
+progression:SetPoint("BOTTOM", S.racine, "BOTTOM", 0, 230)
+progression:SetStatusBarTexture(S.BLANC)
+progression:SetStatusBarColor(S.Couleur("ambre"))
+progression:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 2,
+    insets = { left = 2, right = 2, top = 2, bottom = 2 } })
+progression:SetBackdropColor(S.Couleur("creux"))
+progression:SetBackdropBorderColor(S.Couleur("ambre"))
+progression:SetMinMaxValues(0, 1)
+progression:Hide()
+local objetProgression = S.Texte(progression, "Bold", 14, "clair")
+objetProgression:SetPoint("LEFT", 12, 0)
+local resteProgression = S.Texte(progression, "Bold", 14, "clair")
+local debut, duree = 0, 10
+resteProgression:SetPoint("RIGHT", -12, 0)
+progression:SetScript("OnUpdate", function(self)
+    local part = math.min(1, (GetTime() - debut) / duree)
+    self:SetValue(part)
+    resteProgression:SetText(S.Nombre(math.max(0, duree * (1 - part)), 1) .. " s")
+end)
+
 -- « FORGE;0|1 », « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or », « FIN ».
 S.Message("SOLEQUIP", function(champs)
+    if champs[1] == "FABRIQUE" then
+        local id = tonumber(champs[2])
+        debut, duree = GetTime(), math.max(1, tonumber(champs[3]) or 10)
+        objetProgression:SetText("Fabrication : " .. (GetItemInfo(id or 0) or ("objet " .. (id or "?"))))
+        progression:SetValue(0)
+        progression:Show()
+        return
+    elseif champs[1] == "FINI" or champs[1] == "ANNULE" then
+        progression:Hide()
+        return
+    end
     if champs[1] == "FORGE" then
         forge = champs[2] == "1"
     elseif champs[1] == "DEBUT" then

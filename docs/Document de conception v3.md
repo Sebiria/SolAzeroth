@@ -631,6 +631,14 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Premier rapport de simulation** : à puissance égale, les monstres de la vallée meurent en 7 à 15 s sans danger. Au-delà de la puissance 7, même la fin des quêtes de Durotar (puissance 9,3) perd contre un monstre de puissance 10 ou 11. **À calibrer** avec ces outils.
     - **Cadre de cible** : la puissance s'affiche dès qu'on change de cible (elle attendait jusqu'à 2 s le prochain envoi du serveur). Un contour de 2 px prend la couleur de la difficulté : rouge à 5 points de puissance de plus, orange à 3, jaune de -2 à +2, vert jusqu'à -5, gris en dessous.
     - **Discussion** : les liens des objets à collectionner prennent leur teinte, comme dans les infobulles et la Collection.
+  - **Quatorzième série (31/10/2026)** :
+    - **Puissance de la cible, vraie cause du délai** : le serveur ne renvoyait pas un message identique au précédent. En passant d'un sanglier à un autre de même puissance, rien ne partait, alors que l'interface efface la puissance à chaque changement de cible, d'où jusqu'à 10 s d'attente. Le message part maintenant à chaque changement de cible.
+    - **Puissance des monstres à moins de 60 m** (demande de l'utilisateur) : chaque seconde, le serveur envoie celle des monstres arrivés à portée (« PROCHES »), et l'interface l'affiche dès qu'on cible. Coût : une recherche dans la grille par seconde, quelques octets par monstre nouveau, et un renvoi complet toutes les 10 s.
+    - **Contour de la cible** : 4 px au lieu de 2.
+    - **Fabrication en 10 s** : animation du métier (marteler pour la maille et les armes, travailler debout sinon) et barre de progression. Bouger annule, sans rien coûter : composants et or ne sont pris qu'à la fin, après une nouvelle vérification.
+    - **Annonces retirées** : celles de mod-transmog (« … ajouté(e) à votre collection d'apparences »), filtrées par la discussion. Le module tiers reste intact.
+    - **Addon de butin v2** (SolAzerothButin) : il demandait « .solbutin liste » à la connexion, une commande absente en v3. Il est rangé avec les addons v2, et le lanceur le retire du jeu.
+    - **Durotar d'essai** : les 240 po de test sont retirés, et 210 éclats cadavériques sont donnés, soit la moyenne des 175 monstres hostiles de la vallée des Épreuves (à 1,2 éclat chacun).
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :

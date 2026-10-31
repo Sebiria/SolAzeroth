@@ -33,7 +33,7 @@ puissance:SetPoint("BOTTOMLEFT", nom, "BOTTOMRIGHT", 12, 2)
 -- puissance du monstre et celle du personnage : gris (bien plus faible), vert, jaune (à sa mesure), orange, rouge.
 local contour = CreateFrame("Frame", nil, cible)
 contour:SetAllPoints()
-contour:SetBackdrop({ edgeFile = S.BLANC, edgeSize = 2 })
+contour:SetBackdrop({ edgeFile = S.BLANC, edgeSize = 4 })
 contour:Hide()
 local DIFFICULTES = {
     { 5, { 0.886, 0.243, 0.227 } },    -- rouge : 5 points de plus ou davantage
@@ -358,7 +358,13 @@ cible:GetScript("OnSizeChanged")(cible, cible:GetWidth())
 
 S.RafraichirCible = MajTout
 -- La puissance reçue est celle de l'ancienne cible : on l'oublie jusqu'au message du serveur, qui part aussitôt.
-S.Ecouter("PLAYER_TARGET_CHANGED", function() S.etat.ciblePuissance, S.etat.cibleMalus = nil, 0 end)
+-- Puissance connue d'avance si le monstre est à moins de 60 m (SOLPUISSANCE « PROCHES », SolUI_Base.lua) ; le serveur
+-- la confirme ensuite avec le malus.
+S.Ecouter("PLAYER_TARGET_CHANGED", function()
+    local guid = UnitGUID("target")
+    S.etat.ciblePuissance = guid and S.puissancesProches[guid:gsub("^0x", ""):upper()] or nil
+    S.etat.cibleMalus = 0
+end)
 S.Ecouter("PLAYER_TARGET_CHANGED", MajTout)
 S.Ecouter("PLAYER_ENTERING_WORLD", MajTout)
 S.Ecouter("UNIT_HEALTH", function(_, unite) if unite == "target" then MajVie() end end)

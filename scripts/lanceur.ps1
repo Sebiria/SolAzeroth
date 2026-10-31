@@ -76,7 +76,8 @@ if (Test-Path $configWtf) {
 Copy-Item "$racine\addons\*" "$client\Interface\AddOns\" -Recurse -Force
 # v3 (31/10/2026) : les addons propres à la v2 sont rangés dans addons-v2 ; on retire du jeu les copies déjà installées.
 foreach ($ancien in 'SolAzerothEcart', 'SolAzerothFormation', 'SolAzerothGrimoire', 'SolAzerothMenace',
-                    'SolAzerothSpes', 'SolAzerothTalents', 'SolAzerothRessources', 'SolAzerothDefis') {
+                    'SolAzerothSpes', 'SolAzerothTalents', 'SolAzerothRessources', 'SolAzerothDefis',
+                    'SolAzerothButin') {
     Remove-Item "$client\Interface\AddOns\$ancien" -Recurse -Force -ErrorAction SilentlyContinue
 }
 # Patch client unique (V7) : il contient aussi les fichiers de mod-arac, donc Patch-A.MPQ est rangé dans les archives.

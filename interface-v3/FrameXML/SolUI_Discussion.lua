@@ -75,7 +75,12 @@ end)
 chat:SetScript("OnHyperlinkClick", ChatFrame_OnHyperlinkShow)
 -- Liens des objets à collectionner : à leur teinte (S.TeinteLiens, SolUI_Collection.lua, chargé après ce fichier).
 local ajouter = chat.AddMessage
+-- Les annonces d'apparence ajoutée à la collection (mod-transmog) sont retirées (demande de l'utilisateur, 31/10/2026).
 chat.AddMessage = function(self, texte, ...)
+    if type(texte) == "string" and (texte:find("collection d'apparences", 1, true)
+        or texte:find("appearance collection", 1, true)) then
+        return
+    end
     if type(texte) == "string" and S.TeinteLiens then texte = S.TeinteLiens(texte) end
     return ajouter(self, texte, ...)
 end

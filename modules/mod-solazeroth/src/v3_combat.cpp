@@ -9,7 +9,8 @@
 // - Puissance du personnage : moyenne des niveaux d'objet équipés, rang d'amélioration compris (E1 : rang de la version
 //   d'équipement, SolAzeroth.V3.PuissanceParRang par rang ; provisoire : les chiffres par qualité et origine restent à
 //   fixer, question 3 du document). Envoyée à l'interface (« SOLPUISSANCE ») et
-//   affichée par .puissance.
+//   affichée par .puissance. La puissance des monstres à moins de 60 m part aussi d'avance (« PROCHES;guid:puissance;… »,
+//   seulement les nouveaux, chaque seconde) : l'interface l'affiche dès qu'on cible, sans attendre le serveur (31/10/2026).
 // - Malus hors de sa puissance : face à un monstre plus fort, les dégâts infligés par le joueur et ses familiers baissent
 //   de SolAzeroth.V3.MalusParPoint % par point de puissance manquant, au plus SolAzeroth.V3.MalusMax %.
 // - Calibrage (31/10/2026) : les dégâts des monstres contre le joueur et ses familiers sont multipliés par
@@ -19,10 +20,13 @@
 //   par SolAzeroth.V3.MonstresDegatsDuree (×1,5, accord de l'utilisateur après d'autres essais contre Yarrog).
 
 #include "SolAzeroth.h"
+#include "CellImpl.h"
 #include "Chat.h"
 #include "CommandScript.h"
 #include "Config.h"
 #include "Creature.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
 #include "Item.h"
 #include "ObjectMgr.h"
 #include "Player.h"
@@ -30,6 +34,7 @@
 #include "SpellInfo.h"
 #include "StringFormat.h"
 #include <cmath>
+#include <unordered_set>
 
 using namespace Acore::ChatCommands;
 
@@ -37,6 +42,8 @@ namespace
 {
     char const* const PREFIXE = "SOLPUISSANCE";
     uint32 const TICK_PUISSANCE = 2000;
+    uint32 const TICK_PROCHES = 1000;
+    float const PORTEE_PROCHES = 60.0f;
 
     struct Reglages
     {
@@ -57,6 +64,8 @@ namespace
         uint8 renvoi = 0;
         std::string affiche;
         ObjectGuid cible;   // dernière cible annoncée à l'interface
+        uint32 attenteProches = 0;
+        std::unordered_set<ObjectGuid> proches;   // monstres proches dont la puissance est déjà partie
     };
 
     float CalculerPuissance(Player* player)
@@ -132,6 +141,37 @@ namespace
                 return std::clamp(bas->BaseDamage[extension] / haut->BaseDamage[extension], 0.0f, 1.0f);
         }
         return 1.0f;
+    }
+
+    // Puissance des monstres à moins de PORTEE_PROCHES : seulement ceux qui viennent d'arriver à portée. Coût : une
+    // recherche dans la grille par seconde, et quelques octets quand un monstre arrive.
+    void EnvoyerProches(Player* player, Puissance* p)
+    {
+        std::list<Unit*> unites;
+        Acore::AnyUnitInObjectRangeCheck verif(player, PORTEE_PROCHES);
+        Acore::UnitListSearcher<Acore::AnyUnitInObjectRangeCheck> chercheur(player, unites, verif);
+        Cell::VisitObjects(player, chercheur, PORTEE_PROCHES);
+        std::unordered_set<ObjectGuid> presents;
+        std::string paquet;
+        for (Unit* unite : unites)
+        {
+            Creature* creature = Monstre(unite);
+            if (!creature)
+                continue;
+            presents.insert(creature->GetGUID());
+            if (p->proches.count(creature->GetGUID()))
+                continue;
+            paquet += Acore::StringFormat(";{:016X}:{}", creature->GetGUID().GetRawValue(),
+                uint32(SolAzeroth::PuissanceCreature(creature)));
+            if (paquet.size() > 200)
+            {
+                SolAzeroth::EnvoyerAddon(player, PREFIXE, "PROCHES" + paquet);
+                paquet.clear();
+            }
+        }
+        if (!paquet.empty())
+            SolAzeroth::EnvoyerAddon(player, PREFIXE, "PROCHES" + paquet);
+        p->proches = std::move(presents);
     }
 
     void Envoyer(Player* player)
@@ -254,10 +294,19 @@ public:
         Puissance* p = PuissanceDe(player);
         p->attente += diff;
         // Nouvelle cible : sa puissance part tout de suite (31/10/2026 : elle mettait jusqu'à 2 s à s'afficher).
+        // Le message part même s'il est identique au précédent (deux sangliers de même puissance) : l'interface efface la
+        // puissance à chaque changement de cible.
         if (player->GetTarget() != p->cible)
         {
             p->cible = player->GetTarget();
+            p->affiche.clear();
             Envoyer(player);
+        }
+        p->attenteProches += diff;
+        if (p->attenteProches >= TICK_PROCHES)
+        {
+            p->attenteProches = 0;
+            EnvoyerProches(player, p);
         }
         if (p->attente < TICK_PUISSANCE)
             return;
@@ -268,6 +317,7 @@ public:
         {
             p->renvoi = 0;
             p->affiche.clear();
+            p->proches.clear();
         }
         Envoyer(player);
     }
