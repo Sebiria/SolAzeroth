@@ -11,8 +11,9 @@
 // - Arbre du camp (31/10/2026, proposition de l'utilisateur ; la suite de l'arbre reste à débattre) : premier nœud,
 //   NOEUD_FEU_1 Marques (.camp acheter), le Repos au coin du feu donne en plus +10 % de dégâts (sort 100032, lancé à
 //   la place de 100031). Rang gardé dans solazeroth_v3_bivouac.rang_feu.
-// L'interface reçoit « ETAT;charges;max;secondes avant le Repos;rang du feu » (préfixe SOLBIV) : compte à rebours du
-// feu et arbre du camp.
+// L'interface reçoit « ETAT;charges;max;secondes avant le Repos;rang du feu;plat » (préfixe SOLBIV) : compte à rebours du
+// feu, arbre du camp, et plat du bouton de repas (31/10/2026, demande de l'utilisateur : gardé d'une session à l'autre,
+// .camp repas <plat>, migration 082).
 // Les sorts sont générés par outils\bivouac_v3.py (migration 067) ; les améliorations par rang viendront avec F7.
 
 #include "SolAzeroth.h"
@@ -55,6 +56,7 @@ namespace
     {
         uint8 charges = CHARGES;
         uint8 rangFeu = 0;
+        uint32 repas = 0;
         uint32 attente = 0;
         uint32 depuisEnvoi = RENVOI;
         uint32 attenteFeu = 0;
@@ -73,9 +75,9 @@ namespace
     void Sauver(Player* player)
     {
         Bivouac* b = BivouacDe(player);
-        CharacterDatabase.Execute("INSERT INTO solazeroth_v3_bivouac (guid, charges, rang_feu) VALUES ({}, {}, {}) "
-            "ON DUPLICATE KEY UPDATE charges = VALUES(charges), rang_feu = VALUES(rang_feu)",
-            player->GetGUID().GetCounter(), b->charges, b->rangFeu);
+        CharacterDatabase.Execute("INSERT INTO solazeroth_v3_bivouac (guid, charges, rang_feu, repas) VALUES ({}, {}, {}, {}) "
+            "ON DUPLICATE KEY UPDATE charges = VALUES(charges), rang_feu = VALUES(rang_feu), repas = VALUES(repas)",
+            player->GetGUID().GetCounter(), b->charges, b->rangFeu, b->repas);
     }
 
     void Envoyer(Player* player, bool force = false)
@@ -83,7 +85,8 @@ namespace
         Bivouac* b = BivouacDe(player);
         // Dernier champ : secondes avant le Repos au coin du feu (0 hors du feu), pour le compte à rebours de l'interface.
         uint32 restant = b->allume && b->feu && b->assis < ASSIS_POUR_REPOS ? (ASSIS_POUR_REPOS - b->assis) / 1000 : 0;
-        std::string message = Acore::StringFormat("ETAT;{};{};{};{}", b->charges, CHARGES, restant, b->rangFeu);
+        std::string message = Acore::StringFormat("ETAT;{};{};{};{};{}", b->charges, CHARGES, restant, b->rangFeu,
+            b->repas);
         if (!force && message == b->envoye)
             return;
         b->envoye = message;
@@ -197,11 +200,12 @@ public:
     void OnPlayerLogin(Player* player) override
     {
         Bivouac* b = BivouacDe(player);
-        if (QueryResult r = CharacterDatabase.Query("SELECT charges, rang_feu FROM solazeroth_v3_bivouac WHERE guid = {}",
+        if (QueryResult r = CharacterDatabase.Query("SELECT charges, rang_feu, repas FROM solazeroth_v3_bivouac WHERE guid = {}",
             player->GetGUID().GetCounter()))
         {
             b->charges = std::min<uint8>((*r)[0].Get<uint8>(), CHARGES);
             b->rangFeu = (*r)[1].Get<uint8>();
+            b->repas = (*r)[2].Get<uint32>();
         }
         for (uint32 sort : { POTION, FEU })
             if (!player->HasSpell(sort))
@@ -280,12 +284,29 @@ public:
         static ChatCommandTable camp =
         {
             { "acheter", HandleAcheter, SEC_PLAYER, Console::No },
+            { "repas",   HandleRepas,   SEC_PLAYER, Console::No },
         };
         static ChatCommandTable commandes =
         {
             { "camp", camp },
         };
         return commandes;
+    }
+
+    // .camp repas <plat> : plat du bouton de repas, envoyé par l'interface quand on y en glisse un (0 : aucun).
+    static bool HandleRepas(ChatHandler* handler, uint32 plat)
+    {
+        Player* player = handler->GetPlayer();
+        if (plat && !WorldDatabase.Query("SELECT 1 FROM solazeroth_v3_plats WHERE objet = {}", plat))
+        {
+            handler->SendErrorMessage("Ce n'est pas un plat de la cuisine.");
+            return false;
+        }
+        Bivouac* b = BivouacDe(player);
+        b->repas = plat;
+        Sauver(player);
+        Envoyer(player, true);
+        return true;
     }
 
     // .camp acheter : achète le nœud suivant de l'arbre du camp (pour l'instant, le premier seulement).

@@ -3,7 +3,8 @@
 -- montre ses charges, le Feu de camp sa recharge.
 -- Pierre de foyer (demande du 31/10/2026) : un troisième bouton, à droite du feu, qui utilise l'objet.
 -- Repas (demande du 31/10/2026) : un quatrième, à droite de la potion et sous la pierre de foyer. On y glisse un plat de
--- la cuisine (SolUI_Cuisine.lua) ; vide, ou une fois le plat épuisé, il prend le premier plat des sacs.
+-- la cuisine (SolUI_Cuisine.lua) ; vide, ou une fois le plat épuisé, il prend le premier plat des sacs. Le plat glissé
+-- est gardé par le serveur (.camp repas, v3_bivouac.cpp) et revient à la connexion.
 
 local S = SolUI
 
@@ -12,7 +13,8 @@ local POTION, FEU, PIERRE = 100029, 100030, 6948
 
 S.etat.charges, S.etat.chargesMax = nil, 0
 
--- SOLBIV (v3_bivouac.cpp) : « ETAT;charges;charges max ».
+local RepasDuServeur
+-- SOLBIV (v3_bivouac.cpp) : « ETAT;charges;charges max;secondes avant le Repos;rang du feu;plat du bouton de repas ».
 S.Message("SOLBIV", function(champs)
     if champs[1] ~= "ETAT" then return end
     S.etat.charges = tonumber(champs[2])
@@ -22,6 +24,7 @@ S.Message("SOLBIV", function(champs)
     S.etat.reposFin = restant > 0 and (GetTime() + restant) or nil
     -- Nœuds achetés dans l'arbre du camp (.camp acheter).
     S.etat.rangFeu = tonumber(champs[5]) or 0
+    RepasDuServeur(tonumber(champs[6]) or 0)
     S.Prevenir("camp")
 end)
 
@@ -131,11 +134,21 @@ local function ChoisirRepas(id)
 end
 function S.Repas() return S.etat.repas end
 
+-- Le plat gardé n'est repris que s'il change : un plat épuisé remplacé par celui des sacs ne revient pas toutes les 10 s.
+local repasRecu
+function RepasDuServeur(id)
+    if id == repasRecu then return end
+    repasRecu = id
+    if id > 0 then ChoisirRepas(id) end
+end
+
 local function Deposer()
     local genre, id = GetCursorInfo()
     if genre ~= "item" then return false end
     if EstUnPlat(id) then
         ChoisirRepas(id)
+        repasRecu = id
+        SendChatMessage(".camp repas " .. id, "SAY")
     else
         UIErrorsFrame:AddMessage("Seuls les plats de la cuisine vont ici.", 1, 0.3, 0.3)
     end
