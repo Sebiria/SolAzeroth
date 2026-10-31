@@ -10,7 +10,10 @@
 // - Objet de départ d'une quête (Matraque du contremaître des Péons paresseux…) : retiré du sac quand la quête est
 //   rendue, s'il est lié à la quête et ne sert à aucune autre quête en cours (31/10/2026 ; le moteur le laisse).
 // - Récolte (31/10/2026) : herboristerie et minage au maximum à la connexion, sans pioche ; plus de dépeçage, le cuir
-//   est ajouté au butin du corps à la mort de la créature.
+//   est ajouté au butin du corps à la mort de la créature. Pêche (31/10/2026, demande de l'utilisateur) : au maximum
+//   aussi, sans canne (migrations 073 et 083).
+// - Butin vidé par la Collection (filon, herbe, corps) : la fenêtre restait ouverte, vide, et le filon ne disparaissait
+//   qu'à sa fermeture, quelques secondes plus tard (retour de l'utilisateur). Elle est fermée au passage suivant.
 // L'interface reçoit l'état par messages d'addon SOLCOL : « LISTE;objet:nombre,… » (en plusieurs morceaux, puis
 // « FIN ») à la connexion, et « MAJ;objet;total;changement » à chaque rangement ou retrait.
 
@@ -24,6 +27,7 @@
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
+#include "WorldSession.h"
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
@@ -41,7 +45,7 @@ namespace
 
     // Herboristerie et minage de grand maître, sorts de récolte de grand maître (le minage n'a plus besoin de pioche :
     // migration 073).
-    std::pair<uint16, uint32> const RECOLTE[] = { { 182, 50300 }, { 186, 50310 } };
+    std::pair<uint16, uint32> const RECOLTE[] = { { 182, 50300 }, { 186, 50310 }, { 356, 51294 } };
     // Bonus des métiers de Blizzard, appris avec la compétence : Robustesse du minage (+60 Endurance au rang 6),
     // Sang-de-vie de l'herboristerie. Retirés (31/10/2026 : 713 points de vie au lieu d'une centaine).
     uint32 const BONUS_METIERS[] = { 53120, 53121, 53122, 53123, 53124, 53040,
@@ -89,6 +93,7 @@ namespace
         std::unordered_map<uint32, uint32> nombres;
         std::vector<std::pair<uint32, uint32>> enAttente;   // objets entrés dans le sac, rangés au prochain passage
         bool retrait = false;                               // .collection retirer : ne pas ranger ce qu'on retire
+        ObjectGuid vide;                                    // butin entièrement rangé, à refermer
     };
 
     Collection* CollectionDe(Player* player)
@@ -205,7 +210,7 @@ public:
 
     // Avant l'envoi de la fenêtre de butin : les objets à collectionner partent dans la Collection. Seuls les objets
     // ordinaires du butin sont pris (pas ceux de quête, ni ceux réservés à un joueur ou soumis à une condition).
-    void OnPlayerBeforeSendLoot(Player* player, ObjectGuid /*lootGuid*/, Loot* loot) override
+    void OnPlayerBeforeSendLoot(Player* player, ObjectGuid lootGuid, Loot* loot) override
     {
         for (LootItem& objet : loot->items)
         {
@@ -218,6 +223,8 @@ public:
             if (loot->unlootedCount)
                 --loot->unlootedCount;
         }
+        if (loot->isLooted())
+            CollectionDe(player)->vide = lootGuid;
     }
 
     // Le cuir et les peaux sont dans le butin du corps : on n'a plus à dépecer. Les éclats cadavériques aussi.
@@ -245,6 +252,13 @@ public:
     void OnPlayerUpdate(Player* player, uint32 /*diff*/) override
     {
         Collection* c = CollectionDe(player);
+        if (c->vide)
+        {
+            // Comme si le joueur fermait la fenêtre : le filon ou l'herbe disparaît aussitôt.
+            if (player->GetLootGUID() == c->vide)
+                player->GetSession()->DoLootRelease(c->vide);
+            c->vide.Clear();
+        }
         if (c->enAttente.empty())
             return;
         std::vector<std::pair<uint32, uint32>> liste;

@@ -5,7 +5,8 @@
 -- Techniques en plus (lignes SmartAI 10 et suivantes) :
 --   T1 Yarrog : 2 Vils quasits toutes les 20 s ;
 --   T2 Benedict : à 50 % de vie, 4 Soldats de marine de Kul Tiras ;
---   T3 Kolkanis : Piétinement (étourdit 2 s) et Choc martial (repousse) toutes les 15 s ; à 50 %, 2 Estafettes ;
+--   T3 Kolkanis : Choc martial 20549 (étourdit 2 s ; le Piétinement 25056 ajoutait 250 aux dégâts de l'arme : 997 au
+--      journal du 01/11/2026) et Choc martial 45 (repousse) toutes les 15 s ; à 50 %, 2 Estafettes ;
 --   T4 Zalazane : Maléfice (grenouille, 5 s : pas de version à 3 s) toutes les 25 s ; Garde guérisseuse à briser
 --      toutes les 30 s ;
 --   T5 Gazz'uz : Pluie de feu toutes les 15 s ; à 30 %, 2 Fanatiques.
@@ -58,7 +59,7 @@ INSERT INTO smart_scripts (entryorguid, source_type, id, link, event_type, event
 (910011, 0, 11, 0, 2, 0, 100, 1, 0, 50, 0, 0, 0, 0, 12, 3129, 4, 15000, 1, 0, 0, 2, 0, 0, 0, 0, -6, 6, 0, 0, 'Benedict renforcé - T2 - Alarme'),
 (910011, 0, 12, 0, 2, 0, 100, 1, 0, 50, 0, 0, 0, 0, 12, 3129, 4, 15000, 1, 0, 0, 2, 0, 0, 0, 0, 6, -6, 0, 0, 'Benedict renforcé - T2 - Alarme'),
 (910011, 0, 13, 0, 2, 0, 100, 1, 0, 50, 0, 0, 0, 0, 12, 3129, 4, 15000, 1, 0, 0, 2, 0, 0, 0, 0, -6, -6, 0, 0, 'Benedict renforcé - T2 - Alarme'),
-(910012, 0, 10, 0, 0, 0, 100, 0, 6000, 9000, 15000, 15000, 0, 0, 11, 25056, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 'Kolkanis renforcé - T3 - Piétinement'),
+(910012, 0, 10, 0, 0, 0, 100, 0, 6000, 9000, 15000, 15000, 0, 0, 11, 20549, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 'Kolkanis renforcé - T3 - Piétinement'),
 (910012, 0, 11, 0, 0, 0, 100, 0, 6000, 9000, 15000, 15000, 0, 0, 11, 45, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 'Kolkanis renforcé - T3 - Choc martial'),
 (910012, 0, 12, 0, 2, 0, 100, 1, 0, 50, 0, 0, 0, 0, 12, 3120, 4, 15000, 1, 0, 0, 2, 0, 0, 0, 0, 5, 5, 0, 0, 'Kolkanis renforcé - T3 - Estafette'),
 (910012, 0, 13, 0, 2, 0, 100, 1, 0, 50, 0, 0, 0, 0, 12, 3120, 4, 15000, 1, 0, 0, 2, 0, 0, 0, 0, -5, -5, 0, 0, 'Kolkanis renforcé - T3 - Estafette'),

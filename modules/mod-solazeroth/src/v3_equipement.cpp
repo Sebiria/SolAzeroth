@@ -6,11 +6,16 @@
 // - Rangs : chaque pièce existe en 6 versions, de 0 à 5 (solazeroth_v3_rangs), +10 % de caractéristiques par rang.
 //   Améliorer remplace l'objet par la version suivante, à la même place. Coût à Durotar : 5, 10, 20, 35 puis 60 éclats
 //   cadavériques et 20 c, 40 c, 80 c, 1 pa 60, 3 pa 20 ; davantage au-delà de la puissance 12, comme les éclats
-//   (v3_collection.cpp). Les rangs 4 et 5 demanderont en plus un composant rare, avec la joaillerie (F8).
+//   (v3_collection.cpp). Les rangs 4 et 5 demandent en plus des pierres taillées (solazeroth_v3_rangs_pierres).
+// - Joaillerie (01/11/2026, demande de l'utilisateur ; outils\joaillerie_v3.py, migration 085) : .equipement prospecter
+//   prend 5 Minerais de cuivre et range une gemme brute tirée au sort (solazeroth_v3_prospection) ; .equipement tailler
+//   <pierre> prend 2 gemmes brutes et range la pierre taillée (solazeroth_v3_tailles).
 // - Cuisine (31/10/2026) : les plats de v3_cuisine.cpp (solazeroth_v3_plats, migration 079), payés en ingrédients,
 //   près d'un feu (le Feu de camp v3 compte), en 5 s.
-// - Messages d'addon SOLEQUIP : « FORGE;forge 0|1;feu 0|1 », puis « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or » pour chaque pièce
-//   améliorable (sac -1 : équipement porté, case 0 à 18 ; sac 0 à 4 : sacs du jeu, case à partir de 1) et « FIN ».
+// - Messages d'addon SOLEQUIP : « FORGE;forge 0|1;feu 0|1 », puis « DEBUT »,
+//   « OBJ;sac;case;entrée;rang;éclats;or;éclats jusqu'au rang 4;or jusqu'au 4;éclats jusqu'au 5;or jusqu'au 5 » pour
+//   chaque pièce améliorable (sac -1 : équipement porté, case 0 à 18 ; sac 0 à 4 : sacs du jeu, case à partir de 1) et
+//   « FIN ». Les pierres des rangs 4 et 5 sont dans SolUI_Joaillerie.lua (liste de courses de l'interface).
 // Commandes de l'interface : .equipement, .equipement fabriquer <objet>, .equipement ameliorer <sac> <case>.
 // - Fabrication en 10 s (31/10/2026, demande de l'utilisateur) : animation du métier (marteler à la forge, travailler
 //   debout sinon) et barre de progression de l'interface (« FABRIQUE;objet;secondes », puis « FINI » ou « ANNULE »).
@@ -32,6 +37,7 @@
 #include "Item.h"
 #include "LootMgr.h"
 #include "ObjectMgr.h"
+#include "Random.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
@@ -73,6 +79,11 @@ namespace
         std::vector<std::pair<uint32, uint32>> composants;
     };
     std::unordered_map<uint32, Enchantement> enchantements;
+
+    std::unordered_map<uint8, std::vector<std::pair<uint32, uint32>>> pierresDuRang;   // rang -> (pierre, nombre)
+    std::unordered_map<uint32, std::pair<uint32, uint32>> tailles;                    // pierre -> (brute, nombre)
+    struct Prospection { uint32 minerai = 0, nombre = 0; std::vector<std::pair<uint32, uint32>> gemmes; };   // (gemme, %)
+    Prospection prospection;
 
     uint32 Version(uint32 base, uint8 rang)
     {
@@ -143,9 +154,22 @@ namespace
         if (it == rangs.end())
             return;
         uint8 rang = it->second.rang;
-        auto [eclats, prix] = rang < RANG_MAX ? Cout(item->GetTemplate()->ItemLevel, rang + 1) : std::pair<uint32, uint32>{ 0, 0 };
-        SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("OBJ;{};{};{};{};{};{}", sac, caseInterface,
-            item->GetEntry(), rang, eclats, prix));
+        uint32 niveau = item->GetTemplate()->ItemLevel;
+        auto [eclats, prix] = rang < RANG_MAX ? Cout(niveau, rang + 1) : std::pair<uint32, uint32>{ 0, 0 };
+        // Liste de courses : tout ce qu'il faut jusqu'au rang 4, puis jusqu'au rang 5.
+        uint32 cumul[2][2] = {};
+        for (uint8 vers = rang + 1; vers <= RANG_MAX; ++vers)
+        {
+            auto [e, o] = Cout(niveau, vers);
+            for (uint8 cible = 4; cible <= 5; ++cible)
+                if (vers <= cible)
+                {
+                    cumul[cible - 4][0] += e;
+                    cumul[cible - 4][1] += o;
+                }
+        }
+        SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("OBJ;{};{};{};{};{};{};{};{};{};{}", sac,
+            caseInterface, item->GetEntry(), rang, eclats, prix, cumul[0][0], cumul[0][1], cumul[1][0], cumul[1][1]));
     }
 
     bool Desenchantable(Item* item)
@@ -371,8 +395,33 @@ public:
                 enchantements[f[0].Get<uint32>()].composants.emplace_back(f[1].Get<uint32>(), f[2].Get<uint32>());
             } while (r->NextRow());
         }
-        LOG_INFO("module", ">> Sol'Azeroth v3 : {} recettes, {} versions d'équipement par rang, {} enchantements",
-            recettes.size(), rangs.size(), enchantements.size());
+        pierresDuRang.clear();
+        tailles.clear();
+        prospection = Prospection();
+        if (QueryResult r = WorldDatabase.Query("SELECT rang, pierre, nombre FROM solazeroth_v3_rangs_pierres"))
+        {
+            do
+                pierresDuRang[(*r)[0].Get<uint8>()].emplace_back((*r)[1].Get<uint32>(), (*r)[2].Get<uint32>());
+            while (r->NextRow());
+        }
+        if (QueryResult r = WorldDatabase.Query("SELECT pierre, brute, nombre FROM solazeroth_v3_tailles"))
+        {
+            do
+                tailles[(*r)[0].Get<uint32>()] = { (*r)[1].Get<uint32>(), (*r)[2].Get<uint32>() };
+            while (r->NextRow());
+        }
+        if (QueryResult r = WorldDatabase.Query("SELECT minerai, nombre, gemme, chance FROM solazeroth_v3_prospection "
+            "ORDER BY chance DESC"))
+        {
+            do
+            {
+                prospection.minerai = (*r)[0].Get<uint32>();
+                prospection.nombre = (*r)[1].Get<uint32>();
+                prospection.gemmes.emplace_back((*r)[2].Get<uint32>(), (*r)[3].Get<uint32>());
+            } while (r->NextRow());
+        }
+        LOG_INFO("module", ">> Sol'Azeroth v3 : {} recettes, {} versions d'équipement par rang, {} enchantements, "
+            "{} pierres taillées", recettes.size(), rangs.size(), enchantements.size(), tailles.size());
     }
 };
 
@@ -390,6 +439,8 @@ public:
             { "ameliorer", HandleAmeliorer, SEC_PLAYER, Console::No },
             { "desenchanter", HandleDesenchanter, SEC_PLAYER, Console::No },
             { "enchanter", HandleEnchanter, SEC_PLAYER, Console::No },
+            { "prospecter", HandleProspecter, SEC_PLAYER, Console::No },
+            { "tailler",   HandleTailler,   SEC_PLAYER, Console::No },
         };
         static ChatCommandTable commandes =
         {
@@ -432,6 +483,55 @@ public:
         return true;
     }
 
+    // .equipement prospecter : 5 Minerais de cuivre -> une gemme brute, rangée dans la Collection.
+    static bool HandleProspecter(ChatHandler* handler)
+    {
+        Player* player = handler->GetPlayer();
+        if (!prospection.minerai || prospection.gemmes.empty())
+            return false;
+        if (Possede(player, prospection.minerai) < prospection.nombre)
+        {
+            handler->SendErrorMessage("Il faut {} × {} pour prospecter (tu en as {}).", prospection.nombre,
+                Nom(prospection.minerai), Possede(player, prospection.minerai));
+            return false;
+        }
+        Prendre(player, prospection.minerai, prospection.nombre);
+        uint32 tirage = urand(1, 100), cumul = 0, gemme = prospection.gemmes.back().first;
+        for (auto const& [g, chance] : prospection.gemmes)
+            if (tirage <= (cumul += chance))
+            {
+                gemme = g;
+                break;
+            }
+        SolAzeroth::AjouterACollection(player, gemme, 1);
+        handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Prospection :|r {}.", Nom(gemme)));
+        Envoyer(player);
+        return true;
+    }
+
+    // .equipement tailler <pierre> : 2 gemmes brutes -> la pierre taillée, rangée dans la Collection.
+    static bool HandleTailler(ChatHandler* handler, uint32 pierre)
+    {
+        Player* player = handler->GetPlayer();
+        auto it = tailles.find(pierre);
+        if (it == tailles.end())
+        {
+            handler->SendErrorMessage("Cette pierre ne se taille pas.");
+            return false;
+        }
+        auto [brute, nombre] = it->second;
+        if (Possede(player, brute) < nombre)
+        {
+            handler->SendErrorMessage("Il faut {} × {} (tu en as {}).", nombre, Nom(brute), Possede(player, brute));
+            return false;
+        }
+        Prendre(player, brute, nombre);
+        SolAzeroth::AjouterACollection(player, pierre, 1);
+        handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Taille :|r {}.", Nom(pierre)));
+        Envoyer(player);
+        return true;
+    }
+
     static bool HandleAmeliorer(ChatHandler* handler, int32 sac, uint32 caseInterface)
     {
         Player* player = handler->GetPlayer();
@@ -466,6 +566,13 @@ public:
             handler->SendErrorMessage("Pas assez d'or.");
             return false;
         }
+        auto const& pierres = pierresDuRang[actuel.rang + 1];
+        for (auto const& [pierre, nombre] : pierres)
+            if (Possede(player, pierre) < nombre)
+            {
+                handler->SendErrorMessage("Il manque {} × {} (joaillerie).", nombre - Possede(player, pierre), Nom(pierre));
+                return false;
+            }
         bool porte = bag == INVENTORY_SLOT_BAG_0 && slot < EQUIPMENT_SLOT_END;
         uint16 destPorte = 0;
         if (porte && player->CanEquipNewItem(slot, destPorte, suivant, true) != EQUIP_ERR_OK)
@@ -474,6 +581,8 @@ public:
             return false;
         }
         Prendre(player, ECLAT, eclats);
+        for (auto const& [pierre, nombre] : pierres)
+            Prendre(player, pierre, nombre);
         player->ModifyMoney(-int32(prix));
         uint32 enchantement = item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT);
         player->DestroyItem(bag, slot, true);

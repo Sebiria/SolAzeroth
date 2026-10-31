@@ -16,6 +16,9 @@ namespace SolAzeroth
     void EnvoyerAddon(Player* player, std::string const& prefixe, std::string const& message);
     // v3 : pourcentage d'une zone, en centièmes de % (v3_zone.cpp).
     unsigned int PourcentZone(Player* player, unsigned int zone);
+    // v3 : meilleure médaille d'un défi (0 aucune, 1 bronze, 2 argent, 3 or) et carte des reliques achetée (v3_annexes.cpp).
+    unsigned char MedailleDefi(Player* player, unsigned int quete);
+    bool CarteReliques(Player* player);
     // v3 : objets rangés dans la Collection, et retrait (v3_collection.cpp).
     unsigned int NombreEnCollection(Player* player, unsigned int objet);
     void RetirerDeCollection(Player* player, unsigned int objet, unsigned int nombre);
@@ -180,6 +183,7 @@ void AddSC_solazeroth_v3_bivouac();
 void AddSC_solazeroth_v3_collection();
 void AddSC_solazeroth_v3_carte();
 void AddSC_solazeroth_v3_zone();
+void AddSC_solazeroth_v3_annexes();
 void AddSC_solazeroth_v3_gouffre();
 void AddSC_solazeroth_v3_equipement();
 

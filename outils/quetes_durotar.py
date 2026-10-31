@@ -371,6 +371,19 @@ def item_dbc():
             if e == ECLAT:
                 ligne[1], ligne[2] = 7, 11
             table.enregistrements.append(ligne)
+    # Annexes (migration 084) : Insigne, objets de quête, reliques (classe, sous-classe et emplacement changés), pièces ;
+    # pierres taillées de la joaillerie (migration 085).
+    import annexes_durotar
+    import joaillerie_v3
+    existants = {e[0] for e in table.enregistrements}
+    for e, source, genre in annexes_durotar.lignes_dbc() + joaillerie_v3.lignes_dbc():
+        if e not in existants:
+            ligne = list(table.chercher(source))
+            ligne[0] = e
+            if genre:
+                ligne[1], ligne[2], ligne[6] = genre
+            table.enregistrements.append(ligne)
+            existants.add(e)
     table.enregistrer(ITEM_DBC_PATCH)
 
 

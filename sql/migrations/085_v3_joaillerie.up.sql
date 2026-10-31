@@ -1,0 +1,30 @@
+-- v3, F8 (01/11/2026) : joaillerie (prospection, taille) et pierres des rangs 4 et 5. Généré par
+-- outils\joaillerie_v3.py : ne pas modifier à la main.
+USE acore_world;
+DELETE FROM item_template WHERE entry IN (910180, 910181, 910182);
+DELETE FROM item_template_locale WHERE ID IN (910180, 910181, 910182);
+CREATE TEMPORARY TABLE sol_objet SELECT * FROM item_template WHERE entry = 774;
+UPDATE sol_objet SET entry = 910180, name = 'Malachite taillée', Quality = 3, BuyPrice = 0, SellPrice = 0, description = 'Pierre taillée : améliore les rangs 4 et 5.';
+INSERT INTO item_template SELECT * FROM sol_objet;
+DROP TEMPORARY TABLE sol_objet;
+INSERT INTO item_template_locale (ID, locale, Name, Description, VerifiedBuild) VALUES (910180, 'frFR', 'Malachite taillée', 'Pierre taillée : améliore les rangs 4 et 5.', 0);
+CREATE TEMPORARY TABLE sol_objet SELECT * FROM item_template WHERE entry = 818;
+UPDATE sol_objet SET entry = 910181, name = 'Œil de tigre taillé', Quality = 3, BuyPrice = 0, SellPrice = 0, description = 'Pierre taillée : améliore les rangs 4 et 5.';
+INSERT INTO item_template SELECT * FROM sol_objet;
+DROP TEMPORARY TABLE sol_objet;
+INSERT INTO item_template_locale (ID, locale, Name, Description, VerifiedBuild) VALUES (910181, 'frFR', 'Œil de tigre taillé', 'Pierre taillée : améliore les rangs 4 et 5.', 0);
+CREATE TEMPORARY TABLE sol_objet SELECT * FROM item_template WHERE entry = 1210;
+UPDATE sol_objet SET entry = 910182, name = 'Œil ténébreux taillé', Quality = 3, BuyPrice = 0, SellPrice = 0, description = 'Pierre taillée : améliore les rangs 4 et 5.';
+INSERT INTO item_template SELECT * FROM sol_objet;
+DROP TEMPORARY TABLE sol_objet;
+INSERT INTO item_template_locale (ID, locale, Name, Description, VerifiedBuild) VALUES (910182, 'frFR', 'Œil ténébreux taillé', 'Pierre taillée : améliore les rangs 4 et 5.', 0);
+INSERT IGNORE INTO solazeroth_v3_collectionnables VALUES (910180), (910181), (910182);
+DROP TABLE IF EXISTS solazeroth_v3_prospection;
+CREATE TABLE solazeroth_v3_prospection (minerai INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, gemme INT UNSIGNED NOT NULL, chance TINYINT UNSIGNED NOT NULL, PRIMARY KEY (minerai, gemme));
+INSERT INTO solazeroth_v3_prospection VALUES (2770, 5, 774, 55), (2770, 5, 818, 35), (2770, 5, 1210, 10);
+DROP TABLE IF EXISTS solazeroth_v3_tailles;
+CREATE TABLE solazeroth_v3_tailles (pierre INT UNSIGNED NOT NULL PRIMARY KEY, brute INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL);
+INSERT INTO solazeroth_v3_tailles VALUES (910180, 774, 2), (910181, 818, 2), (910182, 1210, 2);
+DROP TABLE IF EXISTS solazeroth_v3_rangs_pierres;
+CREATE TABLE solazeroth_v3_rangs_pierres (rang TINYINT UNSIGNED NOT NULL, pierre INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, PRIMARY KEY (rang, pierre));
+INSERT INTO solazeroth_v3_rangs_pierres VALUES (4, 910180, 2), (4, 910181, 1), (5, 910181, 2), (5, 910182, 1);

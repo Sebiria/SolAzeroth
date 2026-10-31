@@ -50,6 +50,8 @@ table.insert(ENTREES, { place = "PF", commande = "CLICK SolUIBivouac" .. PIERRE 
 table.insert(ENTREES, { place = "R", commande = "CLICK SolUIBivouacRepas:LeftButton",
     nom = function() return S.Repas() and GetItemInfo(S.Repas()) or "Repas" end,
     icone = function() return S.Repas() and GetItemIcon(S.Repas()) end })
+table.insert(ENTREES, { place = "Pê", commande = "CLICK SolUIBivouacPeche:LeftButton",
+    nom = function() return (GetSpellInfo(51294)) or "Pêche" end, icone = function() return select(3, GetSpellInfo(51294)) end })
 local FENETRES = {
     { nom = function() return "Techniques et raccourcis" end, commande = "CLICK SolUIOuvrirRaccourcis:LeftButton" },
     { nom = function() return "Collection" end, commande = "CLICK SolUIOuvrirCollection:LeftButton" },
@@ -156,15 +158,16 @@ local function Touchette(parent)
     return t
 end
 
--- Disposition de l'écran : en haut 5 à 8, le feu et la pierre de foyer, en bas 1 à 4, la potion et le repas.
+-- Disposition de l'écran : en haut 5 à 8, le feu et la pierre de foyer, en bas 1 à 4, la potion et le repas ; la pêche
+-- à gauche, entre les deux rangées.
 local PLACES = { [5] = { 0, 0 }, [6] = { 1, 0 }, [7] = { 2, 0 }, [8] = { 3, 0 }, [10] = { 4, 0 }, [11] = { 5, 0 },
-    [1] = { 0, 1 }, [2] = { 1, 1 }, [3] = { 2, 1 }, [4] = { 3, 1 }, [9] = { 4, 1 }, [12] = { 5, 1 } }
+    [1] = { 0, 1 }, [2] = { 1, 1 }, [3] = { 2, 1 }, [4] = { 3, 1 }, [9] = { 4, 1 }, [12] = { 5, 1 }, [13] = { -1, 0.5 } }
 local cases = {}
 for n, e in ipairs(ENTREES) do
     local colonne, ligne = PLACES[n][1], PLACES[n][2]
     local b = CreateFrame("Button", nil, plateau)
     b:SetSize(TAILLE, TAILLE)
-    b:SetPoint("TOPLEFT", 40 + colonne * 84 + (colonne >= 4 and 24 or 0), -22 - ligne * 104)
+    b:SetPoint("TOPLEFT", 14 + (colonne + 1) * 76 + (colonne >= 4 and 20 or 0) + (colonne >= 0 and 20 or 0), -22 - ligne * 104)
     b:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
     b.icone = b:CreateTexture(nil, "ARTWORK")
     b.icone:SetPoint("TOPLEFT", 6, -6)

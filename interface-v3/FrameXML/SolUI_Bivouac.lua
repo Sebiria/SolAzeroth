@@ -10,6 +10,7 @@ local S = SolUI
 
 local TAILLE, ECART = 46, 8
 local POTION, FEU, PIERRE = 100029, 100030, 6948
+local PECHE = 51294   -- pêche de grand maître, sans canne (v3_collection.cpp, migration 083)
 
 S.etat.charges, S.etat.chargesMax = nil, 0
 
@@ -114,6 +115,10 @@ local potion = NouveauBouton(POTION, 1, 0)
 local feu = NouveauBouton(FEU, 1, 1)
 local pierre = NouveauBouton(PIERRE, 2, 1, true)
 local repas = NouveauBouton(nil, 2, 0, true, "SolUIBivouacRepas")
+-- Pêche (demande du 31/10/2026) : à gauche du losange du passif, à sa hauteur.
+local peche = NouveauBouton(PECHE, 0, 0, false, "SolUIBivouacPeche")
+peche:ClearAllPoints()
+peche:SetPoint("BOTTOMRIGHT", SolUITechniques, "BOTTOMLEFT", -12, 28)
 S.etat.repas = nil
 
 -- Plats de la cuisine (catégorie « feu » de SolUI.RECETTES).
@@ -178,7 +183,7 @@ S.Ecouter("PLAYER_ENTERING_WORLD", RepasDesSacs)
 
 -- Touches réglées dans la fenêtre « Techniques et raccourcis ».
 local function MajTouches()
-    for _, b in ipairs({ potion, feu, pierre, repas }) do
+    for _, b in ipairs({ potion, feu, pierre, repas, peche }) do
         b.touche:SetText(S.ToucheCourte(GetBindingKey(b.commande)))
     end
 end
@@ -217,5 +222,6 @@ potion:SetScript("OnUpdate", function(self, ecoule)
     Etat(pierre, false)
     repas.nombre:SetText(S.etat.repas and GetItemCount(S.etat.repas) or "")
     Etat(repas, not S.etat.repas)
+    Etat(peche, false)
     MajRebours()
 end)

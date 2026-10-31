@@ -1,0 +1,78 @@
+-- Généré par outils\annexes_durotar.py : ne pas modifier à la main.
+-- Annexes de Durotar (quête -> clé, famille, titre, puissance, résumé), reliques (objet -> clé, nom, famille,
+-- indice, x, y) et catégorie « Durotar » de la Collection.
+SolUI.ANNEXES = {
+    [910211] = { cle = "A11", famille = "Primes", titre = "La matriarche des scorpides", puissance = 4, resume = "Tue la Matriarche des scorpides, dans la crevasse à l'est du champ des scorpides ouvriers.", part = 75 },
+    [910212] = { cle = "A12", famille = "Primes", titre = "Le commandant de la garde", puissance = 7, resume = "Tue le Commandant de la garde Zalaphil, au Donjon de Tiragarde.", part = 125 },
+    [910213] = { cle = "A13", famille = "Primes", titre = "Dent-de-l'Écho", puissance = 11, resume = "Tue Dent-de-l'Écho, en eau profonde au sud des Îles de l'Écho.", part = 125 },
+    [910214] = { cle = "A14", famille = "Primes", titre = "Le renégat de la grève", puissance = 9, resume = "Tue Makasgar, au bout de la Grève des Sombrelances.", part = 100 },
+    [910215] = { cle = "A15", famille = "Primes", titre = "La géomaîtresse", puissance = 10, resume = "Tue la Géomaîtresse Mouchette, au Kraal des Tranchecrins.", part = 100 },
+    [910216] = { cle = "A16", famille = "Primes", titre = "Le gangretisseur", puissance = 11, resume = "Tue le Gangretisseur Arrogg, au Rocher du crâne.", part = 150 },
+    [910217] = { cle = "A17", famille = "Primes", titre = "Le capitaine Plate-défense", puissance = 11, resume = "Tue le Capitaine Plate-défense, sur le plateau au nord de la Vallée.", part = 125 },
+    [910218] = { cle = "A18", famille = "Primes", titre = "L'écorcheur mortel", puissance = 10, resume = "Tue l'Écorcheur mortel, sur le plateau au nord de la Vallée.", part = 100 },
+    [910219] = { cle = "A19", famille = "Primes", titre = "Gueule-de-gangrène", puissance = 10, resume = "Tue Gueule-de-gangrène, à l'extrémité ouest de la Furie-du-Sud.", part = 100 },
+    [910220] = { cle = "A20", famille = "Contrats", titre = "La marmite de Tranchecolline", puissance = 6, resume = "Rapporte 10 Morceaux de viande de sanglier redoutable au Cuisinier Torka.", part = 50 },
+    [910320] = { cle = "A20", famille = "Contrats", titre = "La marmite de Tranchecolline (2)", puissance = 9, resume = "Rapporte 10 Côtes d'ancien sanglier au Cuisinier Torka.", part = 50 },
+    [910520] = { cle = "A20", famille = "Contrats", titre = "La marmite de Tranchecolline (jour)", puissance = 9, resume = "Rapporte 5 morceaux de viande redoutable et 5 côtes d'ancien sanglier au Cuisinier Torka.", part = 0 },
+    [910221] = { cle = "A21", famille = "Contrats", titre = "Les anciens de la côte", puissance = 8, resume = "Tue 2 Anciens makrura, à la Côte des naufrages et au Rivage d'Œil-mort.", part = 50 },
+    [910321] = { cle = "A21", famille = "Contrats", titre = "Les anciens de la côte (2)", puissance = 9, resume = "Tue les 2 Anciens makrura de la Baie de Lamepoing.", part = 50 },
+    [910521] = { cle = "A21", famille = "Contrats", titre = "Les anciens de la côte (jour)", puissance = 9, resume = "Tue 2 Anciens makrura sur la côte est.", part = 0 },
+    [910222] = { cle = "A22", famille = "Contrats", titre = "Des œufs pour la marmite", puissance = 9, resume = "Rapporte 6 Œufs de fouette-queue des Îles de l'Écho au Cuisinier Torka.", part = 100 },
+    [910522] = { cle = "A22", famille = "Contrats", titre = "Des œufs pour la marmite (jour)", puissance = 9, resume = "Rapporte 6 Œufs de fouette-queue au Cuisinier Torka.", part = 0 },
+    [910223] = { cle = "A23", famille = "Contrats", titre = "La traque des corrompus", puissance = 10, resume = "Tue 4 bêtes corrompues dans le nord de Durotar.", part = 50 },
+    [910323] = { cle = "A23", famille = "Contrats", titre = "La traque des corrompus (2)", puissance = 10, resume = "Tue 4 autres bêtes corrompues.", part = 50 },
+    [910423] = { cle = "A23", famille = "Contrats", titre = "La traque des corrompus (3)", puissance = 11, resume = "Tue les 4 dernières bêtes corrompues.", part = 100 },
+    [910523] = { cle = "A23", famille = "Contrats", titre = "La traque des corrompus (jour)", puissance = 11, resume = "Tue 4 bêtes corrompues.", part = 0 },
+    [910224] = { cle = "A24", famille = "Contrats", titre = "Les fétiches de Zalazane", puissance = 10, resume = "Détruis les 7 Monceaux Ju-Ju du fief de Zalazane.", part = 100 },
+    [910524] = { cle = "A24", famille = "Contrats", titre = "Les fétiches de Zalazane (jour)", puissance = 10, resume = "Détruis les 7 Monceaux Ju-Ju.", part = 0 },
+    [910225] = { cle = "A25", famille = "Défis", titre = "Le Convent en cinq minutes", puissance = 3, resume = "Contre la montre : 20 démons du Convent puis Yarrog. Bronze 5 min, argent 4 min, or 3 min.", part = 50, chrono = { 300, 240, 180 } },
+    [910226] = { cle = "A26", famille = "Défis", titre = "L'assaut des remparts", puissance = 7, resume = "Contre la montre : tue le Lieutenant Benedict moins de 6 min après le premier humain tué au donjon (argent 4 min 30, or 3 min 30).", part = 75, chrono = { 360, 270, 210 } },
+    [910227] = { cle = "A27", famille = "Défis", titre = "L'épreuve des esprits", puissance = 7, resume = "Parle à Zun'jala pour lancer l'épreuve, et tiens jusqu'à la vague 5.", part = 75 },
+    [910327] = { cle = "A27", famille = "Défis", titre = "L'épreuve des esprits (2)", puissance = 11, resume = "Tiens les 10 vagues de l'épreuve de Zun'jala.", part = 100 },
+    [910228] = { cle = "A28", famille = "Défis", titre = "Sans potion : Zalazane", puissance = 10, resume = "Tue Zalazane renforcé sans utiliser ta potion pendant le combat.", part = 50 },
+    [910229] = { cle = "A29", famille = "Défis", titre = "L'orage sans abri", puissance = 10, resume = "Tue Féplouf Sombrorage sans potion, sous l'orage : quitte les zones marquées.", part = 50 },
+    [910230] = { cle = "A30", famille = "Défis", titre = "Le Rocher du crâne en douze minutes", puissance = 11, resume = "Contre la montre : 32 sectateurs puis Gazz'uz renforcé. Bronze 12 min, argent 10 min, or 8 min.", part = 100, chrono = { 720, 600, 480 } },
+}
+SolUI.FAMILLES_RELIQUES = { { nom = "Lame ardente", bonus = "un bouclier (Rempart de cendre)" }, { nom = "Kul Tiras", bonus = "3 po et 2 Œil ténébreux" }, { nom = "Sombrelances", bonus = "des bottes (Sandales de Sen'jin)" } }
+SolUI.RELIQUES = {
+    { objet = 910150, cle = "A31", nom = "Dague rituelle ébréchée", famille = 1, indice = "Là où Yarrog parlait à ses chiens, la roche garde une lame.", x = -58, y = -4221, puissance = 3 },
+    { objet = 910151, cle = "A32", nom = "Lettre de recrutement de la Lame", famille = 1, indice = "Le grand scorpide ne gardait pas que sa colline.", x = -547, y = -4104, puissance = 3 },
+    { objet = 910152, cle = "A33", nom = "Collier éteint", famille = 1, indice = "Au plus profond du repaire, un collier ne brûle plus.", x = 908, y = -4732, puissance = 10 },
+    { objet = 910153, cle = "A34", nom = "Bougie de suif noir", famille = 1, indice = "Là où l'orage frappe en premier.", x = 1010, y = -4010, puissance = 10 },
+    { objet = 910154, cle = "A35", nom = "Ordres scellés", famille = 1, indice = "Les pourceaux ne sont pas seuls à fouiller la ferme.", x = 1247, y = -4531, puissance = 9 },
+    { objet = 910155, cle = "A36", nom = "Masque de cendre", famille = 1, indice = "Le gangretisseur dort sur ce qu'il a volé.", x = 1492, y = -4753, puissance = 11 },
+    { objet = 910156, cle = "A37", nom = "Longue-vue de l'amiral", famille = 2, indice = "Le lieutenant guette la mer avec la longue-vue d'un mort.", x = -246, y = -5120, puissance = 6 },
+    { objet = 910157, cle = "A38", nom = "Journal de bord détrempé", famille = 2, indice = "Les gnomes n'ont pas tout perdu dans le naufrage, les humains non plus.", x = -35, y = -5284, puissance = 5 },
+    { objet = 910158, cle = "A39", nom = "Bouteille à la mer", famille = 2, indice = "La marée rend ce que la mer refuse.", x = 916, y = -5133, puissance = 9 },
+    { objet = 910159, cle = "A40", nom = "Insigne de déserteur", famille = 2, indice = "Un soldat de marine a déserté jusqu'au bout de la terre, à l'est.", x = 1371, y = -5013, puissance = 10 },
+    { objet = 910160, cle = "A41", nom = "Lettre pour Theramore", famille = 2, indice = "Un messager humain a voulu couper par le canyon. Les harpies l'ont trouvé avant nous.", x = 717, y = -4469, puissance = 6 },
+    { objet = 910161, cle = "A42", nom = "Totem de Sen'jin volé", famille = 3, indice = "Les centaures ont volé plus que des cartes.", x = -1057, y = -4596, puissance = 9 },
+    { objet = 910162, cle = "A43", nom = "Masque d'offrande", famille = 3, indice = "Un vieil autel, sur un îlot que Zalazane évite.", x = -733, y = -5600, puissance = 9 },
+    { objet = 910163, cle = "A44", nom = "Défense de raptor sculptée", famille = 3, indice = "Les esprits de la terre rouge gardent un présent troll.", x = -893, y = -4285, puissance = 8 },
+    { objet = 910164, cle = "A45", nom = "Collier de perles de la grève", famille = 3, indice = "Au bout de la grève, là où le renégat compte ses prises.", x = -529, y = -5216, puissance = 9 },
+    { objet = 910165, cle = "A46", nom = "Fétiche de jade", famille = 3, indice = "Le requin de l'Écho a avalé plus d'une offrande.", x = -1385, y = -5780, puissance = 11 },
+}
+SolUI.INSIGNE = 910140
+SolUI.PUISSANCES_QUETES = SolUI.PUISSANCES_QUETES or {}
+for quete, a in pairs(SolUI.ANNEXES) do SolUI.PUISSANCES_QUETES[quete] = a.puissance end
+if SolUI.CATALOGUE then
+    table.insert(SolUI.CATALOGUE, { nom = "Durotar", objets = {
+        { 910140, "Insigne de Durotar", 2 },
+        { 910150, "Dague rituelle ébréchée", 3 },
+        { 910151, "Lettre de recrutement de la Lame", 3 },
+        { 910152, "Collier éteint", 3 },
+        { 910153, "Bougie de suif noir", 3 },
+        { 910154, "Ordres scellés", 3 },
+        { 910155, "Masque de cendre", 3 },
+        { 910156, "Longue-vue de l'amiral", 3 },
+        { 910157, "Journal de bord détrempé", 3 },
+        { 910158, "Bouteille à la mer", 3 },
+        { 910159, "Insigne de déserteur", 3 },
+        { 910160, "Lettre pour Theramore", 3 },
+        { 910161, "Totem de Sen'jin volé", 3 },
+        { 910162, "Masque d'offrande", 3 },
+        { 910163, "Défense de raptor sculptée", 3 },
+        { 910164, "Collier de perles de la grève", 3 },
+        { 910165, "Fétiche de jade", 3 },
+    } })
+end

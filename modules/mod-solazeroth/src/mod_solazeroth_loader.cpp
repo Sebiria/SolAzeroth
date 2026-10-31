@@ -39,6 +39,7 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_v3_collection();
         AddSC_solazeroth_v3_carte();
         AddSC_solazeroth_v3_zone();
+        AddSC_solazeroth_v3_annexes();
         AddSC_solazeroth_v3_gouffre();
         AddSC_solazeroth_v3_equipement();
         AddSC_solazeroth_v3_cuisine();

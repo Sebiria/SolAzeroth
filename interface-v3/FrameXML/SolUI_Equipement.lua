@@ -11,6 +11,9 @@
 -- Désenchantement et Enchantement (31/10/2026, SolUI_Enchantements.lua, généré par outils\enchantement_v3.py) :
 -- désenchanter une pièce du sac (second clic pour confirmer) range poussières et essences dans la Collection ;
 -- enchanter une pièce portée ou du sac les dépense. Le serveur envoie « PIECE;… » pour chaque armure et arme.
+-- Joaillerie (01/11/2026, SolUI_Joaillerie.lua, généré par outils\joaillerie_v3.py) : prospecter le Minerai de cuivre
+-- et tailler les gemmes ; les rangs 4 et 5 demandent des pierres taillées. Survoler une pièce de l'onglet Amélioration
+-- montre la liste de courses jusqu'aux rangs 4 et 5 (éclats, or, pierres, gemmes brutes et minerai à prospecter).
 
 local S = SolUI
 
@@ -59,7 +62,8 @@ progression:SetScript("OnUpdate", function(self)
     resteProgression:SetText(S.Nombre(math.max(0, duree * (1 - part)), 1) .. " s")
 end)
 
--- « FORGE;forge 0|1;feu 0|1 », « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or »,
+-- « FORGE;forge 0|1;feu 0|1 », « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or;éclats et or jusqu'au rang 4;
+-- éclats et or jusqu'au rang 5 »,
 -- « PIECE;sac;case;entrée;InventoryType;enchantement;table de désenchantement », « FIN ».
 S.Message("SOLEQUIP", function(champs)
     if champs[1] == "FABRIQUE" then
@@ -85,7 +89,9 @@ S.Message("SOLEQUIP", function(champs)
             type = tonumber(champs[5]) or 0, enchantement = tonumber(champs[6]) or 0, table = tonumber(champs[7]) or 0 })
     elseif champs[1] == "OBJ" then
         table.insert(recues, { sac = tonumber(champs[2]), case = tonumber(champs[3]), id = tonumber(champs[4]),
-            rang = tonumber(champs[5]) or 0, eclats = tonumber(champs[6]) or 0, prix = tonumber(champs[7]) or 0 })
+            rang = tonumber(champs[5]) or 0, eclats = tonumber(champs[6]) or 0, prix = tonumber(champs[7]) or 0,
+            jusqua = { [4] = { tonumber(champs[8]) or 0, tonumber(champs[9]) or 0 },
+                [5] = { tonumber(champs[10]) or 0, tonumber(champs[11]) or 0 } } })
     elseif champs[1] == "FIN" then
         pieces, armures = recues, armuresRecues
     end
@@ -121,9 +127,9 @@ end
 -- Onglets
 ------------------------------------------------------------------------
 local pages, onglets, onglet = {}, {}, 1
-for i, titre in ipairs({ "Fabrication", "Amélioration", "Désenchantement", "Enchantement" }) do
-    local o = S.BoutonPlat(f, titre, 150, 36, 14)
-    o:SetPoint("TOPLEFT", 24 + (i - 1) * 158, -60)
+for i, titre in ipairs({ "Fabrication", "Amélioration", "Désenchantement", "Enchantement", "Joaillerie" }) do
+    local o = S.BoutonPlat(f, titre, 130, 36, 13)
+    o:SetPoint("TOPLEFT", 24 + (i - 1) * 138, -60)
     o:SetScript("OnClick", function() onglet = i; Maj() end)
     onglets[i] = o
     local page = CreateFrame("Frame", nil, f)
@@ -280,7 +286,7 @@ intro:SetPoint("TOPLEFT", 24, -16)
 intro:SetWidth(950)
 intro:SetJustifyH("LEFT")
 intro:SetText("Chaque rang ajoute 10 % aux caractéristiques de la pièce (jusqu'au rang 5) et compte dans ta puissance. "
-    .. "Les rangs 4 et 5 demanderont aussi un composant rare, avec la joaillerie.")
+    .. "Les rangs 4 et 5 demandent aussi des pierres taillées (onglet Joaillerie). Survole une pièce : liste de courses.")
 local soldes = S.Texte(p2, "SemiBold", 13, "ambreClair")
 soldes:SetPoint("TOPLEFT", intro, "BOTTOMLEFT", 0, -10)
 
@@ -340,8 +346,14 @@ local function MajAmelioration()
             else
                 l.rang:SetText("Rang " .. p.rang .. "  →  " .. (p.rang + 1))
                 local ok = eclats >= p.eclats and GetMoney() >= p.prix
-                l.cout:SetText((eclats >= p.eclats and "" or "|cfff0918a") .. p.eclats .. " éclats|r   "
-                    .. (GetMoney() >= p.prix and "" or "|cfff0918a") .. S.Argent(p.prix) .. "|r")
+                local texte = (eclats >= p.eclats and "" or "|cfff0918a") .. p.eclats .. " éclats|r   "
+                    .. (GetMoney() >= p.prix and "" or "|cfff0918a") .. S.Argent(p.prix) .. "|r"
+                for _, pn in ipairs(S.JOAILLERIE.rangs[p.rang + 1] or {}) do
+                    local a = S.NombreCollection(pn[1])
+                    ok = ok and a >= pn[2]
+                    texte = texte .. "   " .. (a >= pn[2] and "" or "|cfff0918a") .. pn[2] .. " " .. S.NomCollection(pn[1]) .. "|r"
+                end
+                l.cout:SetText(texte)
                 S.Montrer(l.bouton, true)
                 l.bouton:SetAlpha(ok and 1 or 0.5)
             end
@@ -351,6 +363,75 @@ end
 
 for _, l in ipairs(lignesPieces) do
     l:SetScript("OnMouseWheel", function(_, sens) decalage = math.max(0, decalage - sens); Maj() end)
+end
+
+-- Liste de courses d'une pièce jusqu'au rang 4 et au rang 5 : éclats, or, pierres taillées, et ce qu'il faut encore
+-- tailler (gemmes brutes) et prospecter (minerai) pour les pierres qui manquent. Les gemmes brutes déjà rangées
+-- comptent d'abord.
+local function Brute(pierre)
+    for _, t in ipairs(S.JOAILLERIE.tailles) do
+        if t[1] == pierre then return t[3], t[4] end
+    end
+end
+
+local function Courses(p, cible)
+    local lignes = {}
+    local hex = function(ok) return ok and "|cff8cc4a6" or "|cfff0918a" end
+    local eclats, prix = p.jusqua[cible][1], p.jusqua[cible][2]
+    local a = S.NombreCollection(ECLAT)
+    table.insert(lignes, hex(a >= eclats) .. eclats .. " éclats cadavériques (tu en as " .. a .. ")|r")
+    table.insert(lignes, hex(GetMoney() >= prix) .. S.Argent(prix) .. "|r")
+    local pierres, ordre = {}, {}
+    for r = p.rang + 1, cible do
+        for _, pn in ipairs(S.JOAILLERIE.rangs[r] or {}) do
+            if not pierres[pn[1]] then table.insert(ordre, pn[1]) end
+            pierres[pn[1]] = (pierres[pn[1]] or 0) + pn[2]
+        end
+    end
+    local brutes, minerai = {}, 0
+    for _, pierre in ipairs(ordre) do
+        local voulu, possede = pierres[pierre], S.NombreCollection(pierre)
+        table.insert(lignes, hex(possede >= voulu) .. voulu .. " " .. S.NomCollection(pierre) .. " (tu en as " .. possede .. ")|r")
+        if possede < voulu then
+            local brute, par = Brute(pierre)
+            if brute then brutes[brute] = (brutes[brute] or 0) + (voulu - possede) * par end
+        end
+    end
+    for brute, voulu in pairs(brutes) do
+        local possede = S.NombreCollection(brute)
+        local manque = math.max(0, voulu - possede)
+        table.insert(lignes, "   à tailler : " .. voulu .. " " .. S.NomCollection(brute) .. " (tu en as " .. possede .. ")")
+        -- Prospections à prévoir en moyenne : chaque prospection donne cette gemme avec sa chance.
+        for _, gc in ipairs(S.JOAILLERIE.chances) do
+            if gc[1] == brute and manque > 0 then
+                minerai = minerai + math.ceil(manque * 100 / gc[2]) * S.JOAILLERIE.parProspection
+            end
+        end
+    end
+    if minerai > 0 then
+        local possede = S.NombreCollection(S.JOAILLERIE.minerai)
+        table.insert(lignes, "   à prospecter : environ " .. minerai .. " " .. S.NomCollection(S.JOAILLERIE.minerai)
+            .. " (tu en as " .. possede .. ")")
+    end
+    return lignes
+end
+S.CoursesEquipement = Courses
+
+for _, l in ipairs(lignesPieces) do
+    l:EnableMouse(true)
+    l:SetScript("OnEnter", function(self)
+        local p = self.piece
+        if not p or p.rang >= 5 then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Liste de courses")
+        for cible = math.max(4, p.rang + 1), 5 do
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("Jusqu'au rang " .. cible, 1, 0.82, 0)
+            for _, ligne in ipairs(Courses(p, cible)) do GameTooltip:AddLine(ligne, 1, 1, 1) end
+        end
+        GameTooltip:Show()
+    end)
+    l:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
 ------------------------------------------------------------------------
@@ -523,6 +604,88 @@ local function MajEnchantement()
 end
 
 ------------------------------------------------------------------------
+-- Page 5 : joaillerie (prospection et taille)
+------------------------------------------------------------------------
+local p5 = pages[5]
+local J = S.JOAILLERIE
+local introJ = S.Texte(p5, "Regular", 13, "gris")
+introJ:SetPoint("TOPLEFT", 24, -16)
+introJ:SetWidth(950)
+introJ:SetJustifyH("LEFT")
+introJ:SetText("Prospecte le minerai pour en tirer des gemmes brutes, puis taille-les. Les pierres taillées servent aux "
+    .. "rangs 4 et 5 de l'équipement. Tout se fait partout et se range dans la Collection.")
+
+local function LigneJ(n)
+    local l = CreateFrame("Frame", nil, p5)
+    l:SetSize(950, 56)
+    l:SetPoint("TOPLEFT", 24, -60 - (n - 1) * 64)
+    l:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
+    l:SetBackdropColor(0.11, 0.118, 0.133, 1)
+    l:SetBackdropBorderColor(S.Couleur("bord"))
+    l.icone = Icone(l, 36)
+    l.icone:SetPoint("LEFT", 8, 0)
+    l.nom = S.Texte(l, "SemiBold", 13, "clair")
+    l.nom:SetPoint("TOPLEFT", l.icone, "TOPRIGHT", 10, 0)
+    l.nom:SetWidth(600)
+    l.nom:SetJustifyH("LEFT")
+    l.info = S.Texte(l, "Regular", 11, "gris")
+    l.info:SetPoint("BOTTOMLEFT", l.icone, "BOTTOMRIGHT", 10, 0)
+    l.info:SetWidth(600)
+    l.info:SetJustifyH("LEFT")
+    l.bouton = S.BoutonPlat(l, "", 130, 34, 13)
+    l.bouton:SetPoint("RIGHT", -8, 0)
+    return l
+end
+
+local prospecter = LigneJ(1)
+prospecter.bouton.texte:SetText("Prospecter")
+prospecter.bouton:SetScript("OnClick", function() SendChatMessage(".equipement prospecter", "SAY") end)
+local lignesTaille = {}
+for n, t in ipairs(J.tailles) do
+    local l = LigneJ(n + 1)
+    l.bouton.texte:SetText("Tailler")
+    l.bouton:SetScript("OnClick", function() SendChatMessage(".equipement tailler " .. t[1], "SAY") end)
+    l.taille = t
+    lignesTaille[n] = l
+end
+local rangsJ = S.Texte(p5, "Regular", 13, "texte")
+rangsJ:SetPoint("TOPLEFT", 24, -60 - (#J.tailles + 1) * 64 - 8)
+rangsJ:SetWidth(950)
+rangsJ:SetJustifyH("LEFT")
+
+local function MajJoaillerie()
+    local hex = function(ok) return ok and "|cff8cc4a6" or "|cfff0918a" end
+    local minerai = S.NombreCollection(J.minerai)
+    prospecter.icone.id = J.minerai
+    prospecter.icone.icone:SetTexture(GetItemIcon(J.minerai))
+    prospecter.nom:SetText("Prospection : " .. J.parProspection .. " " .. S.NomCollection(J.minerai) .. "   "
+        .. hex(minerai >= J.parProspection) .. "(tu en as " .. minerai .. ")|r")
+    local chances = {}
+    for _, gc in ipairs(J.chances) do
+        table.insert(chances, S.NomCollection(gc[1]) .. " " .. gc[2] .. " % (" .. S.NombreCollection(gc[1]) .. ")")
+    end
+    prospecter.info:SetText("Une gemme brute : " .. table.concat(chances, "  ·  "))
+    prospecter.bouton:SetAlpha(minerai >= J.parProspection and 1 or 0.5)
+    for _, l in ipairs(lignesTaille) do
+        local t = l.taille
+        local brutes = S.NombreCollection(t[3])
+        l.icone.id = t[1]
+        l.icone.icone:SetTexture(GetItemIcon(t[1]) or GetItemIcon(t[3]))
+        l.nom:SetText(t[2] .. "   |cffb4b8bf(tu en as " .. S.NombreCollection(t[1]) .. ")|r")
+        l.info:SetText("Demande " .. hex(brutes >= t[4]) .. t[4] .. " " .. S.NomCollection(t[3]) .. " (tu en as " .. brutes .. ")|r")
+        l.bouton:SetAlpha(brutes >= t[4] and 1 or 0.5)
+    end
+    local morceaux = {}
+    for _, r in ipairs({ 4, 5 }) do
+        local liste = {}
+        for _, pn in ipairs(J.rangs[r] or {}) do table.insert(liste, pn[2] .. " " .. S.NomCollection(pn[1])) end
+        table.insert(morceaux, "Rang " .. r .. " : " .. table.concat(liste, " et "))
+    end
+    rangsJ:SetText("En plus des éclats et de l'or :  " .. table.concat(morceaux, "   ·   "))
+end
+
+
+------------------------------------------------------------------------
 -- Mise à jour
 ------------------------------------------------------------------------
 function Maj()
@@ -536,7 +699,8 @@ function Maj()
     if onglet == 1 then MajFabrication()
     elseif onglet == 2 then MajAmelioration()
     elseif onglet == 3 then MajDesenchantement()
-    else MajEnchantement() end
+    elseif onglet == 4 then MajEnchantement()
+    else MajJoaillerie() end
 end
 
 -- Pendant que la fenêtre est ouverte : l'état du serveur toutes les 3 s (distance de la forge), et après chaque

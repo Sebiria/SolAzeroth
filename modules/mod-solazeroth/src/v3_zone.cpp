@@ -10,10 +10,13 @@
 // copie renforcée apparaît, annoncée dans la discussion avec sa distance (essai du 31/10/2026 : bloqué à 45/46 au fort de
 // Tiragarde sans savoir que le chef attendait en haut). C'est sa mort qui clôt le lieu ; la troupe repart alors à zéro, pour que le chef revienne
 // au prochain nettoyage (défis à venir).
-// Les autres annexes (primes, contrats, défis, reliques) viendront ensuite.
+// - genre 4 (31/10/2026), annexe à quête (primes, contrats, défis : migration 084, v3_annexes.cpp) : la quête rendue ;
+// - genre 5, relique : son objet dans la Collection.
 // Interface (SolUI_Zone.lua, préfixe SOLZONE), quand ça change et qu'on est dans une zone qui a des parts :
 // « POURCENT;total;histoire;exploration;annexes », « EXPLO;faites;total », « LIEU;lieu;nom;tués;requis;part;nettoyé »
-// pour chaque lieu (le chef renforcé compte dans « requis »), puis « FINZONE ». Hors de ces zones : « POURCENT;-1 ».
+// pour chaque lieu (le chef renforcé compte dans « requis »), « ANNEXE;quête;état;médaille » (état : 0 à prendre,
+// 1 en cours, 2 à rendre, 3 rendue), « RELIQUE;objet;trouvée », « CARTE;0|1 » (carte des reliques achetée), puis
+// « FINZONE ». Les annexes du pourcentage regroupent les genres 3 à 5. Hors de ces zones : « POURCENT;-1 ».
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -31,7 +34,7 @@
 
 namespace
 {
-    uint8 const QUETE = 1, EXPLORATION = 2, LIEU = 3;
+    uint8 const QUETE = 1, EXPLORATION = 2, LIEU = 3, ANNEXE = 4, RELIQUE = 5;
     uint32 const RELECTURE = 2000;
     float const PROCHE = 120.0f;
     uint32 const DUREE_CHEF = 10 * MINUTE * IN_MILLISECONDS;   // le chef disparaît 10 min après la fin du combat
@@ -100,6 +103,10 @@ namespace
             return player->GetQuestRewardStatus(part.cle);
         if (part.genre == EXPLORATION)
             return Explore(player, part.cle);
+        if (part.genre == ANNEXE)
+            return player->GetQuestRewardStatus(part.cle);
+        if (part.genre == RELIQUE)
+            return SolAzeroth::NombreEnCollection(player, part.cle) > 0;
         if (auto c = chefs.find(part.cle); c != chefs.end())
             return p->tues[Cle(part.cle, c->second.renforce)] != 0;
         auto [tues, requis] = Troupe(p, part.cle);
@@ -141,7 +148,7 @@ namespace
             p->empreinte = 1;
             return;
         }
-        uint32 sommes[4] = {};
+        uint32 sommes[6] = {};
         uint32 explorees = 0, sousZones = 0;
         std::vector<std::string> lieux;
         for (Part const& part : it->second)
@@ -163,11 +170,22 @@ namespace
                 lieux.push_back(Acore::StringFormat("LIEU;{};{};{};{};{};{}", part.cle, part.nom, tues, requis, part.part,
                     acquis ? 1 : 0));
             }
+            else if (part.genre == ANNEXE)
+            {
+                QuestStatus statut = player->GetQuestStatus(part.cle);
+                uint8 etat = acquis ? 3 : statut == QUEST_STATUS_COMPLETE ? 2 : statut == QUEST_STATUS_INCOMPLETE ? 1 : 0;
+                lieux.push_back(Acore::StringFormat("ANNEXE;{};{};{}", part.cle, etat,
+                    SolAzeroth::MedailleDefi(player, part.cle)));
+            }
+            else if (part.genre == RELIQUE)
+                lieux.push_back(Acore::StringFormat("RELIQUE;{};{}", part.cle, acquis ? 1 : 0));
             if (acquis)
                 sommes[part.genre] += part.part;
         }
-        std::string pourcent = Acore::StringFormat("POURCENT;{};{};{};{}", sommes[QUETE] + sommes[EXPLORATION] +
-            sommes[LIEU], sommes[QUETE], sommes[EXPLORATION], sommes[LIEU]);
+        lieux.push_back(Acore::StringFormat("CARTE;{}", SolAzeroth::CarteReliques(player) ? 1 : 0));
+        uint32 annexes = sommes[LIEU] + sommes[ANNEXE] + sommes[RELIQUE];
+        std::string pourcent = Acore::StringFormat("POURCENT;{};{};{};{}", sommes[QUETE] + sommes[EXPLORATION] + annexes,
+            sommes[QUETE], sommes[EXPLORATION], annexes);
         std::string explo = Acore::StringFormat("EXPLO;{};{}", explorees, sousZones);
         std::string tout = pourcent + explo;
         for (std::string const& l : lieux)

@@ -114,6 +114,10 @@ def valeur_sql(d, type_colonne, valeur):
 # demandent plus de pioche (colonne 222, RequiresTotemCategoryID). Copiés dans spell_dbc par la migration 073.
 MINAGE = [2575, 2576, 3564, 10248, 29354, 50310]
 OUTIL = 222
+# Pêche (31/10/2026, demande de l'utilisateur) : plus de canne (colonnes 68 à 70, EquippedItemClass, SubClassMask et
+# InvTypes, mises à « aucune arme demandée »). Les cannes sont retirées du jeu (migration 083).
+PECHE = [7620, 7731, 7732, 18248, 33095, 51294]
+EQUIPEMENT_DEMANDE = 68
 MIGRATION_RECOLTE = r"C:\SolAzeroth\sql\migrations\073_v3_recolte"
 
 
@@ -122,6 +126,10 @@ def main():
     minage = [d.chercher(ident) for ident in MINAGE]
     for e in minage:
         e[OUTIL] = 0
+    peche = [d.chercher(ident) for ident in PECHE]
+    for e in peche:
+        e[EQUIPEMENT_DEMANDE:EQUIPEMENT_DEMANDE + 3] = [0xFFFFFFFF, 0, 0]
+    minage += peche
     modele = d.chercher(MODELE)
     lignes = [nouvelle_aura(d, modele, *a) for a in AURAS]
     incantations = [nouvelle_incantation(d, d.chercher(MODELE_INCANTATION), *i[:4]) for i in INCANTATIONS]
@@ -177,13 +185,14 @@ def main():
             " rang_feu TINYINT UNSIGNED NOT NULL DEFAULT 0);"]
     ecrire_migration(bivouac_v3.MIGRATION, up, sql, ["-- Retire la potion et le feu de camp v3.", "USE acore_world;", up[3], up[4],
                                                     "DROP TABLE acore_characters.solazeroth_v3_bivouac;"])
-    ids = ", ".join(str(i) for i in MINAGE)
-    up = ["-- v3 : minage sans pioche. Généré par outils\\auras_nommees.py : ne pas modifier à la main.",
+    ids = ", ".join(str(i) for i in MINAGE + PECHE)
+    up = ["-- v3 : minage sans pioche et pêche sans canne. Généré par outils\\auras_nommees.py : ne pas modifier à la main.",
           "-- Le client lit les mêmes sorts dans patch-frFR-4.MPQ ; v3_collection.cpp donne herboristerie et minage au maximum.",
           "USE acore_world;",
           "DELETE FROM spell_dbc WHERE ID IN (%s);" % ids]
     sql = ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e)) for e in minage]
-    ecrire_migration(MIGRATION_RECOLTE, up, sql, ["-- Rend la pioche aux sorts de minage.", "USE acore_world;", up[3]])
+    ecrire_migration(MIGRATION_RECOLTE, up, sql, ["-- Rend la pioche aux sorts de minage et la canne à la pêche.",
+                                                  "USE acore_world;", up[3]])
     cuisine_v3.ecrire(plats, ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e))
                               for e in cuisine])
     print(len(lignes), "auras,", len(incantations), "incantation(s),", len(kit), "techniques,", len(bivouac),
