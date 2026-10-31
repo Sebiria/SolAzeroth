@@ -6,6 +6,7 @@
 -- Le serveur (v3_equipement.cpp, messages SOLEQUIP) dit si l'on est près d'une forge et liste les pièces améliorables
 -- avec leur coût ; il vérifie tout avant de fabriquer ou d'améliorer. L'achat se fait chez les marchands de Razor Hill.
 -- Une pièce se fabrique en 10 s (31/10/2026) : barre de progression au-dessus des barres d'action ; bouger annule.
+-- Catégorie Cuisine (SolUI_Cuisine.lua, généré par outils\cuisine_v3.py) : les plats de la zone, près d'un feu, en 5 s.
 
 local S = SolUI
 
@@ -25,7 +26,7 @@ end
 ouvrir:SetScript("OnClick", S.BasculerEquipement)
 
 local Maj
-local forge, pieces, recues = false, {}, {}
+local forge, feu, pieces, recues = false, false, {}, {}
 
 local function Demander() SendChatMessage(".equipement", "SAY") end
 
@@ -52,7 +53,7 @@ progression:SetScript("OnUpdate", function(self)
     resteProgression:SetText(S.Nombre(math.max(0, duree * (1 - part)), 1) .. " s")
 end)
 
--- « FORGE;0|1 », « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or », « FIN ».
+-- « FORGE;forge 0|1;feu 0|1 », « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or », « FIN ».
 S.Message("SOLEQUIP", function(champs)
     if champs[1] == "FABRIQUE" then
         local id = tonumber(champs[2])
@@ -67,6 +68,7 @@ S.Message("SOLEQUIP", function(champs)
     end
     if champs[1] == "FORGE" then
         forge = champs[2] == "1"
+        feu = champs[3] == "1"
     elseif champs[1] == "DEBUT" then
         recues = {}
     elseif champs[1] == "OBJ" then
@@ -214,21 +216,30 @@ local function MajFabrication()
     grande.icone:SetTexture(GetItemIcon(r[1]))
     detailNom:SetText(r[2])
     detailNom:SetTextColor(select(2, NomObjet(r[1], r[2])))
-    detailPuissance:SetText("Puissance " .. r[3])
+    detailPuissance:SetText(c.feu and ("Repas de " .. (r[7] or "") .. " : +" .. r[3] .. " pendant 30 min")
+        or ("Puissance " .. r[3]))
     local puissance = S.etat.puissance or 0
     local okPuissance = puissance + 0.05 >= r[4]
     local lignes = {}
     local hex = function(ok) return ok and "|cff8cc4a6" or "|cfff0918a" end
-    table.insert(lignes, hex(okPuissance) .. "Puissance requise : " .. r[4] .. "|r  |cffb4b8bf(la tienne : "
-        .. S.Nombre(puissance, 1) .. ")|r")
-    if c.forge then
-        table.insert(lignes, hex(forge) .. (forge and "Près d'une enclume ou d'une forge" or
-            "À fabriquer près d'une enclume ou d'une forge") .. "|r")
+    if c.feu then
+        table.insert(lignes, "|cffb4b8bfForce, Agilité ou Intelligence selon ta spécialisation. Un seul repas à la "
+            .. "fois.|r")
+        table.insert(lignes, hex(feu) .. (feu and "Près d'un feu" or "À cuisiner près d'un feu (ton Feu de camp compte)")
+            .. "|r")
     else
-        table.insert(lignes, "|cffb4b8bfSe fabrique partout.|r")
+        table.insert(lignes, hex(okPuissance) .. "Puissance requise : " .. r[4] .. "|r  |cffb4b8bf(la tienne : "
+            .. S.Nombre(puissance, 1) .. ")|r")
+        if c.forge then
+            table.insert(lignes, hex(forge) .. (forge and "Près d'une enclume ou d'une forge" or
+                "À fabriquer près d'une enclume ou d'une forge") .. "|r")
+        else
+            table.insert(lignes, "|cffb4b8bfSe fabrique partout.|r")
+        end
     end
     conditions:SetText(table.concat(lignes, "\n"))
-    local tout = okPuissance and (forge or not c.forge)
+    local tout = okPuissance and (forge or not c.forge) and (feu or not c.feu)
+    S.Montrer(achat, not c.feu)
     for n, ligne in ipairs(composants) do
         local comp = r[6][n]
         S.Montrer(ligne, comp)
@@ -240,7 +251,7 @@ local function MajFabrication()
     end
     local okOr = GetMoney() >= r[5]
     tout = tout and okOr
-    prixFabrication:SetText("Or : " .. hex(okOr) .. S.Argent(r[5]) .. "|r")
+    prixFabrication:SetText(r[5] > 0 and ("Or : " .. hex(okOr) .. S.Argent(r[5]) .. "|r") or "")
     fabriquer:SetAlpha(tout and 1 or 0.5)
 end
 
@@ -336,7 +347,8 @@ function Maj()
         S.Montrer(page, i == onglet)
         onglets[i]:Choisir(i == onglet)
     end
-    etatForge:SetText(forge and "|cff8cc4a6Près d'une forge|r" or "Loin d'une forge")
+    etatForge:SetText((forge and "|cff8cc4a6Près d'une forge|r" or "Loin d'une forge") .. "   ·   "
+        .. (feu and "|cff8cc4a6Près d'un feu|r" or "Loin d'un feu"))
     if onglet == 1 then MajFabrication() else MajAmelioration() end
 end
 

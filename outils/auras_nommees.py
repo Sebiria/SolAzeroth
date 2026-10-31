@@ -9,6 +9,7 @@ import subprocess
 
 import dbc
 import bivouac_v3
+import cuisine_v3
 import icones_retail
 import techniques_v3
 from hauts_faits_natifs import DBC_CLIENT, DBC_SERVEUR, FRFR, IDENTIFIANTS, MASQUE, MYSQL, sql_texte
@@ -126,7 +127,9 @@ def main():
     incantations = [nouvelle_incantation(d, d.chercher(MODELE_INCANTATION), *i[:4]) for i in INCANTATIONS]
     kit = techniques_v3.lignes(d, icones_retail.identifiants())
     bivouac = bivouac_v3.lignes(d, icones_retail.identifiants())
-    d.enregistrements.extend(lignes + incantations + kit + bivouac)
+    plats = cuisine_v3.plats()
+    cuisine = cuisine_v3.lignes(d, plats)
+    d.enregistrements.extend(lignes + incantations + kit + bivouac + cuisine)
     os.makedirs(DBC_CLIENT, exist_ok=True)
     d.enregistrer(os.path.join(DBC_CLIENT, "Spell.dbc"))
 
@@ -181,8 +184,11 @@ def main():
           "DELETE FROM spell_dbc WHERE ID IN (%s);" % ids]
     sql = ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e)) for e in minage]
     ecrire_migration(MIGRATION_RECOLTE, up, sql, ["-- Rend la pioche aux sorts de minage.", "USE acore_world;", up[3]])
-    print(len(lignes), "auras,", len(incantations), "incantation(s),", len(kit), "techniques et", len(bivouac),
-          "sorts de bivouac : Spell.dbc client, migrations 050, 058, 061, 067 et 073 écrits.")
+    cuisine_v3.ecrire(plats, ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e))
+                              for e in cuisine])
+    print(len(lignes), "auras,", len(incantations), "incantation(s),", len(kit), "techniques,", len(bivouac),
+          "sorts de bivouac et", len(plats), "plats : Spell.dbc client, migrations 050, 058, 061, 067, 073 et 079,",
+          "SolUI_Cuisine.lua écrits.")
 
 
 if __name__ == "__main__":

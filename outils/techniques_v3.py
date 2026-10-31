@@ -27,12 +27,13 @@ D1, D2, D3, D5, D6, D8, D10, D15, D30, INFINIE = 36, 39, 27, 28, 32, 31, 1, 8, 9
 R5, R8, R10, R15 = 8, 14, 13, 18
 PORTEE_25 = 34                      # SpellRange.dbc : 0 à 25 m
 
-FRAPPE_DU_BOUCLIER, RIPOSTE, SECOND_SOUFFLE, RAVAGE, VENGEANCE, DERNIER_REMPART, REMPART = (
-    100011, 100014, 100016, 100017, 100025, 100026, 100010)
+FRAPPE_DU_BOUCLIER, RIPOSTE, SECOND_SOUFFLE, RAVAGE, VENGEANCE, DERNIER_REMPART, REMPART, CRI_DE_DEFI = (
+    100011, 100014, 100016, 100017, 100025, 100026, 100010, 100015)
 
 SCRIPTS = {
     REMPART: "spell_solazeroth_v3_rempart",
     FRAPPE_DU_BOUCLIER: "spell_solazeroth_v3_frappe_bouclier",
+    CRI_DE_DEFI: "spell_solazeroth_v3_cri_defi",
     RIPOSTE: "spell_solazeroth_v3_riposte",
     SECOND_SOUFFLE: "spell_solazeroth_v3_second_souffle",
     RAVAGE: "spell_solazeroth_v3_ravage",
@@ -140,11 +141,13 @@ def lignes(d, icones):
     effet(e, 0, DEGATS, 1, DEST_CIBLE, ZONE_DEST, R8)
     t.append(e)
 
-    e = technique(d, 1161, 100015, "Cri de défi",
-                  "Attire vers soi tous les ennemis à moins de 15 m, qui vous attaquent pendant 6 s.",
-                  i["ability_warrior_bullrush"], 12000, "Attaque le guerrier.", duree=D6)
+    # 31/10/2026 : la provocation ne servait à rien en solo (le joueur est la seule cible). Chaque ennemi attiré
+    # remplit le Rempart à la place (v3_kit.cpp), choix de l'utilisateur.
+    e = technique(d, 1161, CRI_DE_DEFI, "Cri de défi",
+                  "Attire vers soi tous les ennemis à moins de 15 m. Chaque ennemi attiré verse 3 % de votre vie "
+                  "maximale dans le Rempart.", i["ability_warrior_bullrush"], 12000)
     effet(e, 0, ATTIRER, 0, AUTOUR_DE_SOI, ZONE_SOURCE, R15, misc=250)
-    effet(e, 1, AURA, 0, AUTOUR_DE_SOI, ZONE_SOURCE, R15, aura=PROVOCATION)
+    effet(e, 1)
     t.append(e)
 
     e = technique(d, 12975, SECOND_SOUFFLE, "Second souffle", "Consomme tout le Rempart : rend autant de points de vie.",

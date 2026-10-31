@@ -13,6 +13,8 @@ Les règles reprennent celles du serveur (v3_combat.cpp, v3_kit.cpp) :
   (100 %, 8 s, le monstre frappe 20 % moins vite pendant 10 s), Riposte du rempart (consomme le Rempart, 150 % du
   montant, 10 s ; sans armure, supposé), mêlée automatique ;
 - Rempart : 40 % de chaque coup encaissé après l'armure (absorbé ou subi), plafonné à 30 % de la vie maximale.
+- contre un groupe (combat_groupe) : mêlée et Frappe du bouclier sur un monstre à la fois, Coup de tonnerre sur tous,
+  et Cri de défi (12 s) qui verse 3 % de la vie maximale au Rempart par monstre attiré.
 
 Fiches : celles du journal de combat (journaux\\combat), ou un monstre bâti depuis la base. Le joueur part de sa
 dernière fiche du journal ; --equiper remplace des pièces (écart d'armure, d'arme, de Puissance d'attaque, d'Endurance).
@@ -38,6 +40,7 @@ ARMURE_PAR_POINT, ARMURE_MINIMUM = 20.0, 0.25
 MONSTRES_VIE, MONSTRES_DEGATS, MONSTRES_DUREE = 2.0, 4.0, 1.5
 MALUS_PAR_POINT, MALUS_MAX = 2.0, 75.0
 REMPART_PART, REMPART_PLAFOND, REMPART_FRAPPE = 0.40, 0.30, 0.08
+REMPART_CRI_DEFI = 0.03
 CRITIQUE_MONSTRE = 5.0
 DUREE_MAX = 180.0
 
@@ -135,9 +138,95 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4):
     return False, t, vie_j, inflige, subi
 
 
+def repas(joueur, force):
+    """Le joueur après un repas (cuisine_v3.py) : +force Force, soit 2 de Puissance d'attaque par point pour le
+    guerrier, et les dégâts de l'arme gagnent PA / 14 × vitesse (règle du moteur)."""
+    bonus = 2 * force / 14.0 * joueur.vitesse
+    return Fiche(joueur.nom + " (repas +%d)" % force, joueur.vie, joueur.armure, joueur.bas + bonus, joueur.haut + bonus,
+                 joueur.vitesse, joueur.critique, joueur.puissance, joueur.poison)
+
+
+def combat_groupe(joueur, monstres, alea, cri=True, reaction=1.4):
+    """Un combat contre plusieurs monstres arrivés ensemble ; même renvoi que combat(). Le joueur frappe le premier
+    monstre encore en vie ; Coup de tonnerre touche et ralentit tous les monstres ; Cri de défi est lancé dès qu'il est
+    prêt s'il reste un monstre."""
+    vie_j = joueur.vie
+    vies = [m.vie for m in monstres]
+    plafond = int(joueur.vie * REMPART_PLAFOND)
+    rempart = 0
+    t = 0.0
+    prochain = {"melee_j": 0.1, "frappe": 0.0, "tonnerre": 1.5, "cri": 0.0 if cri else None}
+    for i, m in enumerate(monstres):
+        prochain[("melee_m", i)] = m.vitesse * alea.uniform(0.5, 1.0)
+    ralenti_jusqua = -1.0
+    inflige = subi = 0
+
+    def malus(m):
+        return min(max(0.0, m.puissance - joueur.puissance) * MALUS_PAR_POINT, MALUS_MAX) / 100.0
+
+    def coup(m, pourcent):
+        d = apres_armure(int(alea.uniform(joueur.bas, joueur.haut) * pourcent * (1 - malus(m))), m.armure)
+        return d * 2 if alea.random() * 100 < joueur.critique else d
+
+    def encaisser(d):
+        nonlocal rempart, vie_j, subi
+        absorbe = min(rempart, d)
+        rempart -= absorbe
+        rempart = min(rempart + round(absorbe * REMPART_PART), plafond + absorbe)
+        reste = d - absorbe
+        rempart = min(rempart + round(reste * REMPART_PART), plafond)
+        vie_j -= reste
+        subi += reste
+
+    while t < DUREE_MAX:
+        t, quoi = min((v, k) for k, v in prochain.items() if v is not None)
+        vivants = [i for i, v in enumerate(vies) if v > 0]
+        cible = vivants[0]
+        degats = {}
+        if quoi == "melee_j":
+            degats[cible] = coup(monstres[cible], 1.0)
+            prochain[quoi] = t + joueur.vitesse
+        elif quoi == "frappe":
+            degats[cible] = coup(monstres[cible], 2.0)
+            rempart = min(rempart + round(joueur.vie * REMPART_FRAPPE), plafond)
+            prochain[quoi] = t + 6.0 + alea.uniform(0, 2 * reaction)
+        elif quoi == "tonnerre":
+            for i in vivants:
+                degats[i] = coup(monstres[i], 1.0)
+            ralenti_jusqua = t + 10.0
+            prochain[quoi] = t + 8.0 + alea.uniform(0, 2 * reaction)
+        elif quoi == "cri":
+            rempart = min(rempart + round(joueur.vie * REMPART_CRI_DEFI) * len(vivants), plafond)
+            prochain[quoi] = t + 12.0 + alea.uniform(0, 2 * reaction)
+        else:
+            i = quoi[1]
+            m = monstres[i]
+            d = apres_armure(round(alea.randint(m.bas, m.haut) * MONSTRES_DEGATS), joueur.armure)
+            encaisser(d * 2 if alea.random() * 100 < m.critique else d)
+            prochain[quoi] = t + m.vitesse * (1.25 if t < ralenti_jusqua else 1.0)
+        for i, d in degats.items():
+            vies[i] -= d
+            inflige += d
+            if vies[i] <= 0:
+                prochain[("melee_m", i)] = None
+        if all(v <= 0 for v in vies):
+            return True, t, vie_j, inflige, subi
+        if vie_j <= 0:
+            return False, t, 0, inflige, subi
+    return False, t, vie_j, inflige, subi
+
+
+def simuler_groupe(joueur, monstres, n=2000, graine=1, **options):
+    alea = random.Random(graine)
+    return resumer([combat_groupe(joueur, monstres, alea, **options) for _ in range(n)], joueur, n)
+
+
 def simuler(joueur, monstre, n=2000, graine=1, **options):
     alea = random.Random(graine)
-    resultats = [combat(joueur, monstre, alea, **options) for _ in range(n)]
+    return resumer([combat(joueur, monstre, alea, **options) for _ in range(n)], joueur, n)
+
+
+def resumer(resultats, joueur, n):
     victoires = [r for r in resultats if r[0]]
     duree = sum(r[1] for r in resultats) / n
     return {

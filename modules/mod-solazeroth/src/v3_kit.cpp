@@ -8,7 +8,8 @@
 // - Rempart : chaque coup encaissé, après l'armure, verse SolAzeroth.V3.Rempart.Part % de ses dégâts dans un bouclier
 //   (aura 100010, absorption), plafonné à SolAzeroth.V3.Rempart.Plafond % de la vie maximale. Hors combat, il perd
 //   SolAzeroth.V3.Rempart.Fuite % de la vie maximale toutes les 2 secondes. Riposte du rempart et Second souffle le
-//   consomment, Vengeance le demande plein, Frappe du bouclier et Dernier rempart le remplissent.
+//   consomment, Vengeance le demande plein, Frappe du bouclier et Dernier rempart le remplissent, Cri de défi aussi
+//   (SolAzeroth.V3.Rempart.CriDefi % de la vie maximale par ennemi attiré, à la place de la provocation, 31/10/2026).
 // Les sorts eux-mêmes (copies retouchées de sorts de Blizzard) sont générés par outils\techniques_v3.py (migration 061).
 
 #include "SolAzeroth.h"
@@ -79,6 +80,7 @@ namespace
         float plafond = 30.0f;
         float fuite = 1.0f;
         float frappe = 8.0f;
+        float criDefi = 3.0f;
     } reglages;
 
     struct Kit : DataMap::Base
@@ -289,6 +291,25 @@ namespace
 
 // ---------------------------------------------------------------- Sorts
 
+// Caractéristique principale de la spécialisation (repas, v3_cuisine.cpp) ; sans spécialisation, celle de la classe.
+unsigned char SolAzeroth::CaracteristiquePrincipale(Player* player)
+{
+    if (KitDe(player)->spe == SPE_GUERRIER_TANK)
+        return STAT_STRENGTH;
+    switch (player->getClass())
+    {
+        case CLASS_WARRIOR:
+        case CLASS_PALADIN:
+        case CLASS_DEATH_KNIGHT:
+            return STAT_STRENGTH;
+        case CLASS_HUNTER:
+        case CLASS_ROGUE:
+            return STAT_AGILITY;
+        default:
+            return STAT_INTELLECT;
+    }
+}
+
 class spell_solazeroth_v3_rempart : public AuraScript
 {
     PrepareAuraScript(spell_solazeroth_v3_rempart);
@@ -320,6 +341,23 @@ class spell_solazeroth_v3_frappe_bouclier : public SpellScript
     void Register() override
     {
         AfterHit += SpellHitFn(spell_solazeroth_v3_frappe_bouclier::Remplir);
+    }
+};
+
+// Cri de défi : chaque ennemi attiré remplit le Rempart.
+class spell_solazeroth_v3_cri_defi : public SpellScript
+{
+    PrepareSpellScript(spell_solazeroth_v3_cri_defi);
+
+    void Remplir(SpellEffIndex /*effet*/)
+    {
+        if (Unit* lanceur = GetCaster())
+            Ajouter(lanceur, int32(std::lround(lanceur->GetMaxHealth() * reglages.criDefi / 100.0f)));
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_solazeroth_v3_cri_defi::Remplir, EFFECT_0, SPELL_EFFECT_PULL_TOWARDS);
     }
 };
 
@@ -541,6 +579,7 @@ public:
         reglages.plafond = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.Plafond", 30.0f);
         reglages.fuite = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.Fuite", 1.0f);
         reglages.frappe = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.FrappeBouclier", 8.0f);
+        reglages.criDefi = sConfigMgr->GetOption<float>("SolAzeroth.V3.Rempart.CriDefi", 3.0f);
     }
 };
 
@@ -660,6 +699,7 @@ void AddSC_solazeroth_v3_kit()
     new solazeroth_v3_kit_commandes();
     RegisterSpellScript(spell_solazeroth_v3_rempart);
     RegisterSpellScript(spell_solazeroth_v3_frappe_bouclier);
+    RegisterSpellScript(spell_solazeroth_v3_cri_defi);
     RegisterSpellScript(spell_solazeroth_v3_riposte);
     RegisterSpellScript(spell_solazeroth_v3_second_souffle);
     RegisterSpellScript(spell_solazeroth_v3_ravage);

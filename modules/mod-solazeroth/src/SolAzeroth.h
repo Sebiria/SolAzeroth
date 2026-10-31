@@ -21,6 +21,8 @@ namespace SolAzeroth
     void RetirerDeCollection(Player* player, unsigned int objet, unsigned int nombre);
     // v3 : rang d'amélioration (0 à 5) d'une version d'équipement (v3_equipement.cpp).
     unsigned char RangEquipement(unsigned int entree);
+    // v3 : caractéristique principale (STAT_STRENGTH, STAT_AGILITY ou STAT_INTELLECT) de la spécialisation (v3_kit.cpp).
+    unsigned char CaracteristiquePrincipale(Player* player);
     // Ligue Destin (défi choisi au niveau 1, lua_scripts/defis.lua) : ni sorts ni talents d'une autre classe (formation.cpp).
     bool EstDestin(Player* player);
     // Ligue Remix (ligues.cpp) : monde à ton niveau imposé (echelle.cpp).
@@ -168,6 +170,7 @@ void AddSC_solazeroth_ligues();
 void AddSC_solazeroth_raids_anciens();
 void AddSC_solazeroth_v3_niveau();
 void AddSC_solazeroth_v3_combat();
+void AddSC_solazeroth_v3_cuisine();
 void AddSC_solazeroth_v3_kit();
 void AddSC_solazeroth_v3_journal();
 void AddSC_solazeroth_v3_mort();

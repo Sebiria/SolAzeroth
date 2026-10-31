@@ -639,6 +639,15 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Annonces retirées** : celles de mod-transmog (« … ajouté(e) à votre collection d'apparences »), filtrées par la discussion. Le module tiers reste intact.
     - **Addon de butin v2** (SolAzerothButin) : il demandait « .solbutin liste » à la connexion, une commande absente en v3. Il est rangé avec les addons v2, et le lanceur le retire du jeu.
     - **Durotar d'essai** : les 240 po de test sont retirés, et 210 éclats cadavériques sont donnés, soit la moyenne des 175 monstres hostiles de la vallée des Épreuves (à 1,2 éclat chacun).
+  - **Quinzième série (31/10/2026)** :
+    - **Cri de défi** (choix de l'utilisateur) : la provocation ne servait à rien en solo. Il attire toujours les ennemis à moins de 15 m, et chacun verse 3 % de la vie maximale dans le Rempart (`SolAzeroth.V3.Rempart.CriDefi`). Simulation contre 3 monstres de la vallée : vie restante de 33 à 60 % contre des Familiers vils, de 64 à 85 % contre des Scorpides ouvriers. Les packs trop forts restent perdus.
+    - **Simulateur** : combat contre un groupe (mêlée et Frappe du bouclier sur un monstre, Coup de tonnerre sur tous, Cri de défi), et effet d'un repas.
+    - **Cuisine par zone** (`outils/cuisine_v3.py`, migration 079, `v3_cuisine.cpp`) :
+      - les plats d'une zone sont les recettes de Blizzard dont un ingrédient au moins tombe sur ses monstres, et dont les autres s'y trouvent (butin ou marchand), sans les plats de fête ;
+      - Durotar en a 5 : viande de sanglier rôtie, Surprise du scorpide, maquereau, steak de crocilisque et thon arc-en-ciel ;
+      - un plat donne, pendant 30 minutes, la caractéristique de la spécialisation (Force pour le guerrier tank, sinon celle de la classe), d'autant de points que la puissance moyenne de la zone : 6 à Durotar (moyenne des niveaux de ses monstres ordinaires, entre le 5e et le 90e centile). Un seul repas à la fois ;
+      - fabrication dans la fenêtre Équipement, catégorie Cuisine, près d'un feu (le Feu de camp v3 compte, et l'on cuisine assis sans l'éteindre), en 5 s ;
+      - simulation (fin de vallée, +6 Force) : combats 15 à 25 % plus courts. Contre le Sanglier tacheté redoutable (puissance 7), vie restante de 27 à 42 %.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :

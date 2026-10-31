@@ -58,11 +58,14 @@ SolAzeroth.V3.PuissanceParRang = 0.1
 #    SolAzeroth.V3.Rempart.Fuite           Perte du Rempart hors combat, en % de la vie maximale toutes les 2 secondes.
 #                                          Défaut : 1.
 #    SolAzeroth.V3.Rempart.FrappeBouclier  Rempart gagné par Frappe du bouclier, en % de la vie maximale. Défaut : 8.
+#    SolAzeroth.V3.Rempart.CriDefi         Rempart gagné par ennemi attiré par Cri de défi, en % de la vie maximale.
+#                                          Défaut : 3.
 
 SolAzeroth.V3.Rempart.Part = 40
 SolAzeroth.V3.Rempart.Plafond = 30
 SolAzeroth.V3.Rempart.Fuite = 1
 SolAzeroth.V3.Rempart.FrappeBouclier = 8
+SolAzeroth.V3.Rempart.CriDefi = 3
 
 #    SolAzeroth.V3.JournalCombat           Journal de combat (v3) : chaque coup, avec les fiches du joueur et des monstres,
 #                                          dans journaux\combat\<nom>_<date>.log. 1 = actif (défaut), 0 = coupé.

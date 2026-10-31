@@ -22,6 +22,7 @@ REFERENCE = os.path.join(ICI, "donnees_tests", "combat_scorpide_2026-10-31.txt")
 # Mesuré dans ce journal : joueur 86 dégâts en 25,8 s, monstre 74 subis (après le Rempart) en 25,8 s.
 REEL_JOUEUR, REEL_MONSTRE = 86 / 25.8, 74 / 25.8
 TOLERANCE = 0.30   # un seul combat réel : ses dés comptent
+REPAS_DUROTAR = 6
 
 # (entrée, niveau d'origine) : de la vallée des Épreuves au sud de Durotar.
 MONSTRES = [(3098, 2), (3124, 3), (3101, 4), (3125, 6), (3099, 7), (3122, 8), (3121, 8), (3100, 9), (3123, 10),
@@ -75,6 +76,8 @@ def rapport():
     panoplies = {"équipement actuel": joueur}
     for nom, objets in PANOPLIES.items():
         panoplies[nom] = sim.equiper(joueur, objets, 20)
+    # Repas de Durotar (cuisine_v3.py : puissance moyenne de la zone, 6) sur la panoplie de fin de vallée.
+    panoplies["fin de vallée + repas de Durotar"] = sim.repas(panoplies["fin de vallée (quêtes)"], REPAS_DUROTAR)
     monstres = [sim.monstre_depuis_base(e, n) for e, n in MONSTRES]
     for nom, j in panoplies.items():
         print("\n%s : puissance %.1f, vie %d, armure %d, arme %.1f-%.1f / %.2f s" % (nom, j.puissance, j.vie, j.armure,
