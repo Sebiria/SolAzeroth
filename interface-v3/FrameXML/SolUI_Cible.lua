@@ -123,7 +123,8 @@ for i = 1, MAX_DEBUFFS do
     d.detail:SetPoint("TOPLEFT", d.nom, "BOTTOMLEFT", 0, -2)
     d.duree = CreateFrame("StatusBar", nil, d)
     d.duree:SetSize(110, 4)
-    d.duree:SetPoint("BOTTOMLEFT", cadreIcone, "BOTTOMRIGHT", 10, 3)
+    -- Sous le détail (« Par toi », cumuls) : ancrée en bas de l'icône, elle le chevauchait (essai du 31/10/2026).
+    d.duree:SetPoint("TOPLEFT", d.detail, "BOTTOMLEFT", 0, -5)
     d.duree:SetStatusBarTexture(S.BLANC)
     d.duree:SetStatusBarColor(S.Couleur("bleu"))
     d.duree:SetBackdrop({ bgFile = S.BLANC })
