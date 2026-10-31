@@ -20,6 +20,7 @@
 #include "Config.h"
 #include "Creature.h"
 #include "Item.h"
+#include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "SpellInfo.h"
@@ -87,6 +88,45 @@ namespace
         return creature && !creature->GetCharmerOrOwnerPlayerOrPlayerItself() ? creature : nullptr;
     }
 
+    // 31/10/2026 (Familier vil de la vallée des Épreuves : Boule de feu à 1 100) : le moteur calcule les sorts des
+    // monstres sur leur niveau affiché, 80, et non sur leur puissance (niveau d'origine). Rapport qui ramène un sort à la
+    // puissance du monstre : points par niveau (SpellEffectInfo::CalcValue), sinon mise à l'échelle des sorts de
+    // créature (SPELL_ATTR0_SCALES_WITH_CREATURE_LEVEL, d'après les dégâts de base de CreatureBaseStats).
+    float EchelleSort(Unit* lanceur, SpellInfo const* sort)
+    {
+        Creature* creature = Monstre(lanceur);
+        if (!creature || !sort)
+            return 1.0f;
+        int32 origine = SolAzeroth::PuissanceCreature(creature), affiche = creature->GetLevel();
+        if (origine <= 0 || origine >= affiche)
+            return 1.0f;
+        for (SpellEffectInfo const& effet : sort->GetEffects())
+        {
+            if (!effet.Effect || effet.RealPointsPerLevel == 0.0f)
+                continue;
+            auto Valeur = [&](int32 niveau)
+            {
+                if (niveau > int32(sort->MaxLevel) && sort->MaxLevel > 0)
+                    niveau = int32(sort->MaxLevel);
+                else if (niveau < int32(sort->BaseLevel))
+                    niveau = int32(sort->BaseLevel);
+                niveau -= int32(std::max(sort->BaseLevel, sort->SpellLevel));
+                return effet.BasePoints + 1 + std::abs(effet.DieSides) / 2.0f + niveau * effet.RealPointsPerLevel;
+            };
+            float haut = Valeur(affiche);
+            return haut > 0.0f ? std::clamp(Valeur(origine) / haut, 0.0f, 1.0f) : 1.0f;
+        }
+        if (sort->HasAttribute(SPELL_ATTR0_SCALES_WITH_CREATURE_LEVEL) && sort->SpellLevel && int32(sort->SpellLevel) != affiche)
+        {
+            uint8 extension = creature->GetCreatureTemplate()->expansion;
+            CreatureBaseStats const* haut = sObjectMgr->GetCreatureBaseStats(affiche, creature->getClass());
+            CreatureBaseStats const* bas = sObjectMgr->GetCreatureBaseStats(origine, creature->getClass());
+            if (haut && bas && haut->BaseDamage[extension] > 0.0f)
+                return std::clamp(bas->BaseDamage[extension] / haut->BaseDamage[extension], 0.0f, 1.0f);
+        }
+        return 1.0f;
+    }
+
     void Envoyer(Player* player)
     {
         Puissance* p = PuissanceDe(player);
@@ -112,7 +152,8 @@ public:
     solazeroth_v3_combat_unites() : UnitScript("solazeroth_v3_combat_unites", true, {
         UNITHOOK_ON_BEFORE_ROLL_MELEE_OUTCOME_AGAINST, UNITHOOK_ON_SPELL_HIT_ROLL,
         UNITHOOK_ON_AFTER_CALC_ARMOR_REDUCED_DAMAGE, UNITHOOK_ON_SPELL_POWER_COST,
-        UNITHOOK_MODIFY_MELEE_DAMAGE, UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN, UNITHOOK_MODIFY_PERIODIC_DAMAGE_AURAS_TICK }) { }
+        UNITHOOK_MODIFY_MELEE_DAMAGE, UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN, UNITHOOK_MODIFY_PERIODIC_DAMAGE_AURAS_TICK,
+        UNITHOOK_MODIFY_HEAL_RECEIVED }) { }
 
     // Compétences égalisées : ni bonus d'esquive ou de parade selon l'écart, ni coup érafle (attaquant = défense + 5),
     // ni coup écrasant (moins de 15 points d'écart), même face à un boss resté au-dessus du niveau 80.
@@ -173,8 +214,21 @@ public:
     }
 
     void ModifyMeleeDamage(Unit* cible, Unit* attaquant, uint32& degats) override { Appliquer(cible, attaquant, degats); }
-    void ModifySpellDamageTaken(Unit* cible, Unit* attaquant, int32& degats, SpellInfo const* /*sort*/) override { Appliquer(cible, attaquant, degats); }
-    void ModifyPeriodicDamageAurasTick(Unit* cible, Unit* attaquant, uint32& degats, SpellInfo const* /*sort*/) override { Appliquer(cible, attaquant, degats); }
+    void ModifySpellDamageTaken(Unit* cible, Unit* attaquant, int32& degats, SpellInfo const* sort) override
+    {
+        degats = int32(std::lround(degats * EchelleSort(attaquant, sort)));
+        Appliquer(cible, attaquant, degats);
+    }
+    void ModifyPeriodicDamageAurasTick(Unit* cible, Unit* attaquant, uint32& degats, SpellInfo const* sort) override
+    {
+        degats = uint32(std::lround(degats * EchelleSort(attaquant, sort)));
+        Appliquer(cible, attaquant, degats);
+    }
+    // Soins des monstres (sur eux ou leurs alliés) : même rapport.
+    void ModifyHealReceived(Unit* /*cible*/, Unit* soigneur, uint32& soin, SpellInfo const* sort) override
+    {
+        soin = uint32(std::lround(soin * EchelleSort(soigneur, sort)));
+    }
 };
 
 class solazeroth_v3_combat_joueur : public PlayerScript

@@ -523,6 +523,17 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **Construites le 31/10/2026** (pas encore vérifiées en jeu) ; elles s'ouvrent depuis le bouton Menu, ou par une touche réglée dans la fenêtre :
   - `SolUI_Raccourcis.lua` : les touches sont celles du jeu, enregistrées à la fermeture. L'onglet Techniques équipées envoie `.kit equiper`. L'onglet Feu de camp et potion décrit le rang de départ.
   - `SolUI_Collection.lua` et le catalogue `SolUI_Catalogue.lua` (`outils/collection_v3.py`) : 609 matériaux et gemmes qu'on peut obtenir, en 9 catégories. En attendant l'inventaire sans limite côté serveur, le nombre possédé est celui des sacs et de la banque.
+  - **Inventaire sans limite** (`v3_collection.cpp`, migration 069) : les 609 objets à collectionner ne passent plus par le sac.
+    - **Au butin** : juste avant l'ouverture de la fenêtre de butin, ils en sont retirés et rangés en base, sans limite. Un sac plein ne bloque plus la collecte.
+    - **Autres arrivées** (quête, marchand, courrier) : l'objet est rangé juste après être entré dans le sac.
+    - **Quête en cours** : un objet qu'elle demande reste dans le sac.
+    - **Retrait** : la fenêtre Collection remet 1 ou 20 objets dans le sac (`.collection retirer`).
+    - Collection par personnage, pour l'instant.
+  - **Corrections du même jour** :
+    - **Sorts des monstres** : ils se calculaient sur le niveau affiché, 80 (Boule de feu du Familier vil à 1 100). Ils sont ramenés à la puissance du monstre ; c'est le cas aussi des dégâts sur la durée et des soins.
+    - **Feu de camp** : compte à rebours au-dessus des techniques avant le Repos et les potions.
+    - **Raccourcis** : boutons de la souris (milieu, 4, 5) et molette.
+    - **Quêtes suivies** : gardées par personnage et remises à la connexion.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :

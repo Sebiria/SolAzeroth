@@ -838,6 +838,14 @@ evenements:SetScript("OnEvent", function(self, event, nom, fonction)
             SolUI.surChangement = function(disposition) SolAzerothDB.interface = disposition end
         end
     elseif event == "PLAYER_LOGIN" then
+        -- v3 : quêtes suivies de ce personnage, que le jeu oublie à la déconnexion (SolUI_Quetes.lua).
+        if SolUI then
+            SolAzerothDB.suivies = SolAzerothDB.suivies or {}
+            local cle = UnitName("player") .. "-" .. GetRealmName()
+            SolAzerothDB.suivies[cle] = SolAzerothDB.suivies[cle] or {}
+            SolUI.QUETES_SUIVIES = SolAzerothDB.suivies[cle]
+            SolUI.MajQuetes()
+        end
         -- Tous les addons sont chargés : leurs fenêtres rejoignent celle-ci.
         for _, section in ipairs(SECTIONS) do
             for _, page in ipairs(section.pages) do Adopter(page) end

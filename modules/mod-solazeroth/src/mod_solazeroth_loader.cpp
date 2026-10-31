@@ -33,6 +33,7 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_v3_journal();
         AddSC_solazeroth_v3_mort();
         AddSC_solazeroth_v3_bivouac();
+        AddSC_solazeroth_v3_collection();
     }
     AddSC_solazeroth_reinitialisation();
     AddSC_solazeroth_butin();

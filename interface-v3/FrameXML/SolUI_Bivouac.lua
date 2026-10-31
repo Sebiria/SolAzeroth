@@ -14,7 +14,35 @@ S.Message("SOLBIV", function(champs)
     if champs[1] ~= "ETAT" then return end
     S.etat.charges = tonumber(champs[2])
     S.etat.chargesMax = tonumber(champs[3]) or 0
+    -- Secondes avant le Repos au coin du feu (0 : pas assis près de son feu).
+    local restant = tonumber(champs[4]) or 0
+    S.etat.reposFin = restant > 0 and (GetTime() + restant) or nil
 end)
+
+-- Compte à rebours au-dessus des techniques, tant qu'on est assis près de son feu (demande de l'utilisateur).
+local DUREE_AVANT_REPOS = 60
+local rebours = CreateFrame("Frame", "SolUIReboursFeu", SolUITechniques)
+rebours:SetSize(300, 40)
+rebours:SetPoint("BOTTOM", SolUITechniques, "TOP", 0, 14)
+S.Panneau(rebours, 0.88)
+rebours:Hide()
+local reboursTexte = S.Texte(rebours, "SemiBold", 13, "clair")
+reboursTexte:SetPoint("TOP", 0, -7)
+local reboursFond = S.Texture(rebours, "ARTWORK", nil, S.Couleur("creux"))
+reboursFond:SetPoint("BOTTOMLEFT", 10, 7)
+reboursFond:SetPoint("BOTTOMRIGHT", -10, 7)
+reboursFond:SetHeight(4)
+local reboursBarre = S.Texture(rebours, "OVERLAY", nil, S.Couleur("ambre"))
+reboursBarre:SetPoint("TOPLEFT", reboursFond, "TOPLEFT")
+reboursBarre:SetPoint("BOTTOMLEFT", reboursFond, "BOTTOMLEFT")
+
+local function MajRebours()
+    local reste = S.etat.reposFin and (S.etat.reposFin - GetTime()) or 0
+    if reste <= 0 then rebours:Hide(); return end
+    rebours:Show()
+    reboursTexte:SetText("Repos au coin du feu et potions dans " .. math.ceil(reste) .. " s")
+    reboursBarre:SetWidth(math.max(1, 280 * (1 - math.min(reste, DUREE_AVANT_REPOS) / DUREE_AVANT_REPOS)))
+end
 
 local function NouveauBouton(sort, ligne)
     local nom = GetSpellInfo(sort)
@@ -101,4 +129,5 @@ potion:SetScript("OnUpdate", function(self, ecoule)
     potion.nombre:SetText(charges or "")
     Etat(potion, charges == 0)
     Etat(feu, false)
+    MajRebours()
 end)

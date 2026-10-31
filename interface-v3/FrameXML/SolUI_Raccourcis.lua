@@ -1,8 +1,8 @@
 -- Sol'Azeroth v3 (31/10/2026) : fenêtre « Techniques et raccourcis », d'après la maquette « 7 » (demande de
 -- l'utilisateur : régler les touches des boutons dans une fenêtre à part).
 -- - Raccourcis : les 10 boutons disposés comme à l'écran. On en clique un, puis on appuie sur la touche voulue (Maj,
---   Ctrl et Alt se combinent ; Échap annule, Suppr retire). Une touche déjà prise est retirée de son ancien usage, et
---   la fenêtre le dit. Les touches sont celles du jeu (SetBinding), enregistrées à la fermeture.
+--   Ctrl et Alt se combinent ; souris : bouton du milieu, 4, 5 et molette ; Échap annule, Suppr retire). Une touche
+--   déjà prise est retirée de son ancien usage, et la fenêtre le dit. Les touches sont celles du jeu (SetBinding), enregistrées à la fermeture.
 -- - Techniques équipées : 8 au plus parmi les techniques débloquées, hors combat (.kit equiper, v3_kit.cpp).
 -- - Feu de camp et potion : leurs effets au rang de départ (v3_bivouac.cpp) ; les rangs viendront avec F7.
 
@@ -100,10 +100,20 @@ local p1 = pages[1]
 local capture, message, modifie = nil, "", false
 local Maj
 
+-- Pendant la saisie, un voile sur tout l'écran prend aussi la souris : bouton du milieu, boutons 4 et 5, molette.
+-- Un clic gauche ou droit annule.
+local voile = CreateFrame("Frame", "SolUIRaccourcisVoile", UIParent)
+voile:SetAllPoints(UIParent)
+voile:SetFrameStrata("FULLSCREEN_DIALOG")
+voile:EnableMouse(true)
+voile:EnableMouseWheel(true)
+voile:Hide()
+
 local function Choisir(e)
     capture = e
     message = ""
     f:EnableKeyboard(e ~= nil)
+    S.Montrer(voile, e ~= nil)
     Maj()
 end
 
@@ -254,7 +264,7 @@ function Maj()
         saisie:SetBackdropBorderColor(S.Couleur("ambre"))
         saisieTitre:SetText("EN ATTENTE D'UNE TOUCHE")
         saisieNom:SetText(capture.nom() .. "  ·  actuelle : " .. (Touche(capture.commande) or "aucune"))
-        saisieAide:SetText("Maj, Ctrl et Alt se combinent avec la touche. Échap annule, Suppr retire le raccourci.")
+        saisieAide:SetText("Touche, bouton du milieu, boutons 4 et 5 ou molette ; Maj, Ctrl et Alt se combinent. Échap ou clic annule, Suppr retire.")
     else
         saisie:SetBackdropColor(S.Couleur("creux", 0.6))
         saisie:SetBackdropBorderColor(S.Couleur("bordCreux"))
@@ -266,7 +276,7 @@ function Maj()
 end
 
 f:EnableKeyboard(false)
-f:SetScript("OnKeyDown", function(self, touche)
+local function Poser(self, touche)
     if not capture or MODIFICATEURS[touche] then return end
     local e = capture
     if touche == "ESCAPE" then
@@ -295,6 +305,15 @@ f:SetScript("OnKeyDown", function(self, touche)
         message = "« " .. texte .. " » est posé sur " .. e.nom() .. "."
     end
     Maj()
+end
+f:SetScript("OnKeyDown", Poser)
+
+local SOURIS = { MiddleButton = "BUTTON3", Button4 = "BUTTON4", Button5 = "BUTTON5" }
+voile:SetScript("OnMouseDown", function(_, bouton)
+    if SOURIS[bouton] then Poser(f, SOURIS[bouton]) else Choisir(nil) end
+end)
+voile:SetScript("OnMouseWheel", function(_, sens)
+    Poser(f, sens > 0 and "MOUSEWHEELUP" or "MOUSEWHEELDOWN")
 end)
 
 ------------------------------------------------------------------------
@@ -453,6 +472,7 @@ f:SetScript("OnHide", function()
     if modifie then SaveBindings(GetCurrentBindingSet()) end
     modifie, capture = false, nil
     f:EnableKeyboard(false)
+    voile:Hide()
 end)
 S.Ecouter("UPDATE_BINDINGS", function() if f:IsShown() then Maj(); MajFiches() end end)
 S.Ecouter("ACTIONBAR_SLOT_CHANGED", function() if f:IsShown() then Maj() end end)

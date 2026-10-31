@@ -6,6 +6,7 @@
 //   Feu douillet de Blizzard (+4 esprit, piège lié au feu). Le personnage s'assoit aussitôt ; se lever, entrer en
 //   combat ou mourir éteint le feu (31/10/2026, demande de l'utilisateur). Assis : REGEN_FEU % de la vie toutes les
 //   2 s, et au bout de 60 s le Repos au coin du feu (100031, vie maximale +5 % pendant 30 minutes) et les potions.
+// L'interface reçoit « ETAT;charges;max;secondes avant le Repos » (préfixe SOLBIV) : compte à rebours du feu.
 // Les sorts sont générés par outils\bivouac_v3.py (migration 067) ; les améliorations par rang viendront avec F7.
 
 #include "SolAzeroth.h"
@@ -64,7 +65,9 @@ namespace
     void Envoyer(Player* player, bool force = false)
     {
         Bivouac* b = BivouacDe(player);
-        std::string message = Acore::StringFormat("ETAT;{};{}", b->charges, CHARGES);
+        // Dernier champ : secondes avant le Repos au coin du feu (0 hors du feu), pour le compte à rebours de l'interface.
+        uint32 restant = b->allume && b->feu && b->assis < ASSIS_POUR_REPOS ? (ASSIS_POUR_REPOS - b->assis) / 1000 : 0;
+        std::string message = Acore::StringFormat("ETAT;{};{};{}", b->charges, CHARGES, restant);
         if (!force && message == b->envoye)
             return;
         b->envoye = message;

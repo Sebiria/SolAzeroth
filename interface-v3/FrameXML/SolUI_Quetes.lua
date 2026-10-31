@@ -712,6 +712,29 @@ end
 ------------------------------------------------------------------------
 -- Mises à jour
 ------------------------------------------------------------------------
+-- Le jeu oublie les quêtes suivies à la déconnexion (constaté le 31/10/2026) : elles sont gardées par personnage dans
+-- SolAzerothDB (l'addon SolAzeroth remplit S.QUETES_SUIVIES à la connexion), puis remises au premier relevé du journal.
+local restaurees = false
+local function Memoriser(liste)
+    local suivies = S.QUETES_SUIVIES
+    if not suivies or #liste == 0 then return end
+    if not restaurees then
+        restaurees = true
+        local remises = false
+        for _, q in ipairs(liste) do
+            if not q.enTete and suivies[q.id] and not q.suivie and GetNumQuestWatches() < MAX_WATCHABLE_QUESTS then
+                AddQuestWatch(q.index)
+                remises = true
+            end
+        end
+        if remises then S.MajQuetes(); return end
+    end
+    wipe(suivies)
+    for _, q in ipairs(liste) do
+        if q.suivie then suivies[q.id] = true end
+    end
+end
+
 local enRetard = false
 local relance = CreateFrame("Frame")
 relance:Hide()
@@ -719,6 +742,7 @@ relance:SetScript("OnUpdate", function(self)
     self:Hide()
     enRetard = false
     local liste = Lire()
+    Memoriser(liste)
     MajSuivi(liste)
     if journal:IsShown() then MajJournal(liste) end
     LirePositions()
