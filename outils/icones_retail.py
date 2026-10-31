@@ -40,6 +40,9 @@ ICONES = [
     "campfire_rootflame",                   # Feu de camp : icône 7479490 de Wowhead (Rootflame Campfire), sans nom
 ]
 
+# Part centrale gardée (le reste est coupé) : le feu de camp était petit dans son bouton (demande du 31/10/2026).
+RECADRAGE = {"campfire_rootflame": 0.72}
+
 
 def chemin_jeu(nom):
     return "Interface\\Icons\\SolAzeroth_" + nom
@@ -73,7 +76,12 @@ def convertir():
     from PIL import Image
     os.makedirs(DOSSIER, exist_ok=True)
     for nom in ICONES:
-        image = Image.open(os.path.join(SOURCES, nom + ".jpg")).convert("RGB").resize((64, 64), Image.LANCZOS)
+        image = Image.open(os.path.join(SOURCES, nom + ".jpg")).convert("RGB")
+        if nom in RECADRAGE:
+            cote = image.width * RECADRAGE[nom]
+            marge = (image.width - cote) / 2
+            image = image.crop((round(marge), round(marge), round(marge + cote), round(marge + cote)))
+        image = image.resize((64, 64), Image.LANCZOS)
         with open(os.path.join(DOSSIER, "SolAzeroth_" + nom + ".blp"), "wb") as f:
             f.write(blp_avec_mipmaps(image))
 
