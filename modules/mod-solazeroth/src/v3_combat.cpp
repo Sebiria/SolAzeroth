@@ -12,7 +12,9 @@
 // - Malus hors de sa puissance : face à un monstre plus fort, les dégâts infligés par le joueur et ses familiers baissent
 //   de SolAzeroth.V3.MalusParPoint % par point de puissance manquant, au plus SolAzeroth.V3.MalusMax %.
 // - Calibrage (31/10/2026) : les dégâts des monstres contre le joueur et ses familiers sont multipliés par
-//   SolAzeroth.V3.MonstresDegats, avant l'armure (leur vie l'est dans v3_niveau.cpp).
+//   SolAzeroth.V3.MonstresDegats, avant l'armure (leur vie l'est dans v3_niveau.cpp). Leurs sorts magiques et leurs
+//   dégâts sur la durée, qui ne passent pas par l'armure, le sont par SolAzeroth.V3.MonstresDegatsSorts (×2 : Yarrog
+//   Plaie-d'ombre tuait en 12 s à coups de Corruption à 40 par tick, journal du 31/10/2026).
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -42,6 +44,7 @@ namespace
         float malusMax = 75.0f;
         float pourcentParRang = 0.03f;
         float degatsMonstres = 4.0f;
+        float degatsSorts = 2.0f;
     } reglages;
 
     struct Puissance : DataMap::Base
@@ -199,30 +202,36 @@ public:
             degats = T(degats * (1.0f - malus / 100.0f));
     }
 
+    // multiplicateur : celui de la mêlée (et des techniques physiques, qui passent par l'armure), ou celui des sorts.
     template <typename T>
-    static void AppliquerMonstre(Unit* cible, Unit* attaquant, T& degats)
+    static void AppliquerMonstre(Unit* cible, Unit* attaquant, T& degats, float multiplicateur)
     {
-        if (reglages.degatsMonstres != 1.0f && Monstre(attaquant) && cible && cible->GetCharmerOrOwnerPlayerOrPlayerItself())
-            degats = T(std::lround(degats * reglages.degatsMonstres)); // arrondi : 1 x 2,5 donnait 2 (journal du 31/10/2026)
+        if (multiplicateur != 1.0f && Monstre(attaquant) && cible && cible->GetCharmerOrOwnerPlayerOrPlayerItself())
+            degats = T(std::lround(degats * multiplicateur)); // arrondi : 1 x 2,5 donnait 2 (journal du 31/10/2026)
     }
 
     template <typename T>
-    static void Appliquer(Unit* cible, Unit* attaquant, T& degats)
+    static void Appliquer(Unit* cible, Unit* attaquant, T& degats, float multiplicateur)
     {
         AppliquerMalus(cible, attaquant, degats);
-        AppliquerMonstre(cible, attaquant, degats);
+        AppliquerMonstre(cible, attaquant, degats, multiplicateur);
     }
 
-    void ModifyMeleeDamage(Unit* cible, Unit* attaquant, uint32& degats) override { Appliquer(cible, attaquant, degats); }
+    void ModifyMeleeDamage(Unit* cible, Unit* attaquant, uint32& degats) override
+    {
+        Appliquer(cible, attaquant, degats, reglages.degatsMonstres);
+    }
     void ModifySpellDamageTaken(Unit* cible, Unit* attaquant, int32& degats, SpellInfo const* sort) override
     {
         degats = int32(std::lround(degats * EchelleSort(attaquant, sort)));
-        Appliquer(cible, attaquant, degats);
+        bool physique = sort && (sort->GetSchoolMask() & SPELL_SCHOOL_MASK_NORMAL);
+        Appliquer(cible, attaquant, degats, physique ? reglages.degatsMonstres : reglages.degatsSorts);
     }
+    // Les dégâts sur la durée, même physiques (saignements), ne passent pas par l'armure.
     void ModifyPeriodicDamageAurasTick(Unit* cible, Unit* attaquant, uint32& degats, SpellInfo const* sort) override
     {
         degats = uint32(std::lround(degats * EchelleSort(attaquant, sort)));
-        Appliquer(cible, attaquant, degats);
+        Appliquer(cible, attaquant, degats, reglages.degatsSorts);
     }
     // Soins des monstres (sur eux ou leurs alliés) : même rapport.
     void ModifyHealReceived(Unit* /*cible*/, Unit* soigneur, uint32& soin, SpellInfo const* sort) override
@@ -267,6 +276,7 @@ public:
         reglages.malusMax = sConfigMgr->GetOption<float>("SolAzeroth.V3.MalusMax", 75.0f);
         reglages.pourcentParRang = sConfigMgr->GetOption<float>("SolAzeroth.Bonus.PourcentParRang", 0.03f);
         reglages.degatsMonstres = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 4.0f);
+        reglages.degatsSorts = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsSorts", 2.0f);
     }
 };
 

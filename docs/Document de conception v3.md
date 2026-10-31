@@ -536,7 +536,7 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Quêtes suivies** : gardées par personnage et remises à la connexion.
   - **Cinquième série (31/10/2026)**, après l'essai dans la vallée des Épreuves ; pas encore vérifiée en jeu :
     - **Journal de combat** : la Boule de feu du Familier vil frappe pour environ 24 avant le Rempart (6 × 4). Elle passe outre l'armure. Elle partait toutes les 5 à 7 s, alors qu'un combat dure deux fois plus longtemps qu'à l'origine, puisque la vie des monstres est doublée. Un diablotin tient 44 s contre le personnage Test, de puissance 1,7 contre 4, et deux diablotins le tuent.
-    - **Sorts des monstres normaux** (migration 070) : leurs sorts répétés en combat (SmartAI) partent deux fois moins souvent, ce qui touche 4 027 sorts. La Boule de feu du Familier vil part désormais toutes les 10 à 14 s.
+    - **Sorts des monstres normaux** (migration 070, annulée et retirée le jour même) : leurs sorts répétés en combat partaient deux fois moins souvent. Le réglage `MonstresDegatsSorts` (septième série) la remplace.
     - **PNJ d'ambiance dans la grotte de la Lame ardente** (migration 071) : ils suivaient les trajets de patrouille des Familiers vils, dont la faction 7 avait été prise pour une faction non hostile. 32 trajets de monstres hostiles ont été retirés des routes d'ambiance ; il en reste 462.
     - **Pierre de foyer** : troisième bouton, à droite du feu de camp. Sa touche se règle dans la fenêtre des raccourcis, sous le nom « PF ».
     - **Repos au coin du feu** : hors combat, il rend 1 % de la vie maximale par seconde. Ce taux s'améliorera par rang avec F7, comme le bonus de vie.
@@ -556,6 +556,15 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Collection, catégorie Cuisine** : la viande, et les consommables qui servent de composant à une recette de cuisine (Eau de source fraîche, lait, fruits…). Ils sont lus dans Spell.dbc et SkillLineAbility.dbc. La Collection passe à 742 objets en 10 catégories.
     - **Yarrog Plaie-d'ombre** (migration 072) : la migration 065 l'avait caché comme PNJ d'ambiance de Durotar, car sa faction 7 était prise pour non hostile. `sans_guildes.py` écarte désormais la faction 7 et les monstres qui portent un objet de quête.
     - **Sarkoth** : la quête « Sarkoth » (910006) est donnée par Hana'zua, couchée sur la colline au nord-ouest de la vallée, après « Les crocs de la Vallée ».
+  - **Septième série (31/10/2026, accord de l'utilisateur)** :
+    - **Journal contre Yarrog Plaie-d'ombre** (puissance 5) : mort du joueur en 12,4 s, pour 35 dégâts infligés sur 196.
+      - Sa mêlée ne passait pas l'armure.
+      - Corruption touchait pour 40 bruts par tick et Immolation pour 40. Ces sorts passent outre l'armure et prenaient le même ×4 que la mêlée.
+      - Côté joueur : son armure de 109 retirait 4 à 5 points à chaque coup d'une arme 7-9.
+    - **Nouveau réglage `SolAzeroth.V3.MonstresDegatsSorts` = 2** (`v3_combat.cpp`) : il s'applique aux sorts magiques et aux dégâts sur la durée des monstres, saignements compris. La mêlée et les techniques physiques gardent `MonstresDegats` = 4, car l'armure les réduit.
+    - **Migration 070 annulée et retirée.** Le ×2 à la cadence d'origine donne aux Familiers vils la même pression que le ×4 à demi-cadence de l'essai précédent, que l'utilisateur jugeait correct.
+    - L'en-tête du journal de combat indique les deux multiplicateurs.
+    - **Reste au calibrage final** : l'armure fixe des monstres contre les armes faibles du début de jeu.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :
