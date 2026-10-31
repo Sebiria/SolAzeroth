@@ -291,6 +291,11 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - les dégâts des monstres et les apports du Rempart sont désormais arrondis au plus proche ;
   - Rempart renforcé : `Rempart.Part` passe de 25 à 40 %, et `Rempart.FrappeBouclier` de 5 à 8 % de la vie maximale.
 
+  **Troisième réglage (journal Ezafz de 02h37, accepté par l'utilisateur)** :
+  - les durées sont dans la cible quand le kit sert dès le début : 11,3 s contre la puissance 2 ;
+  - mais le joueur ne perd que 0 à 10 points de vie sur 70 : le Rempart efface environ 60 % des dégâts, car les dégâts absorbés le rechargent aussi ;
+  - `MonstresDegats` passe de 2,5 à 4. Attendu : environ 15 points de vie perdus contre un monstre de sa puissance.
+
 ### F4. Interface v3 dans les fichiers du jeu
 - **Nos propres fichiers sont ajoutés à FrameXML.** Le test du 30/10 a montré que ce code garde les droits de Blizzard en combat.
 - **Les cadres de Blizzard inutiles sont cachés** : barres d'action, cadres du joueur et de la cible, mana, expérience…

@@ -40,7 +40,7 @@ namespace
         float malusParPoint = 2.0f;
         float malusMax = 75.0f;
         float pourcentParRang = 0.03f;
-        float degatsMonstres = 2.5f;
+        float degatsMonstres = 4.0f;
     } reglages;
 
     struct Puissance : DataMap::Base
@@ -205,7 +205,7 @@ public:
         reglages.malusParPoint = sConfigMgr->GetOption<float>("SolAzeroth.V3.MalusParPoint", 2.0f);
         reglages.malusMax = sConfigMgr->GetOption<float>("SolAzeroth.V3.MalusMax", 75.0f);
         reglages.pourcentParRang = sConfigMgr->GetOption<float>("SolAzeroth.Bonus.PourcentParRang", 0.03f);
-        reglages.degatsMonstres = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 2.5f);
+        reglages.degatsMonstres = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 4.0f);
     }
 };
 
