@@ -77,22 +77,24 @@ def convertir():
 
 
 def blp_avec_mipmaps(image):
-    """BLP2 à palette, avec ses 7 niveaux de réduction (64 à 1 pixel).
+    """BLP2 compressé en DXT1, sans transparence, avec ses 7 niveaux de réduction (64 à 1 pixel).
 
-    Le BLP de Pillow n'a qu'un niveau : le curseur l'affiche, mais les barres d'action, qui lisent un niveau réduit,
-    montraient un carré vert (essai en jeu du 31/10/2026). Les icônes de Blizzard ont toutes leurs réductions.
+    C'est le format des icônes de Blizzard (Ability_Warrior_ShieldBash : compression 2, alpha 0, réductions 0x11).
+    Essais en jeu du 31/10/2026 : un BLP à palette, avec ou sans réductions, s'affichait en carré vert sur les barres
+    d'action (seul le curseur du glisser-déposer le montrait). Aucune icône de Blizzard n'est à palette.
     """
+    import io
     import struct
     from PIL import Image
-    palette = image.quantize(256)
     niveaux = []
     taille = image.size[0]
     while taille >= 1:
         reduite = image if taille == image.size[0] else image.resize((taille, taille), Image.LANCZOS)
-        niveaux.append(reduite.quantize(palette=palette, dither=Image.Dither.NONE).tobytes())
+        dds = io.BytesIO()
+        reduite.save(dds, "DDS", pixel_format="DXT1")
+        niveaux.append(dds.getvalue()[128:])   # blocs DXT1, sans l'en-tête DDS de 128 octets
         taille //= 2
-    couleurs = palette.getpalette()[:768] + [0] * (768 - len(palette.getpalette()[:768]))
-    bgra = b"".join(struct.pack("<4B", couleurs[i * 3 + 2], couleurs[i * 3 + 1], couleurs[i * 3], 255) for i in range(256))
+    bgra = bytes(1024)                         # palette inutilisée, présente dans l'en-tête comme chez Blizzard
     position = 20 + 64 + 64 + len(bgra)
     positions, tailles = [], []
     for n in niveaux:
@@ -101,8 +103,8 @@ def blp_avec_mipmaps(image):
         position += len(n)
     positions += [0] * (16 - len(positions))
     tailles += [0] * (16 - len(tailles))
-    # type 1, compression 1 (palette), sans alpha, réductions présentes (comme les icônes de Blizzard : 0x11)
-    entete = b"BLP2" + struct.pack("<I4BII", 1, 1, 0, 0, 0x11, image.size[0], image.size[1])
+    # type 1, compression 2 (DXT), alpha 0, type d'alpha 0 (DXT1), réductions présentes (0x11)
+    entete = b"BLP2" + struct.pack("<I4BII", 1, 2, 0, 0, 0x11, image.size[0], image.size[1])
     return entete + struct.pack("<16I", *positions) + struct.pack("<16I", *tailles) + bgra + b"".join(niveaux)
 
 

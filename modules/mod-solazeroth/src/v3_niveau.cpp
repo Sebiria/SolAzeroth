@@ -11,6 +11,7 @@
 #include "SolAzeroth.h"
 #include "Config.h"
 #include "Creature.h"
+#include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 
@@ -51,6 +52,18 @@ public:
         creature->CustomData.GetDefault<Puissance>("solazeroth_puissance")->valeur = origine;
         if (origine < NIVEAU_FIXE)
             creature->SetLevel(NIVEAU_FIXE);
+    }
+
+    // L'armure de base est générée après SelectLevel, donc au niveau 80 (9729 pour un sanglier de Durotar, journal de
+    // combat du 31/10/2026) : on reprend celle du niveau d'origine. Accroche ajoutée au moteur (patch v3).
+    void OnCreatureBaseArmor(Creature* creature, float& armure) override
+    {
+        Puissance const* p = creature->CustomData.Get<Puissance>("solazeroth_puissance");
+        if (!p || p->valeur >= NIVEAU_FIXE)
+            return;
+        CreatureTemplate const* modele = creature->GetCreatureTemplate();
+        if (CreatureBaseStats const* stats = sObjectMgr->GetCreatureBaseStats(p->valeur, modele->unit_class))
+            armure = stats->GenerateArmor(modele);
     }
 };
 

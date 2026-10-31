@@ -265,6 +265,14 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - une nouvelle accroche du moteur, `OnDamageLog`, appelée pour la mêlée, les sorts et les dégâts périodiques, a été ajoutée à `patches\azerothcore-v3-combat.patch` ;
   - réglage `SolAzeroth.V3.JournalCombat` (1 par défaut).
 
+  **Deuxième essai (31/10/2026, journal d'Ezafz contre deux sangliers tachetés)** :
+  - **icônes toujours vertes** : aucune icône de Blizzard n'est à palette ; toutes sont en DXT. `icones_retail.py` écrit maintenant du DXT1 sans transparence, avec 7 niveaux, exactement comme `Ability_Warrior_ShieldBash` ;
+  - **armure des monstres au niveau 80** : le sanglier avait 9729 d'armure. Le moteur génère l'armure de base après le choix du niveau, donc au niveau 80. Tous les coups physiques du joueur tombaient au plancher de 25 % (3 dégâts pour un coup blanc de 10 à 12). Le « sanglier en une quinzaine de coups » de F2 venait de cette erreur, pas de l'armure ÷ 20. Correction : nouvelle accroche du moteur `OnCreatureBaseArmor`, et `v3_niveau.cpp` reprend l'armure du niveau d'origine (8 à 20 pour ce sanglier) ;
+  - **blocage des techniques** : le sanglier bloquait encore des techniques (« bloqué 6 »). `Unit::isSpellBlocked` passe maintenant par l'accroche « tout coup porte » de F2 ;
+  - **journal** : le bilan comptait 0 monstre tué, car la sortie de combat arrive avant l'accroche de mort. La mort est maintenant comptée au coup qui tue ;
+  - **chiffres justes par ailleurs** : arme 10-12 → coup blanc d'environ 10 avant armure ; Frappe du bouclier (200 %) environ 21 ; Coup de tonnerre (100 %) environ 10 ; le Rempart se remplit et absorbe comme prévu ;
+  - **à calibrer en F5** : le sanglier (coups de 2 toutes les 2 s) n'inflige presque rien, 2 à 3 points par combat sur 70 de vie. Les dégâts des monstres à niveau fixe restent la question 7.
+
 ### F4. Interface v3 dans les fichiers du jeu
 - **Nos propres fichiers sont ajoutés à FrameXML.** Le test du 30/10 a montré que ce code garde les droits de Blizzard en combat.
 - **Les cadres de Blizzard inutiles sont cachés** : barres d'action, cadres du joueur et de la cible, mana, expérience…

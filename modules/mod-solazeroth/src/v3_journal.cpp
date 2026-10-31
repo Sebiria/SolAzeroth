@@ -207,6 +207,12 @@ public:
             t.critiques += critique;
             t.total += degats;
             t.maximum = std::max(t.maximum, degats);
+            // Mort comptée ici : la sortie de combat (bilan) arrive avant l'accroche de mort du monstre.
+            if (!vieApres && monstre)
+            {
+                ++j->tues;
+                j->fichier << Acore::StringFormat("{:7.1f} s  {} meurt\n", Secondes(j), monstre->GetName());
+            }
         }
         else
         {
@@ -233,21 +239,12 @@ class solazeroth_v3_journal_joueur : public PlayerScript
 {
 public:
     solazeroth_v3_journal_joueur() : PlayerScript("solazeroth_v3_journal_joueur", {
-        PLAYERHOOK_ON_PLAYER_LEAVE_COMBAT, PLAYERHOOK_ON_CREATURE_KILL, PLAYERHOOK_ON_PLAYER_KILLED_BY_CREATURE, PLAYERHOOK_ON_LOGOUT }) { }
+        PLAYERHOOK_ON_PLAYER_LEAVE_COMBAT, PLAYERHOOK_ON_PLAYER_KILLED_BY_CREATURE, PLAYERHOOK_ON_LOGOUT }) { }
 
     void OnPlayerLeaveCombat(Player* player) override
     {
         if (actif)
             Terminer(JournalDe(player), player);
-    }
-
-    void OnPlayerCreatureKill(Player* player, Creature* tue) override
-    {
-        if (!actif)
-            return;
-        Journal* j = JournalDe(player);
-        ++j->tues;
-        j->fichier << Acore::StringFormat("{:7.1f} s  {} meurt\n", Secondes(j), tue->GetName());
     }
 
     void OnPlayerKilledByCreature(Creature* tueur, Player* player) override

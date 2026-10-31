@@ -1,3 +1,15 @@
+diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
+index ce0dc84..fd9cdb3 100644
+--- a/src/server/game/Entities/Creature/Creature.cpp
++++ b/src/server/game/Entities/Creature/Creature.cpp
+@@ -644,6 +644,7 @@ bool Creature::UpdateEntry(uint32 Entry, CreatureData const* data, bool changele
+     SetMeleeDamageSchool(SpellSchools(cInfo->dmgschool));
+     CreatureBaseStats const* stats = sObjectMgr->GetCreatureBaseStats(GetLevel(), cInfo->unit_class);
+     float armor = stats->GenerateArmor(cInfo);
++    sScriptMgr->OnCreatureBaseArmor(this, armor);
+     SetStatFlatModifier(UNIT_MOD_ARMOR,             BASE_VALUE, armor);
+     SetStatFlatModifier(UNIT_MOD_RESISTANCE_HOLY,   BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_HOLY]));
+     SetStatFlatModifier(UNIT_MOD_RESISTANCE_FIRE,   BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_FIRE]));
 diff --git a/src/server/game/Entities/Object/Object.cpp b/src/server/game/Entities/Object/Object.cpp
 index 89c9cf4..05f204d 100644
 --- a/src/server/game/Entities/Object/Object.cpp
@@ -15,7 +27,7 @@ index 89c9cf4..05f204d 100644
  
      // vehicles cant miss
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 3e1ac32..99e4a86 100644
+index 3e1ac32..8b032d4 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -1676,6 +1676,8 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage* damageInfo, bool durabilityLoss,
@@ -49,7 +61,20 @@ index 3e1ac32..99e4a86 100644
  }
  
  float Unit::GetEffectiveResistChance(Unit const* owner, SpellSchoolMask schoolMask, Unit const* victim, SpellInfo const* spellInfo /*= nullptr*/, uint8 casterLevel /*= 0*/)
-@@ -3379,6 +3387,11 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit* victim, SpellInfo const* spellInfo
+@@ -3309,6 +3317,12 @@ bool Unit::isSpellBlocked(Unit* victim, SpellInfo const* spellProto, WeaponAttac
+     if (spellProto && (spellProto->HasAttribute(SPELL_ATTR0_NO_ACTIVE_DEFENSE) || spellProto->HasAttribute(SPELL_ATTR3_ALWAYS_HIT)))
+         return false;
+ 
++    // Same hook as the hit roll: a spell that always hits can't be blocked either
++    bool alwaysHit = false;
++    sScriptMgr->OnSpellHitRoll(this, victim, spellProto, alwaysHit);
++    if (alwaysHit)
++        return false;
++
+     if (victim->HasIgnoreHitDirectionAura() || victim->HasInArc(M_PI, this))
+     {
+         // Check creatures flags_extra for disable block
+@@ -3379,6 +3393,11 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit* victim, SpellInfo const* spellInfo
      else
          attackerWeaponSkill = int32(GetWeaponSkillValue(attType, victim));
  
@@ -61,6 +86,39 @@ index 3e1ac32..99e4a86 100644
      int32 skillDiff = attackerWeaponSkill - int32(victim->GetMaxSkillValueForLevel(this));
  
      uint32 roll = urand (0, 10000);
+diff --git a/src/server/game/Scripting/ScriptDefines/AllCreatureScript.cpp b/src/server/game/Scripting/ScriptDefines/AllCreatureScript.cpp
+index 119809d..33035ca 100644
+--- a/src/server/game/Scripting/ScriptDefines/AllCreatureScript.cpp
++++ b/src/server/game/Scripting/ScriptDefines/AllCreatureScript.cpp
+@@ -65,6 +65,14 @@ void ScriptMgr::OnCreatureSelectLevel(CreatureTemplate const* cinfo, Creature* c
+     });
+ }
+ 
++void ScriptMgr::OnCreatureBaseArmor(Creature* creature, float& armor)
++{
++    ExecuteScript<AllCreatureScript>([&](AllCreatureScript* script)
++    {
++        script->OnCreatureBaseArmor(creature, armor);
++    });
++}
++
+ //bool ScriptMgr::CanCreatureSendListInventory(Player* player, Creature* creature, uint32 vendorEntry)
+ //{
+ //    auto ret = IsValidBoolScript<AllCreatureScript>([&](AllCreatureScript* script)
+diff --git a/src/server/game/Scripting/ScriptDefines/AllCreatureScript.h b/src/server/game/Scripting/ScriptDefines/AllCreatureScript.h
+index 30d1e18..3c8c313 100644
+--- a/src/server/game/Scripting/ScriptDefines/AllCreatureScript.h
++++ b/src/server/game/Scripting/ScriptDefines/AllCreatureScript.h
+@@ -35,6 +35,9 @@ public:
+     // Called from End of Creature SelectLevel.
+     virtual void OnCreatureSelectLevel(CreatureTemplate const* /*cinfo*/, Creature* /*creature*/) { }
+ 
++    // Called in Creature::UpdateEntry once the base armor has been generated from the creature's level
++    virtual void OnCreatureBaseArmor(Creature* /*creature*/, float& /*armor*/) { }
++
+     /**
+      * @brief This hook runs after add creature in world
+      *
 diff --git a/src/server/game/Scripting/ScriptDefines/UnitScript.cpp b/src/server/game/Scripting/ScriptDefines/UnitScript.cpp
 index eb365fd..93ea265 100644
 --- a/src/server/game/Scripting/ScriptDefines/UnitScript.cpp
@@ -132,7 +190,7 @@ index 8df6eea..f0b433d 100644
  
  #endif
 diff --git a/src/server/game/Scripting/ScriptMgr.h b/src/server/game/Scripting/ScriptMgr.h
-index ce301a1..83e2615 100644
+index ce301a1..f2e1f95 100644
 --- a/src/server/game/Scripting/ScriptMgr.h
 +++ b/src/server/game/Scripting/ScriptMgr.h
 @@ -583,6 +583,10 @@ public: /* UnitScript */
@@ -146,6 +204,14 @@ index ce301a1..83e2615 100644
  
  public: /* MovementHandlerScript */
      void OnPlayerMove(Player* player, MovementInfo movementInfo, uint32 opcode);
+@@ -592,6 +596,7 @@ public: /* AllCreatureScript */
+     //void OnAllCreatureUpdate(Creature* creature, uint32 diff);
+     void OnBeforeCreatureSelectLevel(CreatureTemplate const* cinfo, Creature* creature, uint8& level);
+     void OnCreatureSelectLevel(CreatureTemplate const* cinfo, Creature* creature);
++    void OnCreatureBaseArmor(Creature* creature, float& armor);
+     void OnCreatureSaveToDB(Creature* creature);
+ 
+ public: /* AllGameobjectScript */
 diff --git a/src/server/game/Spells/Auras/SpellAuraEffects.cpp b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
 index 24e2d29..90f6013 100644
 --- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp
