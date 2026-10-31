@@ -134,6 +134,9 @@ local function Rangee(n)
     rangees[n] = r
     return r
 end
+-- Toutes les rangées naissent au chargement, en code de confiance : créées pendant une mise à jour lancée par l'addon
+-- SolAzeroth, leur bouton d'objet de quête aurait un gestionnaire de clic contaminé (« action bloquée », 01/11/2026).
+for n = 1, MAX_QUESTLOG_QUESTS or 25 do Rangee(n):Hide() end
 
 local function MajObjet(r, index)
     local lien, icone, charges = GetQuestLogSpecialItemInfo(index)
