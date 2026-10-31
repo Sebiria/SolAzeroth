@@ -206,7 +206,7 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **Plus de ressource** : rage, énergie, mana, runes et combos ne sont plus ni utilisés ni affichés.
 - **Puissance du personnage** : moyenne des objets, chiffre envoyé à l'interface. Elle sert aussi à calculer le malus hors zone.
 
-  **Construite le 31/10/2026**, pas encore vérifiée en jeu :
+  **Construite et vérifiée en jeu le 31/10/2026** : un sanglier tombe en une quinzaine de coups blancs, contre 6 avant F2, car l'armure retire maintenant des points fixes à de petits coups. Tous les coups portent, dans les deux sens. La régénération est faible mais acceptable.
   - **patch du moteur** `patches\azerothcore-v3-combat.patch` : trois accroches ajoutées au moteur (ratés des sorts, armure, coût des sorts), sur 6 fichiers ;
   - `v3_combat.cpp` :
     - **tout coup porte**, en mêlée, à distance et pour les sorts. Les effets comme l'étourdissement ne sont plus résistés. Plus de coup érafle ni de coup écrasant, même face à un boss. Le critique reste. L'immunité, le renvoi de sort et la fuite d'un monstre (évasion) restent aussi ;
