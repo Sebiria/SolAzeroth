@@ -211,7 +211,7 @@ public:
         p->valeur = CalculerPuissance(player);
         handler->PSendSysMessage("Puissance : {:.1f}", p->valeur);
         if (Creature* cible = Monstre(player->GetSelectedUnit()))
-            handler->PSendSysMessage("Cible {} : puissance {}, malus de dégâts {:.0f} %", cible->GetName(),
+            handler->PSendSysMessage("Cible {} : puissance {}, malus de dégâts {:.1f} %", cible->GetName(),
                 uint32(SolAzeroth::PuissanceCreature(cible)), Malus(player, cible));
         return true;
     }
