@@ -34,6 +34,14 @@ SolAzeroth.V3.ArmureMinimum = 25
 SolAzeroth.V3.MalusParPoint = 2
 SolAzeroth.V3.MalusMax = 75
 
+#    SolAzeroth.V3.MonstresVie             Calibrage (v3) : vie des monstres multipliée par ce chiffre (appliqué à leur
+#                                          apparition, donc au prochain redémarrage). Défaut : 2.
+#    SolAzeroth.V3.MonstresDegats          Dégâts des monstres contre le joueur et ses familiers, multipliés avant l'armure.
+#                                          Défaut : 2.5.
+
+SolAzeroth.V3.MonstresVie = 2
+SolAzeroth.V3.MonstresDegats = 2.5
+
 #    SolAzeroth.V3.Rempart.Part            Kit du guerrier tank (v3, F3) : part des dégâts encaissés, après l'armure, versée
 #                                          dans le Rempart, en %. Défaut : 25.
 #    SolAzeroth.V3.Rempart.Plafond         Plafond du Rempart, en % de la vie maximale. Défaut : 30.

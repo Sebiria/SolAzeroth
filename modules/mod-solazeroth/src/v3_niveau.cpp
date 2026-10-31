@@ -52,6 +52,19 @@ public:
         creature->CustomData.GetDefault<Puissance>("solazeroth_puissance")->valeur = origine;
         if (origine < NIVEAU_FIXE)
             creature->SetLevel(NIVEAU_FIXE);
+
+        // Calibrage (journal du 31/10/2026 : un sanglier tenait 6 s et ne coûtait rien) : vie des monstres multipliée par
+        // SolAzeroth.V3.MonstresVie. Leurs dégâts le sont dans v3_combat.cpp (SolAzeroth.V3.MonstresDegats).
+        static float const multiplicateur = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresVie", 2.0f);
+        if (multiplicateur != 1.0f)
+        {
+            uint32 vie = std::max<uint32>(1, uint32(creature->GetCreateHealth() * multiplicateur));
+            creature->SetCreateHealth(vie);
+            creature->SetMaxHealth(vie);
+            creature->SetHealth(vie);
+            creature->SetStatFlatModifier(UNIT_MOD_HEALTH, BASE_VALUE, float(vie));
+            creature->ResetPlayerDamageReq();
+        }
     }
 
     // L'armure de base est générée après SelectLevel, donc au niveau 80 (9729 pour un sanglier de Durotar, journal de

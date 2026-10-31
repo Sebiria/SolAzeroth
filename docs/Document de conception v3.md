@@ -273,6 +273,18 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **chiffres justes par ailleurs** : arme 10-12 → coup blanc d'environ 10 avant armure ; Frappe du bouclier (200 %) environ 21 ; Coup de tonnerre (100 %) environ 10 ; le Rempart se remplit et absorbe comme prévu ;
   - **à calibrer en F5** : le sanglier (coups de 2 toutes les 2 s) n'inflige presque rien, 2 à 3 points par combat sur 70 de vie. Les dégâts des monstres à niveau fixe restent la question 7.
 
+  **Troisième essai (31/10/2026, 9 combats contre des sangliers)** :
+  - les chiffres sont cohérents : armure 8 à 20, coups blancs de 8 à 12, Frappe du bouclier de 18 à 22, Coup de tonnerre de 8 à 12, critique à environ ×2, plus aucun blocage ;
+  - en revanche, le joueur ne risque rien. Un sanglier meurt en 1 à 6 s et coûte 0 à 2 points de vie sur 70. Le Rempart ne dépasse pas 3 points ;
+  - cela ne vient pas d'un bug : c'est le rapport de forces d'origine de Blizzard, qu'un niveau caché ne change pas.
+
+  **Premier calibrage (accepté par l'utilisateur le 31/10/2026)**, à ajuster avec le journal :
+  - `SolAzeroth.V3.MonstresVie` = 2 : la vie des monstres est multipliée à leur apparition (`v3_niveau.cpp`) ;
+  - `SolAzeroth.V3.MonstresDegats` = 2,5 : les dégâts des monstres contre le joueur et ses familiers sont multipliés avant l'armure, pour la mêlée, les sorts et les dégâts périodiques (`v3_combat.cpp`) ;
+  - cible : un monstre de sa puissance tient de 10 à 12 s et coûte environ un quart de la vie sans se défendre ;
+  - l'en-tête du journal rappelle les deux multiplicateurs ;
+  - les fiches des monstres donnent la vie multipliée, mais les coups avant multiplication.
+
 ### F4. Interface v3 dans les fichiers du jeu
 - **Nos propres fichiers sont ajoutés à FrameXML.** Le test du 30/10 a montré que ce code garde les droits de Blizzard en combat.
 - **Les cadres de Blizzard inutiles sont cachés** : barres d'action, cadres du joueur et de la cible, mana, expérience…

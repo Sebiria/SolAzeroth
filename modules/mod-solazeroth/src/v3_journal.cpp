@@ -72,7 +72,9 @@ namespace
             j->fichier.open(DOSSIER + "/" + player->GetName() + "_" + Heure() + ".log", std::ios::app);
             j->fichier << "Journal de combat de " << player->GetName() << " (Sol'Azeroth v3). Armure : "
                 << sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureParPoint", 20.0f) << " points d'armure retirent 1 point par coup physique, "
-                << sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureMinimum", 25.0f) << " % du coup passent toujours.\n";
+                << sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureMinimum", 25.0f) << " % du coup passent toujours. Monstres : vie x"
+                << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresVie", 2.0f) << ", dégâts x"
+                << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 2.5f) << " (avant l'armure).\n";
         }
         return j;
     }

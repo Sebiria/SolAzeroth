@@ -11,6 +11,8 @@
 //   affichée par .puissance.
 // - Malus hors de sa puissance : face à un monstre plus fort, les dégâts infligés par le joueur et ses familiers baissent
 //   de SolAzeroth.V3.MalusParPoint % par point de puissance manquant, au plus SolAzeroth.V3.MalusMax %.
+// - Calibrage (31/10/2026) : les dégâts des monstres contre le joueur et ses familiers sont multipliés par
+//   SolAzeroth.V3.MonstresDegats, avant l'armure (leur vie l'est dans v3_niveau.cpp).
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -37,6 +39,7 @@ namespace
         float malusParPoint = 2.0f;
         float malusMax = 75.0f;
         float pourcentParRang = 0.03f;
+        float degatsMonstres = 2.5f;
     } reglages;
 
     struct Puissance : DataMap::Base
@@ -153,9 +156,23 @@ public:
             degats = T(degats * (1.0f - malus / 100.0f));
     }
 
-    void ModifyMeleeDamage(Unit* cible, Unit* attaquant, uint32& degats) override { AppliquerMalus(cible, attaquant, degats); }
-    void ModifySpellDamageTaken(Unit* cible, Unit* attaquant, int32& degats, SpellInfo const* /*sort*/) override { AppliquerMalus(cible, attaquant, degats); }
-    void ModifyPeriodicDamageAurasTick(Unit* cible, Unit* attaquant, uint32& degats, SpellInfo const* /*sort*/) override { AppliquerMalus(cible, attaquant, degats); }
+    template <typename T>
+    static void AppliquerMonstre(Unit* cible, Unit* attaquant, T& degats)
+    {
+        if (reglages.degatsMonstres != 1.0f && Monstre(attaquant) && cible && cible->GetCharmerOrOwnerPlayerOrPlayerItself())
+            degats = T(degats * reglages.degatsMonstres);
+    }
+
+    template <typename T>
+    static void Appliquer(Unit* cible, Unit* attaquant, T& degats)
+    {
+        AppliquerMalus(cible, attaquant, degats);
+        AppliquerMonstre(cible, attaquant, degats);
+    }
+
+    void ModifyMeleeDamage(Unit* cible, Unit* attaquant, uint32& degats) override { Appliquer(cible, attaquant, degats); }
+    void ModifySpellDamageTaken(Unit* cible, Unit* attaquant, int32& degats, SpellInfo const* /*sort*/) override { Appliquer(cible, attaquant, degats); }
+    void ModifyPeriodicDamageAurasTick(Unit* cible, Unit* attaquant, uint32& degats, SpellInfo const* /*sort*/) override { Appliquer(cible, attaquant, degats); }
 };
 
 class solazeroth_v3_combat_joueur : public PlayerScript
@@ -187,6 +204,7 @@ public:
         reglages.malusParPoint = sConfigMgr->GetOption<float>("SolAzeroth.V3.MalusParPoint", 2.0f);
         reglages.malusMax = sConfigMgr->GetOption<float>("SolAzeroth.V3.MalusMax", 75.0f);
         reglages.pourcentParRang = sConfigMgr->GetOption<float>("SolAzeroth.Bonus.PourcentParRang", 0.03f);
+        reglages.degatsMonstres = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 2.5f);
     }
 };
 
