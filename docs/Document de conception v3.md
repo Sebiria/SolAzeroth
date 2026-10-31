@@ -82,6 +82,15 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
 - **L'armure devient une réduction fixe des dégâts subis**, retirée de chaque coup.
 - **Tous les objets sont réécrits** selon ce modèle.
 - **Les conditions pour porter un objet** sont les nôtres, plus de niveau requis.
+- **Arsenal façon Genshin Impact (idée de l'utilisateur, 31/10/2026, pour plus tard)** :
+  - **Les armes suivent la spécialisation.** En passant tank, le personnage est équipé tout seul d'une épée et d'un bouclier ; en berserker, de deux armes à une main ; en armes, d'une arme à deux mains.
+  - **On ne change plus d'arme par le sac.** Une fenêtre présente les armes possédées pour la spécialisation, et le joueur choisit celle à porter. Il peut garder une vieille arme bien améliorée plutôt qu'une nouvelle, si ses statistiques sont meilleures.
+  - **De même pour tout l'équipement**, emplacement par emplacement.
+  - Se marie avec l'amélioration des objets (page Amélioration de la v2, à recycler) et avec la puissance tirée de l'équipement (§2.1).
+  - **Questions à trancher** :
+    - chaque spécialisation garde-t-elle son propre équipement choisi ?
+    - un objet gagné va-t-il directement dans l'arsenal, sans passer par le sac ?
+    - que deviennent les objets en double ou dépassés : recyclés en matériaux d'amélioration ?
 
 ### 2.5 Donjons
 - **Façon Genshin Impact** : le premier passage a un accès gradué.
