@@ -120,6 +120,10 @@ En plus des difficultés de donjon, ses paliers débloquent du confort :
 ### 2.8 Inventaire sans limite (série 4)
 - **Plus de banque.**
 - **Un inventaire complet des objets à collectionner** (composants, matériaux…), sans limite de quantité.
+  - Il est **exhaustif** (précision de l'utilisateur, 31/10/2026) : trié par catégorie, il montre tous les objets à collectionner du jeu.
+  - Un objet qu'on n'a pas est grisé ; un objet qu'on a est en couleur, avec le nombre possédé.
+- **Pas de sac de départ** : les objets gris ne servent à rien et sont retirés du butin (migration 068).
+- **La vie ne remonte que par le feu de camp, la potion du module et les sorts.** Nourriture, boissons, potions de Blizzard, bandages et pierres de soins sont bannis.
 
 ### 2.9 Ce qu'on recycle de la v2
 - **Contrats et primes**, pour accumuler une monnaie.
@@ -491,6 +495,23 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **Potion de soins** : rend 30 % de la vie. 3 charges, 30 s de recharge, hors du temps global. Les charges reviennent toutes en zone de repos, et une toutes les 15 s assis près de son feu.
   - **Feu de camp** : 2 minutes, 2 minutes de recharge, hors combat. Assis à moins de 5 m de son propre feu : 6 % de la vie toutes les 2 s. Au bout de 60 s : Repos au coin du feu, vie maximale +5 % pendant 10 minutes.
 - **Mini-carte** : le bouton d'enregistrement vidéo est rangé. L'élément de bordure qui affiche le village le plus proche reste à identifier (`/solminicarte`, `/soltexte`).
+
+**Quatrième série (31/10/2026)**, après l'essai du feu de camp ; pas encore vérifiée en jeu :
+- **Techniques** : aucun temps de recharge global, chacune n'a plus que sa propre recharge.
+- **Potion de soins** : 1 charge au départ. La recharge de 30 s reste, pour quand il y aura plusieurs charges.
+- **Feu de camp** :
+  - le personnage s'assoit dès que le feu est posé ;
+  - se lever, entrer en combat ou mourir éteint le feu ; la recharge de 2 minutes reste ;
+  - le Feu douillet de Blizzard (+4 esprit) est retiré.
+- **Repos au coin du feu** : 30 minutes, à améliorer plus tard. Il vient au bout de 60 s assis, et rend alors toutes les potions (avant, une charge revenait toutes les 15 s).
+- **Butin** (`outils/butin_v3.py`, migration 068). Retirés des tables de butin (monstres, décor, réserves, contenants, vol à la tire, pêche, dépeçage) et des marchands :
+  - les objets gris ;
+  - les consommables qui rendent vie ou mana.
+  
+  Les objets liés à une quête restent, mais le sort de tout consommable de régénération est désactivé pour les joueurs. Les récompenses de quête ne sont pas touchées.
+- **À venir, sur maquette** :
+  - une fenêtre pour régler les techniques, leurs boutons, le feu de camp et la potion ;
+  - l'inventaire de collection exhaustif (§ 2.8).
 
 **Suite proposée par Claude** (après F5c à F5f) :
 - **F6, butin** : tables de butin réduites aux composants, cuir sans dépeçage, éclats cadavériques, or.

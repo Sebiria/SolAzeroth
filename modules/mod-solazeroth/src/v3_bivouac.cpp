@@ -1,15 +1,17 @@
 // v3 (31/10/2026) : potion et feu de camp, rang de départ (document v3, F7). Deux boutons à droite des techniques
 // (SolUI_Bivouac.lua), pour ne plus attendre que la vie remonte seule entre deux combats.
-// - Potion de soins (100029) : rend SOIN_POTION % de la vie maximale. CHARGES charges, gardées en base ; elles
-//   reviennent une par une assis près de son feu, et toutes d'un coup en zone de repos (auberge, ville).
-// - Feu de camp (100030) : pose un feu pour 2 minutes (objet 29784, comme le Feu de camp simple de Blizzard). Assis à
-//   moins de PORTEE_FEU mètres de son propre feu, hors combat : REGEN_FEU % de la vie toutes les 2 s, une charge de
-//   potion toutes les 15 s, et au bout de 60 s le Repos au coin du feu (100031, vie maximale +5 % pendant 10 minutes).
+// - Potion de soins (100029) : rend SOIN_POTION % de la vie maximale. CHARGES charge(s), gardée(s) en base ; elles
+//   reviennent toutes avec le Repos au coin du feu, et en zone de repos (auberge, ville).
+// - Feu de camp (100030) : pose un feu pour 2 minutes (objet 29784, comme le Feu de camp simple de Blizzard), sans le
+//   Feu douillet de Blizzard (+4 esprit, piège lié au feu). Le personnage s'assoit aussitôt ; se lever, entrer en
+//   combat ou mourir éteint le feu (31/10/2026, demande de l'utilisateur). Assis : REGEN_FEU % de la vie toutes les
+//   2 s, et au bout de 60 s le Repos au coin du feu (100031, vie maximale +5 % pendant 30 minutes) et les potions.
 // Les sorts sont générés par outils\bivouac_v3.py (migration 067) ; les améliorations par rang viendront avec F7.
 
 #include "SolAzeroth.h"
 #include "DatabaseEnv.h"
 #include "GameObject.h"
+#include "ObjectAccessor.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "SpellScript.h"
@@ -23,13 +25,15 @@ namespace
     uint32 const POTION = 100029;
     uint32 const FEU = 100030;
     uint32 const REPOS = 100031;
+    uint32 const FEU_DOUILLET = 7353;       // aura du piège lié au feu de Blizzard
     uint32 const OBJET_FEU = 29784;
     uint32 const TICK = 2000;
+    uint32 const TICK_FEU = 250;            // se lever éteint le feu presque aussitôt
+    uint32 const RECHERCHE_FEU = 3000;      // délai pour trouver le feu après l'incantation
     uint32 const RENVOI = 10000;            // l'état repart au moins toutes les 10 s : l'interface le retrouve après un /reload
     uint32 const ASSIS_POUR_REPOS = 60000;
-    uint32 const ASSIS_PAR_CHARGE = 15000;
-    float const PORTEE_FEU = 5.0f;
-    uint8 const CHARGES = 3;
+    float const PORTEE_FEU = 10.0f;
+    uint8 const CHARGES = 1;
     float const SOIN_POTION = 30.0f;
     float const REGEN_FEU = 6.0f;
 
@@ -38,8 +42,11 @@ namespace
         uint8 charges = CHARGES;
         uint32 attente = 0;
         uint32 depuisEnvoi = RENVOI;
+        uint32 attenteFeu = 0;
         uint32 assis = 0;
-        uint32 versCharge = 0;
+        bool allume = false;                // feu de camp lancé, pas encore éteint
+        uint32 depuisAllumage = 0;
+        ObjectGuid feu;
         std::string envoye;
     };
 
@@ -76,10 +83,34 @@ namespace
     }
 
     // Son propre feu, posé par le sort, à portée.
-    bool PresDeSonFeu(Player* player)
+    GameObject* ChercherSonFeu(Player* player)
     {
         GameObject* feu = player->FindNearestGameObject(OBJET_FEU, PORTEE_FEU, true);
-        return feu && feu->GetOwnerGUID() == player->GetGUID() && feu->GetSpellId() == FEU;
+        return feu && feu->GetOwnerGUID() == player->GetGUID() && feu->GetSpellId() == FEU ? feu : nullptr;
+    }
+
+    void Eteindre(Player* player)
+    {
+        Bivouac* b = BivouacDe(player);
+        if (GameObject* feu = b->feu ? ObjectAccessor::GetGameObject(*player, b->feu) : nullptr)
+        {
+            if (GameObject* piege = feu->GetLinkedTrap())
+                piege->Delete();
+            feu->Delete();
+        }
+        player->RemoveAurasDueToSpell(FEU_DOUILLET);
+        b->feu.Clear();
+        b->allume = false;
+        b->assis = 0;
+    }
+
+    // Le feu vient d'apparaître : on retire son piège (le Feu douillet de Blizzard).
+    void Adopter(Player* player, GameObject* feu)
+    {
+        BivouacDe(player)->feu = feu->GetGUID();
+        if (GameObject* piege = feu->GetLinkedTrap())
+            piege->Delete();
+        player->RemoveAurasDueToSpell(FEU_DOUILLET);
     }
 }
 
@@ -113,6 +144,31 @@ class spell_solazeroth_v3_potion : public SpellScript
     }
 };
 
+class spell_solazeroth_v3_feu : public SpellScript
+{
+    PrepareSpellScript(spell_solazeroth_v3_feu);
+
+    void Asseoir()
+    {
+        Player* joueur = GetCaster() ? GetCaster()->ToPlayer() : nullptr;
+        if (!joueur)
+            return;
+        Bivouac* b = BivouacDe(joueur);
+        b->feu.Clear();
+        b->allume = true;
+        b->depuisAllumage = 0;
+        b->assis = 0;
+        joueur->SetStandState(UNIT_STAND_STATE_SIT);
+        if (GameObject* feu = ChercherSonFeu(joueur))
+            Adopter(joueur, feu);
+    }
+
+    void Register() override
+    {
+        AfterCast += SpellCastFn(spell_solazeroth_v3_feu::Asseoir);
+    }
+};
+
 class solazeroth_v3_bivouac_joueur : public PlayerScript
 {
 public:
@@ -135,6 +191,30 @@ public:
         Bivouac* b = BivouacDe(player);
         b->attente += diff;
         b->depuisEnvoi += diff;
+        b->attenteFeu += diff;
+
+        if (b->allume && b->attenteFeu >= TICK_FEU)
+        {
+            b->attenteFeu = 0;
+            b->depuisAllumage += TICK_FEU;
+            if (!b->feu)
+            {
+                if (GameObject* feu = ChercherSonFeu(player))
+                    Adopter(player, feu);
+                else if (b->depuisAllumage >= RECHERCHE_FEU)
+                    b->allume = false;
+            }
+            else if (!ObjectAccessor::GetGameObject(*player, b->feu))
+            {
+                // Le feu a fini de brûler.
+                b->feu.Clear();
+                b->allume = false;
+                b->assis = 0;
+            }
+            else if (!player->IsSitState() || player->IsInCombat() || !player->IsAlive())
+                Eteindre(player);
+        }
+
         if (b->attente < TICK)
             return;
         b->attente = 0;
@@ -142,22 +222,17 @@ public:
         if (player->HasPlayerFlag(PLAYER_FLAGS_RESTING))
             FixerCharges(player, CHARGES);
 
-        if (player->IsAlive() && !player->IsInCombat() && player->IsSitState() && PresDeSonFeu(player))
+        if (b->allume && b->feu && player->IsSitState())
         {
+            bool avant = b->assis < ASSIS_POUR_REPOS;
             b->assis += TICK;
-            b->versCharge += TICK;
             player->ModifyHealth(int32(std::lround(player->GetMaxHealth() * REGEN_FEU / 100.0f)));
-            if (b->versCharge >= ASSIS_PAR_CHARGE)
+            if (avant && b->assis >= ASSIS_POUR_REPOS)
             {
-                b->versCharge = 0;
-                if (b->charges < CHARGES)
-                    FixerCharges(player, b->charges + 1);
-            }
-            if (b->assis >= ASSIS_POUR_REPOS && !player->HasAura(REPOS))
                 player->CastSpell(player, REPOS, true);
+                FixerCharges(player, CHARGES);
+            }
         }
-        else
-            b->assis = b->versCharge = 0;
 
         Envoyer(player, b->depuisEnvoi >= RENVOI);
     }
@@ -172,4 +247,5 @@ void AddSC_solazeroth_v3_bivouac()
 {
     new solazeroth_v3_bivouac_joueur();
     RegisterSpellScript(spell_solazeroth_v3_potion);
+    RegisterSpellScript(spell_solazeroth_v3_feu);
 }

@@ -1,0 +1,20 @@
+-- Rend le butin retiré par la migration 068.
+USE acore_world;
+DELETE FROM disables WHERE sourceType = 0 AND comment = 'Sol''Azeroth v3 : consommable de regeneration';
+INSERT IGNORE INTO creature_loot_template SELECT * FROM solazeroth_v3_butin_creature;
+DROP TABLE solazeroth_v3_butin_creature;
+INSERT IGNORE INTO gameobject_loot_template SELECT * FROM solazeroth_v3_butin_gameobject;
+DROP TABLE solazeroth_v3_butin_gameobject;
+INSERT IGNORE INTO reference_loot_template SELECT * FROM solazeroth_v3_butin_reference;
+DROP TABLE solazeroth_v3_butin_reference;
+INSERT IGNORE INTO item_loot_template SELECT * FROM solazeroth_v3_butin_item;
+DROP TABLE solazeroth_v3_butin_item;
+INSERT IGNORE INTO pickpocketing_loot_template SELECT * FROM solazeroth_v3_butin_pickpocketing;
+DROP TABLE solazeroth_v3_butin_pickpocketing;
+INSERT IGNORE INTO fishing_loot_template SELECT * FROM solazeroth_v3_butin_fishing;
+DROP TABLE solazeroth_v3_butin_fishing;
+INSERT IGNORE INTO skinning_loot_template SELECT * FROM solazeroth_v3_butin_skinning;
+DROP TABLE solazeroth_v3_butin_skinning;
+INSERT IGNORE INTO npc_vendor SELECT * FROM solazeroth_v3_butin_marchands;
+DROP TABLE solazeroth_v3_butin_marchands;
+DROP TABLE solazeroth_v3_butin_objets;

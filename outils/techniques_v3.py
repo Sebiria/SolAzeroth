@@ -1,7 +1,7 @@
 """Sol'Azeroth v3, F3 (31/10/2026) : kit du guerrier tank (document v3, partie 3).
 
 Chaque technique est la copie d'un sort de Blizzard (visuel, ciblage), retouchée : aucun coût, aucune posture, aucune
-arme ni bouclier requis, recharge propre, temps de recharge global de 1 s, valeurs fixes. Les dégâts sont des
+arme ni bouclier requis, recharge propre, sans temps de recharge global, valeurs fixes. Les dégâts sont des
 pourcentages des dégâts de l'arme, pour suivre l'équipement. Ce qui ne s'écrit pas dans Spell.dbc (Rempart, dégâts
 selon le Rempart, bonus de Ravage) est fait par le module (v3_kit.cpp, SpellScripts nommés ci-dessous).
 
@@ -77,7 +77,7 @@ def technique(d, modele, ident, nom, description, icone, recharge, infobulle="",
     e[68], e[69], e[70] = 0xFFFFFFFF, 0, 0   # aucune arme ni bouclier requis
     e[122:131] = [0] * 9
     e[133], e[134] = icone, 0
-    e[204], e[205], e[206] = 0, 133, 1000    # temps de recharge global : 1 s
+    e[204], e[205], e[206] = 0, 0, 0          # aucun temps de recharge global (demande de l'utilisateur, 31/10/2026)
     e[208:212] = [0] * 4            # hors de la famille du guerrier : ni talent ni script de Blizzard ne s'y accroche
     e[213] = 2                      # dégâts de mêlée
     e[226] = 0
