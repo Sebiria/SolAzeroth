@@ -398,6 +398,69 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **F5e** : pourcentage de zone, lieux à nettoyer et exploration.
 - **F5f** : accès au Gouffre de Ragefeu à 60 %.
 
+**Validation de l'histoire de Durotar (31/10/2026)** : l'utilisateur valide le brouillon relu (`Durotar — Histoire et quêtes (brouillon).md`) et toutes les recommandations du relecteur, sauf la répartition des activités secondaires :
+- **exploration 6 %**, comme recommandé ;
+- **les 44 % restants vont à tout ce qui est annexe** : primes, contrats, défis, objets à collectionner cachés, lieux à nettoyer… Ces activités sont **plus difficiles que les quêtes de la zone**.
+
+**Nouvelles décisions de l'utilisateur (31/10/2026)** :
+- **Butin des monstres et des chefs** : on retire leurs tables de butin. On ne garde que les **composants** : tissu, gemmes, matériaux en général.
+- **Plus de dépeçage** : le cuir tombe directement sur les monstres qui se dépeçaient.
+- **Éclats cadavériques** : chaque monstre de la zone de départ en donne **de 0 à 3**. Ils servent à **monter le rang d'un objet, jusqu'au rang 5**. À équilibrer ensemble :
+  - la rareté de l'éclat ;
+  - la quantité qui grandit avec la puissance des zones ;
+  - la quantité nécessaire pour monter un objet, qui suit la puissance de l'objet ;
+  - et le fait qu'en avançant, il y a de plus en plus d'objets à monter.
+- **Bouton de potion** dans le cadre du personnage : une **potion unique**, améliorable sur trois axes (soin rendu, temps de recharge, nombre de charges).
+- **Bouton de camp** dans le cadre du personnage : il pose un feu de camp. Assis près du feu, on régénère sa vie. Au bout de **60 secondes assis**, on reçoit un bonus. Le camp s'améliore comme la potion, sur la régénération rendue, ainsi que sur le nombre et la qualité des bonus, indépendamment des consommables.
+- **Exigence** : un peu exigeant dans la zone de départ, puis **de plus en plus, de façon exponentielle**, dans les zones suivantes. On peut ajouter des sorts et des bonus aux monstres, aux rares et aux chefs.
+  - Hors de Durotar, on doit aborder les combats prudemment, avoir des potions de soin et prendre en compte les consommables qui augmentent les caractéristiques pendant un temps. Il faut aussi monter le rang de ses objets.
+- **Le but** : on ne doit pas pouvoir rouler sur le jeu.
+
+**Précisions de l'utilisateur (31/10/2026, suite)** :
+- **L'équipement vient des quêtes et des annexes**, un peu comme dans le jeu d'origine. Les emplacements s'ouvrent progressivement : pas d'épaules, de tête, de bijou ni de bague dans la zone de départ ; ils viennent un peu plus tard.
+- **L'or, comme dans Genshin Impact** :
+  - il sert à acheter des consommables et des objets à collectionner, mais cher, en contrepartie de ne pas avoir à les récolter soi-même ;
+  - il contribue à l'amélioration de l'équipement et à l'achat d'équipement ;
+  - il sert aussi à acheter les recettes des métiers.
+- **Améliorer la potion et le camp : une liste de courses.**
+  - Le joueur doit pouvoir les améliorer **deux fois par zone**. La première amélioration les rend indispensables pour les quêtes et les annexes de la zone ; la deuxième apporte du confort.
+  - Le coût reste proportionnel à la zone, toujours dans l'idée de difficulté. La liste demande de la monnaie, de l'or, des éclats cadavériques, des plantes, des minerais, des étoffes… **Être créatif** : l'investissement doit être réel et la récompense appréciable.
+- **Rangs d'objet** :
+  - les rangs coûtent des éclats, et chaque rang ajoute environ **10 % aux caractéristiques**, soit +50 % au rang 5 ;
+  - **les rangs 4 et 5 demandent en plus des composants rares**, de l'or et des éclats. Il faut que ce soit dur.
+- **Joaillerie réinventée** : on efface les recettes d'origine, l'interface et les icônes, et on crée nos propres composants rares, avec des icônes retail. Par exemple, avec 5 malachites ramassées sur les monstres, ou obtenues en prospectant du minerai comme le joaillier d'origine, on fabrique un composant rare.
+- **Un jeu dur, mais permissif pour qui veut récolter** : une fois **60 % d'une zone** atteints, le joueur choisit dans une zone de repos un mode pour cette zone :
+  - **Mode normal (rehaussé)** : un monstre plus faible que le joueur monte à sa puissance, et donne des éclats en proportion ;
+  - **Mode difficile** : encore plus d'éclats ; les monstres de la zone sont plus dangereux, avec des techniques en plus ;
+  - **Mode cauchemar**, actif seulement hors des zones de repos :
+    - des techniques encore améliorées, et des bonus pour les monstres et les rares ;
+    - des **événements aléatoires**, par exemple une pluie de feu ou un rare qui apparaît ;
+    - un **écran légèrement rougeâtre**.
+- **L'âme, à la manière de Dofus** (remet en cause la mort sans perte de F5a) :
+  - à chaque mort, le personnage perd une partie de son âme ;
+  - plus il est puissant, plus la mort coûte d'âme ; à bas niveau, la perte doit rester presque négligeable ;
+  - pour régénérer l'âme, il faut une quantité non négligeable d'éclats, de plus en plus grande avec la puissance du personnage ;
+  - **si l'âme tombe à zéro, le personnage devient inutilisable, donc à supprimer.**
+  - Réponses de l'utilisateur aux questions de Claude :
+    - **chaque mort coûte de l'âme**, très peu au début ; le retour à la pierre de foyer reste, sans autre perte ;
+    - **à zéro, le personnage est verrouillé** : le serveur refuse de le connecter (« Âme éteinte ») et le joueur le supprime lui-même. Une commande MJ peut le déverrouiller en cas de mort due à un bogue ;
+    - **zones de repos = auberges et villes**, celles où le jeu donne déjà le repos. Le mode s'y choisit.
+
+**F5c construite (31/10/2026)**, pas encore vérifiée en jeu :
+- `outils\quetes_durotar.py` lit les textes du document de l'histoire et écrit la migration 063 : quêtes 910001 à 910030, 19 récompenses d'équipement 910101 à 910119 (avec l'Item.dbc du patch client), Ruga Brise-cendre au Rocher du crâne, et la Sacoche du Totem-sinistre près de Maur ;
+- 102 quêtes d'origine de Durotar, de la Vallée et du Gouffre sont retirées par la table `disables` ; les quêtes de fête restent ;
+- le niveau des quêtes suit celui du joueur (QuestLevel -1), pour qu'elles ne s'affichent pas en gris ;
+- les zones d'objectif sont dans `quest_poi`. Celles du Gouffre s'affichent à la faille, car le Gouffre n'a pas de carte ;
+- les récompenses du point 24 ont été corrigées comme recommandé.
+
+**Suite proposée par Claude** (après F5c à F5f) :
+- **F6, butin** : tables de butin réduites aux composants, cuir sans dépeçage, éclats cadavériques, or.
+- **F7, potion et camp** : les deux boutons du cadre du personnage, et leurs listes de courses.
+- **F8, rangs d'objet et joaillerie** : rangs 1 à 5, composants rares, et nos recettes de joaillerie.
+- **F9, modes de zone** : normal rehaussé, difficile et cauchemar.
+- **F10, âme** : perte à la mort, régénération avec les éclats, verrouillage à zéro.
+- **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
+
 ## 5. Questions pour les prochaines séries
 
 1. **Réputation des donjons** : la liste des techniques actives et passives d'entrée, et les paliers d'emplacements.

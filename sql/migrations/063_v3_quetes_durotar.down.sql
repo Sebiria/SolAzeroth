@@ -1,0 +1,20 @@
+-- Annule 063 : retire les quêtes de Durotar v3 et rend les quêtes d'origine.
+USE acore_world;
+DELETE FROM disables WHERE sourceType = 1 AND comment = 'Sol''Azeroth v3 : quete d''origine de Durotar';
+DELETE FROM quest_template WHERE ID BETWEEN 910001 AND 910030;
+DELETE FROM quest_template_addon WHERE ID BETWEEN 910001 AND 910030;
+DELETE FROM quest_request_items WHERE ID BETWEEN 910001 AND 910030;
+DELETE FROM quest_offer_reward WHERE ID BETWEEN 910001 AND 910030;
+DELETE FROM quest_poi WHERE QuestID BETWEEN 910001 AND 910030;
+DELETE FROM quest_poi_points WHERE QuestID BETWEEN 910001 AND 910030;
+DELETE FROM conditions WHERE SourceTypeOrReferenceId = 19 AND SourceEntry BETWEEN 910001 AND 910030;
+DELETE FROM creature_queststarter WHERE quest BETWEEN 910001 AND 910030;
+DELETE FROM creature_questender WHERE quest BETWEEN 910001 AND 910030;
+DELETE FROM item_template WHERE entry IN (910101, 910102, 910103, 910104, 910105, 910106, 910107, 910108, 910109, 910110, 910111, 910112, 910113, 910114, 910115, 910116, 910117, 910118, 910119);
+DELETE FROM creature WHERE guid = 9100001;
+DELETE FROM creature_template_model WHERE CreatureID = 910001;
+DELETE FROM creature_template WHERE entry = 910001;
+DELETE FROM gameobject WHERE guid = 9100001;
+DELETE FROM gameobject_loot_template WHERE Entry = 910001;
+DELETE FROM gameobject_template WHERE entry = 910001;
+DELETE FROM creature_loot_template WHERE Entry = 3192 AND Item = 4883;
