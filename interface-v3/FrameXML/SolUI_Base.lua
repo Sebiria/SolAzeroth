@@ -137,6 +137,18 @@ function S.Nombre(valeur, decimales)
     return signe .. chiffres
 end
 
+-- 12345 -> « 1 [or] 23 [argent] 45 [cuivre] », avec les icônes des pièces du jeu.
+local PIECES = { "Interface\\MoneyFrame\\UI-GoldIcon", "Interface\\MoneyFrame\\UI-SilverIcon",
+    "Interface\\MoneyFrame\\UI-CopperIcon" }
+function S.Argent(cuivre)
+    local valeurs = { math.floor(cuivre / 10000), math.floor(cuivre / 100) % 100, cuivre % 100 }
+    local morceaux = {}
+    for i, valeur in ipairs(valeurs) do
+        if valeur > 0 then table.insert(morceaux, valeur .. " |T" .. PIECES[i] .. ":0:0:0:-1|t") end
+    end
+    return table.concat(morceaux, "  ")
+end
+
 -- Durée restante : « 7 s », « 28 min », « 2 h ».
 function S.Duree(secondes)
     if secondes >= 3600 then return math.floor(secondes / 3600 + 0.5) .. " h" end

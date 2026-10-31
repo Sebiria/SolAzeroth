@@ -84,8 +84,52 @@ local function Rangee(n)
             S.OuvrirJournal(self.index)
         end
     end)
+    -- Objet de quête utilisable (matraque, fiole…) : à gauche du titre, comme dans le suivi de Blizzard.
+    local o = CreateFrame("Button", nil, r)
+    o:SetSize(26, 26)
+    o:SetPoint("TOPRIGHT", r, "TOPLEFT", -6, 3)
+    o:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    o.fond = S.Texture(o, "BACKGROUND", nil, S.Couleur("bord"))
+    o.fond:SetAllPoints()
+    o.icone = o:CreateTexture(nil, "ARTWORK")
+    o.icone:SetPoint("TOPLEFT", 1, -1)
+    o.icone:SetPoint("BOTTOMRIGHT", -1, 1)
+    o.icone:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    o.nombre = S.Texte(o, "SemiBold", 10, "clair")
+    o.nombre:SetPoint("BOTTOMRIGHT", -1, 1)
+    o.recharge = CreateFrame("Cooldown", nil, o, "CooldownFrameTemplate")
+    o.recharge:SetAllPoints(o.icone)
+    o:SetScript("OnClick", function(self)
+        if IsModifiedClick("CHATLINK") and ChatFrameEditBox:IsVisible() then
+            ChatFrameEditBox:Insert((GetQuestLogSpecialItemInfo(self.index)))
+        else
+            UseQuestLogSpecialItem(self.index)
+        end
+    end)
+    o:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+        GameTooltip:SetQuestLogSpecialItem(self.index)
+    end)
+    o:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    o:SetScript("OnUpdate", function(self)
+        local portee = IsQuestLogSpecialItemInRange(self.index)
+        if portee == 0 then self.icone:SetVertexColor(0.85, 0.35, 0.32) else self.icone:SetVertexColor(1, 1, 1) end
+    end)
+    r.objet = o
     rangees[n] = r
     return r
+end
+
+local function MajObjet(r, index)
+    local lien, icone, charges = GetQuestLogSpecialItemInfo(index)
+    local o = r.objet
+    S.Montrer(o, lien ~= nil)
+    if not lien then return end
+    o.index = index
+    o.icone:SetTexture(icone)
+    o.nombre:SetText(charges and charges > 1 and charges or "")
+    local debut, duree, active = GetQuestLogSpecialItemCooldown(index)
+    if debut then CooldownFrame_SetTimer(o.recharge, debut, duree, active) end
 end
 
 local function Ligne(n)
@@ -120,12 +164,13 @@ local function MajSuivi(liste)
             r.couleur = q.complete and "vertClair" or (q.echouee and "rougeClair" or "clair")
             r.titre:SetText(q.titre)
             r.titre:SetTextColor(S.Couleur(r.couleur))
+            MajObjet(r, q.index)
             r:ClearAllPoints()
             r:SetPoint("TOPLEFT", 2, y)
             r:SetPoint("RIGHT", suivi, "RIGHT")
             r:SetHeight(17)
             r:Show()
-            y = y - 19
+            y = y - (r.objet:IsShown() and 23 or 19)
             local details = Objectifs(q.index)
             if q.complete then
                 details = { { texte = (#details > 0) and "Prête à rendre" or "À rendre", fini = true } }
@@ -305,15 +350,6 @@ local function Recompense(n)
     return b
 end
 
-local function Argent(cuivre)
-    local po, pa, pc = math.floor(cuivre / 10000), math.floor(cuivre / 100) % 100, cuivre % 100
-    local morceaux = {}
-    if po > 0 then table.insert(morceaux, po .. " po") end
-    if pa > 0 then table.insert(morceaux, pa .. " pa") end
-    if pc > 0 then table.insert(morceaux, pc .. " pc") end
-    return table.concat(morceaux, " ")
-end
-
 -- Pose un texte sous le précédent et renvoie la nouvelle hauteur.
 local function Poser(objet, y, ecart)
     objet:ClearAllPoints()
@@ -391,7 +427,7 @@ local function MajDetail(q)
         end
         y = y - math.ceil(n / 2) * 46
         if argent > 0 then
-            contenu.argent:SetText(Argent(argent))
+            contenu.argent:SetText(S.Argent(argent))
             y = Poser(contenu.argent, y, 4)
         end
     end
@@ -613,6 +649,35 @@ animation:SetScript("OnUpdate", function(self, ecoule)
     MajReperes(self, ecoule)
 end)
 
+-- /soltexte <mot> : quel cadre affiche ce texte (pour retirer un élément d'interface inconnu).
+SLASH_SOLUITEXTE1 = "/soltexte"
+SlashCmdList.SOLUITEXTE = function(mot)
+    mot = (mot or ""):lower()
+    if mot == "" then return end
+    local function Chemin(cadre)
+        local noms = {}
+        while cadre do
+            table.insert(noms, 1, cadre:GetName() or ("<" .. cadre:GetObjectType() .. ">"))
+            cadre = cadre:GetParent()
+        end
+        return table.concat(noms, " > ")
+    end
+    local trouves = 0
+    local cadre = EnumerateFrames()
+    while cadre do
+        for _, region in ipairs({ cadre:GetRegions() }) do
+            local texte = region:GetObjectType() == "FontString" and region:GetText()
+            if texte and texte:lower():find(mot, 1, true) then
+                trouves = trouves + 1
+                DEFAULT_CHAT_FRAME:AddMessage(string.format("%s (%s, %s) : %s", Chemin(cadre), region:GetName() or "texte",
+                    cadre:IsVisible() and "visible" or "caché", texte))
+            end
+        end
+        cadre = EnumerateFrames(cadre)
+    end
+    DEFAULT_CHAT_FRAME:AddMessage(trouves .. " texte(s) contenant « " .. mot .. " ».")
+end
+
 -- /solpoi : ce que lit la mini-carte (pour un rapport de bogue).
 SLASH_SOLUIPOI1 = "/solpoi"
 SlashCmdList.SOLUIPOI = function()
@@ -660,6 +725,7 @@ end
 -- Zones d'objectif reçues du serveur : relues au plus toutes les 2 s (la relecture elle-même peut relancer
 -- l'événement).
 local derniereLecture = 0
+S.Ecouter("BAG_UPDATE_COOLDOWN", S.MajQuetes)
 S.Ecouter("QUEST_POI_UPDATE", function()
     if GetTime() - derniereLecture < 2 then return end
     derniereLecture = GetTime()

@@ -37,6 +37,9 @@ namespace
     uint8 const SPE_AUCUNE = 0;
     uint8 const SPE_GUERRIER_TANK = 1;
     uint32 const PASSIF_REMPART = 100009;
+    uint32 const SORT_EPEES_1M = 201;          // Épées à une main
+    uint32 const EPEE_DE_DEPART = 25;          // Épée courte usée
+    uint32 const BOUCLIER_DE_DEPART = 2362;    // Vieux bouclier en bois
     uint32 const REMPART = 100010;
     size_t const DE_DEPART = 4;
     size_t const EQUIPEES_MAX = 8;
@@ -447,7 +450,25 @@ class solazeroth_v3_kit_joueur : public PlayerScript
 {
 public:
     solazeroth_v3_kit_joueur() : PlayerScript("solazeroth_v3_kit_joueur", {
-        PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_FIRST_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_DELETE }) { }
+        PLAYERHOOK_ON_CREATE, PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_FIRST_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_DELETE }) { }
+
+    // F5d (31/10/2026) : le guerrier naît sans ses anciens sorts (Frappe héroïque, Posture de combat…) ni barre
+    // d'action. Sinon Appliquer les retire à la première connexion, et le jeu l'annonce dans la discussion.
+    // Le personnage est déjà enregistré : on corrige la base avant sa première connexion.
+    void OnPlayerCreate(Player* player) override
+    {
+        if (player->getClass() != CLASS_WARRIOR)
+            return;
+        uint32 guid = player->GetGUID().GetCounter();
+        std::string sorts;
+        for (auto const& [sort, etat] : player->GetSpellMap())
+            if (SpellInfo const* info = sSpellMgr->GetSpellInfo(sort))
+                if (info->SpellFamilyName == SPELLFAMILY_WARRIOR)
+                    sorts += (sorts.empty() ? "" : ",") + std::to_string(sort);
+        if (!sorts.empty())
+            CharacterDatabase.DirectExecute("DELETE FROM character_spell WHERE guid = {} AND spell IN ({})", guid, sorts);
+        CharacterDatabase.DirectExecute("DELETE FROM character_action WHERE guid = {}", guid);
+    }
 
     // F5d (31/10/2026) : le personnage commence sans arme ; la première vient des quêtes de Durotar.
     void OnPlayerFirstLogin(Player* player) override
@@ -565,6 +586,17 @@ public:
             return false;
         }
         kit->spe = SPE_GUERRIER_TANK;
+        // Armes de la spécialisation, si les mains sont vides : Épée courte usée et Vieux bouclier en bois.
+        if (!player->HasSpell(SORT_EPEES_1M))
+            player->learnSpell(SORT_EPEES_1M);
+        for (auto [emplacement, objet] : { std::pair<uint8, uint32>{ EQUIPMENT_SLOT_MAINHAND, EPEE_DE_DEPART },
+                                           std::pair<uint8, uint32>{ EQUIPMENT_SLOT_OFFHAND, BOUCLIER_DE_DEPART } })
+        {
+            uint16 destination;
+            if (!player->GetItemByPos(INVENTORY_SLOT_BAG_0, emplacement)
+                && player->CanEquipNewItem(emplacement, destination, objet, false) == EQUIP_ERR_OK)
+                player->EquipNewItem(destination, objet, true);
+        }
         kit->equipees.clear();
         kit->debloquees = 0;
         Sauver(player);

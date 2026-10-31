@@ -270,7 +270,20 @@ class solazeroth_hauts_faits_joueur : public PlayerScript
 {
 public:
     solazeroth_hauts_faits_joueur() : PlayerScript("solazeroth_hauts_faits_joueur", {
-        PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_CALCULATE_TALENTS_POINTS, PLAYERHOOK_ON_LEVEL_CHANGED }) { }
+        PLAYERHOOK_ON_CREATE, PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_CALCULATE_TALENTS_POINTS,
+        PLAYERHOOK_ON_LEVEL_CHANGED }) { }
+
+    // v3, F5d (31/10/2026) : un nouveau personnage reçoit les hauts faits déjà obtenus par le compte sans annonce.
+    // Sans cela, Verifier les lui accorde à la connexion et le jeu les annonce dans la discussion.
+    void OnPlayerCreate(Player* player) override
+    {
+        std::set<uint32> obtenus = Obtenus(player->GetSession()->GetAccountId());
+        for (HautFait const& hf : hautsFaits)
+            if (obtenus.count(hf.id))
+                if (AchievementEntry const* natif = Natif(hf))
+                    CharacterDatabase.DirectExecute("INSERT IGNORE INTO character_achievement (guid, achievement, date) "
+                        "VALUES ({}, {}, UNIX_TIMESTAMP())", player->GetGUID().GetCounter(), natif->ID);
+    }
 
     void OnPlayerLogin(Player* player) override
     {

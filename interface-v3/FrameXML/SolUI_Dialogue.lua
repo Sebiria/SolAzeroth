@@ -186,15 +186,6 @@ local function Grille(genre, nombre, fonction)
     end
 end
 
-local function Argent(cuivre)
-    local po, pa, pc = math.floor(cuivre / 10000), math.floor(cuivre / 100) % 100, cuivre % 100
-    local morceaux = {}
-    if po > 0 then table.insert(morceaux, po .. " po") end
-    if pa > 0 then table.insert(morceaux, pa .. " pa") end
-    if pc > 0 then table.insert(morceaux, pc .. " pc") end
-    return table.concat(morceaux, " ")
-end
-
 local function Finir()
     page:SetHeight(-y + 10)
 end
@@ -208,8 +199,9 @@ local function Bouton(ancre, x)
     b:SetPoint(ancre, x, 20)
     return b
 end
-local principal = Bouton("BOTTOMRIGHT", -24)
-local secondaire = Bouton("BOTTOMLEFT", 24)
+-- Accepter (ou Continuer, Terminer) à gauche, Refuser à droite (demande de l'utilisateur).
+local principal = Bouton("BOTTOMLEFT", 24)
+local secondaire = Bouton("BOTTOMRIGHT", -24)
 
 local function Boutons(texte1, fonction1, texte2, fonction2)
     principal:SetText(texte1 or "")
@@ -251,7 +243,7 @@ local function Recompenses(avecChoix)
         if nChoix > 0 then Texte("Et aussi :", "discret", 4); y = y - 6 end
         Grille("reward", nRecompenses)
     end
-    if argent > 0 then Texte(Argent(argent), "texte", 4) end
+    if argent > 0 then Texte(S.Argent(argent), "texte", 4) end
 end
 
 local function PageDiscussion()
@@ -314,7 +306,7 @@ local function PageEnCours()
         Texte("À APPORTER", "rubrique", 24)
         y = y - 10
         Grille("required", demandes)
-        if argent > 0 then Texte(Argent(argent), GetMoney() >= argent and "texte" or "alerte", 4) end
+        if argent > 0 then Texte(S.Argent(argent), GetMoney() >= argent and "texte" or "alerte", 4) end
     end
     Finir()
     Boutons("Continuer", function() CompleteQuest() end, "Plus tard", function() d:Hide() end)

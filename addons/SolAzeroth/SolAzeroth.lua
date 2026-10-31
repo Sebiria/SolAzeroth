@@ -558,7 +558,7 @@ local CONSTRUCTEURS = {
         end)
         Bouton(edition, "Tout réinitialiser", 160, 250, -70, function() S.Reinitialiser() end)
 
-        local blocs = Carte(p, -146, 266,"Interface\\Icons\\INV_Misc_Gear_02", "Taille des blocs", "")
+        local blocs = Carte(p, -146, 230, "Interface\\Icons\\INV_Misc_Gear_02", "Taille des blocs", "")
         local curseurs = {}
         local y = -46
         for _, nom in ipairs({ "perso", "techniques", "cible", "zone", "quetes" }) do
@@ -567,20 +567,20 @@ local CONSTRUCTEURS = {
                 S.Modifier(nom, "echelle", v / 100)
             end)
             Bouton(blocs, "Réinitialiser", 110, 470, y + 4, function() S.Reinitialiser(nom) end)
-            y = y - 36
+            y = y - 32
         end
         Texte(blocs, "GameFontNormal", "Largeur de la cible", 60, y - 2):SetWidth(120)
         local largeur = Curseur(blocs, 180, y, 220, S.LIMITES.largeur[1], S.LIMITES.largeur[2], 20, "%d", function(v)
             S.Modifier("cible", "largeur", v)
         end)
 
-        local carte = Carte(p, -428, 110, "Interface\\Icons\\INV_Misc_Map_01", "Mini-carte", "")
-        Texte(carte, "GameFontNormal", "Taille", 60, -48):SetWidth(110)
-        local taille = Curseur(carte, 180, -46, 220, S.LIMITES.carte[1], S.LIMITES.carte[2], 2, "%d", function(v)
+        local carte = Carte(p, -388, 104, "Interface\\Icons\\INV_Misc_Map_01", "Mini-carte", "")
+        Texte(carte, "GameFontNormal", "Taille", 60, -46):SetWidth(110)
+        local taille = Curseur(carte, 180, -44, 220, S.LIMITES.carte[1], S.LIMITES.carte[2], 2, "%d", function(v)
             S.ModifierOption("carte", v)
         end)
-        Texte(carte, "GameFontNormal", "Repères de quête", 60, -84):SetWidth(120)
-        local reperes = Curseur(carte, 180, -82, 220, 50, 250, 10, "%d %%", function(v)
+        Texte(carte, "GameFontNormal", "Repères de quête", 60, -78):SetWidth(120)
+        local reperes = Curseur(carte, 180, -76, 220, 50, 250, 10, "%d %%", function(v)
             S.ModifierOption("reperes", v / 100)
         end)
 

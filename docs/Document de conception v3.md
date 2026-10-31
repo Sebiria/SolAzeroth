@@ -472,6 +472,19 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **Durotar** : 17 PNJ d'ambiance sont cachés hors des villages, pour l'instant (`outils/sans_guildes.py`). La migration descendante les remet.
 - **Reste à faire** : identifier le motif « Cabestan » sous la mini-carte. Les icônes propres à chaque collectible attendent notre système de collectibles.
 
+**Deuxième série de correctifs (31/10/2026)**, pas encore vérifiés en jeu :
+- **Discussion** (`SolUI_Discussion.lua`) : notre fenêtre remplace celles de Blizzard, sans onglets.
+  - Le fond n'apparaît que sous la souris ou pendant la saisie.
+  - Le bouton en haut à droite choisit ce qui s'affiche : discussion, paroles des PNJ, butin et argent, progression, sorts appris ou oubliés, système.
+  - Le bloc se déplace en mode édition, comme les autres.
+- **Objets de quête** (matraque…) : un bouton à gauche de la quête dans le suivi, comme dans le suivi de Blizzard.
+- **Argent** : les sommes s'affichent avec les icônes des pièces.
+- **Dialogue** : Accepter est à gauche et Refuser à droite.
+- **Nouveau guerrier** : il naît sans ses anciens sorts ni barre d'action, donc sans messages « Vous avez oublié… ». Les hauts faits du compte lui sont inscrits sans annonce.
+- **Choix de la spécialisation tank** : il équipe l'Épée courte usée et le Vieux bouclier en bois si les mains sont vides.
+- `/soltexte <mot>` dit quel cadre affiche un texte (pour trouver « Cabestan »).
+- **À venir** : une refonte graphique du dialogue et du journal, sur maquette à valider.
+
 **Suite proposée par Claude** (après F5c à F5f) :
 - **F6, butin** : tables de butin réduites aux composants, cuir sans dépeçage, éclats cadavériques, or.
 - **F7, potion et camp** : les deux boutons du cadre du personnage, et leurs listes de courses.
