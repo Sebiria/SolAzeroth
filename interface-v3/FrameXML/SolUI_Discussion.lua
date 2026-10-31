@@ -16,9 +16,9 @@ local CATEGORIES = {
         "CHANNEL_NOTICE_USER", "CHANNEL_LIST" } },
     { cle = "chatPnj", nom = "Paroles des PNJ", evenements = { "MONSTER_SAY", "MONSTER_YELL", "MONSTER_EMOTE",
         "MONSTER_WHISPER", "MONSTER_PARTY", "RAID_BOSS_EMOTE", "RAID_BOSS_WHISPER" } },
-    { cle = "chatButin", nom = "Butin et argent", evenements = { "LOOT", "MONEY", "OPENING", "TRADESKILLS" } },
+    { cle = "chatButin", nom = "Butin et argent", evenements = { "LOOT", "MONEY", "TRADESKILLS" } },
     { cle = "chatProgression", nom = "Progression", evenements = { "COMBAT_XP_GAIN", "COMBAT_HONOR_GAIN",
-        "COMBAT_FACTION_CHANGE", "SKILL", "ACHIEVEMENT" }, autres = { "PLAYER_LEVEL_UP" } },
+        "COMBAT_FACTION_CHANGE", "ACHIEVEMENT" }, autres = { "PLAYER_LEVEL_UP" } },
     { cle = "chatSorts", nom = "Sorts appris ou oubliés" },   -- messages du système, reconnus à leur texte
     { cle = "chatSysteme", nom = "Système", evenements = { "SYSTEM" }, autres = { "TIME_PLAYED_MSG" } },
 }

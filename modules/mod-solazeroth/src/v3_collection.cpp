@@ -9,6 +9,8 @@
 // - .collection retirer <objet> <nombre> remet des objets dans le sac (pour une quête ou un métier de Blizzard).
 // - Objet de départ d'une quête (Matraque du contremaître des Péons paresseux…) : retiré du sac quand la quête est
 //   rendue, s'il est lié à la quête et ne sert à aucune autre quête en cours (31/10/2026 ; le moteur le laisse).
+// - Récolte (31/10/2026) : herboristerie et minage au maximum à la connexion, sans pioche ; plus de dépeçage, le cuir
+//   est ajouté au butin du corps à la mort de la créature.
 // L'interface reçoit l'état par messages d'addon SOLCOL : « LISTE;objet:nombre,… » (en plusieurs morceaux, puis
 // « FIN ») à la connexion, et « MAJ;objet;total;changement » à chaque rangement ou retrait.
 
@@ -34,6 +36,11 @@ namespace
     size_t const MORCEAU = 200;          // longueur d'un message d'addon, sous la limite de 255
 
     std::unordered_set<uint32> collectionnables;
+    std::unordered_map<uint32, uint32> depecage;     // créature -> butin de dépeçage (retiré du modèle au démarrage)
+
+    // Herboristerie et minage de grand maître, sorts de récolte de grand maître (le minage n'a plus besoin de pioche :
+    // migration 073).
+    std::pair<uint16, uint32> const RECOLTE[] = { { 182, 50300 }, { 186, 50310 } };
 
     struct Collection : DataMap::Base
     {
@@ -94,7 +101,7 @@ class solazeroth_v3_collection_joueur : public PlayerScript
 public:
     solazeroth_v3_collection_joueur() : PlayerScript("solazeroth_v3_collection_joueur", {
         PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_BEFORE_SEND_LOOT, PLAYERHOOK_ON_STORE_NEW_ITEM, PLAYERHOOK_ON_UPDATE,
-        PLAYERHOOK_ON_DELETE, PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST }) { }
+        PLAYERHOOK_ON_DELETE, PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST, PLAYERHOOK_ON_CREATURE_KILL_CREDIT }) { }
 
     void OnPlayerCompleteQuest(Player* player, Quest const* quete) override
     {
@@ -112,6 +119,12 @@ public:
 
     void OnPlayerLogin(Player* player) override
     {
+        for (auto const& [metier, sort] : RECOLTE)
+        {
+            player->SetSkill(metier, 6, 450, 450);
+            if (!player->HasSpell(sort))
+                player->learnSpell(sort);
+        }
         Collection* c = CollectionDe(player);
         if (QueryResult r = CharacterDatabase.Query("SELECT objet, nombre FROM solazeroth_v3_collection WHERE guid = {}",
             player->GetGUID().GetCounter()))
@@ -138,6 +151,18 @@ public:
             if (loot->unlootedCount)
                 --loot->unlootedCount;
         }
+    }
+
+    // Le cuir et les peaux sont dans le butin du corps : on n'a plus à dépecer.
+    void OnPlayerCreatureKillCredit(Player* player, Creature* creature) override
+    {
+        auto it = depecage.find(creature->GetEntry());
+        if (it == depecage.end() || creature->GetLootRecipient() != player)
+            return;
+        LootTemplates_Skinning.GetLootFor(it->second)->Process(creature->loot, LootTemplates_Skinning,
+            creature->GetLootMode(), player);
+        if (!creature->loot.isLooted())
+            creature->SetDynamicFlag(UNIT_DYNFLAG_LOOTABLE);
     }
 
     void OnPlayerStoreNewItem(Player* player, Item* item, uint32 count) override
@@ -188,6 +213,14 @@ public:
             while (r->NextRow());
         }
         LOG_INFO("module", ">> Sol'Azeroth v3 : {} objets à collectionner", collectionnables.size());
+        // Sans butin de dépeçage, le corps vidé n'est plus marqué « à dépecer ».
+        for (auto const& [entree, modele] : *sObjectMgr->GetCreatureTemplates())
+            if (modele.SkinLootId && LootTemplates_Skinning.HaveLootFor(modele.SkinLootId))
+            {
+                depecage[entree] = modele.SkinLootId;
+                const_cast<CreatureTemplate&>(modele).SkinLootId = 0;
+            }
+        LOG_INFO("module", ">> Sol'Azeroth v3 : {} créatures donnent leur cuir sans dépeçage", depecage.size());
     }
 };
 

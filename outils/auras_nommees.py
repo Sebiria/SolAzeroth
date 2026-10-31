@@ -109,8 +109,18 @@ def valeur_sql(d, type_colonne, valeur):
     return str(valeur)
 
 
+# v3 (31/10/2026, demande de l'utilisateur : « tout doit être récoltable ») : les sorts de minage de Blizzard ne
+# demandent plus de pioche (colonne 222, RequiresTotemCategoryID). Copiés dans spell_dbc par la migration 073.
+MINAGE = [2575, 2576, 3564, 10248, 29354, 50310]
+OUTIL = 222
+MIGRATION_RECOLTE = r"C:\SolAzeroth\sql\migrations\073_v3_recolte"
+
+
 def main():
     d = dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "Spell.dbc"))
+    minage = [d.chercher(ident) for ident in MINAGE]
+    for e in minage:
+        e[OUTIL] = 0
     modele = d.chercher(MODELE)
     lignes = [nouvelle_aura(d, modele, *a) for a in AURAS]
     incantations = [nouvelle_incantation(d, d.chercher(MODELE_INCANTATION), *i[:4]) for i in INCANTATIONS]
@@ -164,8 +174,15 @@ def main():
             " rang_feu TINYINT UNSIGNED NOT NULL DEFAULT 0);"]
     ecrire_migration(bivouac_v3.MIGRATION, up, sql, ["-- Retire la potion et le feu de camp v3.", "USE acore_world;", up[3], up[4],
                                                     "DROP TABLE acore_characters.solazeroth_v3_bivouac;"])
+    ids = ", ".join(str(i) for i in MINAGE)
+    up = ["-- v3 : minage sans pioche. Généré par outils\\auras_nommees.py : ne pas modifier à la main.",
+          "-- Le client lit les mêmes sorts dans patch-frFR-4.MPQ ; v3_collection.cpp donne herboristerie et minage au maximum.",
+          "USE acore_world;",
+          "DELETE FROM spell_dbc WHERE ID IN (%s);" % ids]
+    sql = ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e)) for e in minage]
+    ecrire_migration(MIGRATION_RECOLTE, up, sql, ["-- Rend la pioche aux sorts de minage.", "USE acore_world;", up[3]])
     print(len(lignes), "auras,", len(incantations), "incantation(s),", len(kit), "techniques et", len(bivouac),
-          "sorts de bivouac : Spell.dbc client, migrations 050, 058, 061 et 067 écrits.")
+          "sorts de bivouac : Spell.dbc client, migrations 050, 058, 061, 067 et 073 écrits.")
 
 
 if __name__ == "__main__":

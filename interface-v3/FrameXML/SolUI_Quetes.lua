@@ -5,7 +5,8 @@
 --   récit, récompenses), avec Suivre, Carte et Abandonner.
 -- - Mini-carte : la zone d'objectif de chaque quête suivie (le PNJ à qui la rendre, une fois terminée), au bord de la
 --   carte quand elle est trop loin. Les positions viennent du serveur (quest_poi), par l'API QuestPOI du client.
--- - Carte du monde : celle de Blizzard, objectifs de quête toujours affichés.
+-- - Carte du monde : celle de Blizzard, objectifs de quête toujours affichés, et un « ! » sur chaque PNJ qui a une
+--   quête à prendre (31/10/2026, liste envoyée par le serveur).
 -- Le journal et le suivi de Blizzard restent chargés (événements, raccourcis), mais rangés.
 
 local S = SolUI
@@ -771,6 +772,78 @@ S.Ecouter("QUEST_POI_UPDATE", function()
     LirePositions()
 end)
 WorldMapFrame:HookScript("OnHide", S.MajQuetes)
+
+------------------------------------------------------------------------
+-- Quêtes à prendre, sur la carte du monde
+------------------------------------------------------------------------
+-- Le serveur (v3_carte.cpp) envoie les quêtes que le personnage peut accepter sur son continent, avec la position en
+-- mètres du jeu de qui les donne. Un point d'exclamation par donneur ; survol : les titres et leur niveau.
+local disponibles, recues = {}, {}
+local marques = {}
+
+local function Marque(n)
+    if marques[n] then return marques[n] end
+    local m = CreateFrame("Frame", nil, WorldMapButton)
+    m:SetSize(18, 18)
+    m:SetFrameLevel(WorldMapButton:GetFrameLevel() + 5)
+    m:EnableMouse(true)
+    local icone = m:CreateTexture(nil, "OVERLAY")
+    icone:SetAllPoints()
+    icone:SetTexture("Interface\\GossipFrame\\AvailableQuestIcon")
+    m:SetScript("OnEnter", function(self)
+        WorldMapTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        WorldMapTooltip:AddLine("Quêtes à prendre", 1, 0.82, 0)
+        for _, q in ipairs(self.quetes) do
+            local c = GetQuestDifficultyColor(q.niveau)
+            WorldMapTooltip:AddLine(string.format("[%d] %s", q.niveau, q.titre), c.r, c.g, c.b)
+        end
+        WorldMapTooltip:Show()
+    end)
+    m:SetScript("OnLeave", function() WorldMapTooltip:Hide() end)
+    marques[n] = m
+    return m
+end
+
+local function MajMarques()
+    local carte = S.CARTES and S.CARTES[GetMapInfo() or ""]
+    local largeur, hauteur = WorldMapButton:GetWidth(), WorldMapButton:GetHeight()
+    local groupes, ordre = {}, {}
+    if carte and carte[5] == disponibles.carte then
+        for _, q in ipairs(disponibles) do
+            local x, y = (carte[3] - q.y) / carte[1], (carte[4] - q.x) / carte[2]
+            if x >= 0 and x <= 1 and y >= 0 and y <= 1 then
+                local cle = q.x .. ":" .. q.y
+                if not groupes[cle] then
+                    groupes[cle] = { x = x, y = y, quetes = {} }
+                    table.insert(ordre, groupes[cle])
+                end
+                table.insert(groupes[cle].quetes, q)
+            end
+        end
+    end
+    for n, g in ipairs(ordre) do
+        local m = Marque(n)
+        m.quetes = g.quetes
+        m:ClearAllPoints()
+        m:SetPoint("CENTER", WorldMapButton, "TOPLEFT", g.x * largeur, -g.y * hauteur)
+        m:Show()
+    end
+    for n = #ordre + 1, #marques do marques[n]:Hide() end
+end
+
+S.Message("SOLQDISPO", function(champs)
+    if champs[1] == "DEBUT" then
+        recues = { carte = tonumber(champs[2]) }
+    elseif champs[1] == "Q" then
+        table.insert(recues, { id = tonumber(champs[2]), niveau = tonumber(champs[3]) or 1, x = tonumber(champs[4]),
+            y = tonumber(champs[5]), titre = table.concat(champs, ";", 6) })
+    elseif champs[1] == "FIN" then
+        disponibles = recues
+        if WorldMapFrame:IsShown() then MajMarques() end
+    end
+end)
+S.Ecouter("WORLD_MAP_UPDATE", function() if WorldMapFrame:IsShown() then MajMarques() end end)
+WorldMapFrame:HookScript("OnShow", MajMarques)
 
 -- La carte du monde montre toujours les objectifs de quête.
 S.Ecouter("PLAYER_ENTERING_WORLD", function() SetCVar("questPOI", "1") end)

@@ -31,8 +31,6 @@ puissance:SetPoint("BOTTOMLEFT", nom, "BOTTOMRIGHT", 12, 2)
 
 local pourcent = S.Texte(cible, "Bold", 24, "vertClair")
 pourcent:SetPoint("TOPRIGHT", cible, "TOPRIGHT", -MARGE, -14)
-local vie = S.Texte(cible, "Regular", 15, "gris")
-vie:SetPoint("BOTTOMRIGHT", pourcent, "BOTTOMLEFT", -14, 3)
 
 ------------------------------------------------------------------------
 -- Barre de vie, graduée aux quarts
@@ -46,6 +44,12 @@ barre:SetStatusBarColor(S.Couleur("vert"))
 barre:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
 barre:SetBackdropColor(S.Couleur("creux"))
 barre:SetBackdropBorderColor(S.Couleur("bordCreux"))
+-- Vie en chiffres dans la barre : à côté du nom, elle chevauchait le malus (capture du 31/10/2026).
+local dessusBarre = CreateFrame("Frame", nil, barre)
+dessusBarre:SetAllPoints()
+dessusBarre:SetFrameLevel(barre:GetFrameLevel() + 2)
+local vie = S.Texte(dessusBarre, "SemiBold", 12, "clair")
+vie:SetPoint("CENTER", 0, 0)
 local traits = {}
 for i, alpha in ipairs({ 0.5, 0.5, 0.18 }) do
     local trait = barre:CreateTexture(nil, "OVERLAY")

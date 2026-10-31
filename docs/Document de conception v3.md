@@ -577,10 +577,16 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
       - Le bonus vient avec le Repos, pas en permanent : on a une raison de faire un feu avant un chef. C'est le choix de l'utilisateur.
       - Mise en œuvre : sort 100032 (copie du Repos avec l'aura 79, +10 % toutes écoles), lancé à la place de 100031 quand `solazeroth_v3_bivouac.rang_feu` ≥ 1 ; achat par `.camp acheter` ; affichage dans l'onglet « Feu de camp et potion » de la fenêtre Techniques et raccourcis.
       - **La suite de l'arbre est à débattre**, ainsi que son lien avec la « liste de courses » de F7 (or, éclats, composants).
+  - **Neuvième série (31/10/2026)**, après la fin des quêtes de la vallée ; pas encore vérifiée en jeu :
+    - **Retour de l'utilisateur** : le message « Vous exécutez Cueillette sur Feuillargent » est inutile ; le cuivre n'a pas pu être miné ; la quête de Hana'zua (Sarkoth) serait passée inaperçue ; le dépeçage doit disparaître ; sur le cadre de cible, « -8 % de dégâts » chevauchait la vie.
+    - **Tout se récolte, sans niveau** : à la connexion, herboristerie et minage passent à 450/450, avec les sorts de grand maître (50300, 50310). Le minage n'a plus besoin de pioche (migration 073, et le même Spell.dbc côté client). Les messages « Vous exécutez… » et de progression de métier ne s'affichent plus.
+    - **Plus de dépeçage** (avance sur F6) : au démarrage, le serveur retire le butin de dépeçage des modèles de créature et le garde en mémoire. À la mort, le cuir et les peaux s'ajoutent au butin du corps, donc à la Collection.
+    - **Quêtes à prendre sur la carte du monde** : le serveur (v3_carte.cpp) relit toutes les 3 s les quêtes que le personnage peut accepter sur son continent (niveau, quête précédente, classe, réputation…). Un « ! » marque chaque donneur ; le survol donne les titres et leur niveau.
+    - **Cadre de cible** : la vie s'affiche dans la barre ; le pourcentage de dégâts garde sa place à droite.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :
-- **F6, butin** : tables de butin réduites aux composants, cuir sans dépeçage, éclats cadavériques, or.
+- **F6, butin** : tables de butin réduites aux composants, éclats cadavériques, or (le cuir sans dépeçage est fait, neuvième série).
 - **F7, potion et camp** : les deux boutons du cadre du personnage, et leurs listes de courses.
 - **F8, rangs d'objet et joaillerie** : rangs 1 à 5, composants rares, et nos recettes de joaillerie.
 - **F9, modes de zone** : normal rehaussé, difficile et cauchemar.

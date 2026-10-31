@@ -186,12 +186,14 @@ def cartes():
     import dbc
     table = dbc.Dbc.ouvrir(os.path.join(RACINE, "data", "dbc", "WorldMapArea.dbc"))
     lignes = ["-- Généré par outils\\interface_v3.py depuis WorldMapArea.dbc : ne pas modifier à la main.",
-              "-- Carte de zone (nom de fichier, GetMapInfo) -> largeur et hauteur en mètres du jeu.",
+              "-- Carte de zone (nom de fichier, GetMapInfo) -> largeur et hauteur en mètres du jeu, bord gauche (y du jeu)",
+              "-- et bord haut (x du jeu), carte du serveur (continent).",
               "SolUI.CARTES = {"]
     for e in table.enregistrements:
         gauche, droite, haut, bas = (dbc.flottant(v) for v in e[4:8])
         if gauche != droite and haut != bas:
-            lignes.append("    [\"%s\"] = { %.1f, %.1f }," % (table.texte(e[3]), gauche - droite, haut - bas))
+            lignes.append("    [\"%s\"] = { %.1f, %.1f, %.1f, %.1f, %d }," % (table.texte(e[3]), gauche - droite,
+                                                                        haut - bas, gauche, haut, e[1]))
     lignes.append("}")
     with open(os.path.join(FRAMEXML, "SolUI_Cartes.lua"), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lignes) + "\n")
