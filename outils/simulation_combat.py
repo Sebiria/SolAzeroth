@@ -146,6 +146,14 @@ def repas(joueur, force):
                  joueur.vitesse, joueur.critique, joueur.puissance, joueur.poison)
 
 
+def enchanter(joueur, vie=0, armure=0, force=0, degats=0):
+    """Le joueur avec des enchantements (enchantement_v3.py) : vie, armure, Force (2 de Puissance d'attaque par point
+    pour le guerrier) et dégâts d'arme ajoutés à chaque coup."""
+    bonus = 2 * force / 14.0 * joueur.vitesse + degats
+    return Fiche(joueur.nom + " (enchanté)", joueur.vie + vie, joueur.armure + armure, joueur.bas + bonus,
+                 joueur.haut + bonus, joueur.vitesse, joueur.critique, joueur.puissance, joueur.poison)
+
+
 def combat_groupe(joueur, monstres, alea, cri=True, reaction=1.4):
     """Un combat contre plusieurs monstres arrivés ensemble ; même renvoi que combat(). Le joueur frappe le premier
     monstre encore en vie ; Coup de tonnerre touche et ralentit tous les monstres ; Cri de défi est lancé dès qu'il est

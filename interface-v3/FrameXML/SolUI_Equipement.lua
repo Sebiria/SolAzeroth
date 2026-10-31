@@ -7,6 +7,9 @@
 -- avec leur coût ; il vérifie tout avant de fabriquer ou d'améliorer. L'achat se fait chez les marchands de Razor Hill.
 -- Une pièce se fabrique en 10 s (31/10/2026) : barre de progression au-dessus des barres d'action ; bouger annule.
 -- Catégorie Cuisine (SolUI_Cuisine.lua, généré par outils\cuisine_v3.py) : les plats de la zone, près d'un feu, en 5 s.
+-- Désenchantement et Enchantement (31/10/2026, SolUI_Enchantements.lua, généré par outils\enchantement_v3.py) :
+-- désenchanter une pièce du sac (second clic pour confirmer) range poussières et essences dans la Collection ;
+-- enchanter une pièce portée ou du sac les dépense. Le serveur envoie « PIECE;… » pour chaque armure et arme.
 
 local S = SolUI
 
@@ -27,6 +30,7 @@ ouvrir:SetScript("OnClick", S.BasculerEquipement)
 
 local Maj
 local forge, feu, pieces, recues = false, false, {}, {}
+local armures, armuresRecues = {}, {}
 
 local function Demander() SendChatMessage(".equipement", "SAY") end
 
@@ -53,7 +57,8 @@ progression:SetScript("OnUpdate", function(self)
     resteProgression:SetText(S.Nombre(math.max(0, duree * (1 - part)), 1) .. " s")
 end)
 
--- « FORGE;forge 0|1;feu 0|1 », « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or », « FIN ».
+-- « FORGE;forge 0|1;feu 0|1 », « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or »,
+-- « PIECE;sac;case;entrée;InventoryType;enchantement;table de désenchantement », « FIN ».
 S.Message("SOLEQUIP", function(champs)
     if champs[1] == "FABRIQUE" then
         local id = tonumber(champs[2])
@@ -70,14 +75,17 @@ S.Message("SOLEQUIP", function(champs)
         forge = champs[2] == "1"
         feu = champs[3] == "1"
     elseif champs[1] == "DEBUT" then
-        recues = {}
+        recues, armuresRecues = {}, {}
+    elseif champs[1] == "PIECE" then
+        table.insert(armuresRecues, { sac = tonumber(champs[2]), case = tonumber(champs[3]), id = tonumber(champs[4]),
+            type = tonumber(champs[5]) or 0, enchantement = tonumber(champs[6]) or 0, table = tonumber(champs[7]) or 0 })
     elseif champs[1] == "OBJ" then
         table.insert(recues, { sac = tonumber(champs[2]), case = tonumber(champs[3]), id = tonumber(champs[4]),
             rang = tonumber(champs[5]) or 0, eclats = tonumber(champs[6]) or 0, prix = tonumber(champs[7]) or 0 })
     elseif champs[1] == "FIN" then
-        pieces = recues
+        pieces, armures = recues, armuresRecues
     end
-    if champs[1] ~= "OBJ" and champs[1] ~= "DEBUT" then Maj() end
+    if champs[1] ~= "OBJ" and champs[1] ~= "PIECE" and champs[1] ~= "DEBUT" then Maj() end
 end)
 
 local function NomObjet(id, defaut)
@@ -109,9 +117,9 @@ end
 -- Onglets
 ------------------------------------------------------------------------
 local pages, onglets, onglet = {}, {}, 1
-for i, titre in ipairs({ "Fabrication", "Amélioration" }) do
-    local o = S.BoutonPlat(f, titre, 190, 36, 14)
-    o:SetPoint("TOPLEFT", 24 + (i - 1) * 198, -60)
+for i, titre in ipairs({ "Fabrication", "Amélioration", "Désenchantement", "Enchantement" }) do
+    local o = S.BoutonPlat(f, titre, 150, 36, 14)
+    o:SetPoint("TOPLEFT", 24 + (i - 1) * 158, -60)
     o:SetScript("OnClick", function() onglet = i; Maj() end)
     onglets[i] = o
     local page = CreateFrame("Frame", nil, f)
@@ -339,6 +347,175 @@ for _, l in ipairs(lignesPieces) do
 end
 
 ------------------------------------------------------------------------
+-- Pages 3 et 4 : désenchantement et enchantement
+------------------------------------------------------------------------
+local hexOk = function(ok) return ok and "" or "|cfff0918a" end
+
+-- Enchantement de SolUI.ENCHANTEMENTS qui va sur ce type de pièce, de numéro enchantement (ou tous si nil).
+local function EnchantementsDe(type, enchantement)
+    local liste = {}
+    for _, e in ipairs(S.ENCHANTEMENTS) do
+        for _, t in ipairs(e[5]) do
+            if t == type and (not enchantement or e[4] == enchantement) then table.insert(liste, e) end
+        end
+    end
+    return liste
+end
+
+local function Cout(e)
+    local morceaux, ok = {}, GetMoney() >= e[7]
+    for _, c in ipairs(e[6]) do
+        local a = S.NombreCollection(c[1])
+        ok = ok and a >= c[2]
+        table.insert(morceaux, hexOk(a >= c[2]) .. c[2] .. " " .. S.NomCollection(c[1]) .. " (" .. a .. ")|r")
+    end
+    table.insert(morceaux, hexOk(GetMoney() >= e[7]) .. S.Argent(e[7]) .. "|r")
+    return table.concat(morceaux, "  ·  "), ok
+end
+
+-- Une page de pièces : intro, lignes de LIGNES, molette, texte si vide.
+local function PageDePieces(page, texteIntro, texteVide, boutons)
+    local p = { decalage = 0, lignes = {} }
+    p.intro = S.Texte(page, "Regular", 13, "gris")
+    p.intro:SetPoint("TOPLEFT", 24, -16)
+    p.intro:SetWidth(950)
+    p.intro:SetJustifyH("LEFT")
+    p.intro:SetText(texteIntro)
+    for n = 1, LIGNES do
+        local l = CreateFrame("Frame", nil, page)
+        l:SetSize(950, 50)
+        l:SetPoint("TOPLEFT", 24, -70 - (n - 1) * 56)
+        l:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
+        l:SetBackdropColor(0.11, 0.118, 0.133, 1)
+        l:SetBackdropBorderColor(S.Couleur("bord"))
+        l:EnableMouseWheel(true)
+        l:SetScript("OnMouseWheel", function(_, sens) p.decalage = math.max(0, p.decalage - sens); Maj() end)
+        l.icone = Icone(l, 36)
+        l.icone:SetPoint("LEFT", 8, 0)
+        l.nom = S.Texte(l, "SemiBold", 13, "clair")
+        l.nom:SetPoint("TOPLEFT", l.icone, "TOPRIGHT", 10, 0)
+        l.nom:SetWidth(330)
+        l.nom:SetJustifyH("LEFT")
+        l.place = S.Texte(l, "Regular", 11, "gris")
+        l.place:SetPoint("BOTTOMLEFT", l.icone, "BOTTOMRIGHT", 10, 0)
+        l.haut = S.Texte(l, "SemiBold", 12, "ambreClair")
+        l.haut:SetPoint("TOPLEFT", 400, -8)
+        l.haut:SetJustifyH("LEFT")
+        l.bas = S.Texte(l, "Regular", 11, "texte")
+        l.bas:SetPoint("BOTTOMLEFT", 400, 8)
+        l.bas:SetJustifyH("LEFT")
+        l.boutons = {}
+        for b = 1, boutons do
+            local bouton = S.BoutonPlat(l, "", 130, 34, 12)
+            bouton:SetPoint("RIGHT", -8 - (b - 1) * 138, 0)
+            bouton.ligne = l
+            l.boutons[b] = bouton
+        end
+        p.lignes[n] = l
+    end
+    p.vide = S.Texte(page, "Regular", 14, "gris")
+    p.vide:SetPoint("TOP", 0, -140)
+    p.vide:SetText(texteVide)
+    return p
+end
+
+local function Remplir(p, liste, Ligne)
+    p.decalage = math.max(0, math.min(p.decalage, #liste - LIGNES))
+    S.Montrer(p.vide, #liste == 0)
+    for n, l in ipairs(p.lignes) do
+        local piece = liste[n + p.decalage]
+        S.Montrer(l, piece)
+        if piece then
+            l.piece, l.icone.id = piece, piece.id
+            l.icone.icone:SetTexture(GetItemIcon(piece.id))
+            local nom, r, g, b = NomObjet(piece.id)
+            l.nom:SetText(nom)
+            l.nom:SetTextColor(r, g, b)
+            l.place:SetText(piece.sac == -1 and "Porté" or "Dans le sac")
+            Ligne(l, piece)
+        end
+    end
+end
+
+local function Cle(piece) return piece.sac .. ":" .. piece.case .. ":" .. piece.id end
+
+local p3 = PageDePieces(pages[3], "Désenchanter détruit une pièce verte ou mieux de tes sacs ; ses poussières et "
+    .. "essences vont dans la Collection et servent à enchanter. Un second clic confirme.",
+    "Aucune pièce à désenchanter dans tes sacs (armures et armes vertes ou mieux).", 1)
+local aConfirmer
+for _, l in ipairs(p3.lignes) do
+    l.boutons[1]:SetScript("OnClick", function(self)
+        local piece = self.ligne.piece
+        if not piece then return end
+        if aConfirmer ~= Cle(piece) then
+            aConfirmer = Cle(piece)
+        else
+            aConfirmer = nil
+            SendChatMessage(".equipement desenchanter " .. piece.sac .. " " .. piece.case, "SAY")
+        end
+        Maj()
+    end)
+end
+
+local function MajDesenchantement()
+    local liste, confirmee = {}, false
+    for _, piece in ipairs(armures) do
+        if piece.sac >= 0 and piece.table > 0 then
+            table.insert(liste, piece)
+            confirmee = confirmee or aConfirmer == Cle(piece)
+        end
+    end
+    if not confirmee then aConfirmer = nil end
+    Remplir(p3, liste, function(l, piece)
+        l.haut:SetText("Donne")
+        l.bas:SetText(S.DESENCHANTEMENT[piece.table] or "le butin de désenchantement de la pièce")
+        local b = l.boutons[1]
+        b.texte:SetText(aConfirmer == Cle(piece) and "Confirmer" or "Désenchanter")
+        b:Choisir(aConfirmer == Cle(piece))
+    end)
+end
+
+local p4 = PageDePieces(pages[4], "Un enchantement par pièce : le nouveau remplace l'ancien, et il reste quand la pièce "
+    .. "change de rang. Composants de la Collection (entre parenthèses, ce que tu as) et or.",
+    "Aucune pièce à enchanter : plastron, brassards, cape, bouclier ou arme.", 2)
+for _, l in ipairs(p4.lignes) do
+    for _, b in ipairs(l.boutons) do
+        b:SetScript("OnClick", function(self)
+            local piece = self.ligne.piece
+            if piece and self.enchantement then
+                SendChatMessage(".equipement enchanter " .. piece.sac .. " " .. piece.case .. " " .. self.enchantement[1],
+                    "SAY")
+            end
+        end)
+    end
+end
+
+local function MajEnchantement()
+    local liste = {}
+    for _, piece in ipairs(armures) do
+        if #EnchantementsDe(piece.type) > 0 then table.insert(liste, piece) end
+    end
+    Remplir(p4, liste, function(l, piece)
+        local actuel = piece.enchantement > 0 and EnchantementsDe(piece.type, piece.enchantement)[1]
+        local possibles = EnchantementsDe(piece.type)
+        l.haut:SetText(piece.enchantement == 0 and "|cffb4b8bfSans enchantement|r"
+            or actuel and ("Enchantée : " .. actuel[2] .. " (" .. actuel[3] .. ")") or "Enchantée")
+        local cout, ok = Cout(possibles[1])
+        l.bas:SetText(cout)
+        for n, b in ipairs(l.boutons) do
+            local e = possibles[n]
+            b.enchantement = e
+            S.Montrer(b, e)
+            if e then
+                b.texte:SetText(e[3])
+                b:Choisir(piece.enchantement == e[4])
+                b:SetAlpha((ok and piece.enchantement ~= e[4]) and 1 or 0.5)
+            end
+        end
+    end)
+end
+
+------------------------------------------------------------------------
 -- Mise à jour
 ------------------------------------------------------------------------
 function Maj()
@@ -349,7 +526,10 @@ function Maj()
     end
     etatForge:SetText((forge and "|cff8cc4a6Près d'une forge|r" or "Loin d'une forge") .. "   ·   "
         .. (feu and "|cff8cc4a6Près d'un feu|r" or "Loin d'un feu"))
-    if onglet == 1 then MajFabrication() else MajAmelioration() end
+    if onglet == 1 then MajFabrication()
+    elseif onglet == 2 then MajAmelioration()
+    elseif onglet == 3 then MajDesenchantement()
+    else MajEnchantement() end
 end
 
 -- Pendant que la fenêtre est ouverte : l'état du serveur toutes les 3 s (distance de la forge), et après chaque

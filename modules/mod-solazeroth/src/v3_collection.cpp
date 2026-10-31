@@ -150,6 +150,14 @@ void SolAzeroth::RetirerDeCollection(Player* player, unsigned int objet, unsigne
     Modifier(player, objet, -int32(std::min(nombre, NombreEnCollection(player, objet))));
 }
 
+bool SolAzeroth::AjouterACollection(Player* player, unsigned int objet, unsigned int nombre)
+{
+    if (!Collectionnable(objet))
+        return false;
+    Modifier(player, objet, int32(nombre));
+    return true;
+}
+
 class solazeroth_v3_collection_joueur : public PlayerScript
 {
 public:

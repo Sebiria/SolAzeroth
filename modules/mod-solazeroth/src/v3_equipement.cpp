@@ -15,6 +15,11 @@
 // - Fabrication en 10 s (31/10/2026, demande de l'utilisateur) : animation du métier (marteler à la forge, travailler
 //   debout sinon) et barre de progression de l'interface (« FABRIQUE;objet;secondes », puis « FINI » ou « ANNULE »).
 //   Bouger annule ; composants et or ne sont pris qu'à la fin, après une nouvelle vérification.
+// - Désenchantement et enchantement (31/10/2026, demande de l'utilisateur ; outils\enchantement_v3.py, migration 081) :
+//   « PIECE;sac;case;entrée;InventoryType;enchantement;table de désenchantement » pour chaque armure et arme.
+//   .equipement desenchanter <sac> <case> : une pièce du sac, verte ou mieux, donne le butin de sa table, rangé dans la
+//   Collection. .equipement enchanter <sac> <case> <id> : un enchantement de solazeroth_v3_enchantements, payé en
+//   composants et en or, remplace celui de la pièce. Améliorer une pièce garde son enchantement.
 
 #include "SolAzeroth.h"
 #include "CellImpl.h"
@@ -25,10 +30,12 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "Item.h"
+#include "LootMgr.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
+#include <algorithm>
 #include <unordered_map>
 #include <vector>
 
@@ -57,6 +64,15 @@ namespace
     std::unordered_map<uint32, Rang> rangs;                     // entrée -> pièce de base et rang
     std::unordered_map<uint64, uint32> versions;                // (base << 8 | rang) -> entrée
     std::unordered_map<uint32, Recette> recettes;
+
+    struct Enchantement
+    {
+        uint32 enchantement = 0;   // SpellItemEnchantment.dbc
+        uint32 prix = 0;
+        std::vector<uint8> types;  // InventoryType
+        std::vector<std::pair<uint32, uint32>> composants;
+    };
+    std::unordered_map<uint32, Enchantement> enchantements;
 
     uint32 Version(uint32 base, uint8 rang)
     {
@@ -132,19 +148,48 @@ namespace
             item->GetEntry(), rang, eclats, prix));
     }
 
+    bool Desenchantable(Item* item)
+    {
+        ItemTemplate const* modele = item->GetTemplate();
+        return modele->DisenchantID && modele->Quality >= ITEM_QUALITY_UNCOMMON && modele->Quality <= ITEM_QUALITY_EPIC;
+    }
+
+    void EnvoyerArmureOuArme(Player* player, Item* item, int32 sac, uint32 caseInterface)
+    {
+        if (!item || (item->GetTemplate()->Class != ITEM_CLASS_ARMOR && item->GetTemplate()->Class != ITEM_CLASS_WEAPON))
+            return;
+        SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("PIECE;{};{};{};{};{};{}", sac, caseInterface,
+            item->GetEntry(), item->GetTemplate()->InventoryType, item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT),
+            Desenchantable(item) ? item->GetTemplate()->DisenchantID : 0));
+    }
+
+    void EnvoyerPieces(Player* player, Item* item, int32 sac, uint32 caseInterface)
+    {
+        EnvoyerPiece(player, item, sac, caseInterface);
+        EnvoyerArmureOuArme(player, item, sac, caseInterface);
+    }
+
+    // Pose l'enchantement permanent d'une pièce, en retirant puis rendant ses effets si elle est portée.
+    void Enchanter(Player* player, Item* item, uint32 enchantement)
+    {
+        player->ApplyEnchantment(item, PERM_ENCHANTMENT_SLOT, false);
+        item->SetEnchantment(PERM_ENCHANTMENT_SLOT, enchantement, 0, 0, player->GetGUID());
+        player->ApplyEnchantment(item, PERM_ENCHANTMENT_SLOT, true);
+    }
+
     void Envoyer(Player* player)
     {
         SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("FORGE;{};{}", PresDUneForge(player) ? 1 : 0,
             PresDUnFeu(player) ? 1 : 0));
         SolAzeroth::EnvoyerAddon(player, PREFIXE, "DEBUT");
         for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
-            EnvoyerPiece(player, player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot), -1, slot);
+            EnvoyerPieces(player, player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot), -1, slot);
         for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
-            EnvoyerPiece(player, player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot), 0, slot - INVENTORY_SLOT_ITEM_START + 1);
+            EnvoyerPieces(player, player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot), 0, slot - INVENTORY_SLOT_ITEM_START + 1);
         for (uint8 sac = 1; sac <= 4; ++sac)
             if (Bag* b = player->GetBagByPos(INVENTORY_SLOT_BAG_START + sac - 1))
                 for (uint32 slot = 0; slot < b->GetBagSize(); ++slot)
-                    EnvoyerPiece(player, b->GetItemByPos(uint8(slot)), sac, slot + 1);
+                    EnvoyerPieces(player, b->GetItemByPos(uint8(slot)), sac, slot + 1);
         SolAzeroth::EnvoyerAddon(player, PREFIXE, "FIN");
     }
 
@@ -263,6 +308,7 @@ public:
         rangs.clear();
         versions.clear();
         recettes.clear();
+        enchantements.clear();
         if (QueryResult r = WorldDatabase.Query("SELECT entree, base, rang FROM solazeroth_v3_rangs"))
         {
             do
@@ -299,7 +345,34 @@ public:
                 recettes[f[0].Get<uint32>()].composants.emplace_back(f[1].Get<uint32>(), f[2].Get<uint32>());
             } while (r->NextRow());
         }
-        LOG_INFO("module", ">> Sol'Azeroth v3 : {} recettes, {} versions d'équipement par rang", recettes.size(), rangs.size());
+        if (QueryResult r = WorldDatabase.Query("SELECT id, enchantement, prix FROM solazeroth_v3_enchantements"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                Enchantement& enchantement = enchantements[f[0].Get<uint32>()];
+                enchantement.enchantement = f[1].Get<uint32>();
+                enchantement.prix = f[2].Get<uint32>();
+            } while (r->NextRow());
+        }
+        if (QueryResult r = WorldDatabase.Query("SELECT id, type FROM solazeroth_v3_enchantements_types"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                enchantements[f[0].Get<uint32>()].types.push_back(f[1].Get<uint8>());
+            } while (r->NextRow());
+        }
+        if (QueryResult r = WorldDatabase.Query("SELECT id, composant, nombre FROM solazeroth_v3_enchantements_composants"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                enchantements[f[0].Get<uint32>()].composants.emplace_back(f[1].Get<uint32>(), f[2].Get<uint32>());
+            } while (r->NextRow());
+        }
+        LOG_INFO("module", ">> Sol'Azeroth v3 : {} recettes, {} versions d'équipement par rang, {} enchantements",
+            recettes.size(), rangs.size(), enchantements.size());
     }
 };
 
@@ -315,6 +388,8 @@ public:
             { "",          HandleEtat,      SEC_PLAYER, Console::No },
             { "fabriquer", HandleFabriquer, SEC_PLAYER, Console::No },
             { "ameliorer", HandleAmeliorer, SEC_PLAYER, Console::No },
+            { "desenchanter", HandleDesenchanter, SEC_PLAYER, Console::No },
+            { "enchanter", HandleEnchanter, SEC_PLAYER, Console::No },
         };
         static ChatCommandTable commandes =
         {
@@ -400,6 +475,7 @@ public:
         }
         Prendre(player, ECLAT, eclats);
         player->ModifyMoney(-int32(prix));
+        uint32 enchantement = item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT);
         player->DestroyItem(bag, slot, true);
         Item* nouveau = nullptr;
         if (porte)
@@ -411,11 +487,100 @@ public:
                 || player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, suivant, 1) == EQUIP_ERR_OK)
                 nouveau = player->StoreNewItem(dest, suivant, true);
         }
+        if (nouveau && enchantement)
+            Enchanter(player, nouveau, enchantement);
         if (!nouveau)
             LOG_ERROR("module", "Sol'Azeroth v3 : amélioration de {} perdue pour {}", suivant, player->GetName());
         else
             ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat("|cff8cc4a6Amélioration :|r {} passe au rang {}.",
                 Nom(actuel.base), actuel.rang + 1));
+        Envoyer(player);
+        return true;
+    }
+
+    static bool HandleDesenchanter(ChatHandler* handler, int32 sac, uint32 caseInterface)
+    {
+        Player* player = handler->GetPlayer();
+        uint8 bag, slot;
+        Item* item = sac >= 0 && PositionDuJeu(sac, caseInterface, bag, slot) ? player->GetItemByPos(bag, slot) : nullptr;
+        if (!item || !Desenchantable(item))
+        {
+            handler->SendErrorMessage("Cet objet ne se désenchante pas (une pièce du sac, verte ou mieux).");
+            return false;
+        }
+        if (player->IsInCombat())
+        {
+            handler->SendErrorMessage("Pas pendant un combat.");
+            return false;
+        }
+        std::string nom = Nom(item->GetEntry());
+        Loot butin;
+        butin.FillLoot(item->GetTemplate()->DisenchantID, LootTemplates_Disenchant, player, true);
+        player->DestroyItem(bag, slot, true);
+        std::string produits;
+        for (LootItem const& produit : butin.items)
+        {
+            if (!SolAzeroth::AjouterACollection(player, produit.itemid, produit.count))
+            {
+                ItemPosCountVec dest;
+                if (player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, produit.itemid, produit.count) == EQUIP_ERR_OK)
+                    player->StoreNewItem(dest, produit.itemid, true);
+                else
+                    LOG_ERROR("module", "Sol'Azeroth v3 : désenchantement, {} × {} perdu pour {}", produit.count,
+                        produit.itemid, player->GetName());
+            }
+            produits += Acore::StringFormat("{}{} × {}", produits.empty() ? "" : ", ", produit.count, Nom(produit.itemid));
+        }
+        handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Désenchantement :|r {} donne {}.", nom,
+            produits.empty() ? "rien" : produits));
+        Envoyer(player);
+        return true;
+    }
+
+    static bool HandleEnchanter(ChatHandler* handler, int32 sac, uint32 caseInterface, uint32 id)
+    {
+        Player* player = handler->GetPlayer();
+        uint8 bag, slot;
+        Item* item = PositionDuJeu(sac, caseInterface, bag, slot) ? player->GetItemByPos(bag, slot) : nullptr;
+        auto it = enchantements.find(id);
+        if (!item || it == enchantements.end())
+        {
+            handler->SendErrorMessage("Enchantement ou pièce inconnus.");
+            return false;
+        }
+        Enchantement const& enchantement = it->second;
+        if (std::find(enchantement.types.begin(), enchantement.types.end(), uint8(item->GetTemplate()->InventoryType))
+            == enchantement.types.end())
+        {
+            handler->SendErrorMessage("Cet enchantement ne va pas sur cette pièce.");
+            return false;
+        }
+        if (item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT) == enchantement.enchantement)
+        {
+            handler->SendErrorMessage("La pièce porte déjà cet enchantement.");
+            return false;
+        }
+        if (player->IsInCombat())
+        {
+            handler->SendErrorMessage("Pas pendant un combat.");
+            return false;
+        }
+        for (auto const& [composant, nombre] : enchantement.composants)
+            if (Possede(player, composant) < nombre)
+            {
+                handler->SendErrorMessage("Il manque {} × {}.", nombre - Possede(player, composant), Nom(composant));
+                return false;
+            }
+        if (!player->HasEnoughMoney(enchantement.prix))
+        {
+            handler->SendErrorMessage("Pas assez d'or.");
+            return false;
+        }
+        for (auto const& [composant, nombre] : enchantement.composants)
+            Prendre(player, composant, nombre);
+        player->ModifyMoney(-int32(enchantement.prix));
+        Enchanter(player, item, enchantement.enchantement);
+        handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Enchantement :|r {} est enchanté.", Nom(item->GetEntry())));
         Envoyer(player);
         return true;
     }

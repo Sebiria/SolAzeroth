@@ -19,6 +19,8 @@ namespace SolAzeroth
     // v3 : objets rangés dans la Collection, et retrait (v3_collection.cpp).
     unsigned int NombreEnCollection(Player* player, unsigned int objet);
     void RetirerDeCollection(Player* player, unsigned int objet, unsigned int nombre);
+    // Range un objet collectionnable dans la Collection ; faux s'il ne l'est pas (v3_collection.cpp).
+    bool AjouterACollection(Player* player, unsigned int objet, unsigned int nombre);
     // v3 : rang d'amélioration (0 à 5) d'une version d'équipement (v3_equipement.cpp).
     unsigned char RangEquipement(unsigned int entree);
     // v3 : caractéristique principale (STAT_STRENGTH, STAT_AGILITY ou STAT_INTELLECT) de la spécialisation (v3_kit.cpp).

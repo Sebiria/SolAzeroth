@@ -654,6 +654,19 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
       - **blocage à 45/46** : la troupe était tombée, et le 46e est le chef renforcé (Lieutenant Benedict), qui apparaît à la place du chef d'origine, en haut du fort, sans rien dire. Son apparition est maintenant annoncée dans la discussion, avec sa distance et « plus haut » ou « plus bas » ;
       - **silhouettes d'ambiance de l'Alliance dans le fort** (migration 080) : elles suivaient le trajet d'un Fusilier de Kul Tiras. Les monstres des lieux à nettoyer ne servent plus de routes d'ambiance. La faction ne suffisait pas à trier : d'autres PNJ de faction 123 sont de vrais gardes.
     - **Puissance du personnage, décision de l'utilisateur** : elle reste la moyenne des seules pièces portées, sans compter les emplacements vides pour 0. Une pièce proche de la moyenne ne la change donc presque pas : un pantalon de niveau 5 sur une moyenne de 4,86 la porte à 4,88.
+    - **Enchantement** (demande de l'utilisateur, choix des enchantements laissé à Claude ; `outils/enchantement_v3.py`, migration 081, `v3_equipement.cpp`) : deux onglets de plus dans la fenêtre Équipement.
+      - **Désenchantement** : une armure ou une arme du sac, verte ou mieux, est détruite ; son butin de Blizzard (poussières, essences, éclats) va dans la Collection. Un second clic confirme. Nos pièces (quêtes, fabrication, rangs) reçoivent la table d'une pièce verte de même genre et de même niveau d'objet. À Durotar : Poussière étrange ×1-2 (80 %) ou Essence de magie inférieure ×1-2 (20 %) pour une armure, l'inverse pour une arme.
+      - **Enchantement** : les enchantements mineurs de Blizzard, un par pièce, portée ou dans le sac. Le nouveau remplace l'ancien, et il reste quand la pièce change de rang. Coût : les composants, plus 10 c par composant.
+
+        | Pièce | Enchantement | Composants |
+        |---|---|---|
+        | Plastron, robe | Santé mineure, +5 points de vie | 2 Poussières |
+        | Brassards | Force ou Agilité mineure, +1 | 3 Poussières, 1 Essence |
+        | Cape, bouclier | Protection mineure, +10 armure | 2 Poussières, 1 Essence |
+        | Arme à une main | Frappe mineure, +1 aux dégâts | 3 Poussières, 2 Essences |
+        | Arme à deux mains | Impact mineur, +2 aux dégâts | 4 Poussières, 2 Essences |
+
+      - **Équilibre** (simulation, personnage de fin de vallée) : le jeu complet vaut à peu près un rang d'amélioration sur toutes les pièces. Contre le Tigre de Durotar (puissance 8), victoire de 59 à 98 % ; contre le Fouette-queue Griffesang, de 8 à 54 %. L'Endurance mineure des bottes (+10 points de vie) le doublait presque (85 %) : pas de bottes à Durotar. La panoplie enchantée est dans `tests_equilibrage.py`.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :
