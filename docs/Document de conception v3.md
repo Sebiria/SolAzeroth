@@ -414,6 +414,12 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - Les renforts apparaissent à côté du joueur. Mouchette (A07) reste un monstre ordinaire du lieu, en attendant sa prime A15.
   - **Reste à faire** : les primes, contrats, défis et reliques (25 %). Les annexes du document de Durotar restent à valider par l'utilisateur.
 - **F5f** : accès au Gouffre de Ragefeu à 60 %.
+  - **Construit le 31/10/2026, pas encore vérifié en jeu** (`v3_gouffre.cpp`, migration 076) :
+    - **Ruga Brise-cendre** : en plus de ses quêtes, elle propose « Descendre dans la faille ». Avec D26 rendue et 60 % de Durotar, elle envoie le joueur à l'entrée du Gouffre. Sinon, elle lui chuchote ce qui manque, avec son pourcentage.
+    - **Autres entrées** : l'entrée d'origine, à Orgrimmar, est refusée sous ces conditions, avec un message qui renvoie à Ruga.
+    - **Sortie** : elle ramène devant Ruga, et non plus dans Orgrimmar.
+    - Les maîtres du jeu passent toujours.
+  - **Calibrage à noter (retour de l'utilisateur, 31/10/2026)** : Yarrog est déjà difficile sans renforts. Yarrog renforcé (2 Vils quasits toutes les 20 s) est à revoir au calibrage final.
 
 **Validation de l'histoire de Durotar (31/10/2026)** : l'utilisateur valide le brouillon relu (`Durotar — Histoire et quêtes (brouillon).md`) et toutes les recommandations du relecteur, sauf la répartition des activités secondaires :
 - **exploration 6 %**, comme recommandé ;

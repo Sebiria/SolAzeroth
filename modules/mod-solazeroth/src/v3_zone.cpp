@@ -92,6 +92,18 @@ namespace
         return { tues, requis };
     }
 
+    bool Acquis(Player* player, Progres* p, Part const& part)
+    {
+        if (part.genre == QUETE)
+            return player->GetQuestRewardStatus(part.cle);
+        if (part.genre == EXPLORATION)
+            return Explore(player, part.cle);
+        if (auto c = chefs.find(part.cle); c != chefs.end())
+            return p->tues[Cle(part.cle, c->second.renforce)] != 0;
+        auto [tues, requis] = Troupe(p, part.cle);
+        return requis && tues >= requis;
+    }
+
     // Troupe tombée et joueur près de la place : le chef d'origine s'efface devant sa copie renforcée.
     void FaireApparaitre(Player* player, Progres* p, uint32 lieu, Chef const& chef)
     {
@@ -126,23 +138,18 @@ namespace
         std::vector<std::string> lieux;
         for (Part const& part : it->second)
         {
-            bool acquis = false;
-            if (part.genre == QUETE)
-                acquis = player->GetQuestRewardStatus(part.cle);
-            else if (part.genre == EXPLORATION)
+            bool acquis = Acquis(player, p, part);
+            if (part.genre == EXPLORATION)
             {
-                acquis = Explore(player, part.cle);
                 ++sousZones;
                 explorees += acquis;
             }
             else if (part.genre == LIEU)
             {
                 auto [tues, requis] = Troupe(p, part.cle);
-                acquis = requis && tues >= requis;
                 if (auto c = chefs.find(part.cle); c != chefs.end())
                 {
                     FaireApparaitre(player, p, part.cle, c->second);
-                    acquis = p->tues[Cle(part.cle, c->second.renforce)] != 0;
                     ++requis;
                 }
                 lieux.push_back(Acore::StringFormat("LIEU;{};{};{};{};{};{}", part.cle, part.nom, tues, requis, part.part,
@@ -167,6 +174,19 @@ namespace
             SolAzeroth::EnvoyerAddon(player, "SOLZONE", l);
         SolAzeroth::EnvoyerAddon(player, "SOLZONE", "FINZONE");
     }
+}
+
+unsigned int SolAzeroth::PourcentZone(Player* player, unsigned int zone)
+{
+    auto it = parts.find(zone);
+    if (it == parts.end())
+        return 0;
+    Progres* p = ProgresDe(player);
+    uint32 somme = 0;
+    for (Part const& part : it->second)
+        if (Acquis(player, p, part))
+            somme += part.part;
+    return somme;
 }
 
 class solazeroth_v3_zone_joueur : public PlayerScript

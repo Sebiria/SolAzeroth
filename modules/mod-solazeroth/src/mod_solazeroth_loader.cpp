@@ -38,6 +38,7 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_v3_collection();
         AddSC_solazeroth_v3_carte();
         AddSC_solazeroth_v3_zone();
+        AddSC_solazeroth_v3_gouffre();
     }
     AddSC_solazeroth_reinitialisation();
     AddSC_solazeroth_butin();

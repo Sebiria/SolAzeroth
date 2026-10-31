@@ -14,6 +14,8 @@ namespace SolAzeroth
 {
     // Message pour un addon Sol'Azeroth (addon.cpp)
     void EnvoyerAddon(Player* player, std::string const& prefixe, std::string const& message);
+    // v3 : pourcentage d'une zone, en centièmes de % (v3_zone.cpp).
+    unsigned int PourcentZone(Player* player, unsigned int zone);
     // Ligue Destin (défi choisi au niveau 1, lua_scripts/defis.lua) : ni sorts ni talents d'une autre classe (formation.cpp).
     bool EstDestin(Player* player);
     // Ligue Remix (ligues.cpp) : monde à ton niveau imposé (echelle.cpp).
@@ -168,5 +170,6 @@ void AddSC_solazeroth_v3_bivouac();
 void AddSC_solazeroth_v3_collection();
 void AddSC_solazeroth_v3_carte();
 void AddSC_solazeroth_v3_zone();
+void AddSC_solazeroth_v3_gouffre();
 
 #endif
