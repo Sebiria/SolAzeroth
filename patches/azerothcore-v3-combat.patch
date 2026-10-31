@@ -15,10 +15,30 @@ index 89c9cf4..05f204d 100644
  
      // vehicles cant miss
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 3e1ac32..fa90a66 100644
+index 3e1ac32..99e4a86 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -2301,7 +2301,9 @@ uint32 Unit::CalcArmorReducedDamage(Unit const* attacker, Unit const* victim, co
+@@ -1676,6 +1676,8 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage* damageInfo, bool durabilityLoss,
+         return;
+     }
+ 
++    sScriptMgr->OnDamageLog(this, victim, spellProto, damageInfo->damage, damageInfo->cleanDamage, damageInfo->absorb, damageInfo->resist, damageInfo->blocked, damageInfo->HitInfo & SPELL_HIT_TYPE_CRIT, false);
++
+     // Call default DealDamage
+     CleanDamage cleanDamage(damageInfo->cleanDamage, damageInfo->absorb, BASE_ATTACK, MELEE_HIT_NORMAL);
+     Unit::DealDamage(this, victim, damageInfo->damage, &cleanDamage, SPELL_DIRECT_DAMAGE, SpellSchoolMask(damageInfo->schoolMask), spellProto, durabilityLoss, false, spell);
+@@ -2036,6 +2038,10 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
+         return;
+     }
+ 
++    sScriptMgr->OnDamageLog(this, victim, nullptr, damageInfo->damages[0].damage + damageInfo->damages[1].damage, damageInfo->cleanDamage,
++        damageInfo->damages[0].absorb + damageInfo->damages[1].absorb, damageInfo->damages[0].resist + damageInfo->damages[1].resist,
++        damageInfo->blocked_amount, damageInfo->HitInfo & HITINFO_CRITICALHIT, false);
++
+     // Hmmmm dont like this emotes client must by self do all animations
+     if (damageInfo->HitInfo & HITINFO_CRITICALHIT)
+         victim->HandleEmoteCommand(EMOTE_ONESHOT_WOUND_CRITICAL);
+@@ -2301,7 +2307,9 @@ uint32 Unit::CalcArmorReducedDamage(Unit const* attacker, Unit const* victim, co
      if (tmpvalue > 0.75f)
          tmpvalue = 0.75f;
  
@@ -29,7 +49,7 @@ index 3e1ac32..fa90a66 100644
  }
  
  float Unit::GetEffectiveResistChance(Unit const* owner, SpellSchoolMask schoolMask, Unit const* victim, SpellInfo const* spellInfo /*= nullptr*/, uint8 casterLevel /*= 0*/)
-@@ -3379,6 +3381,11 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit* victim, SpellInfo const* spellInfo
+@@ -3379,6 +3387,11 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit* victim, SpellInfo const* spellInfo
      else
          attackerWeaponSkill = int32(GetWeaponSkillValue(attType, victim));
  
@@ -42,10 +62,10 @@ index 3e1ac32..fa90a66 100644
  
      uint32 roll = urand (0, 10000);
 diff --git a/src/server/game/Scripting/ScriptDefines/UnitScript.cpp b/src/server/game/Scripting/ScriptDefines/UnitScript.cpp
-index eb365fd..ab37dd0 100644
+index eb365fd..93ea265 100644
 --- a/src/server/game/Scripting/ScriptDefines/UnitScript.cpp
 +++ b/src/server/game/Scripting/ScriptDefines/UnitScript.cpp
-@@ -69,6 +69,21 @@ void ScriptMgr::OnBeforeRollMeleeOutcomeAgainst(Unit const* attacker, Unit const
+@@ -69,6 +69,26 @@ void ScriptMgr::OnBeforeRollMeleeOutcomeAgainst(Unit const* attacker, Unit const
      CALL_ENABLED_HOOKS(UnitScript, UNITHOOK_ON_BEFORE_ROLL_MELEE_OUTCOME_AGAINST, script->OnBeforeRollMeleeOutcomeAgainst(attacker, victim, attType, attackerMaxSkillValueForLevel, victimMaxSkillValueForLevel, attackerWeaponSkill, victimDefenseSkill, crit_chance, miss_chance, dodge_chance, parry_chance, block_chance));
  }
  
@@ -64,20 +84,26 @@ index eb365fd..ab37dd0 100644
 +    CALL_ENABLED_HOOKS(UnitScript, UNITHOOK_ON_SPELL_POWER_COST, script->OnSpellPowerCost(caster, spellInfo, cost));
 +}
 +
++void ScriptMgr::OnDamageLog(Unit* attacker, Unit* victim, SpellInfo const* spellInfo, uint32 damage, uint32 mitigated, uint32 absorb, uint32 resist, uint32 blocked, bool crit, bool periodic)
++{
++    CALL_ENABLED_HOOKS(UnitScript, UNITHOOK_ON_DAMAGE_LOG, script->OnDamageLog(attacker, victim, spellInfo, damage, mitigated, absorb, resist, blocked, crit, periodic));
++}
++
  void ScriptMgr::OnAuraApply(Unit* unit, Aura* aura)
  {
      CALL_ENABLED_HOOKS(UnitScript, UNITHOOK_ON_AURA_APPLY, script->OnAuraApply(unit, aura));
 diff --git a/src/server/game/Scripting/ScriptDefines/UnitScript.h b/src/server/game/Scripting/ScriptDefines/UnitScript.h
-index 8df6eea..941de8e 100644
+index 8df6eea..f0b433d 100644
 --- a/src/server/game/Scripting/ScriptDefines/UnitScript.h
 +++ b/src/server/game/Scripting/ScriptDefines/UnitScript.h
-@@ -44,10 +44,14 @@ enum UnitHook
+@@ -44,10 +44,15 @@ enum UnitHook
      UNITHOOK_ON_UNIT_EXIT_COMBAT,
      UNITHOOK_ON_UNIT_DEATH,
      UNITHOOK_ON_UNIT_SET_SHAPESHIFT_FORM,
 +    UNITHOOK_ON_SPELL_HIT_ROLL,
 +    UNITHOOK_ON_AFTER_CALC_ARMOR_REDUCED_DAMAGE,
 +    UNITHOOK_ON_SPELL_POWER_COST,
++    UNITHOOK_ON_DAMAGE_LOG,
      UNITHOOK_END
  };
  
@@ -86,7 +112,7 @@ index 8df6eea..941de8e 100644
  class ByteBuffer;
  struct BuildValuesCachePosPointers;
  
-@@ -110,6 +114,15 @@ public:
+@@ -110,6 +115,18 @@ public:
      virtual void OnUnitExitCombat(Unit* /*unit*/) { }
      virtual void OnUnitDeath(Unit* /*unit*/, Unit* /*killer*/) { }
      virtual void OnUnitSetShapeshiftForm(Unit* /*unit*/, uint8 /*form*/) { }
@@ -99,23 +125,39 @@ index 8df6eea..941de8e 100644
 +
 +    // Called when a spell's power cost is computed
 +    virtual void OnSpellPowerCost(WorldObject const* /*caster*/, SpellInfo const* /*spellInfo*/, int32& /*cost*/) { }
++
++    // Called just before melee, spell or periodic damage is dealt, with its final values (combat journal)
++    virtual void OnDamageLog(Unit* /*attacker*/, Unit* /*victim*/, SpellInfo const* /*spellInfo*/, uint32 /*damage*/, uint32 /*mitigated*/, uint32 /*absorb*/, uint32 /*resist*/, uint32 /*blocked*/, bool /*crit*/, bool /*periodic*/) { }
  };
  
  #endif
 diff --git a/src/server/game/Scripting/ScriptMgr.h b/src/server/game/Scripting/ScriptMgr.h
-index ce301a1..4d1c064 100644
+index ce301a1..83e2615 100644
 --- a/src/server/game/Scripting/ScriptMgr.h
 +++ b/src/server/game/Scripting/ScriptMgr.h
-@@ -583,6 +583,9 @@ public: /* UnitScript */
+@@ -583,6 +583,10 @@ public: /* UnitScript */
      void OnUnitExitCombat(Unit* unit);
      void OnUnitDeath(Unit* unit, Unit* killer);
      void OnUnitSetShapeshiftForm(Unit* unit, uint8 form);
 +    void OnSpellHitRoll(WorldObject const* caster, Unit const* victim, SpellInfo const* spellInfo, bool& alwaysHit);
 +    void OnAfterCalcArmorReducedDamage(Unit const* attacker, Unit const* victim, uint32 damage, float armor, uint32& reducedDamage);
 +    void OnSpellPowerCost(WorldObject const* caster, SpellInfo const* spellInfo, int32& cost);
++    void OnDamageLog(Unit* attacker, Unit* victim, SpellInfo const* spellInfo, uint32 damage, uint32 mitigated, uint32 absorb, uint32 resist, uint32 blocked, bool crit, bool periodic);
  
  public: /* MovementHandlerScript */
      void OnPlayerMove(Player* player, MovementInfo movementInfo, uint32 opcode);
+diff --git a/src/server/game/Spells/Auras/SpellAuraEffects.cpp b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
+index 24e2d29..90f6013 100644
+--- a/src/server/game/Spells/Auras/SpellAuraEffects.cpp
++++ b/src/server/game/Spells/Auras/SpellAuraEffects.cpp
+@@ -6451,6 +6451,7 @@ void AuraEffect::HandlePeriodicDamageAurasTick(Unit* target, Unit* caster) const
+     SpellPeriodicAuraLogInfo pInfo(this, damage, overkill, absorb, resist, 0.0f, crit);
+     target->SendPeriodicAuraLog(&pInfo);
+ 
++    sScriptMgr->OnDamageLog(caster, target, GetSpellInfo(), damage, cleanDamage.mitigated_damage, absorb, resist, 0, crit, true);
+     Unit::DealDamage(caster, target, damage, &cleanDamage, DOT, GetSpellInfo()->GetSchoolMask(), GetSpellInfo(), true);
+ 
+     Unit::ProcSkillsAndAuras(caster, target, caster ? procAttacker : 0, procVictim, procEx, damage, BASE_ATTACK, GetSpellInfo(), nullptr, GetEffIndex(), nullptr, &dmgInfo);
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
 index ebc0ab1..433e33c 100644
 --- a/src/server/game/Spells/Spell.cpp

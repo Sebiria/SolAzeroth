@@ -46,6 +46,11 @@ SolAzeroth.V3.Rempart.Plafond = 30
 SolAzeroth.V3.Rempart.Fuite = 1
 SolAzeroth.V3.Rempart.FrappeBouclier = 5
 
+#    SolAzeroth.V3.JournalCombat           Journal de combat (v3) : chaque coup, avec les fiches du joueur et des monstres,
+#                                          dans journaux\combat\<nom>_<date>.log. 1 = actif (défaut), 0 = coupé.
+
+SolAzeroth.V3.JournalCombat = 1
+
 
 ###################################################################################################
 # RANG DE MENACE (sections 4.2 et 4.3)

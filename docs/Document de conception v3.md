@@ -254,6 +254,17 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - Cri de défi tire les monstres jusque sur le guerrier, puis les provoque 6 s ;
   - les dégâts du Bond héroïque partent dès le saut et arrivent avec un léger délai.
 
+  **Premier essai en jeu (31/10/2026)** : les icônes s'affichaient en carrés verts, sauf pendant le glisser-déposer. Le BLP produit par Pillow n'avait qu'un seul niveau d'image, alors que les icônes de Blizzard en ont 7 (de 64 à 1 pixel) et que les barres lisent un niveau réduit. `icones_retail.py` écrit désormais lui-même le fichier, avec ses 7 niveaux.
+
+  **Journal de combat** (demande du 31/10/2026), `v3_journal.cpp`, pour vérifier que les chiffres sont cohérents :
+  - un fichier par personnage et par connexion : `journaux\combat\<nom>_<date>.log` ;
+  - à chaque combat, la fiche du joueur : puissance, vie, armure, force, endurance, puissance d'attaque, dégâts et vitesse de l'arme, critique, Rempart ;
+  - puis la fiche de chaque monstre : puissance d'origine, vie, armure, dégâts et vitesse, et le malus du joueur contre lui ;
+  - chaque coup, dans les deux sens : technique, dégâts, part retirée par l'armure, part absorbée, résistée ou bloquée, critique, vie restante de la cible et Rempart du joueur. S'y ajoutent les soins et les morts ;
+  - un bilan à la sortie du combat : durée, dégâts infligés et subis par seconde, détail par technique ;
+  - une nouvelle accroche du moteur, `OnDamageLog`, appelée pour la mêlée, les sorts et les dégâts périodiques, a été ajoutée à `patches\azerothcore-v3-combat.patch` ;
+  - réglage `SolAzeroth.V3.JournalCombat` (1 par défaut).
+
 ### F4. Interface v3 dans les fichiers du jeu
 - **Nos propres fichiers sont ajoutés à FrameXML.** Le test du 30/10 a montré que ce code garde les droits de Blizzard en combat.
 - **Les cadres de Blizzard inutiles sont cachés** : barres d'action, cadres du joueur et de la cible, mana, expérience…

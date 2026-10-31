@@ -72,7 +72,38 @@ def convertir():
     os.makedirs(DOSSIER, exist_ok=True)
     for nom in ICONES:
         image = Image.open(os.path.join(SOURCES, nom + ".jpg")).convert("RGB").resize((64, 64), Image.LANCZOS)
-        image.quantize(256).save(os.path.join(DOSSIER, "SolAzeroth_" + nom + ".blp"), "BLP")
+        with open(os.path.join(DOSSIER, "SolAzeroth_" + nom + ".blp"), "wb") as f:
+            f.write(blp_avec_mipmaps(image))
+
+
+def blp_avec_mipmaps(image):
+    """BLP2 à palette, avec ses 7 niveaux de réduction (64 à 1 pixel).
+
+    Le BLP de Pillow n'a qu'un niveau : le curseur l'affiche, mais les barres d'action, qui lisent un niveau réduit,
+    montraient un carré vert (essai en jeu du 31/10/2026). Les icônes de Blizzard ont toutes leurs réductions.
+    """
+    import struct
+    from PIL import Image
+    palette = image.quantize(256)
+    niveaux = []
+    taille = image.size[0]
+    while taille >= 1:
+        reduite = image if taille == image.size[0] else image.resize((taille, taille), Image.LANCZOS)
+        niveaux.append(reduite.quantize(palette=palette, dither=Image.Dither.NONE).tobytes())
+        taille //= 2
+    couleurs = palette.getpalette()[:768] + [0] * (768 - len(palette.getpalette()[:768]))
+    bgra = b"".join(struct.pack("<4B", couleurs[i * 3 + 2], couleurs[i * 3 + 1], couleurs[i * 3], 255) for i in range(256))
+    position = 20 + 64 + 64 + len(bgra)
+    positions, tailles = [], []
+    for n in niveaux:
+        positions.append(position)
+        tailles.append(len(n))
+        position += len(n)
+    positions += [0] * (16 - len(positions))
+    tailles += [0] * (16 - len(tailles))
+    # type 1, compression 1 (palette), sans alpha, réductions présentes (comme les icônes de Blizzard : 0x11)
+    entete = b"BLP2" + struct.pack("<I4BII", 1, 1, 0, 0, 0x11, image.size[0], image.size[1])
+    return entete + struct.pack("<16I", *positions) + struct.pack("<16I", *tailles) + bgra + b"".join(niveaux)
 
 
 if __name__ == "__main__":
