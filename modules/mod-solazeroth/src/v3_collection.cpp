@@ -138,6 +138,18 @@ namespace
     }
 }
 
+unsigned int SolAzeroth::NombreEnCollection(Player* player, unsigned int objet)
+{
+    auto const& nombres = CollectionDe(player)->nombres;
+    auto it = nombres.find(objet);
+    return it == nombres.end() ? 0 : it->second;
+}
+
+void SolAzeroth::RetirerDeCollection(Player* player, unsigned int objet, unsigned int nombre)
+{
+    Modifier(player, objet, -int32(std::min(nombre, NombreEnCollection(player, objet))));
+}
+
 class solazeroth_v3_collection_joueur : public PlayerScript
 {
 public:

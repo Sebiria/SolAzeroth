@@ -59,6 +59,10 @@ GameTooltip:HookScript("OnTooltipSetItem", InfobulleCollection)
 ItemRefTooltip:HookScript("OnTooltipSetItem", InfobulleCollection)
 
 local function Nombre(id) return (ranges[id] or 0) + (GetItemCount(id, true) or 0) end
+-- Pour les autres fenêtres (Équipement) : nombre possédé (Collection et sacs), nom et teinte d'un composant.
+S.NombreCollection = Nombre
+function S.NomCollection(id) return NOMS[id] and NOMS[id][2] or ("objet " .. id) end
+S.TeinteCollection = Teinte
 
 local function Lien(id)
     local o = NOMS[id]
@@ -295,7 +299,7 @@ function Maj()
         grandeIcone:SetTexture(GetItemIcon(choisi[1]))
         grandeIcone:SetDesaturated(nombre == 0)
         detailNom:SetText(choisi[2])
-        if nombre > 0 then detailNom:SetTextColor(Couleur(choisi[3])) else detailNom:SetTextColor(S.Couleur("gris")) end
+        if nombre > 0 then detailNom:SetTextColor(Teinte(choisi[1])) else detailNom:SetTextColor(S.Couleur("gris")) end
         local range = ranges[choisi[1]] or 0
         detailEtat:SetText(nombre > 0 and ("Possédé : " .. nombre .. "\nDans la Collection : " .. range
             .. "\nDans le sac : " .. (nombre - range)) or "Pas encore trouvé")

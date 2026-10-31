@@ -14,7 +14,7 @@ local POTION, FEU, PIERRE = 100029, 100030, 6948
 local MODIFICATEURS = { LSHIFT = true, RSHIFT = true, LCTRL = true, RCTRL = true, LALT = true, RALT = true,
     UNKNOWN = true }
 
-local f = S.Fenetre("SolUIRaccourcis", 1000, 660, "Techniques et raccourcis")
+local f = S.Fenetre("SolUIRaccourcis", 1000, 690, "Techniques et raccourcis")
 
 -- Bouton invisible : une touche peut ouvrir la fenêtre (« CLICK SolUIOuvrirRaccourcis:LeftButton »).
 local ouvrir = CreateFrame("Button", "SolUIOuvrirRaccourcis", UIParent)
@@ -50,6 +50,7 @@ table.insert(ENTREES, { place = "PF", commande = "CLICK SolUIBivouac" .. PIERRE 
 local FENETRES = {
     { nom = function() return "Techniques et raccourcis" end, commande = "CLICK SolUIOuvrirRaccourcis:LeftButton" },
     { nom = function() return "Collection" end, commande = "CLICK SolUIOuvrirCollection:LeftButton" },
+    { nom = function() return "Équipement" end, commande = "CLICK SolUIOuvrirEquipement:LeftButton" },
     { nom = function() return "Carte" end, commande = "TOGGLEWORLDMAP" },
 }
 

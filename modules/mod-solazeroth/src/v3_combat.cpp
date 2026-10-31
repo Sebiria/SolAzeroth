@@ -6,8 +6,9 @@
 //   du pourcentage du moteur, en gardant au moins SolAzeroth.V3.ArmureMinimum % du coup.
 // - Plus de ressource : les sorts ne coûtent plus ni mana, ni rage, ni énergie, ni puissance runique (les sorts payés en
 //   vie gardent leur coût). L'affichage des barres disparaît avec l'interface v3 (F4).
-// - Puissance du personnage : moyenne des niveaux d'objet équipés, rang d'amélioration compris (provisoire : les chiffres
-//   par qualité et origine restent à fixer, question 3 du document). Envoyée à l'interface (« SOLPUISSANCE ») et
+// - Puissance du personnage : moyenne des niveaux d'objet équipés, rang d'amélioration compris (E1 : rang de la version
+//   d'équipement, SolAzeroth.V3.PuissanceParRang par rang ; provisoire : les chiffres par qualité et origine restent à
+//   fixer, question 3 du document). Envoyée à l'interface (« SOLPUISSANCE ») et
 //   affichée par .puissance.
 // - Malus hors de sa puissance : face à un monstre plus fort, les dégâts infligés par le joueur et ses familiers baissent
 //   de SolAzeroth.V3.MalusParPoint % par point de puissance manquant, au plus SolAzeroth.V3.MalusMax %.
@@ -43,7 +44,7 @@ namespace
         float armureMinimum = 25.0f;
         float malusParPoint = 2.0f;
         float malusMax = 75.0f;
-        float pourcentParRang = 0.03f;
+        float pourcentParRang = 0.1f;
         float degatsMonstres = 4.0f;
         float degatsSorts = 2.0f;
         float degatsDuree = 1.5f;
@@ -69,7 +70,7 @@ namespace
             if (!objet)
                 continue;
             somme += objet->GetTemplate()->ItemLevel
-                * (1.0f + reglages.pourcentParRang * SolAzeroth::RangDObjet(objet->GetGUID().GetCounter()));
+                * (1.0f + reglages.pourcentParRang * SolAzeroth::RangEquipement(objet->GetEntry()));
             ++nombre;
         }
         return nombre ? somme / nombre : 0.0f;
@@ -276,7 +277,7 @@ public:
         reglages.armureMinimum = sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureMinimum", 25.0f);
         reglages.malusParPoint = sConfigMgr->GetOption<float>("SolAzeroth.V3.MalusParPoint", 2.0f);
         reglages.malusMax = sConfigMgr->GetOption<float>("SolAzeroth.V3.MalusMax", 75.0f);
-        reglages.pourcentParRang = sConfigMgr->GetOption<float>("SolAzeroth.Bonus.PourcentParRang", 0.03f);
+        reglages.pourcentParRang = sConfigMgr->GetOption<float>("SolAzeroth.V3.PuissanceParRang", 0.1f);
         reglages.degatsMonstres = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 4.0f);
         reglages.degatsSorts = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsSorts", 2.0f);
         reglages.degatsDuree = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsDuree", 1.5f);

@@ -358,10 +358,13 @@ def construire():
 
 def item_dbc():
     """Item.dbc du client : une ligne par récompense, copiée de l'objet source (type, apparence, emplacement), et
-    l'Éclat cadavérique (F6, migration 077), copié du Fragment d'âme en composant (classe 7, sous-classe 11)."""
+    l'Éclat cadavérique (F6, migration 077), copié du Fragment d'âme en composant (classe 7, sous-classe 11), puis les
+    pièces fabriquées et les rangs d'equipement_v3.py (E1, migration 078)."""
+    import equipement_v3
     table = dbc.Dbc.ouvrir(ITEM_DBC_ORIGINE)
     existants = {e[0] for e in table.enregistrements}
-    for e, _, _, source, _ in EQUIPEMENT + [(ECLAT, 0, "", FRAGMENT_AME, 0)]:
+    for e, _, _, source, _ in EQUIPEMENT + [(ECLAT, 0, "", FRAGMENT_AME, 0)] + \
+            [(e, 0, "", source, 0) for e, source in equipement_v3.lignes_dbc()]:
         if e not in existants:
             ligne = list(table.chercher(source))
             ligne[0] = e

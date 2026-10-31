@@ -47,6 +47,11 @@ SolAzeroth.V3.MonstresDegats = 4
 SolAzeroth.V3.MonstresDegatsSorts = 2
 SolAzeroth.V3.MonstresDegatsDuree = 1.5
 
+#    SolAzeroth.V3.PuissanceParRang        Puissance d'une pièce : niveau d'objet × (1 + ce chiffre × rang d'amélioration).
+#                                          Les caractéristiques gagnent 10 % par rang. Défaut : 0.1.
+
+SolAzeroth.V3.PuissanceParRang = 0.1
+
 #    SolAzeroth.V3.Rempart.Part            Kit du guerrier tank (v3, F3) : part des dégâts encaissés, après l'armure, versée
 #                                          dans le Rempart, en %. Défaut : 40.
 #    SolAzeroth.V3.Rempart.Plafond         Plafond du Rempart, en % de la vie maximale. Défaut : 30.
