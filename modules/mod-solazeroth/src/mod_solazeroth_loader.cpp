@@ -26,6 +26,7 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_ligues();
         AddSC_solazeroth_metiers();         // métiers partagés : en v3, plus de niveau de métier
         AddSC_solazeroth_hauts_faits();     // hauts faits v2 (points de talent, Marques) : retirés en v3 le 31/10/2026
+        AddSC_solazeroth_butin();           // choix du butin des boss : en v3, les chefs ne laissent que des composants (F6)
     }
     else
     {
@@ -41,7 +42,6 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_v3_gouffre();
     }
     AddSC_solazeroth_reinitialisation();
-    AddSC_solazeroth_butin();
     AddSC_solazeroth_journal();
     AddSC_solazeroth_pistage();
     AddSC_solazeroth_marques();

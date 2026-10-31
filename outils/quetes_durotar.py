@@ -25,6 +25,7 @@ HISTOIRE = os.path.join(os.path.expanduser("~"), "Documents", "Claude", "Sol'Aze
 MIGRATION = r"C:\SolAzeroth\sql\migrations\063_v3_quetes_durotar"
 ITEM_DBC_ORIGINE = r"C:\SolAzeroth\data\dbc\Item.dbc"
 ITEM_DBC_PATCH = r"C:\SolAzeroth\patch-client\fichiers\DBFilesClient\Item.dbc"
+ECLAT, FRAGMENT_AME = 910120, 6265   # Éclat cadavérique (F6), copié du Fragment d'âme
 PUISSANCES = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Puissances.lua"
 
 QUETE = 910000          # D01 = 910001
@@ -351,16 +352,23 @@ def construire():
         with open(MIGRATION + suffixe, "w", encoding="utf-8", newline="\n") as f:
             f.write("\n".join(lignes))
 
-    # Item.dbc du client : une ligne par récompense, copiée de l'objet source (type, apparence, emplacement).
+    item_dbc()
+    print("%d quêtes, %d récompenses, %d quêtes d'origine retirées" % (len(Q), len(EQUIPEMENT), len(origine)))
+
+
+def item_dbc():
+    """Item.dbc du client : une ligne par récompense, copiée de l'objet source (type, apparence, emplacement), et
+    l'Éclat cadavérique (F6, migration 077), copié du Fragment d'âme en composant (classe 7, sous-classe 11)."""
     table = dbc.Dbc.ouvrir(ITEM_DBC_ORIGINE)
     existants = {e[0] for e in table.enregistrements}
-    for e, _, _, source, _ in EQUIPEMENT:
+    for e, _, _, source, _ in EQUIPEMENT + [(ECLAT, 0, "", FRAGMENT_AME, 0)]:
         if e not in existants:
             ligne = list(table.chercher(source))
             ligne[0] = e
+            if e == ECLAT:
+                ligne[1], ligne[2] = 7, 11
             table.enregistrements.append(ligne)
     table.enregistrer(ITEM_DBC_PATCH)
-    print("%d quêtes, %d récompenses, %d quêtes d'origine retirées" % (len(Q), len(EQUIPEMENT), len(origine)))
 
 
 _noms = {}

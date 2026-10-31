@@ -24,6 +24,7 @@
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
+#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -46,6 +47,42 @@ namespace
     uint32 const BONUS_METIERS[] = { 53120, 53121, 53122, 53123, 53124, 53040,
                                      55428, 55480, 55500, 55501, 55502, 55503 };
     uint16 const DEPECAGE = 393;   // plus de dépeçage : la compétence (et Maître en anatomie) est retirée
+
+    // F6 (31/10/2026) : Éclat cadavérique, monnaie des rangs d'objet (F8). Monstre ordinaire : 0 (25 %), 1 (40 %),
+    // 2 (25 %) ou 3 (10 %) ; élite ×3 ; rare, chef de donjon ou chef renforcé ×5 ; et davantage avec la puissance,
+    // au-delà de celle de Durotar (niveau d'origine 12). Valeurs choisies par l'utilisateur, à calibrer avec F8.
+    uint32 const ECLAT = 910120;
+    uint32 const CHEF_RENFORCE_PREMIER = 910010, CHEF_RENFORCE_DERNIER = 910014;   // migration 075
+
+    uint32 Eclats(Creature* creature)
+    {
+        CreatureTemplate const* modele = creature->GetCreatureTemplate();
+        if (modele->type == CREATURE_TYPE_CRITTER)
+            return 0;
+        bool renforce = modele->Entry >= CHEF_RENFORCE_PREMIER && modele->Entry <= CHEF_RENFORCE_DERNIER;
+        if (creature->IsSummon() && !renforce)   // les renforts appelés en combat ne donnent rien
+            return 0;
+        uint32 tirage = urand(1, 100);
+        float nombre = tirage <= 25 ? 0 : tirage <= 65 ? 1 : tirage <= 90 ? 2 : 3;
+        if (renforce || creature->IsDungeonBoss() || modele->rank == CREATURE_ELITE_WORLDBOSS
+            || modele->rank == CREATURE_ELITE_RARE || modele->rank == CREATURE_ELITE_RAREELITE)
+            nombre *= 5;
+        else if (modele->rank == CREATURE_ELITE_ELITE)
+            nombre *= 3;
+        nombre *= 1.0f + std::max(0, int32(modele->maxlevel) - 12) / 12.0f;
+        return uint32(nombre + 0.5f);
+    }
+
+    // F6 : le butin des monstres et des chefs ne garde que les composants (objets à collectionner), les objets de quête
+    // et les clés. Plus d'équipement, de recettes ni de consommables : l'équipement vient des quêtes et des annexes.
+    bool Garde(uint32 objet)
+    {
+        if (collectionnables.count(objet))
+            return true;
+        ItemTemplate const* modele = sObjectMgr->GetItemTemplate(objet);
+        return modele && (modele->Class == ITEM_CLASS_QUEST || modele->Class == ITEM_CLASS_KEY || modele->StartQuest
+            || modele->Bonding == BIND_QUEST_ITEM);
+    }
 
     struct Collection : DataMap::Base
     {
@@ -163,14 +200,16 @@ public:
         }
     }
 
-    // Le cuir et les peaux sont dans le butin du corps : on n'a plus à dépecer.
+    // Le cuir et les peaux sont dans le butin du corps : on n'a plus à dépecer. Les éclats cadavériques aussi.
     void OnPlayerCreatureKillCredit(Player* player, Creature* creature) override
     {
-        auto it = depecage.find(creature->GetEntry());
-        if (it == depecage.end() || creature->GetLootRecipient() != player)
+        if (creature->GetLootRecipient() != player)
             return;
-        LootTemplates_Skinning.GetLootFor(it->second)->Process(creature->loot, LootTemplates_Skinning,
-            creature->GetLootMode(), player);
+        if (auto it = depecage.find(creature->GetEntry()); it != depecage.end())
+            LootTemplates_Skinning.GetLootFor(it->second)->Process(creature->loot, LootTemplates_Skinning,
+                creature->GetLootMode(), player);
+        if (uint32 nombre = Eclats(creature))
+            creature->loot.AddItem(LootStoreItem(ECLAT, 0, 100.0f, false, LOOT_MODE_DEFAULT, 0, nombre, nombre));
         if (!creature->loot.isLooted())
             creature->SetDynamicFlag(UNIT_DYNFLAG_LOOTABLE);
     }
@@ -205,6 +244,31 @@ public:
     void OnPlayerDelete(ObjectGuid guid, uint32 /*compte*/) override
     {
         CharacterDatabase.Execute("DELETE FROM solazeroth_v3_collection WHERE guid = {}", guid.GetCounter());
+    }
+};
+
+class solazeroth_v3_collection_butin : public MiscScript
+{
+public:
+    solazeroth_v3_collection_butin() : MiscScript("solazeroth_v3_collection_butin",
+        { MISCHOOK_ON_AFTER_LOOT_TEMPLATE_PROCESS }) { }
+
+    void OnAfterLootTemplateProcess(Loot* loot, LootTemplate const* /*table*/, LootStore const& store, Player* joueur,
+        bool /*personnel*/, bool /*sansErreur*/, uint16 /*mode*/) override
+    {
+        if (&store != &LootTemplates_Creature)
+            return;
+        auto fin = std::remove_if(loot->items.begin(), loot->items.end(), [&](LootItem const& objet)
+        {
+            if (Garde(objet.itemid))
+                return false;
+            if (loot->unlootedCount && joueur && objet.AllowedForPlayer(joueur, loot->sourceWorldObjectGUID))
+                --loot->unlootedCount;
+            return true;
+        });
+        loot->items.erase(fin, loot->items.end());
+        for (size_t i = 0; i < loot->items.size(); ++i)
+            loot->items[i].itemIndex = i;
     }
 };
 
@@ -295,6 +359,7 @@ public:
 void AddSC_solazeroth_v3_collection()
 {
     new solazeroth_v3_collection_joueur();
+    new solazeroth_v3_collection_butin();
     new solazeroth_v3_collection_monde();
     new solazeroth_v3_collection_commandes();
 }

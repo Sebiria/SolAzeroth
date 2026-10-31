@@ -8,8 +8,8 @@ acore_world.solazeroth_v3_collectionnables) : le serveur range ces objets dans l
 Objets retenus : les matériaux (classe 7) et les gemmes (classe 3), de qualité commune ou mieux, qu'on peut réellement
 obtenir (butin, marchand, prospection, pilage, désenchantement). Cuisine (31/10/2026, l'Eau de source fraîche ramassée
 allait dans le sac) : la viande, et les consommables qui servent de composant à une recette de cuisine (lait, eau,
-fruits…), lus dans Spell.dbc et SkillLineAbility.dbc. Les éclats
-cadavériques, composants rares et reliques de zone viendront avec F6 à F10.
+fruits…), lus dans Spell.dbc et SkillLineAbility.dbc. F6 : l'Éclat cadavérique, donné par script à la mort des
+monstres (aucune table de butin), en tête. Composants rares et reliques de zone viendront avec F7 à F10.
 """
 import os
 import subprocess
@@ -22,6 +22,7 @@ MIGRATION = r"C:\SolAzeroth\sql\migrations\069_v3_collection"
 
 # nom de la catégorie, puis (classe, sous-classe) de item_template
 CATEGORIES = [
+    ("Éclats", []),
     ("Tissus", [(7, 5)]),
     ("Cuirs et peaux", [(7, 6)]),
     ("Métaux et pierres", [(7, 7)]),
@@ -34,6 +35,7 @@ CATEGORIES = [
     ("Divers", [(7, 11), (7, 13)]),
 ]
 CUISINE = 185   # SkillLine.dbc
+ECLATS = [910120]   # migration 077
 
 
 def composants_de_cuisine():
@@ -68,7 +70,8 @@ def main():
         "SELECT i.entry, i.class, i.subclass, i.Quality, i.ItemLevel, COALESCE(NULLIF(l.Name, ''), i.name) "
         "FROM item_template i LEFT JOIN item_template_locale l ON l.ID = i.entry AND l.locale = 'frFR' "
         "WHERE (i.class IN (3, 7) OR (i.class = 0 AND i.entry IN (%s))) AND i.Quality >= 1 "
-        "AND i.entry IN (%s UNION SELECT item FROM npc_vendor)" % (",".join(map(str, sorted(cuisine))), obtenables))
+        "AND i.entry IN (%s UNION SELECT item FROM npc_vendor UNION SELECT entry FROM item_template WHERE entry IN (%s))" % (",".join(map(str, sorted(cuisine))), obtenables,
+                                                    ",".join(map(str, ECLATS))))
     sortie = ["-- Catalogue de la Collection. Généré par outils\\collection_v3.py : ne pas modifier à la main.",
               "-- Par catégorie : { identifiant, nom, qualité }, du plus petit niveau d'objet au plus grand.",
               "SolUI.CATALOGUE = {"]
@@ -76,8 +79,9 @@ def main():
     for nom, genres in CATEGORIES:
         objets = sorted((int(niveau), nom_objet, int(entree), int(qualite))
                         for entree, classe, sous_classe, qualite, niveau, nom_objet in lignes
-                        if (int(classe), int(sous_classe)) in genres
-                        or (nom == "Cuisine" and classe == "0"))
+                        if (nom == "Éclats") == (int(entree) in ECLATS)
+                        and ((int(classe), int(sous_classe)) in genres or nom == "Éclats"
+                             or (nom == "Cuisine" and classe == "0")))
         total += len(objets)
         tous |= {entree for _, _, entree, _ in objets}
         sortie.append("    { nom = %s, objets = {" % lua(nom))

@@ -607,10 +607,15 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Bonus des métiers retirés** : Robustesse du minage (+60 Endurance, d'où 713 points de vie) et Sang-de-vie de l'herboristerie. Le dépeçage est retiré, et Maître en anatomie avec lui.
     - **Puissance des quêtes** : un chiffre devant chaque quête, dans le suivi, le journal et sur la carte. Nos quêtes restent au niveau du joueur, car à leur niveau d'origine le client cacherait leur « ! ». Leur puissance vient donc de `SolUI_Puissances.lua`, généré par `quetes_durotar.py`.
     - **Infobulles** : celle d'un objet n'affiche plus les autres personnages qui le possèdent (addon des sacs). Un objet à collectionner n'affiche que son nom, coloré selon son type : vert pour les herbes, bleu pour les métaux et les pierres, orange pour les cuirs. Ces couleurs servent aussi dans la Collection.
+  - **Onzième série, F6 butin (31/10/2026)**, choix de l'utilisateur ; pas encore vérifiée en jeu :
+    - **Butin des monstres** : le corps ne garde que les composants (objets de la Collection), les objets de quête, les objets qui lancent une quête et les clés. Plus d'équipement, de recettes ni de consommables. L'or d'origine est gardé. Le tri porte sur toute table de butin de créature, chefs de donjon et de raid compris (`v3_collection.cpp`). Le vol à la tire et le butin des objets du monde ne changent pas.
+    - **Choix du butin des boss (v2, `butin.cpp`)** : plus chargé en v3.
+    - **Éclat cadavérique** (910120, migration 077 ; client : `quetes_durotar.item_dbc()`) : composant de qualité inhabituelle, en tête de la Collection (743 objets, 11 catégories). À la mort, un monstre en donne 0 (25 %), 1 (40 %), 2 (25 %) ou 3 (10 %), soit 1,2 en moyenne. Élite ×3 ; rare, chef de donjon ou chef renforcé ×5. Au-delà du niveau d'origine 12 (Durotar), le nombre croît de 1/12 par niveau. Ni les bestioles ni les renforts invoqués en combat n'en donnent.
+    - **À calibrer avec F8** : le nombre d'éclats, d'après le prix des rangs d'objet.
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :
-- **F6, butin** : tables de butin réduites aux composants, éclats cadavériques, or (le cuir sans dépeçage est fait, neuvième série).
+- **F6, butin** : construit (onzième série).
 - **F7, potion et camp** : les deux boutons du cadre du personnage, et leurs listes de courses.
 - **F8, rangs d'objet et joaillerie** : rangs 1 à 5, composants rares, et nos recettes de joaillerie.
 - **F9, modes de zone** : normal rehaussé, difficile et cauchemar.

@@ -1,6 +1,9 @@
 -- Catalogue de la Collection. Généré par outils\collection_v3.py : ne pas modifier à la main.
 -- Par catégorie : { identifiant, nom, qualité }, du plus petit niveau d'objet au plus grand.
 SolUI.CATALOGUE = {
+    { nom = "Éclats", objets = {
+        { 910120, "Éclat cadavérique", 2 },
+    } },
     { nom = "Tissus", objets = {
         { 2320, "Bobine de fil grossier", 1 },
         { 2589, "Etoffe de lin", 1 },
