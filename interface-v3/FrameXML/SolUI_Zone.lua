@@ -1,7 +1,7 @@
 -- Sol'Azeroth v3, F4 : la zone (maquette Arène, reprise dans Synthèse), en haut à droite.
--- Cadre réduit en attendant F5 : nom de la zone, puissance conseillée (calculée par le serveur d'après ses monstres)
--- et sous-zone ; le pourcentage et les reliques viendront avec F5. Puis la mini-carte ronde et le bouton Menu, qui
--- remplace le micro-menu de Blizzard.
+-- Nom de la zone, puissance conseillée (calculée par le serveur d'après ses monstres), sous-zone et, depuis F5e,
+-- pourcentage de la zone (les reliques viendront ensuite). Puis la mini-carte ronde et le bouton Menu, qui remplace
+-- le micro-menu de Blizzard.
 
 local S = SolUI
 
@@ -25,8 +25,73 @@ local conseillee = S.Texte(suivi, "Regular", 12, "gris")
 conseillee:SetPoint("TOPRIGHT", suivi, "TOPRIGHT", -14, -13)
 local sousZone = S.Texte(suivi, "Regular", 12, "gris")
 sousZone:SetPoint("TOPLEFT", nom, "BOTTOMLEFT", 0, -6)
-sousZone:SetPoint("RIGHT", suivi, "RIGHT", -14, 0)
+sousZone:SetPoint("RIGHT", suivi, "RIGHT", -64, 0)
 sousZone:SetJustifyH("LEFT")
+
+-- F5e (31/10/2026) : pourcentage de la zone (v3_zone.cpp), une jauge au pied du cadre ; survol : le détail.
+local pourcent = S.Texte(suivi, "Bold", 13, "ambreClair")
+pourcent:SetPoint("BOTTOMRIGHT", suivi, "BOTTOMRIGHT", -14, 12)
+local jauge = S.Texture(suivi, "ARTWORK", nil, S.Couleur("creux"))
+jauge:SetPoint("BOTTOMLEFT", suivi, "BOTTOMLEFT", 14, 6)
+jauge:SetPoint("BOTTOMRIGHT", suivi, "BOTTOMRIGHT", -14, 6)
+jauge:SetHeight(2)
+local plein = S.Texture(suivi, "OVERLAY", nil, S.Couleur("ambre"))
+plein:SetPoint("TOPLEFT", jauge)
+plein:SetPoint("BOTTOMLEFT", jauge)
+
+local progres, recu = nil, nil
+local function Pour(c) return (string.format("%.2f", c / 100):gsub("%.?0+$", ""):gsub("%.", ",")) .. " %" end
+
+local function MajPourcent()
+    S.Montrer(pourcent, progres)
+    S.Montrer(jauge, progres)
+    S.Montrer(plein, progres and progres.total > 0)
+    if not progres then return end
+    pourcent:SetText(Pour(progres.total))
+    plein:SetWidth(math.max(1, jauge:GetWidth() * math.min(1, progres.total / 10000)))
+end
+
+S.Message("SOLZONE", function(champs)
+    local genre = champs[1]
+    if genre == "POURCENT" then
+        if tonumber(champs[2]) < 0 then progres, recu = nil, nil; MajPourcent(); return end
+        recu = { total = tonumber(champs[2]), histoire = tonumber(champs[3]), exploration = tonumber(champs[4]),
+            annexes = tonumber(champs[5]), lieux = {} }
+    elseif not recu then
+        return
+    elseif genre == "EXPLO" then
+        recu.explorees, recu.sousZones = tonumber(champs[2]), tonumber(champs[3])
+    elseif genre == "LIEU" then
+        table.insert(recu.lieux, { nom = champs[3], tues = tonumber(champs[4]), requis = tonumber(champs[5]),
+            part = tonumber(champs[6]) })
+    elseif genre == "FINZONE" then
+        progres = recu
+        MajPourcent()
+    end
+end)
+
+suivi:EnableMouse(true)
+suivi:SetScript("OnEnter", function(self)
+    if not progres then return end
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
+    GameTooltip:AddDoubleLine(GetZoneText() or "", Pour(progres.total), 1, 0.82, 0, 1, 0.82, 0)
+    GameTooltip:AddDoubleLine("Histoire", Pour(progres.histoire) .. " / 50 %", 1, 1, 1, 1, 1, 1)
+    GameTooltip:AddDoubleLine(string.format("Exploration (%d / %d)", progres.explorees or 0, progres.sousZones or 0),
+        Pour(progres.exploration) .. " / 6 %", 1, 1, 1, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Annexes", Pour(progres.annexes) .. " / 44 %", 1, 1, 1, 1, 1, 1)
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine("Lieux à nettoyer", 1, 0.82, 0)
+    for _, l in ipairs(progres.lieux) do
+        local fait = l.tues >= l.requis
+        local r, g, b = 0.75, 0.75, 0.75
+        if fait then r, g, b = 0.4, 1, 0.4 end
+        GameTooltip:AddDoubleLine(l.nom, fait and ("nettoyé, " .. Pour(l.part)) or string.format("%d / %d", l.tues, l.requis),
+            r, g, b, r, g, b)
+    end
+    GameTooltip:Show()
+end)
+suivi:SetScript("OnLeave", function() GameTooltip:Hide() end)
+MajPourcent()
 
 local function MajZone()
     nom:SetText(GetZoneText() or "")

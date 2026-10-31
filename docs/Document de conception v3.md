@@ -400,6 +400,9 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **F5c** : construction des quêtes dans la base, et retrait des quêtes d'origine.
 - **F5d** : interface des quêtes (journal, suivi, carte et mini-carte).
 - **F5e** : pourcentage de zone, lieux à nettoyer et exploration.
+  - **Construit le 31/10/2026, pas encore vérifié en jeu** : `outils\zone_durotar.py` lit les parts dans le document de Durotar et écrit la migration 074 : 26 quêtes (50 %), 24 sous-zones (6 %) et 10 lieux (19 %). Le serveur (`v3_zone.cpp`) compte les quêtes rendues, les sous-zones découvertes et les monstres de chaque lieu tués dans la zone, y compris pour les quêtes.
+  - **Interface** : le suivi de zone affiche le pourcentage et une jauge. Au survol, il détaille histoire, exploration et annexes, et donne l'avancée de chaque lieu.
+  - **Reste à faire** : les chefs renforcés (en attendant, le chef d'origine compte pour 1 monstre du lieu), puis les primes, contrats, défis et reliques (25 %). Les annexes du document de Durotar restent à valider par l'utilisateur.
 - **F5f** : accès au Gouffre de Ragefeu à 60 %.
 
 **Validation de l'histoire de Durotar (31/10/2026)** : l'utilisateur valide le brouillon relu (`Durotar — Histoire et quêtes (brouillon).md`) et toutes les recommandations du relecteur, sauf la répartition des activités secondaires :

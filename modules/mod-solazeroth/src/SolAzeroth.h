@@ -167,5 +167,6 @@ void AddSC_solazeroth_v3_mort();
 void AddSC_solazeroth_v3_bivouac();
 void AddSC_solazeroth_v3_collection();
 void AddSC_solazeroth_v3_carte();
+void AddSC_solazeroth_v3_zone();
 
 #endif
