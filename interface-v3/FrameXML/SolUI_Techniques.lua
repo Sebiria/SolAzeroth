@@ -12,7 +12,7 @@ local PASSIF = 100009
 
 local groupe = CreateFrame("Frame", "SolUITechniques", S.racine)
 groupe:SetSize(26 + 18 + 4 * TAILLE + 3 * ECART + 18 + 26, 2 * TAILLE + ECART)
-groupe:SetPoint("BOTTOM", S.racine, "BOTTOM", 0, 30)
+S.Placer(groupe, "techniques")
 
 ------------------------------------------------------------------------
 -- Losange du passif

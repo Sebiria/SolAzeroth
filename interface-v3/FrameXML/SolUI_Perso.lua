@@ -7,7 +7,7 @@ local S = SolUI
 -- Cadre de 300 x 300 centré sur le personnage (maquette : centre en 738, 568 ; le jeu centre le personnage).
 local perso = CreateFrame("Frame", "SolUIPerso", S.racine)
 perso:SetSize(300, 300)
-perso:SetPoint("CENTER", S.racine, "CENTER", 0, -118)
+S.Placer(perso, "perso")
 S.perso = perso
 
 ------------------------------------------------------------------------

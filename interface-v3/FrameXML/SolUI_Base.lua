@@ -61,6 +61,27 @@ end
 Dimensionner()
 
 ------------------------------------------------------------------------
+-- Disposition des blocs : point d'ancrage sur la racine, décalage, échelle et largeur. Une seule table, pour que la
+-- future page de réglages (interface paramétrable) n'ait qu'elle à changer, puis à rappeler S.Placer.
+------------------------------------------------------------------------
+S.DISPOSITION = {
+    perso = { point = "CENTER", x = 0, y = -118, echelle = 1 },
+    techniques = { point = "BOTTOM", x = 0, y = 30, echelle = 1 },
+    cible = { point = "TOP", x = 0, y = -18, echelle = 1, largeur = 720 },
+    zone = { point = "TOPRIGHT", x = -20, y = -20, echelle = 1 },
+}
+S.blocs = {}
+
+function S.Placer(cadre, nom)
+    local d = S.DISPOSITION[nom]
+    S.blocs[nom] = cadre
+    cadre:SetScale(d.echelle or 1)
+    cadre:ClearAllPoints()
+    cadre:SetPoint(d.point, racine, d.point, d.x / (d.echelle or 1), d.y / (d.echelle or 1))
+    if d.largeur then cadre:SetWidth(d.largeur) end
+end
+
+------------------------------------------------------------------------
 -- Fabriques
 ------------------------------------------------------------------------
 -- Texte en Inter, avec une ombre pour rester lisible sur le décor.

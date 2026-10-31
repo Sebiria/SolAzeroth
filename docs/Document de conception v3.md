@@ -333,6 +333,17 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - L'ancienne jauge du Rempart de l'addon SolAzerothKit est retirée.
 - **Pour revenir à l'interface de Blizzard** : supprimer `patch-client\fichiers\Interface\FrameXML`, puis relancer `construire_patch.py`.
 
+**Premier essai en jeu (31/10/2026)** :
+- Le client accepte le `FrameXML.toc` modifié, et l'interface s'affiche.
+- **Corrigé** :
+  - le nom de la cible manquait : il était ancré sur l'étiquette ÉLITE, cachée et sans largeur ;
+  - les boutons des addons restaient autour de la mini-carte : ils sont maintenant rangés.
+- **Demande de l'utilisateur** : couper tous les messages d'erreur rouges (« pas encore disponible », « hors de portée »…). Les messages jaunes restent.
+- **Demande de l'utilisateur : une interface paramétrable**, dont le contenu doit donc s'adapter.
+  - La position, l'échelle et la largeur de chaque bloc sont réunies dans `S.DISPOSITION` (`SolUI_Base.lua`) et appliquées par `S.Placer`. La future page de réglages n'aura qu'à les changer.
+  - Le cadre de la cible suit sa largeur : barre, graduations et incantation s'étirent, et le nombre de débuffs affichés (6 au plus) est celui qui tient.
+- Les barres verte et rouge vues sous le personnage sont des WeakAuras de la v2 propres au joueur, et non l'interface v3.
+
 ### F5. Premier essai jouable à Durotar
 - Les monstres de la Vallée des épreuves et de Durotar sont remis à l'échelle, et le Gouffre de Ragefeu s'ouvre à 60 %, même si le contenu de la zone est encore incomplet.
 - **Vérification** : l'utilisateur joue son guerrier tank et dit si c'est exigeant et amusant. Les chiffres se calibrent à partir de là.

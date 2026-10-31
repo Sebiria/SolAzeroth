@@ -7,7 +7,7 @@ local S = SolUI
 
 local zone = CreateFrame("Frame", "SolUIZone", S.racine)
 zone:SetSize(248 + 12 + 92, 160)
-zone:SetPoint("TOPRIGHT", S.racine, "TOPRIGHT", -20, -20)
+S.Placer(zone, "zone")
 
 ------------------------------------------------------------------------
 -- Suivi de zone
@@ -70,6 +70,13 @@ for _, nomCadre in ipairs({ "MinimapCluster", "MinimapBorder", "MinimapBorderTop
         if cadre:GetObjectType() == "Texture" then cadre:Hide() else S.Ranger(cadre) end
     end
 end
+
+-- Boutons posés autour de la mini-carte par les addons (WeakAuras…) : rangés une fois tout chargé.
+S.Ecouter("PLAYER_ENTERING_WORLD", function()
+    for _, enfant in ipairs({ Minimap:GetChildren() }) do
+        if enfant:GetObjectType() == "Button" then S.Ranger(enfant) end
+    end
+end)
 
 -- L'horloge (Blizzard_TimeManager) arrive plus tard.
 S.Ecouter("ADDON_LOADED", function(_, addon)

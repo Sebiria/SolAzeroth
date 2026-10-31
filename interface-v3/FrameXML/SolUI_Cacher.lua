@@ -28,3 +28,7 @@ for _, cadre in ipairs(REMPLACES) do
 end
 
 -- Ces cadres se replacent d'eux-mêmes (UIParent_ManageFramePositions) : rangés, ils restent invisibles.
+
+-- Messages d'erreur rouges au centre de l'écran (« pas encore disponible », « hors de portée »…) : coupés à la
+-- demande de l'utilisateur. Les messages jaunes (quêtes, captures d'écran) restent.
+UIErrorsFrame:UnregisterEvent("UI_ERROR_MESSAGE")

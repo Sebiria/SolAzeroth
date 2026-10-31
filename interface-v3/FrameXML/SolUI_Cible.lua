@@ -3,13 +3,13 @@
 
 local S = SolUI
 
-local LARGEUR, MARGE = 720, 18
-local INTERIEUR = LARGEUR - 2 * MARGE
-local MAX_DEBUFFS = 3
+-- Tout suit la largeur du cadre (réglable : S.DISPOSITION.cible) ; les débuffs affichés sont ceux qui y tiennent.
+local MARGE = 18
+local LARGEUR_DEBUFF, ECART_DEBUFF = 214, 12
+local MAX_DEBUFFS = 6
 
 local cible = CreateFrame("Frame", "SolUICible", S.racine)
-cible:SetWidth(LARGEUR)
-cible:SetPoint("TOP", S.racine, "TOP", 0, -18)
+S.Placer(cible, "cible")
 S.Panneau(cible, 0.92)
 cible:Hide()
 
@@ -17,7 +17,7 @@ cible:Hide()
 -- En-tête : [ÉLITE] Nom  puissance             vie / max   62 %
 ------------------------------------------------------------------------
 local etiquette = CreateFrame("Frame", nil, cible)
-etiquette:SetHeight(19)
+etiquette:SetSize(48, 19)
 etiquette:SetPoint("TOPLEFT", cible, "TOPLEFT", MARGE, -18)
 etiquette:SetBackdrop({ edgeFile = S.BLANC, edgeSize = 1 })
 etiquette:SetBackdropBorderColor(0.416, 0.435, 0.471)
@@ -25,6 +25,7 @@ etiquette.texte = S.Texte(etiquette, "Bold", 11, "texte")
 etiquette.texte:SetPoint("CENTER", 0, 0)
 
 local nom = S.Texte(cible, "Bold", 22, "clair")
+nom:SetJustifyH("LEFT")
 local puissance = S.Texte(cible, "Regular", 13, "gris")
 puissance:SetPoint("BOTTOMLEFT", nom, "BOTTOMRIGHT", 12, 2)
 
@@ -37,26 +38,29 @@ vie:SetPoint("BOTTOMRIGHT", pourcent, "BOTTOMLEFT", -14, 3)
 -- Barre de vie, graduée aux quarts
 ------------------------------------------------------------------------
 local barre = CreateFrame("StatusBar", nil, cible)
-barre:SetSize(INTERIEUR, 18)
+barre:SetHeight(18)
 barre:SetPoint("TOPLEFT", cible, "TOPLEFT", MARGE, -50)
+barre:SetPoint("TOPRIGHT", cible, "TOPRIGHT", -MARGE, -50)
 barre:SetStatusBarTexture(S.BLANC)
 barre:SetStatusBarColor(S.Couleur("vert"))
 barre:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
 barre:SetBackdropColor(S.Couleur("creux"))
 barre:SetBackdropBorderColor(S.Couleur("bordCreux"))
+local traits = {}
 for i, alpha in ipairs({ 0.5, 0.5, 0.18 }) do
     local trait = barre:CreateTexture(nil, "OVERLAY")
     trait:SetTexture(i == 3 and 1 or 0, i == 3 and 1 or 0, i == 3 and 1 or 0, alpha)
     trait:SetSize(1, 18)
-    trait:SetPoint("TOPLEFT", barre, "TOPLEFT", INTERIEUR * i / 4, 0)
+    traits[i] = trait
 end
 
 ------------------------------------------------------------------------
 -- Incantation
 ------------------------------------------------------------------------
 local incantation = CreateFrame("Frame", nil, cible)
-incantation:SetSize(INTERIEUR, 30)
+incantation:SetHeight(30)
 incantation:SetPoint("TOPLEFT", barre, "BOTTOMLEFT", 0, -12)
+incantation:SetPoint("TOPRIGHT", barre, "BOTTOMRIGHT", 0, -12)
 incantation:Hide()
 local motIncante = S.Texte(incantation, "Bold", 11, "rougeClair")
 motIncante:SetPoint("LEFT")
@@ -78,12 +82,12 @@ pourcentIncante:SetPoint("RIGHT", -12, 0)
 ------------------------------------------------------------------------
 local debuffs = {}
 local rangee = CreateFrame("Frame", nil, cible)
-rangee:SetSize(INTERIEUR, 58)
+rangee:SetHeight(58)
 
 for i = 1, MAX_DEBUFFS do
     local d = CreateFrame("Frame", nil, rangee)
-    d:SetSize(214, 58)
-    d:SetPoint("TOPLEFT", rangee, "TOPLEFT", (i - 1) * 226, 0)
+    d:SetSize(LARGEUR_DEBUFF, 58)
+    d:SetPoint("TOPLEFT", rangee, "TOPLEFT", (i - 1) * (LARGEUR_DEBUFF + ECART_DEBUFF), 0)
     d:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
     d:SetBackdropColor(0.11, 0.118, 0.133)
     d:SetBackdropBorderColor(S.Couleur("bordCreux"))
@@ -139,6 +143,12 @@ end
 ------------------------------------------------------------------------
 -- Mise à jour
 ------------------------------------------------------------------------
+-- Nombre de débuffs qui tiennent dans la largeur du cadre.
+local function DebuffsVisibles()
+    local place = (cible:GetWidth() or 0) - 2 * MARGE + ECART_DEBUFF
+    return math.max(1, math.min(MAX_DEBUFFS, math.floor(place / (LARGEUR_DEBUFF + ECART_DEBUFF))))
+end
+
 local function Disposer()
     local hauteur = 50 + 18
     local dernier = barre
@@ -148,6 +158,7 @@ local function Disposer()
     end
     rangee:ClearAllPoints()
     rangee:SetPoint("TOPLEFT", dernier, "BOTTOMLEFT", 0, -12)
+    rangee:SetPoint("TOPRIGHT", dernier, "BOTTOMRIGHT", 0, -12)
     if rangee:IsShown() then hauteur = hauteur + 12 + 58 end
     cible:SetHeight(hauteur + 16)
 end
@@ -156,16 +167,18 @@ local function MajEntete()
     local classement = UnitClassification("target")
     local texte = (classement == "worldboss" and "BOSS") or ((classement == "elite" or classement == "rareelite") and "ÉLITE")
         or (classement == "rare" and "RARE") or nil
+    -- Le nom se place depuis le cadre lui-même (une ancre sur l'étiquette cachée le faisait disparaître).
+    local decalage = 0
     nom:ClearAllPoints()
     if texte then
         etiquette.texte:SetText(texte)
         etiquette:SetWidth(etiquette.texte:GetStringWidth() + 12)
         etiquette:Show()
-        nom:SetPoint("LEFT", etiquette, "RIGHT", 10, 0)
+        decalage = etiquette:GetWidth() + 10
     else
         etiquette:Hide()
-        nom:SetPoint("LEFT", etiquette, "LEFT", 0, 0)
     end
+    nom:SetPoint("TOPLEFT", cible, "TOPLEFT", MARGE + decalage, -16)
     nom:SetText(UnitName("target") or "")
     nom:SetTextColor(S.Couleur(UnitIsEnemy("player", "target") and "clair" or "texte"))
 end
@@ -207,7 +220,7 @@ end
 local function MajDebuffs()
     local n = 0
     for index = 1, 40 do
-        if n >= MAX_DEBUFFS then break end
+        if n >= DebuffsVisibles() then break end
         local nomSort, _, icone, nombre, _, duree, fin, lanceur = UnitDebuff("target", index)
         if not nomSort then break end
         n = n + 1
@@ -288,6 +301,16 @@ local function MajTout()
     MajDebuffs()
     cible:Show()
 end
+
+-- Largeur changée (réglages) : graduations et débuffs suivent.
+cible:SetScript("OnSizeChanged", function(self, largeur)
+    for i, trait in ipairs(traits) do
+        trait:ClearAllPoints()
+        trait:SetPoint("TOPLEFT", barre, "TOPLEFT", (largeur - 2 * MARGE) * i / 4, 0)
+    end
+    if self:IsShown() then MajDebuffs() end
+end)
+cible:GetScript("OnSizeChanged")(cible, cible:GetWidth())
 
 S.Ecouter("PLAYER_TARGET_CHANGED", MajTout)
 S.Ecouter("PLAYER_ENTERING_WORLD", MajTout)
