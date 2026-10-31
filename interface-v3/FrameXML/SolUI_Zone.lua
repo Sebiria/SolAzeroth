@@ -57,6 +57,19 @@ Minimap:SetScript("OnMouseWheel", function(self, sens)
     if sens > 0 then Minimap_ZoomIn() else Minimap_ZoomOut() end
 end)
 
+-- Taille réglable (Réglages > Interface) : la colonne et le bloc de la zone suivent.
+local function TaillerCarte()
+    local t = S.OPTIONS.carte
+    Minimap:SetSize(t, t)
+    colonne:SetSize(t, t + 48)
+    zone:SetSize(248 + 12 + t, math.max(160, t + 68))
+    -- La mini-carte ne redessine son contenu à la nouvelle taille qu'après un changement de zoom.
+    local zoom = Minimap:GetZoom()
+    Minimap:SetZoom(zoom > 0 and zoom - 1 or zoom + 1)
+    Minimap:SetZoom(zoom)
+end
+S.Abonner("options", TaillerCarte)
+
 local anneau = S.Texture(Minimap, "OVERLAY", "Anneau", 0.227, 0.239, 0.263)
 anneau:SetPoint("TOPLEFT", -1, 1)
 anneau:SetPoint("BOTTOMRIGHT", 1, -1)

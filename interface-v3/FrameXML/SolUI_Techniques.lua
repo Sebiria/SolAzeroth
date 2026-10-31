@@ -1,7 +1,8 @@
 -- Sol'Azeroth v3, F4 : deux petites barres de 4 techniques, translucides, en bas au centre, et le losange du passif.
 -- Barre du bas : emplacements 1 à 4 de la barre d'action 1 ; barre du haut : 5 à 8. Chaque bouton clique le bouton
--- de Blizzard correspondant (ActionButton1 à 8, rangé mais chargé) : les touches restent celles du menu Raccourcis
--- (« Barre d'action 1 »), que chaque joueur attribue comme il veut, et le bouton affiche la touche choisie.
+-- de Blizzard correspondant (ActionButton1 à 8, rangé mais chargé). Les touches restent celles du menu Raccourcis
+-- (« Barre d'action 1 »), que chaque joueur attribue comme il veut, et le bouton affiche la touche choisie. Elles
+-- visent nos boutons (voir MajTouches).
 
 local S = SolUI
 
@@ -207,9 +208,22 @@ local function Etat(b)
     b.icone:SetAlpha(enRecharge and 0.6 or 0.9)
 end
 
+-- Les touches de la barre d'action 1 visent nos boutons. Sans cela, le jeu les enverrait à la barre de posture du
+-- guerrier (BonusActionButton) ou de véhicule dès qu'elle est active, et non aux emplacements 1 à 8. Hors combat
+-- seulement : sinon, au premier retour hors combat.
+local enAttente = false
 local function MajTouches()
     for id, b in ipairs(boutons) do b.touche:SetText(Touche(id)) end
+    if InCombatLockdown() then enAttente = true; return end
+    enAttente = false
+    ClearOverrideBindings(groupe)
+    for id = 1, #boutons do
+        for _, touche in ipairs({ GetBindingKey("ACTIONBUTTON" .. id) }) do
+            SetOverrideBindingClick(groupe, true, touche, "SolUITechnique" .. id)
+        end
+    end
 end
+S.Ecouter("PLAYER_REGEN_ENABLED", function() if enAttente then MajTouches() end end)
 
 local function MajPassif()
     S.Montrer(passif, S.etat.spe == 1)

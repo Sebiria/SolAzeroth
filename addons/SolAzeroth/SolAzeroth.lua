@@ -574,9 +574,21 @@ local CONSTRUCTEURS = {
             S.Modifier("cible", "largeur", v)
         end)
 
+        local carte = Carte(p, -428, 110, "Interface\\Icons\\INV_Misc_Map_01", "Mini-carte", "")
+        Texte(carte, "GameFontNormal", "Taille", 60, -48):SetWidth(110)
+        local taille = Curseur(carte, 180, -46, 220, S.LIMITES.carte[1], S.LIMITES.carte[2], 2, "%d", function(v)
+            S.ModifierOption("carte", v)
+        end)
+        Texte(carte, "GameFontNormal", "Repères de quête", 60, -84):SetWidth(120)
+        local reperes = Curseur(carte, 180, -82, 220, 50, 250, 10, "%d %%", function(v)
+            S.ModifierOption("reperes", v / 100)
+        end)
+
         local function Lire()
             for nom, c in pairs(curseurs) do c:Fixer(math.floor(S.DISPOSITION[nom].echelle * 100 + 0.5)) end
             largeur:Fixer(S.DISPOSITION.cible.largeur)
+            taille:Fixer(S.OPTIONS.carte)
+            reperes:Fixer(math.floor(S.OPTIONS.reperes * 100 + 0.5))
             basculer:SetText(S.EnEdition() and "Terminer" or "Déplacer les blocs")
         end
         p:SetScript("OnShow", Lire)

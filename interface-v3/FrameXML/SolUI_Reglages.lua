@@ -8,7 +8,7 @@ local S = SolUI
 
 local NOMS = { perso = "Personnage", techniques = "Techniques", cible = "Cible", zone = "Zone", quetes = "Quêtes" }
 S.NOMS_BLOCS = NOMS
-S.LIMITES = { echelle = { 0.6, 1.6 }, largeur = { 420, 1100 } }
+S.LIMITES = { echelle = { 0.6, 1.6 }, largeur = { 420, 1100 }, carte = { 70, 220 }, reperes = { 0.5, 2.5 } }
 
 local function Copier(table)
     local copie = {}
@@ -17,13 +17,27 @@ local function Copier(table)
 end
 
 S.DEFAUTS = Copier(S.DISPOSITION)
+S.DEFAUTS_OPTIONS = Copier(S.OPTIONS)
 
 local function Borner(valeur, limites)
     return math.max(limites[1], math.min(limites[2], valeur))
 end
 
 local function Prevenir()
-    if S.surChangement then S.surChangement(Copier(S.DISPOSITION)) end
+    if S.surChangement then
+        local d = Copier(S.DISPOSITION)
+        d.options = Copier(S.OPTIONS)
+        S.surChangement(d)
+    end
+end
+
+-- Change un réglage qui n'est pas un bloc (S.OPTIONS) ; les cadres concernés sont prévenus par S.Abonner("options").
+function S.ModifierOption(nom, valeur)
+    if InCombatLockdown() or S.OPTIONS[nom] == nil or type(valeur) ~= "number" then return end
+    if S.LIMITES[nom] then valeur = Borner(valeur, S.LIMITES[nom]) end
+    S.OPTIONS[nom] = valeur
+    S.Prevenir("options")
+    Prevenir()
 end
 
 -- Change un réglage d'un bloc (« echelle », « largeur ») et le replace.
@@ -46,8 +60,17 @@ function S.Appliquer(sauvegarde)
             if type(d.y) == "number" then actuel.y = d.y end
             if type(d.echelle) == "number" then actuel.echelle = Borner(d.echelle, S.LIMITES.echelle) end
             if actuel.largeur and type(d.largeur) == "number" then actuel.largeur = Borner(d.largeur, S.LIMITES.largeur) end
+            actuel.sous = type(d.sous) == "string" and d.sous or nil
             S.Placer(S.blocs[nom], nom)
         end
+    end
+    if type(sauvegarde.options) == "table" then
+        for nom, valeur in pairs(sauvegarde.options) do
+            if S.OPTIONS[nom] ~= nil and type(valeur) == "number" then
+                S.OPTIONS[nom] = S.LIMITES[nom] and Borner(valeur, S.LIMITES[nom]) or valeur
+            end
+        end
+        S.Prevenir("options")
     end
 end
 
@@ -59,6 +82,14 @@ function S.Reinitialiser(nom)
             S.DISPOSITION[cle] = Copier(defaut)
             S.Placer(S.blocs[cle], cle)
         end
+    end
+    if not nom then
+        S.OPTIONS = Copier(S.DEFAUTS_OPTIONS)
+        S.Prevenir("options")
+    end
+    -- Les blocs rangés sous un autre bloc suivent celui-ci.
+    for cle, d in pairs(S.DISPOSITION) do
+        if d.sous == nom and S.blocs[cle] then S.Placer(S.blocs[cle], cle) end
     end
     Prevenir()
 end
@@ -81,6 +112,7 @@ local function Retenir(nom)
     local cadre, d = S.blocs[nom], S.DISPOSITION[nom]
     local bx, by = Coordonnees(cadre, d.point)
     local rx, ry = Coordonnees(S.racine, d.point)
+    d.sous = nil
     local echelleRacine = S.racine:GetEffectiveScale()
     d.x = math.floor((bx - rx) / echelleRacine + 0.5)
     d.y = math.floor((by - ry) / echelleRacine + 0.5)

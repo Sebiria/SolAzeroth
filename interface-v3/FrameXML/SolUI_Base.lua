@@ -72,14 +72,22 @@ S.DISPOSITION = {
 }
 S.blocs = {}
 
+-- Un bloc qui a « sous » (nom d'un autre bloc) se range sous lui tant que le joueur ne l'a pas déplacé.
 function S.Placer(cadre, nom)
     local d = S.DISPOSITION[nom]
     S.blocs[nom] = cadre
     cadre:SetScale(d.echelle or 1)
     cadre:ClearAllPoints()
-    cadre:SetPoint(d.point, racine, d.point, d.x / (d.echelle or 1), d.y / (d.echelle or 1))
+    if d.sous and S.blocs[d.sous] then
+        cadre:SetPoint("TOPRIGHT", S.blocs[d.sous], "BOTTOMRIGHT", 0, -12 / (d.echelle or 1))
+    else
+        cadre:SetPoint(d.point, racine, d.point, d.x / (d.echelle or 1), d.y / (d.echelle or 1))
+    end
     if d.largeur then cadre:SetWidth(d.largeur) end
 end
+
+-- Réglages qui ne sont pas des blocs : taille de la mini-carte (unités de la maquette), taille des repères de quête.
+S.OPTIONS = { carte = 92, reperes = 1 }
 
 ------------------------------------------------------------------------
 -- Fabriques
@@ -191,6 +199,7 @@ end
 local function Prevenir(sujet)
     for _, fonction in ipairs(abonnes[sujet] or {}) do fonction() end
 end
+S.Prevenir = Prevenir
 
 -- SOLKIT (v3_kit.cpp) : « ETAT;spe;… » et « REMPART;montant;plafond ».
 S.Message("SOLKIT", function(champs)

@@ -193,9 +193,15 @@ aide:SetText("Clique pour équiper ou ranger une technique (8 au plus), puis val
 local ecoute = CreateFrame("Frame")
 ecoute:RegisterEvent("CHAT_MSG_ADDON")
 ecoute:RegisterEvent("PLAYER_ENTERING_WORLD")
+ecoute:RegisterEvent("CINEMATIC_STOP")
 ecoute:SetScript("OnEvent", function(self, event, prefixe, message)
     if event == "PLAYER_ENTERING_WORLD" then
         Commande(".kit")
+        return
+    end
+    -- Échap, qui passe la cinématique d'introduction, fermait aussi la page : elle revient à la fin de la cinématique.
+    if event == "CINEMATIC_STOP" then
+        if etat.spe == 0 and select(2, UnitClass("player")) == "WARRIOR" then cadre:Show() end
         return
     end
     if prefixe ~= PREFIXE then return end

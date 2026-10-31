@@ -10,7 +10,8 @@
 
 local S = SolUI
 
-S.DISPOSITION.quetes = { point = "TOPRIGHT", x = -20, y = -190, echelle = 1 }
+-- Rangé sous la zone (et la mini-carte) tant que le joueur ne le déplace pas.
+S.DISPOSITION.quetes = { point = "TOPRIGHT", x = -20, y = -192, echelle = 1, sous = "zone" }
 
 local LARGEUR_SUIVI = 260
 
@@ -585,8 +586,10 @@ local function MajReperes(self, ecoule)
                 local bord = (pixels - 5) / math.max(distance, 0.01)
                 dx, dy = dx * bord / echelle, dy * bord / echelle
             end
-            local taille = (loin or p.complete) and 9 or math.max(9, 2 * RAYON_ZONE * echelle)
+            local m = S.OPTIONS.reperes
+            local taille = (loin or p.complete) and 9 * m or math.max(9 * m, 2 * RAYON_ZONE * echelle)
             r:SetSize(taille, taille)
+            r.point:SetSize(7 * m, 7 * m)
             r:ClearAllPoints()
             r:SetPoint("CENTER", Minimap, "CENTER", dx * echelle, -dy * echelle)
             S.Montrer(r.zone, not loin and not p.complete)
@@ -598,8 +601,33 @@ local function MajReperes(self, ecoule)
     for i = n + 1, #reperes do reperes[i]:Hide() end
 end
 
+-- Les zones d'objectif arrivent du serveur après coup (et changent avec la progression) : relues toutes les 3 s.
+local relecture = 0
 local animation = CreateFrame("Frame", nil, Minimap)
-animation:SetScript("OnUpdate", MajReperes)
+animation:SetScript("OnUpdate", function(self, ecoule)
+    relecture = relecture - ecoule
+    if relecture <= 0 then
+        relecture = 3
+        LirePositions()
+    end
+    MajReperes(self, ecoule)
+end)
+
+-- /solpoi : ce que lit la mini-carte (pour un rapport de bogue).
+SLASH_SOLUIPOI1 = "/solpoi"
+SlashCmdList.SOLUIPOI = function()
+    LirePositions()
+    local px, py = GetPlayerMapPosition("player")
+    DEFAULT_CHAT_FRAME:AddMessage(string.format("Carte %s (%s), joueur %.3f %.3f, %d repère(s)", tostring(cartePositions),
+        S.CARTES[cartePositions or ""] and "taille connue" or "taille inconnue", px or 0, py or 0, #positions))
+    for _, q in ipairs(Lire()) do
+        if q.suivie then
+            local a, x, y = QuestPOIGetIconInfo(q.id)
+            DEFAULT_CHAT_FRAME:AddMessage(string.format("  %s (%s) : %s %s %s", q.titre, tostring(q.id), tostring(a),
+                tostring(x), tostring(y)))
+        end
+    end
+end
 
 ------------------------------------------------------------------------
 -- Mises à jour

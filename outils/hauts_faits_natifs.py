@@ -69,6 +69,8 @@ def main():
     cat = dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "Achievement_Category.dbc"))
     hf = dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "Achievement.dbc"))
     crit = dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "Achievement_Criteria.dbc"))
+    # v3, F5d (31/10/2026) : les hauts faits natifs sont purgés (migration 065) ; le client ne garde que les nôtres.
+    cat.enregistrements, hf.enregistrements, crit.enregistrements = [], [], []
 
     categories = [(CATEGORIE, 0xFFFFFFFF, "Sol'Azeroth", 11)]
     categories += [(CATEGORIE + n, CATEGORIE, nom, n) for n, nom in CATEGORIES.items()]

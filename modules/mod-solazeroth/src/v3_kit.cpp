@@ -447,7 +447,15 @@ class solazeroth_v3_kit_joueur : public PlayerScript
 {
 public:
     solazeroth_v3_kit_joueur() : PlayerScript("solazeroth_v3_kit_joueur", {
-        PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_DELETE }) { }
+        PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_FIRST_LOGIN, PLAYERHOOK_ON_UPDATE, PLAYERHOOK_ON_DELETE }) { }
+
+    // F5d (31/10/2026) : le personnage commence sans arme ; la première vient des quêtes de Durotar.
+    void OnPlayerFirstLogin(Player* player) override
+    {
+        for (uint8 emplacement : { EQUIPMENT_SLOT_MAINHAND, EQUIPMENT_SLOT_OFFHAND, EQUIPMENT_SLOT_RANGED })
+            if (player->GetItemByPos(INVENTORY_SLOT_BAG_0, emplacement))
+                player->DestroyItem(INVENTORY_SLOT_BAG_0, emplacement, true);
+    }
 
     void OnPlayerLogin(Player* player) override
     {
@@ -560,6 +568,9 @@ public:
         kit->equipees.clear();
         kit->debloquees = 0;
         Sauver(player);
+        // La première barre (boutons 1 à 12) ne garde que les techniques : Attaque et sorts de départ en sont retirés.
+        for (uint8 bouton = 0; bouton < 12; ++bouton)
+            player->removeActionButton(bouton);
         Appliquer(player);
         handler->SendSysMessage("|cff40c0ffSpécialisation choisie : guerrier tank. Le Rempart et tes premières techniques sont prêts.|r");
         return true;

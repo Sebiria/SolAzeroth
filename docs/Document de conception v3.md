@@ -462,6 +462,16 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **Carte du monde** : celle de Blizzard, avec les objectifs de quête toujours affichés.
 - Les fenêtres d'acceptation et de rendu des quêtes restent celles de Blizzard pour l'instant.
 
+**Correctifs après le premier essai (31/10/2026)**, pas encore vérifiés en jeu :
+- **Dialogue** (`SolUI_Dialogue.lua`) : notre fenêtre remplace celles de Blizzard pour parler aux PNJ et pour accepter, suivre et rendre les quêtes (choix de la récompense compris).
+- **Raccourcis** : les touches de la barre d'action 1 visent nos boutons. Avant, en posture, elles passaient à la barre de posture du guerrier : Alt+A lançait le sort racial de l'orc.
+- **Mini-carte** : sa taille et celle des repères de quête se règlent dans /sol, page Réglages > Interface. Les repères sont relus toutes les 3 s ; `/solpoi` affiche ce que le jeu donne pour chaque quête suivie. Le suivi des quêtes se range sous la zone et ne recouvre plus le bouton Menu.
+- **Nouveau personnage** : il commence sans arme. Le choix de la spécialisation revient après la cinématique d'introduction, et ce choix vide la première barre pour la remplir des techniques.
+- **Plus de guildes ni de banques** (migrations 065 et 066) : banquiers, coffres de guilde, créateurs de guilde et dessinateurs de tabards sont retirés. Les deux « Coffres » de la V2 sont effacés. Seul le niveau d'aventurier se partage entre les personnages.
+- **Hauts faits natifs purgés** : leurs 7 655 critères sont désactivés et leur progression est effacée. Le client ne garde que les hauts faits Sol'Azeroth.
+- **Durotar** : 17 PNJ d'ambiance sont cachés hors des villages, pour l'instant (`outils/sans_guildes.py`). La migration descendante les remet.
+- **Reste à faire** : identifier le motif « Cabestan » sous la mini-carte. Les icônes propres à chaque collectible attendent notre système de collectibles.
+
 **Suite proposée par Claude** (après F5c à F5f) :
 - **F6, butin** : tables de butin réduites aux composants, cuir sans dépeçage, éclats cadavériques, or.
 - **F7, potion et camp** : les deux boutons du cadre du personnage, et leurs listes de courses.
