@@ -14,11 +14,12 @@
 
 SolAzeroth.Version = 3
 
-#    SolAzeroth.V3.RegenVie                Pourcentage de la vie maximum rendu toutes les 2 secondes hors combat
+#    SolAzeroth.V3.RegenVie                Pourcentage de la vie maximum rendu par seconde hors combat
 #                                          (v3 ; la régénération selon l'Esprit est coupée, Rate.Health = 0.001).
-#                                          Défaut : 3 (vie pleine en un peu plus d'une minute).
+#                                          Le Repos au coin du feu en ajoute 1 (v3_bivouac.cpp).
+#                                          Défaut : 2 (31/10/2026, demande de l'utilisateur).
 
-SolAzeroth.V3.RegenVie = 3
+SolAzeroth.V3.RegenVie = 2
 
 #    SolAzeroth.V3.ArmureParPoint          Armure = réduction fixe (v3) : chaque coup physique perd armure / cette valeur
 #                                          points de dégâts. Défaut : 20 (100 d'armure retirent 5 points par coup).

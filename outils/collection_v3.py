@@ -5,13 +5,17 @@ d'un objet qu'après l'avoir demandé au serveur : le catalogue (identifiant, no
 l'interface, en interface-v3\\FrameXML\\SolUI_Catalogue.lua. La même liste va en base (migration 069,
 acore_world.solazeroth_v3_collectionnables) : le serveur range ces objets dans la Collection (v3_collection.cpp).
 
-Objets retenus : les matériaux (classe 7, sauf la viande, inutile sans nourriture) et les gemmes (classe 3), de qualité
-commune ou mieux, qu'on peut réellement obtenir (butin, marchand, prospection, pilage, désenchantement). Les éclats
+Objets retenus : les matériaux (classe 7) et les gemmes (classe 3), de qualité commune ou mieux, qu'on peut réellement
+obtenir (butin, marchand, prospection, pilage, désenchantement). Cuisine (31/10/2026, l'Eau de source fraîche ramassée
+allait dans le sac) : la viande, et les consommables qui servent de composant à une recette de cuisine (lait, eau,
+fruits…), lus dans Spell.dbc et SkillLineAbility.dbc. Les éclats
 cadavériques, composants rares et reliques de zone viendront avec F6 à F10.
 """
+import os
 import subprocess
 
-from hauts_faits_natifs import IDENTIFIANTS, MYSQL
+import dbc
+from hauts_faits_natifs import DBC_SERVEUR, IDENTIFIANTS, MYSQL
 
 SORTIE = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Catalogue.lua"
 MIGRATION = r"C:\SolAzeroth\sql\migrations\069_v3_collection"
@@ -26,8 +30,21 @@ CATEGORIES = [
     ("Gemmes", [(3, s) for s in range(9)] + [(7, 4)]),
     ("Enchantement", [(7, 12)]),
     ("Pièces d'ingénierie", [(7, 1), (7, 2), (7, 3)]),
+    ("Cuisine", [(7, 8)]),
     ("Divers", [(7, 11), (7, 13)]),
 ]
+CUISINE = 185   # SkillLine.dbc
+
+
+def composants_de_cuisine():
+    """Objets demandés par une recette de cuisine (Spell.dbc, Reagent : colonnes 52 à 59)."""
+    recettes = {e[2] for e in dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "SkillLineAbility.dbc")).enregistrements
+                if e[1] == CUISINE}
+    composants = set()
+    for e in dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "Spell.dbc")).enregistrements:
+        if e[0] in recettes:
+            composants |= {objet for objet in e[52:60] if objet}
+    return composants
 
 TABLES = ["creature", "gameobject", "reference", "item", "skinning", "fishing", "pickpocketing", "prospecting",
           "milling", "disenchant"]
@@ -45,11 +62,13 @@ def lua(texte):
 
 
 def main():
+    cuisine = composants_de_cuisine()
     obtenables = " UNION ".join("SELECT Item FROM %s_loot_template WHERE Reference = 0" % t for t in TABLES)
     lignes = requete(
         "SELECT i.entry, i.class, i.subclass, i.Quality, i.ItemLevel, COALESCE(NULLIF(l.Name, ''), i.name) "
         "FROM item_template i LEFT JOIN item_template_locale l ON l.ID = i.entry AND l.locale = 'frFR' "
-        "WHERE i.class IN (3, 7) AND i.Quality >= 1 AND i.entry IN (%s UNION SELECT item FROM npc_vendor)" % obtenables)
+        "WHERE (i.class IN (3, 7) OR (i.class = 0 AND i.entry IN (%s))) AND i.Quality >= 1 "
+        "AND i.entry IN (%s UNION SELECT item FROM npc_vendor)" % (",".join(map(str, sorted(cuisine))), obtenables))
     sortie = ["-- Catalogue de la Collection. Généré par outils\\collection_v3.py : ne pas modifier à la main.",
               "-- Par catégorie : { identifiant, nom, qualité }, du plus petit niveau d'objet au plus grand.",
               "SolUI.CATALOGUE = {"]
@@ -57,7 +76,8 @@ def main():
     for nom, genres in CATEGORIES:
         objets = sorted((int(niveau), nom_objet, int(entree), int(qualite))
                         for entree, classe, sous_classe, qualite, niveau, nom_objet in lignes
-                        if (int(classe), int(sous_classe)) in genres)
+                        if (int(classe), int(sous_classe)) in genres
+                        or (nom == "Cuisine" and classe == "0"))
         total += len(objets)
         tous |= {entree for _, _, entree, _ in objets}
         sortie.append("    { nom = %s, objets = {" % lua(nom))

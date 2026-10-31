@@ -39,8 +39,10 @@ def requete(sql):
 
 
 def factions_non_hostiles():
+    # La faction 7 (« Creature ») n'a pas de masque d'ennemis mais attaque les joueurs : Yarrog Plaie-d'ombre, caché à
+    # tort le 31/10/2026, est de cette faction (et porte un objet de quête, désormais exclu aussi).
     ft = dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "FactionTemplate.dbc"))
-    return {e[0] for e in ft.enregistrements if not e[5] & (JOUEURS | HORDE)}
+    return {e[0] for e in ft.enregistrements if not e[5] & (JOUEURS | HORDE)} - {7}
 
 
 def ambiance():
@@ -51,8 +53,10 @@ def ambiance():
     lignes = requete(
         "SELECT c.guid, t.faction, c.position_x, c.position_y FROM creature c JOIN creature_template t ON t.entry = c.id "
         "WHERE c.map = 1 AND c.zoneId = 14 AND t.type = %d AND t.npcflag = 0 AND c.npcflag = 0 AND c.id < 900000 "
-        "AND IFNULL(t.ScriptName, '') = '' AND IFNULL(c.ScriptName, '') = '' AND c.phaseMask <> %d "
+        "AND IFNULL(t.ScriptName, '') = '' AND IFNULL(c.ScriptName, '') = '' AND (c.phaseMask <> %d "
+        "OR c.guid IN (SELECT guid FROM solazeroth_v3_phases_origine WHERE genre = 'pnj')) "
         "AND c.guid NOT IN (SELECT guid FROM game_event_creature) "
+        "AND t.lootid NOT IN (SELECT Entry FROM creature_loot_template WHERE QuestRequired = 1) "
         "AND c.id NOT IN (SELECT id FROM creature_queststarter) AND c.id NOT IN (SELECT id FROM creature_questender) "
         "AND c.id NOT IN (SELECT KillCredit1 FROM creature_template) AND c.id NOT IN (SELECT KillCredit2 FROM creature_template) "
         "AND c.id NOT IN (SELECT RequiredNpcOrGo1 FROM quest_template) AND c.id NOT IN (SELECT RequiredNpcOrGo2 FROM quest_template) "

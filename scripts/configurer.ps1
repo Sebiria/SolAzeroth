@@ -30,7 +30,8 @@ $reglages = [ordered]@{
         'StartHeroicPlayerLevel'          = '80'
         'Rate.Talent'                     = '0'
         # v3 : plus de régénération de vie selon l'Esprit (instantanée avec les petites réserves de vie) ; v3_niveau.cpp
-        # la remplace par un pourcentage de la vie maximum, hors combat (SolAzeroth.V3.RegenVie)
+        # la remplace par un pourcentage de la vie maximum, hors combat (SolAzeroth.V3.RegenVie, 2 % par seconde ; le
+        # Repos au coin du feu en ajoute 1)
         'Rate.Health'                     = '0.001'
         # v3, F5a : la mort ne coûte rien (retour à la pierre de foyer, v3_mort.cpp), pas même l'usure de l'équipement
         'DurabilityLoss.OnDeath'          = '0'

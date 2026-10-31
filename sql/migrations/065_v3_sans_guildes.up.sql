@@ -13,8 +13,8 @@ UPDATE creature SET npcflag = npcflag & ~9306112 WHERE npcflag & 9306112;
 CREATE TABLE IF NOT EXISTS solazeroth_v3_phases_origine (genre VARCHAR(8) NOT NULL, guid INT UNSIGNED NOT NULL, phaseMask INT UNSIGNED NOT NULL, PRIMARY KEY (genre, guid));
 INSERT IGNORE INTO solazeroth_v3_phases_origine SELECT 'objet', g.guid, g.phaseMask FROM gameobject g JOIN gameobject_template t ON t.entry = g.id WHERE t.type = 34;
 UPDATE gameobject g JOIN gameobject_template t ON t.entry = g.id SET g.phaseMask = 1073741824 WHERE t.type = 34;
-INSERT IGNORE INTO solazeroth_v3_phases_origine SELECT 'pnj', guid, phaseMask FROM creature WHERE guid IN (12303, 5303, 6378, 6379, 7286, 7288, 7664, 3367, 7944, 7947, 10349, 1976136, 1976137, 1976138, 1976139, 1976187, 1976188);
-UPDATE creature SET phaseMask = 1073741824 WHERE guid IN (12303, 5303, 6378, 6379, 7286, 7288, 7664, 3367, 7944, 7947, 10349, 1976136, 1976137, 1976138, 1976139, 1976187, 1976188);
+INSERT IGNORE INTO solazeroth_v3_phases_origine SELECT 'pnj', guid, phaseMask FROM creature WHERE guid IN (5303, 6378, 6379, 7286, 7288, 7664, 3367, 7944, 7947, 10349, 1976136, 1976137, 1976138, 1976139, 1976187, 1976188);
+UPDATE creature SET phaseMask = 1073741824 WHERE guid IN (5303, 6378, 6379, 7286, 7288, 7664, 3367, 7944, 7947, 10349, 1976136, 1976137, 1976138, 1976139, 1976187, 1976188);
 
 -- Hauts faits natifs : critères désactivés, progression effacée.
 INSERT IGNORE INTO disables (sourceType, entry, flags, params_0, params_1, comment) VALUES

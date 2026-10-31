@@ -7,6 +7,8 @@
 // - Autres arrivées (récompense de quête, marchand, courrier…) : l'objet est rangé juste après être entré dans le sac.
 // - Exception : un objet demandé par une quête en cours reste dans le sac, pour que la quête le compte.
 // - .collection retirer <objet> <nombre> remet des objets dans le sac (pour une quête ou un métier de Blizzard).
+// - Objet de départ d'une quête (Matraque du contremaître des Péons paresseux…) : retiré du sac quand la quête est
+//   rendue, s'il est lié à la quête et ne sert à aucune autre quête en cours (31/10/2026 ; le moteur le laisse).
 // L'interface reçoit l'état par messages d'addon SOLCOL : « LISTE;objet:nombre,… » (en plusieurs morceaux, puis
 // « FIN ») à la connexion, et « MAJ;objet;total;changement » à chaque rangement ou retrait.
 
@@ -16,6 +18,7 @@
 #include "DatabaseEnv.h"
 #include "Item.h"
 #include "LootMgr.h"
+#include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
@@ -91,7 +94,21 @@ class solazeroth_v3_collection_joueur : public PlayerScript
 public:
     solazeroth_v3_collection_joueur() : PlayerScript("solazeroth_v3_collection_joueur", {
         PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_BEFORE_SEND_LOOT, PLAYERHOOK_ON_STORE_NEW_ITEM, PLAYERHOOK_ON_UPDATE,
-        PLAYERHOOK_ON_DELETE }) { }
+        PLAYERHOOK_ON_DELETE, PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST }) { }
+
+    void OnPlayerCompleteQuest(Player* player, Quest const* quete) override
+    {
+        uint32 objet = quete->GetSrcItemId();
+        ItemTemplate const* modele = objet ? sObjectMgr->GetItemTemplate(objet) : nullptr;
+        if (!modele || modele->Bonding != BIND_QUEST_ITEM || modele->StartQuest || player->HasQuestForItem(objet))
+            return;
+        for (uint8 emplacement = 0; emplacement < MAX_QUEST_LOG_SIZE; ++emplacement)
+            if (uint32 autre = player->GetQuestSlotQuestId(emplacement))
+                if (Quest const* q = sObjectMgr->GetQuestTemplate(autre); q && q->GetSrcItemId() == objet &&
+                    player->GetQuestStatus(autre) == QUEST_STATUS_INCOMPLETE)
+                    return;
+        player->DestroyItemCount(objet, 9999, true);
+    }
 
     void OnPlayerLogin(Player* player) override
     {

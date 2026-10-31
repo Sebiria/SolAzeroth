@@ -543,6 +543,19 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **Touches de souris abrégées** sur les boutons : S4 pour le bouton 4, MH et MB pour la molette.
     - **Collection** : la grille passe à 4 colonnes plus larges. Les tuiles affichent « Manquant ». La catégorie s'appelle désormais « Métaux et pierres », et la croix de fermeture ne recouvre plus le filtre « Manquants ».
     - **Discussion** : la zone de saisie s'appelle `ChatFrame1EditBox` en 3.3.5. Le nom `ChatFrameEditBox` provoquait une erreur au chargement (FrameXML.log).
+  - **Sixième série (31/10/2026)**, d'après 14 combats dans le Convent de la Lame ardente ; pas encore vérifiée en jeu :
+    - **Journal** :
+      - aucune mort ;
+      - la Boule de feu part bien toutes les 10 s environ ;
+      - le Familier vil coûte 7 à 51 points de vie, le Traqueur gangrené 0 à 8 ;
+      - le joueur a 240 d'armure, soit -12 par coup : la mêlée des monstres tombe au plancher de 25 %, puis le Rempart l'absorbe ;
+      - les combats durent 17 à 48 s, contre 10 à 12 s visés, car le personnage n'inflige que 4 à 8 dégâts par seconde avec une arme de 7-9 ;
+      - ces deux points relèvent du calibrage final.
+    - **Régénération passive** (demande de l'utilisateur) : 2 % de la vie maximale par seconde hors combat (`SolAzeroth.V3.RegenVie` = 2, désormais en % par seconde ; c'était 3 % toutes les 2 s). Le Repos au coin du feu ajoute 1 % par seconde.
+    - **Objet de départ d'une quête** (Matraque du contremaître) : retiré du sac quand la quête est rendue, s'il est lié à la quête et ne sert à aucune autre quête en cours (`v3_collection.cpp`). Le moteur le laissait.
+    - **Collection, catégorie Cuisine** : la viande, et les consommables qui servent de composant à une recette de cuisine (Eau de source fraîche, lait, fruits…). Ils sont lus dans Spell.dbc et SkillLineAbility.dbc. La Collection passe à 742 objets en 10 catégories.
+    - **Yarrog Plaie-d'ombre** (migration 072) : la migration 065 l'avait caché comme PNJ d'ambiance de Durotar, car sa faction 7 était prise pour non hostile. `sans_guildes.py` écarte désormais la faction 7 et les monstres qui portent un objet de quête.
+    - **Sarkoth** : la quête « Sarkoth » (910006) est donnée par Hana'zua, couchée sur la colline au nord-ouest de la vallée, après « Les crocs de la Vallée ».
   - **Apparence et logique** : l'apparence de ces fenêtres ne vit que dans le client. Elle se retouche sans toucher au serveur : il suffit de reconstruire le patch et de relancer le jeu. Dans les fichiers Lua, apparence et comportement sont encore mêlés.
 
 **Suite proposée par Claude** (après F5c à F5f) :

@@ -6,7 +6,8 @@
 // - La puissance d'attaque des joueurs ne compte plus le niveau (formule du niveau 1).
 // - Régénération de vie : celle du jeu, selon l'Esprit, est coupée (Rate.Health = 0.001) car elle remplissait les petites
 //   réserves de vie en quelques secondes ; hors combat, le joueur récupère SolAzeroth.V3.RegenVie % de sa vie maximum
-//   toutes les 2 secondes.
+//   par seconde (2 par défaut, demande du 31/10/2026), rendus toutes les 2 secondes ; le Repos au coin du feu en
+//   ajoute 1 (v3_bivouac.cpp).
 // - F4 (31/10/2026) : puissance conseillée de chaque zone, calculée au démarrage d'après ses monstres, et envoyée à
 //   l'interface v3 (préfixe SOLZONE, « ZONE;basse;haute ») au changement de zone et toutes les 10 s.
 
@@ -160,8 +161,10 @@ public:
 
         if (!player->IsAlive() || player->IsInCombat() || player->GetHealth() >= player->GetMaxHealth())
             return;
-        static float const pourcentage = sConfigMgr->GetOption<float>("SolAzeroth.V3.RegenVie", 3.0f);
-        player->ModifyHealth(std::max<int32>(1, int32(player->GetMaxHealth() * pourcentage / 100.0f)));
+        static float const pourcentage = sConfigMgr->GetOption<float>("SolAzeroth.V3.RegenVie", 2.0f);
+        if (pourcentage <= 0.0f)
+            return;
+        player->ModifyHealth(std::max<int32>(1, int32(player->GetMaxHealth() * pourcentage * TICK_REGEN / 1000 / 100.0f)));
     }
 };
 
