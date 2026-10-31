@@ -485,6 +485,13 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - `/soltexte <mot>` dit quel cadre affiche un texte (pour trouver « Cabestan »).
 - **À venir** : une refonte graphique du dialogue et du journal, sur maquette à valider.
 
+**Troisième série (31/10/2026)**, pas encore vérifiée en jeu :
+- **Discussion** : notre fenêtre ne se chargeait pas (une fonction absente de ce client). C'est corrigé. Pendant 15 s après la connexion, les messages de sorts, recettes et métiers appris ou oubliés sont tus.
+- **Potion et feu de camp, rang de départ** (avance sur F7). Deux boutons à droite des techniques, avec des icônes de retail. Côté serveur : `v3_bivouac.cpp`, migration 067.
+  - **Potion de soins** : rend 30 % de la vie. 3 charges, 30 s de recharge, hors du temps global. Les charges reviennent toutes en zone de repos, et une toutes les 15 s assis près de son feu.
+  - **Feu de camp** : 2 minutes, 2 minutes de recharge, hors combat. Assis à moins de 5 m de son propre feu : 6 % de la vie toutes les 2 s. Au bout de 60 s : Repos au coin du feu, vie maximale +5 % pendant 10 minutes.
+- **Mini-carte** : le bouton d'enregistrement vidéo est rangé. L'élément de bordure qui affiche le village le plus proche reste à identifier (`/solminicarte`, `/soltexte`).
+
 **Suite proposée par Claude** (après F5c à F5f) :
 - **F6, butin** : tables de butin réduites aux composants, cuir sans dépeçage, éclats cadavériques, or.
 - **F7, potion et camp** : les deux boutons du cadre du personnage, et leurs listes de courses.

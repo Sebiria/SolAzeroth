@@ -77,7 +77,7 @@ anneau:SetPoint("BOTTOMRIGHT", 1, -1)
 for _, nomCadre in ipairs({ "MinimapCluster", "MinimapBorder", "MinimapBorderTop", "MinimapZoomIn", "MinimapZoomOut",
         "MinimapZoneTextButton", "MiniMapWorldMapButton", "GameTimeFrame", "MiniMapTracking", "MiniMapMailFrame",
         "MiniMapBattlefieldFrame", "MiniMapLFGFrame", "MiniMapVoiceChatFrame", "MinimapNorthTag",
-        "MinimapCompassTexture", "MiniMapInstanceDifficulty", "MinimapBackdrop" }) do
+        "MinimapCompassTexture", "MiniMapInstanceDifficulty", "MinimapBackdrop", "MiniMapRecordingButton" }) do
     local cadre = _G[nomCadre]
     if cadre then
         if cadre:GetObjectType() == "Texture" then cadre:Hide() else S.Ranger(cadre) end

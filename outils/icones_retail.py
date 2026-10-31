@@ -36,6 +36,8 @@ ICONES = [
     "ability_warrior_shieldreflection",     # Renvoi de sort
     "warrior_talent_icon_igniteweapon",     # Vengeance
     "ability_warrior_improveddisciplines",  # Dernier rempart
+    "inv_alchemy_80_potion01red",           # Potion de soins (bivouac_v3.py)
+    "campfire_rootflame",                   # Feu de camp : icône 7479490 de Wowhead (Rootflame Campfire), sans nom
 ]
 
 

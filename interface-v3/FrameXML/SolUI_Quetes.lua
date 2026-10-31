@@ -678,6 +678,21 @@ SlashCmdList.SOLUITEXTE = function(mot)
     DEFAULT_CHAT_FRAME:AddMessage(trouves .. " texte(s) contenant « " .. mot .. " ».")
 end
 
+-- /solminicarte : ce qui est accroché à la mini-carte (nom, visibilité, texture), pour retirer un élément inconnu.
+SLASH_SOLUIMINICARTE1 = "/solminicarte"
+SlashCmdList.SOLUIMINICARTE = function()
+    for _, parent in ipairs({ Minimap, MinimapCluster, MinimapBackdrop }) do
+        for _, enfant in ipairs({ parent:GetChildren() }) do
+            local texture
+            for _, region in ipairs({ enfant:GetRegions() }) do
+                if region:GetObjectType() == "Texture" and region:GetTexture() then texture = region:GetTexture(); break end
+            end
+            DEFAULT_CHAT_FRAME:AddMessage(string.format("%s > %s (%s, %s) %s", parent:GetName(), enfant:GetName() or "?",
+                enfant:GetObjectType(), enfant:IsVisible() and "visible" or "caché", tostring(texture)))
+        end
+    end
+end
+
 -- /solpoi : ce que lit la mini-carte (pour un rapport de bogue).
 SLASH_SOLUIPOI1 = "/solpoi"
 SlashCmdList.SOLUIPOI = function()

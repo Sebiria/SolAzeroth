@@ -28,7 +28,8 @@ end
 
 -- « Vous avez appris un nouveau sort : %s. » -> motif Lua.
 local SORTS = {}
-for _, nom in ipairs({ "ERR_LEARN_SPELL_S", "ERR_LEARN_ABILITY_S", "ERR_LEARN_PASSIVE_S", "ERR_SPELL_UNLEARNED_S" }) do
+for _, nom in ipairs({ "ERR_LEARN_SPELL_S", "ERR_LEARN_ABILITY_S", "ERR_LEARN_PASSIVE_S", "ERR_SPELL_UNLEARNED_S",
+        "ERR_LEARN_RECIPE_S", "ERR_SKILL_GAINED_S" }) do
     local texte = _G[nom]
     if texte then
         table.insert(SORTS, "^" .. texte:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"):gsub("%%%%s", ".+") .. "$")
@@ -63,7 +64,7 @@ chat:SetMaxLines(300)
 chat:SetFading(true)
 chat:SetTimeVisible(90)
 chat:SetFadeDuration(4)
-chat:SetIndentedWordWrap(true)
+chat:SetHyperlinksEnabled(true)
 chat:EnableMouseWheel(true)
 chat:SetScript("OnMouseWheel", function(self, sens)
     if IsShiftKeyDown() then
@@ -88,6 +89,9 @@ bloc:SetScript("OnUpdate", Fond)
 -- Événements
 ------------------------------------------------------------------------
 local afficher = {}   -- événement -> clé de la catégorie
+-- À chaque connexion, le serveur redonne métiers, recettes et techniques et retire les anciens sorts du guerrier :
+-- ces messages-là sont tus pendant les premières secondes, quel que soit le réglage.
+local silenceJusqua = 0
 
 local function MajCanaux()
     wipe(chat.channelList)
@@ -113,10 +117,14 @@ end
 
 chat:SetScript("OnEvent", function(self, evenement, ...)
     if evenement == "PLAYER_ENTERING_WORLD" or evenement == "CHANNEL_UI_UPDATE" then MajCanaux() end
+    if evenement == "PLAYER_ENTERING_WORLD" then silenceJusqua = GetTime() + 15 end
     if evenement == "CHAT_MSG_CHANNEL_NOTICE" then MajCanaux() end
     local cle = afficher[evenement]
     if cle then
-        if evenement == "CHAT_MSG_SYSTEM" and EstUnSort((...) or "") then cle = "chatSorts" end
+        if evenement == "CHAT_MSG_SYSTEM" and EstUnSort((...) or "") then
+            if GetTime() < silenceJusqua then return end
+            cle = "chatSorts"
+        end
         if S.OPTIONS[cle] ~= 1 then return end
     end
     ChatFrame_OnEvent(self, evenement, ...)
