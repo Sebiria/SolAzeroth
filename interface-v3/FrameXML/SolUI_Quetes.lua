@@ -838,7 +838,7 @@ WorldMapFrame:HookScript("OnHide", S.MajQuetes)
 -- mètres du jeu de qui les donne, et qui reprend les quêtes du journal (« R »). Les deux sont dessinés en épingles
 -- (plus bas), sur la carte du monde comme sur la mini-carte.
 local disponibles, aRendre, recues = {}, {}, {}
-local MajMarques   -- plus bas (Épingles)
+local MajMarques, MajZonesMonde   -- plus bas (Épingles)
 
 S.Message("SOLQDISPO", function(champs)
     if champs[1] == "DEBUT" then
@@ -864,7 +864,7 @@ S.Ecouter("WORLD_MAP_UPDATE", function() if WorldMapFrame:IsShown() then MajMarq
 ------------------------------------------------------------------------
 -- Les marques du jeu sur la mini-carte disparaissent : « ! » et « ? » des donneurs (cases effacées de
 -- Interface\Minimap\ObjectIcons.blp par outils\minicarte_v3.py), zones et flèche d'objectif (option questPOI coupée,
--- sauf sur la carte du monde, qui montre toujours les objectifs). À leur place, une épingle par donneur, dont la pointe
+-- ici comme sur la carte du monde, qui a ses propres zones). À leur place, une épingle par donneur, dont la pointe
 -- vise le PNJ, sur la mini-carte comme sur la carte du monde :
 --   « ! » ambre : quête à prendre ; « ! » gris : facile (puissance de la quête 6 sous la tienne ou plus) ;
 --   « ? » pleine ambre : objectifs remplis, à rendre ; « ? » grise : quête en cours, le donneur attend.
@@ -1059,15 +1059,77 @@ MajMarques = function()
         end
     end
     for i = n + 1, #marques do marques[i]:Hide() end
+    MajZonesMonde()
 end
 
--- Objectifs de quête : sur la carte du monde seulement (la mini-carte a nos zones et nos épingles).
+-- Zones d'objectif sur la carte du monde (01/11/2026, demande de l'utilisateur) : comme sur la mini-carte, un rond
+-- ambre à l'échelle du terrain (RAYON_ZONE) et son point, pour chaque quête du journal pas encore remplie (une quête
+-- remplie a son épingle « ? » chez qui la reprend). Survol : la quête et ses objectifs. Les marques du jeu (zones et
+-- numéros) restent coupées : l'option questPOI n'est remise que le temps de lire les positions.
+local zonesMonde = {}
+local function ZoneMonde(n)
+    if zonesMonde[n] then return zonesMonde[n] end
+    local z = CreateFrame("Frame", nil, WorldMapButton)
+    z:SetFrameLevel(WorldMapButton:GetFrameLevel() + 3)
+    z:EnableMouse(true)
+    z.zone = S.Texture(z, "ARTWORK", "Rond", S.Couleur("ambre", 0.22))
+    z.zone:SetAllPoints()
+    z.bord = S.Texture(z, "OVERLAY", "Anneau", S.Couleur("ambre", 0.9))
+    z.bord:SetAllPoints()
+    z.point = S.Texture(z, "OVERLAY", "Rond", S.Couleur("ambreClair"))
+    z.point:SetSize(8, 8)
+    z.point:SetPoint("CENTER")
+    z:SetScript("OnEnter", function(self)
+        WorldMapTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        WorldMapTooltip:AddLine(S.TitreQuete(self.quete), S.Couleur("ambreClair"))
+        for _, o in ipairs(Objectifs(self.quete.index)) do
+            WorldMapTooltip:AddLine((o.compte and (o.compte .. "  ") or "") .. o.texte,
+                S.Couleur(o.fini and "vertClair" or "texte"))
+        end
+        WorldMapTooltip:Show()
+    end)
+    z:SetScript("OnLeave", function() WorldMapTooltip:Hide() end)
+    zonesMonde[n] = z
+    return z
+end
+
+local lectureMonde = false
+MajZonesMonde = function()
+    if lectureMonde then return end
+    lectureMonde = true
+    local carte = S.CARTES and S.CARTES[GetMapInfo() or ""]
+    local largeur, hauteur = WorldMapButton:GetWidth(), WorldMapButton:GetHeight()
+    local n = 0
+    if carte then
+        SetCVar("questPOI", "1")
+        QuestPOIUpdateIcons()
+        for _, q in ipairs(Lire()) do
+            if not q.enTete and q.id and not q.complete then
+                local _, x, y = QuestPOIGetIconInfo(q.id)
+                if x and y and x >= 0 and x <= 1 and y >= 0 and y <= 1 then
+                    n = n + 1
+                    local z = ZoneMonde(n)
+                    z.quete = q
+                    local taille = math.max(12, 2 * RAYON_ZONE / carte[1] * largeur)
+                    z:SetSize(taille, taille)
+                    z:ClearAllPoints()
+                    z:SetPoint("CENTER", WorldMapButton, "TOPLEFT", x * largeur, -y * hauteur)
+                    z:Show()
+                end
+            end
+        end
+        SetCVar("questPOI", "0")
+    end
+    for i = n + 1, #zonesMonde do zonesMonde[i]:Hide() end
+    lectureMonde = false
+end
+
+-- Marques de quête du jeu coupées partout (mini-carte et carte du monde) : nos zones et nos épingles les remplacent.
 if Minimap.SetPOIArrowTexture then Minimap:SetPOIArrowTexture(S.MEDIA .. "Textures\\Vide") end
 local surMonde = WorldMapFrame:GetScript("OnShow")
 WorldMapFrame:SetScript("OnShow", function(...)
-    SetCVar("questPOI", "1")
+    SetCVar("questPOI", "0")
     if surMonde then surMonde(...) end
     MajMarques()
 end)
-WorldMapFrame:HookScript("OnHide", function() SetCVar("questPOI", "0") end)
-S.Ecouter("PLAYER_ENTERING_WORLD", function() SetCVar("questPOI", WorldMapFrame:IsShown() and "1" or "0") end)
+S.Ecouter("PLAYER_ENTERING_WORLD", function() SetCVar("questPOI", "0") end)
