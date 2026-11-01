@@ -13,6 +13,7 @@ import cuisine_v3
 import icones_retail
 import montures_v3
 import passifs_v3
+import sorts_monstres_v3
 import techniques_v3
 from hauts_faits_natifs import DBC_CLIENT, DBC_SERVEUR, FRFR, IDENTIFIANTS, MASQUE, MYSQL, sql_texte
 
@@ -141,7 +142,8 @@ def main():
     cuisine = cuisine_v3.lignes(d, plats)
     montures, catalogue = montures_v3.lignes(d)
     passifs = passifs_v3.lignes(d)
-    d.enregistrements.extend(lignes + incantations + kit + bivouac + cuisine + passifs)
+    monstres = sorts_monstres_v3.lignes(d)   # v3 (01/11/2026) : sorts des monstres, migration 106
+    d.enregistrements.extend(lignes + incantations + kit + bivouac + cuisine + passifs + monstres)
     os.makedirs(DBC_CLIENT, exist_ok=True)
     d.enregistrer(os.path.join(DBC_CLIENT, "Spell.dbc"))
 

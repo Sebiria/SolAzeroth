@@ -25,6 +25,7 @@
 #include "CommandScript.h"
 #include "Config.h"
 #include "Creature.h"
+#include "DatabaseEnv.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "Item.h"
@@ -36,6 +37,7 @@
 #include "StringFormat.h"
 #include <algorithm>
 #include <cmath>
+#include <unordered_map>
 #include <unordered_set>
 
 using namespace Acore::ChatCommands;
@@ -104,6 +106,19 @@ namespace
     {
         Creature* creature = unite ? unite->ToCreature() : nullptr;
         return creature && !creature->GetCharmerOrOwnerPlayerOrPlayerItself() ? creature : nullptr;
+    }
+
+    // 01/11/2026 (recalibrage avec les sorts des monstres, outils\sorts_calibre_v3.py, migration 107) : facteur sur les
+    // dégâts et les soins des sorts de certains monstres, quand baisser leur mêlée ne suffisait pas à garder la
+    // difficulté voulue (table solazeroth_v3_sorts_facteur, lue au démarrage).
+    std::unordered_map<uint32, float> facteursSorts;
+    float FacteurSorts(Unit* lanceur)
+    {
+        Creature* creature = Monstre(lanceur);
+        if (!creature)
+            return 1.0f;
+        auto i = facteursSorts.find(creature->GetEntry());
+        return i == facteursSorts.end() ? 1.0f : i->second;
     }
 
     // 31/10/2026 (Familier vil de la vallée des Épreuves : Boule de feu à 1 100) : le moteur calcule les sorts des
@@ -319,20 +334,20 @@ public:
     }
     void ModifySpellDamageTaken(Unit* cible, Unit* attaquant, int32& degats, SpellInfo const* sort) override
     {
-        degats = int32(std::lround(degats * EchelleSort(attaquant, sort)));
+        degats = int32(std::lround(degats * EchelleSort(attaquant, sort) * FacteurSorts(attaquant)));
         bool physique = sort && (sort->GetSchoolMask() & SPELL_SCHOOL_MASK_NORMAL);
         Appliquer(cible, attaquant, degats, physique ? reglages.degatsMonstres : reglages.degatsSorts);
     }
     // Les dégâts sur la durée, même physiques (saignements), ne passent pas par l'armure.
     void ModifyPeriodicDamageAurasTick(Unit* cible, Unit* attaquant, uint32& degats, SpellInfo const* sort) override
     {
-        degats = uint32(std::lround(degats * EchelleSort(attaquant, sort)));
+        degats = uint32(std::lround(degats * EchelleSort(attaquant, sort) * FacteurSorts(attaquant)));
         Appliquer(cible, attaquant, degats, reglages.degatsDuree);
     }
     // Soins des monstres (sur eux ou leurs alliés) : même rapport.
     void ModifyHealReceived(Unit* /*cible*/, Unit* soigneur, uint32& soin, SpellInfo const* sort) override
     {
-        soin = uint32(std::lround(soin * EchelleSort(soigneur, sort)));
+        soin = uint32(std::lround(soin * EchelleSort(soigneur, sort) * FacteurSorts(soigneur)));
     }
 };
 
@@ -378,7 +393,21 @@ public:
 class solazeroth_v3_combat_monde : public WorldScript
 {
 public:
-    solazeroth_v3_combat_monde() : WorldScript("solazeroth_v3_combat_monde", { WORLDHOOK_ON_AFTER_CONFIG_LOAD }) { }
+    solazeroth_v3_combat_monde() : WorldScript("solazeroth_v3_combat_monde", { WORLDHOOK_ON_AFTER_CONFIG_LOAD,
+        WORLDHOOK_ON_STARTUP }) { }
+
+    void OnStartup() override
+    {
+        facteursSorts.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT entry, facteur FROM solazeroth_v3_sorts_facteur"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                facteursSorts[f[0].Get<uint32>()] = std::clamp(f[1].Get<float>(), 0.0f, 1.0f);
+            } while (r->NextRow());
+        }
+    }
 
     void OnAfterConfigLoad(bool /*reload*/) override
     {
