@@ -98,6 +98,23 @@ libelleRempart:SetPoint("TOPLEFT", perso, "TOPLEFT", 293, -124)
 local puissance = S.Texte(perso, "Regular", 12, "texte", 0.8)
 puissance:SetPoint("TOPLEFT", perso, "TOPLEFT", 293, -200)
 
+-- F10 (01/11/2026) : jauge d'âme sous la puissance (v3_ame.cpp, messages SOLAME). Violette, rouge sous 25 %. En
+-- auberge ou en ville, un clic propose de régénérer avec les éclats cadavériques de la Collection.
+local ECLAT = 910120
+local VIOLET, VIOLET_CLAIR = { 0.62, 0.45, 0.85 }, { 0.706, 0.549, 0.902 }
+local ame = CreateFrame("Button", nil, perso)
+ame:SetSize(130, 24)
+ame:SetPoint("TOPLEFT", puissance, "BOTTOMLEFT", 0, -6)
+ame.texte = S.Texte(ame, "Regular", 12, "texte", 0.8)
+ame.texte:SetPoint("TOPLEFT")
+ame.piste = S.Texture(ame, "BORDER", nil, VIOLET[1], VIOLET[2], VIOLET[3], 0.18)
+ame.piste:SetSize(120, 3)
+ame.piste:SetPoint("TOPLEFT", ame.texte, "BOTTOMLEFT", 0, -4)
+ame.plein = S.Texture(ame, "ARTWORK", nil, VIOLET[1], VIOLET[2], VIOLET[3], 1)
+ame.plein:SetHeight(3)
+ame.plein:SetPoint("TOPLEFT", ame.piste, "TOPLEFT")
+ame:Hide()
+
 ------------------------------------------------------------------------
 -- Mise à jour
 ------------------------------------------------------------------------
@@ -135,6 +152,84 @@ local function MajPuissance()
     if conseillee then texte = texte .. "  |cffb4b8bf/ " .. conseillee .. "|r" end
     puissance:SetText(texte)
 end
+
+-- SOLAME : « AME;âme;maximum;perte à la prochaine mort;éclats par point;repos » et « ETEINTE ».
+local etatAme = nil
+
+local function PointsRegenerables()
+    local e = etatAme
+    return math.min(e.max - e.valeur, math.floor(S.NombreCollection(ECLAT) / math.max(1, e.prix)))
+end
+
+local function MajAme()
+    local e = etatAme
+    if not e then ame:Hide(); return end
+    local part = e.max > 0 and e.valeur / e.max or 0
+    local r, g, b = unpack(part < 0.25 and { S.Couleur("rouge") } or VIOLET)
+    ame.texte:SetText("Âme |cffe8e9eb" .. e.valeur .. "|r  |cffb4b8bf/ " .. e.max .. "|r")
+    ame.plein:SetVertexColor(r, g, b, 1)
+    ame.plein:SetWidth(math.max(0.01, 120 * part))
+    S.Montrer(ame.plein, part > 0)
+    ame:Show()
+end
+
+S.Message("SOLAME", function(champs)
+    if champs[1] == "AME" then
+        etatAme = { valeur = tonumber(champs[2]) or 0, max = tonumber(champs[3]) or 100, perte = tonumber(champs[4]) or 1,
+                    prix = tonumber(champs[5]) or 1, repos = champs[6] == "1" }
+        MajAme()
+    elseif champs[1] == "ETEINTE" then
+        RaidNotice_AddMessage(RaidWarningFrame, "Âme éteinte : ce personnage ne peut plus jouer.",
+            ChatTypeInfo["RAID_WARNING"])
+    end
+end)
+
+StaticPopupDialogs["SOLUI_AME_REGENERER"] = {
+    text = "Régénérer %s points d'âme pour %s éclats cadavériques ?",
+    button1 = "Régénérer",
+    button2 = "Annuler",
+    OnAccept = function() SendChatMessage(".ame regenerer", "SAY") end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+}
+
+ame:SetScript("OnEnter", function(self)
+    local e = etatAme
+    if not e then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:AddLine("Âme", VIOLET_CLAIR[1], VIOLET_CLAIR[2], VIOLET_CLAIR[3])
+    GameTooltip:AddLine("Chaque mort en coûte. À zéro, le personnage est perdu.", 0.91, 0.914, 0.922, true)
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddDoubleLine("Prochaine mort", "-" .. e.perte, 0.706, 0.722, 0.749, 0.941, 0.569, 0.541)
+    GameTooltip:AddDoubleLine("Régénération", e.prix .. " éclats par point", 0.706, 0.722, 0.749, 0.91, 0.914, 0.922)
+    GameTooltip:AddDoubleLine("Éclats en Collection", S.Nombre(S.NombreCollection(ECLAT)), 0.706, 0.722, 0.749,
+        0.91, 0.914, 0.922)
+    GameTooltip:AddLine(" ")
+    if e.valeur >= e.max then
+        GameTooltip:AddLine("Ton âme est entière.", 0.549, 0.769, 0.651)
+    elseif e.repos then
+        GameTooltip:AddLine("Clic : régénérer.", 0.965, 0.761, 0.478)
+    else
+        GameTooltip:AddLine("Régénération en auberge ou en ville.", 0.706, 0.722, 0.749)
+    end
+    GameTooltip:Show()
+end)
+ame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+ame:SetScript("OnClick", function()
+    local e = etatAme
+    if not e or e.valeur >= e.max then return end
+    if not e.repos then
+        UIErrorsFrame:AddMessage("L'âme se régénère en auberge ou en ville.", 1, 0.3, 0.3)
+        return
+    end
+    local points = PointsRegenerables()
+    if points <= 0 then
+        UIErrorsFrame:AddMessage("Il faut " .. e.prix .. " éclats cadavériques par point d'âme.", 1, 0.3, 0.3)
+        return
+    end
+    StaticPopup_Show("SOLUI_AME_REGENERER", points, S.Nombre(points * e.prix))
+end)
 
 S.Ecouter("UNIT_HEALTH", function(_, unite) if unite == "player" then MajVie() end end)
 S.Ecouter("UNIT_MAXHEALTH", function(_, unite) if unite == "player" then MajVie() end end)

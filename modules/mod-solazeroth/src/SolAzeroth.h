@@ -186,5 +186,6 @@ void AddSC_solazeroth_v3_zone();
 void AddSC_solazeroth_v3_annexes();
 void AddSC_solazeroth_v3_gouffre();
 void AddSC_solazeroth_v3_equipement();
+void AddSC_solazeroth_v3_ame();
 
 #endif
