@@ -233,6 +233,17 @@ bool SolAzeroth::EstBossFinal(unsigned int entree)
     return bossFinaux.count(entree) > 0;
 }
 
+void SolAzeroth::ChargerBossFinaux()
+{
+    bossFinaux.clear();
+    if (QueryResult resultat = WorldDatabase.Query("SELECT creditEntry, lastEncounterDungeon FROM instance_encounters WHERE creditType = 0 AND lastEncounterDungeon <> 0"))
+    {
+        do
+            bossFinaux[(*resultat)[0].Get<uint32>()] = (*resultat)[1].Get<uint32>();
+        while (resultat->NextRow());
+    }
+}
+
 unsigned char SolAzeroth::RangMenaceDebloque(unsigned int compte)
 {
     return RangDebloque(compte);
@@ -476,12 +487,7 @@ public:
 
     void OnStartup() override
     {
-        if (QueryResult resultat = WorldDatabase.Query("SELECT creditEntry, lastEncounterDungeon FROM instance_encounters WHERE creditType = 0 AND lastEncounterDungeon <> 0"))
-        {
-            do
-                bossFinaux[(*resultat)[0].Get<uint32>()] = (*resultat)[1].Get<uint32>();
-            while (resultat->NextRow());
-        }
+        SolAzeroth::ChargerBossFinaux();
 
         std::lock_guard<std::mutex> garde(verrou);
         if (QueryResult resultat = CharacterDatabase.Query("SELECT instance_id, rang, verrouille, affixe, affixes FROM solazeroth_menace_instance"))

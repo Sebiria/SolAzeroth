@@ -4,7 +4,8 @@
 //   (acore_characters.solazeroth_v3_aventurier). Aucune puissance : confort, modes, montures, titres, mascottes.
 //   Remplace le Renom de la v2 (renom.cpp n'est plus chargé en v3).
 // - Points de base : quête d'histoire 10, sous-zone 2, lieu nettoyé 20, annexe 25 (+10 pour une médaille d'or), relique
-//   10, zone à 60 % 50 et à 100 % 300, donjon terminé (dernier boss tué) 150. Ils croissent avec la zone :
+//   10, zone à 60 % 50 et à 100 % 300, donjon terminé (dernier boss tué) 150, et 100 au premier passage de chaque
+//   difficulté de donjon au-dessus de 1 (v3_donjons.cpp). Ils croissent avec la zone :
 //   × (1 + puissance haute conseillée / 100) ; pour un donjon, la puissance de son dernier boss. Durotar à 100 % et le
 //   Gouffre de Ragefeu donnent environ 2 000 points : la première monture arrive juste après (choix de l'utilisateur,
 //   « Monture après Durotar »).
@@ -39,8 +40,8 @@ namespace
 {
     // Genres d'objectif : 1 à 5 comme solazeroth_v3_zone_parts, puis les nôtres.
     uint8 const QUETE = 1, EXPLORATION = 2, LIEU = 3, ANNEXE = 4, RELIQUE = 5, MEDAILLE_OR = 6, DONJON = 7,
-                ZONE_60 = 8, ZONE_100 = 9, OFFERTE = 10;
-    uint32 const POINTS[] = { 0, 10, 2, 20, 25, 10, 10, 150, 50, 300, 0 };
+                ZONE_60 = 8, ZONE_100 = 9, OFFERTE = 10, DONJON_DIFFICULTE = 11;
+    uint32 const POINTS[] = { 0, 10, 2, 20, 25, 10, 10, 150, 50, 300, 0, 100 };
 
     // Récompenses (montures_v3.py).
     enum Recompense : uint8 { RIEN, TITRE, FOYER, MASCOTTE, MODE, MONTE, VITESSE_OUVERTE, DIFFICULTE_DONJON };
@@ -255,6 +256,16 @@ unsigned char SolAzeroth::ModesOuverts(Player* player)
     return uint8(Meilleure(PalierDe(player), MODE));
 }
 
+unsigned char SolAzeroth::PalierAventurier(Player* player)
+{
+    return PalierDe(player);
+}
+
+unsigned char SolAzeroth::DifficultesOuvertes(Player* player)
+{
+    return uint8(std::max<uint32>(1, Meilleure(PalierDe(player), DIFFICULTE_DONJON)));
+}
+
 class solazeroth_v3_aventurier_joueur : public PlayerScript
 {
 public:
@@ -285,13 +296,17 @@ public:
         }
     }
 
-    // Donjon terminé : son dernier boss tué.
+    // Donjon terminé : son dernier boss tué, et chaque difficulté au-dessus de 1 jusqu'à celle du donjon.
     void OnPlayerCreatureKill(Player* player, Creature* creature) override
     {
         if (!player->GetMap()->IsDungeon() || !SolAzeroth::EstBossFinal(creature->GetEntry()))
             return;
         uint8 avant = PalierDe(player);
-        Gagner(player, Compter(player, DONJON, player->GetMapId(), SolAzeroth::PuissanceCreature(creature)), avant);
+        uint8 puissance = SolAzeroth::PuissanceCreature(creature);
+        uint32 gain = Compter(player, DONJON, player->GetMapId(), puissance);
+        for (uint8 d = 2; d <= SolAzeroth::DifficulteDonjon(player->GetMap()); ++d)
+            gain += Compter(player, DONJON_DIFFICULTE, player->GetMapId() * 10 + d, puissance);
+        Gagner(player, gain, avant);
     }
 
     // La recharge de la pierre de foyer est posée juste après le lancement ; on la réduit selon le palier.
@@ -299,7 +314,8 @@ public:
     {
         if (sort->GetSpellInfo()->Id != PIERRE_DE_FOYER)
             return;
-        uint32 reduction = FOYER_BASE - MinutesFoyer(PalierDe(player));
+        uint32 reduction = FOYER_BASE - MinutesFoyer(PalierDe(player))
+            + (SolAzeroth::PassifActif(player, SolAzeroth::FOYER_PROCHE) ? 5 : 0);
         if (!reduction)
             return;
         player->m_Events.AddEventAtOffset([player, reduction]()

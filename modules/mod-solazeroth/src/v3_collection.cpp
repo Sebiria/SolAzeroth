@@ -214,6 +214,7 @@ public:
     // ordinaires du butin sont pris (pas ceux de quête, ni ceux réservés à un joueur ou soumis à une condition).
     void OnPlayerBeforeSendLoot(Player* player, ObjectGuid lootGuid, Loot* loot) override
     {
+        uint32 recolte = 0;
         for (LootItem& objet : loot->items)
         {
             if (objet.is_looted || objet.freeforall || objet.is_blocked || !objet.conditions.empty()
@@ -221,9 +222,20 @@ public:
                 || !objet.AllowedForPlayer(player, loot->sourceWorldObjectGUID))
                 continue;
             Modifier(player, objet.itemid, int32(objet.count));
+            if (!recolte)
+                recolte = objet.itemid;
             objet.is_looted = true;
             if (loot->unlootedCount)
                 --loot->unlootedCount;
+        }
+        // Passifs (v3_passifs.cpp), en récoltant (herbe, filon, pêche) : Cueilleur, 15 % de chances d'un composant de
+        // plus ; Main experte, 20 % de chances d'un éclat cadavérique.
+        if (recolte && lootGuid.IsGameObject())
+        {
+            if (SolAzeroth::PassifActif(player, SolAzeroth::CUEILLEUR) && urand(1, 100) <= 15)
+                Modifier(player, recolte, 1);
+            if (SolAzeroth::PassifActif(player, SolAzeroth::MAIN_EXPERTE) && urand(1, 100) <= 20)
+                Modifier(player, ECLAT, 1);
         }
         if (loot->isLooted())
             CollectionDe(player)->vide = lootGuid;
@@ -237,7 +249,13 @@ public:
         if (auto it = depecage.find(creature->GetEntry()); it != depecage.end())
             LootTemplates_Skinning.GetLootFor(it->second)->Process(creature->loot, LootTemplates_Skinning,
                 creature->GetLootMode(), player);
-        if (uint32 nombre = Eclats(creature))
+        uint32 nombre = Eclats(creature);
+        // Passifs (v3_passifs.cpp) : Charognard, + 25 % en donjon ; Éclats d'aventure, + 10 % hors des instances.
+        if (SolAzeroth::PassifActif(player, SolAzeroth::CHAROGNARD))
+            nombre = uint32(nombre * 1.25f + frand(0.0f, 1.0f));
+        else if (SolAzeroth::PassifActif(player, SolAzeroth::ECLATS_D_AVENTURE))
+            nombre = uint32(nombre * 1.1f + frand(0.0f, 1.0f));
+        if (nombre)
             creature->loot.AddItem(LootStoreItem(ECLAT, 0, 100.0f, false, LOOT_MODE_DEFAULT, 0, nombre, nombre));
         if (!creature->loot.isLooted())
             creature->SetDynamicFlag(UNIT_DYNFLAG_LOOTABLE);

@@ -108,6 +108,18 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
   - un tout petit peu à chaque monstre tué, pour inciter à nettoyer le donjon entier.
 - **Ce qu'apporte cette réputation** (série 4) : des techniques actives et passives à choisir à l'entrée de chaque donjon. Plus le rang de réputation est haut, plus il y a de choix et d'emplacements d'amélioration.
 
+**Construit le 01/11/2026** (`v3_donjons.cpp`, `v3_passifs.cpp`, `outils\passifs_v3.py`, `outils\simulation_donjons.py`, migration 093 ; proposition validée : « Réputation des donjons — proposition.md »), pas encore vérifié en jeu. Pas d'actif bonus : que des passifs, tous ouverts, dans des emplacements qui s'ouvrent peu à peu (choix de l'utilisateur).
+- **Difficultés 1 à 5** de chaque donjon (pas des raids), choisies à l'entrée (fenêtre « Difficulté du donjon » ou `.donjon <1-5>`), modifiables jusqu'au premier combat puis verrouillées jusqu'à la remise à zéro. Les difficultés 2 à 5 s'ouvrent aux paliers 12, 20, 30 et 38 du rang d'aventurier ; un nouveau donjon reprend la dernière difficulté choisie par le compte.
+  - Monstres (boss compris) à la puissance de base du joueur + écart, vie et dégâts × facteur, éclats × facteur : 2 (+0, × 1,1, 1 technique, éclats × 1,5), 3 (+0, × 1,25, 2, × 2), 4 (+1, × 1,3, 2, × 2,5), 5 (+1, × 1,4, 3, × 3). Les chiffres de la proposition (+1 à +4, × 1,2 à × 1,8) laissaient la difficulté 2 à 0 % de victoires en simulation ; ceux-ci demandent environ 1, 3, 4 puis 5 rangs d'objet de plus (et des passifs) que la difficulté 1.
+  - Techniques tirées pour le donjon parmi Enragé, Renforçant, Volcanique et **Explosif** (toutes les 12 s, une sphère à 6 m du joueur, 5 % de sa vie ; non détruite en 6 s, 15 % de la vie à 30 m). Fortifié et Tyrannique sont fondus dans le facteur.
+  - Dernier boss : + 2 Marques par difficulté au-dessus de 1, 25 % de chances par difficulté au-dessus de 2 d'une pierre taillée ; + 100 points d'aventurier pour chaque nouvelle difficulté réussie.
+- **Réputation des donjons**, au compte : 1 par monstre, 10 par boss, 100 au dernier boss, × la difficulté. 10 rangs (0, 100, 300, 600, 1 000, 1 600, 2 400, 3 400, 4 600, 6 000 points).
+- **Passifs de donjon** (21, valent dans les instances) : 6 emplacements ouverts aux rangs 1, 2, 4, 6, 8 et 10 ; se changent hors combat, hors d'une instance ou dans un donjon avant le premier combat. Chaque passif de combat vaut à peu près « + 5 % de puissance » en simulation (Peau de braise − 8 % de dégâts subis, Soif de sang 6 % de vol de vie, Bourreau + 30 % sous 35 %, Cuirasse + 6 % d'armure, etc. : liste dans `outils\passifs_v3.py`).
+- **Passifs du monde extérieur** (21, valent hors des instances), en arbre à trois branches sans prérequis (combat, survie, récolte et voyage) : 6 emplacements ouverts aux paliers 2, 5, 9, 15, 23 et 31 du rang d'aventurier, puis achetés en Marques (25, 50, 100, 175, 275, 400) ; se changent dans une zone de repos. Main experte devient « 20 % de chances d'un éclat cadavérique en récoltant » (le temps de récolte ne peut pas être changé par le serveur).
+- **Interface** : icône de la barre « Passifs et réputation des donjons » (pages Donjon et Extérieur), commandes `.passif`, `.passif donjon|exterieur <emplacement> <passif|0>`, `.passif acheter`.
+- **Corrigé en passant** : la liste des derniers boss n'était chargée que par la v2 (`menace.cpp`) ; en v3 elle était vide, si bien que les donjons terminés ne rapportaient rien au rang d'aventurier. `v3_donjons.cpp` la charge maintenant.
+- **À noter** : le Gouffre de Ragefeu n'est pas calibré pour la v3 : en simulation, les fiches actuelles ne gagnent pas contre ses élites même en difficulté 1 (armure ~665, qui ramène les coups à 25 %).
+
 ### 2.6 Mort
 - **Retour à la pierre de foyer, sans aucune perte.**
 - Depuis F10 (01/11/2026), chaque mort coûte aussi de l'âme : voir « L'âme, à la manière de Dofus » et **F10 construite** dans la partie F5.
@@ -726,11 +738,12 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **Cauchemar** : toutes les 4 à 6 minutes, une pluie de feu (trois éruptions) ou un rare de la zone qui apparaît à 20 m (5 minutes, il donne ses éclats) ; écran légèrement rougeâtre.
 - **F10, âme** : construite le 01/11/2026 (voir **F10 construite**), pas encore compilée.
 - **Rang d'aventurier et montures** : construit le 01/11/2026 (voir 2.7), pas encore vérifié en jeu.
+- **Réputation des donjons, difficultés et passifs** : construits le 01/11/2026 (voir 2.5), pas encore vérifiés en jeu.
 - **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
 
 ## 5. Questions pour les prochaines séries
 
-1. **Réputation des donjons** : la liste des techniques actives et passives d'entrée, et les paliers d'emplacements.
+1. **Réputation des donjons** : réglée et construite le 01/11/2026 (voir 2.5). Reste à calibrer le Gouffre de Ragefeu pour la v3.
 2. **Rang d'aventurier** : réglé et construit le 01/11/2026 (voir 2.7). Reste à relever le plafond de 20 000 avec les zones suivantes, et à parler des montures volantes pour l'Outreterre et le Norfendre.
 3. **Puissance** : les chiffres par qualité et origine d'objet, et la courbe exacte du malus.
 4. **Kit du guerrier tank** : relire et corriger le brouillon de la partie 3. Il reste aussi à fixer :

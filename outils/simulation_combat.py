@@ -66,11 +66,20 @@ def apres_armure(degats, armure):
     return math.ceil(max(degats - armure / ARMURE_PAR_POINT, degats * ARMURE_MINIMUM))
 
 
-def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None):
+def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None, passifs=None):
     """Un combat ; renvoie (victoire, durée, vie restante du joueur, dégâts infligés, dégâts subis).
     reaction : délai moyen (tiré entre 0 et 2 × reaction) entre la fin d'une recharge et la technique, d'après le
     journal du 31/10/2026 (Frappe du bouclier toutes les 7,4 s pour 6 s de recharge). Riposte du rempart n'est
-    lancée que si riposte est vrai (l'utilisateur ne s'en servait pas)."""
+    lancée que si riposte est vrai (l'utilisateur ne s'en servait pas).
+    passifs (réputation des donjons et monde extérieur, 01/11/2026) : dictionnaire, clés facultatives
+    subis (× dégâts subis), inflige (× dégâts infligés), vol (part des dégâts infligés rendue en vie),
+    souffle ((seuil, soin) en part de la vie, une fois), epines (part de la mêlée subie renvoyée),
+    bourreau ((seuil de vie du monstre, bonus)), premier ((au-dessus de cette part de vie, bonus)),
+    concentration ((délai, bonus)),
+    contre (chance d'une attaque automatique quand on est frappé), recharge (× recharges des techniques)."""
+    p = passifs or {}
+    souffle_pris = False
+    dernier_coup_subi = -99.0
     vie_j, vie_m = joueur.vie, monstre.vie
     plafond = int(joueur.vie * REMPART_PLAFOND)
     rempart = 0
@@ -98,10 +107,19 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None):
         d = apres_armure(int(d), monstre.armure)
         if alea.random() * 100 < joueur.critique:
             d *= 2
-        return d
+        f = p.get("inflige", 1.0)
+        if "bourreau" in p and vie_m < monstre.vie * p["bourreau"][0]:
+            f += p["bourreau"][1]
+        if "premier" in p and vie_m > monstre.vie * p["premier"][0]:
+            f += p["premier"][1]
+        if "concentration" in p and t - dernier_coup_subi >= p["concentration"][0]:
+            f += p["concentration"][1]
+        return round(d * f)
 
     def encaisser(d):
-        nonlocal rempart, vie_j, subi
+        nonlocal rempart, vie_j, subi, dernier_coup_subi, souffle_pris
+        d = round(d * p.get("subis", 1.0))
+        dernier_coup_subi = t
         absorbe = min(rempart, d)
         rempart -= absorbe
         rempart = min(rempart + round(absorbe * REMPART_PART), plafond + absorbe)
@@ -109,6 +127,9 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None):
         rempart = min(rempart + round(reste * REMPART_PART), plafond)
         vie_j -= reste
         subi += reste
+        if "souffle" in p and not souffle_pris and 0 < vie_j < joueur.vie * p["souffle"][0]:
+            souffle_pris = True
+            vie_j = min(joueur.vie, vie_j + round(joueur.vie * p["souffle"][1]))
 
     while t < DUREE_MAX:
         evenement = min((v, k) for k, v in prochain.items() if v is not None)
@@ -119,11 +140,11 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None):
         elif quoi == "frappe":
             d = coup_joueur(2.0)
             rempart = min(rempart + round(joueur.vie * REMPART_FRAPPE), plafond)
-            prochain[quoi] = t + 6.0 + alea.uniform(0, 2 * reaction)
+            prochain[quoi] = t + 6.0 * p.get("recharge", 1.0) + alea.uniform(0, 2 * reaction)
         elif quoi == "tonnerre":
             d = coup_joueur(1.0)
             ralenti_jusqua = t + 10.0
-            prochain[quoi] = t + 8.0 + alea.uniform(0, 2 * reaction)
+            prochain[quoi] = t + 8.0 * p.get("recharge", 1.0) + alea.uniform(0, 2 * reaction)
         elif quoi == "riposte":
             if rempart >= plafond * 0.5 and rempart > 0:
                 d = round(rempart * 1.5 * (1 - malus))
@@ -139,7 +160,9 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None):
                 d *= 2
             encaisser(d)
             prochain[quoi] = t + monstre.vitesse * (1.25 if t < ralenti_jusqua else 1.0)
-            d = 0
+            d = round(d * p.get("subis", 1.0) * p.get("epines", 0.0))
+            if "contre" in p and alea.random() < p["contre"]:
+                d += coup_joueur(1.0)
         elif quoi == "soin":
             vie_j = min(joueur.vie, vie_j + round(joueur.vie * potion[2] / 100.0))
             soins_restants -= 1
@@ -153,6 +176,8 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None):
             boire()
         vie_m -= d
         inflige += d
+        if d > 0 and "vol" in p and vie_j > 0:
+            vie_j = min(joueur.vie, vie_j + round(d * p["vol"]))
         if vie_m <= 0:
             return True, t, vie_j, inflige, subi
         if vie_j <= 0:

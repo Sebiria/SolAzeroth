@@ -87,7 +87,11 @@ namespace
         return player->CustomData.GetDefault<Bivouac>("solazeroth_v3_bivouac");
     }
 
-    uint8 Charges(Bivouac const* b) { return b->rangPotion >= 1 ? 2 : 1; }
+    // Passif Gorgée de plus (v3_passifs.cpp) : une charge de plus.
+    uint8 Charges(Player* player, Bivouac const* b)
+    {
+        return (b->rangPotion >= 1 ? 2 : 1) + (SolAzeroth::PassifActif(player, SolAzeroth::GORGEE_DE_PLUS) ? 1 : 0);
+    }
     float SoinPotion(Bivouac const* b) { return b->rangPotion >= 1 ? 35.0f : 30.0f; }
     bool EnRepos(Player* player)
     {
@@ -128,7 +132,7 @@ namespace
         Bivouac* b = BivouacDe(player);
         // Dernier champ : secondes avant le Repos au coin du feu (0 hors du feu), pour le compte à rebours de l'interface.
         uint32 restant = b->allume && b->feu && b->assis < ASSIS_POUR_REPOS ? (ASSIS_POUR_REPOS - b->assis) / 1000 : 0;
-        std::string message = Acore::StringFormat("ETAT;{};{};{};{};{};{}", b->charges, Charges(b), restant, b->rangFeu,
+        std::string message = Acore::StringFormat("ETAT;{};{};{};{};{};{}", b->charges, Charges(player, b), restant, b->rangFeu,
             b->repas, b->rangPotion);
         if (!force && message == b->envoye)
             return;
@@ -253,7 +257,7 @@ public:
             b->rangFeu = (*r)[1].Get<uint8>();
             b->repas = (*r)[2].Get<uint32>();
             b->rangPotion = std::min((*r)[3].Get<uint8>(), RANG_POTION_MAX);
-            b->charges = std::min((*r)[0].Get<uint8>(), Charges(b));
+            b->charges = std::min((*r)[0].Get<uint8>(), Charges(player, b));
         }
         for (uint32 sort : { POTION, FEU })
             if (!player->HasSpell(sort))
@@ -294,7 +298,7 @@ public:
         b->attente = 0;
 
         if (player->HasPlayerFlag(PLAYER_FLAGS_RESTING))
-            FixerCharges(player, Charges(b));
+            FixerCharges(player, Charges(player, b));
 
         if (b->allume && b->feu && player->IsSitState())
         {
@@ -307,13 +311,16 @@ public:
                     player->RemoveAurasDueToSpell(repos);
                 uint32 repos = b->rangFeu >= 2 ? ReposBraises(player) : b->rangFeu >= 1 ? REPOS_FLAMME : REPOS;
                 player->CastSpell(player, repos, true);
-                if (b->rangFeu >= 3)
-                    if (Aura* aura = player->GetAura(repos))
-                    {
-                        aura->SetMaxDuration(DUREE_REPOS_BIVOUAC);
-                        aura->SetDuration(DUREE_REPOS_BIVOUAC);
-                    }
-                FixerCharges(player, Charges(b));
+                if (Aura* aura = player->GetAura(repos))
+                {
+                    // Passif Veillée (v3_passifs.cpp) : le Repos dure + 50 %.
+                    int32 duree = b->rangFeu >= 3 ? DUREE_REPOS_BIVOUAC : aura->GetMaxDuration();
+                    if (SolAzeroth::PassifActif(player, SolAzeroth::VEILLEE))
+                        duree = duree * 3 / 2;
+                    aura->SetMaxDuration(duree);
+                    aura->SetDuration(duree);
+                }
+                FixerCharges(player, Charges(player, b));
             }
         }
 
@@ -422,7 +429,7 @@ public:
         if (!Payer(handler, player, 1, b->rangPotion + 1))
             return true;
         ++b->rangPotion;
-        b->charges = Charges(b);
+        b->charges = Charges(player, b);
         Sauver(player);
         Envoyer(player, true);
         handler->SendSysMessage(b->rangPotion == 1 ? "Potion de Durotar : 2 charges, 35 % de la vie."

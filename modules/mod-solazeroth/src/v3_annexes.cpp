@@ -148,6 +148,15 @@ namespace
 
     // ------------------------------------------------------------------ chrono, médailles, sans potion
 
+    // Passif Défi tenu (v3_passifs.cpp) : 5 s de plus à chaque épreuve contre la montre.
+    uint32 DefiTenu(Player* player) { return SolAzeroth::PassifActif(player, SolAzeroth::DEFI_TENU) ? 5000 : 0; }
+
+    // Passif Chasseur de primes : + 20 % d'Insignes.
+    uint32 Insignes(Player* player, uint32 nombre)
+    {
+        return SolAzeroth::PassifActif(player, SolAzeroth::CHASSEUR_DE_PRIMES) ? uint32(nombre * 1.2f + 0.5f) : nombre;
+    }
+
     uint8 Medaille(Annexe const& a, uint32 ms)
     {
         uint32 s = ms / IN_MILLISECONDS;
@@ -168,14 +177,14 @@ namespace
                 if (!c->second.fin)
                     c->second.fin = getMSTime();
                 temps = c->second.fin - c->second.debut;
-                medaille = Medaille(a, temps);
+                medaille = Medaille(a, temps - std::min(temps, DefiTenu(player)));
             }
             j->chronos.erase(quete);
             SolAzeroth::EnvoyerAddon(player, "SOLZONE", "CHRONO;-");
         }
         float facteur = medaille == 3 ? 2.0f : medaille == 2 ? 1.5f : 1.0f;
         if (a.insignes)
-            SolAzeroth::AjouterACollection(player, INSIGNE, uint32(a.insignes * facteur));
+            SolAzeroth::AjouterACollection(player, INSIGNE, Insignes(player, uint32(a.insignes * facteur)));
         if (a.eclats)
             SolAzeroth::AjouterACollection(player, ECLAT, uint32(a.eclats * facteur));
         for (auto const& [objet, nombre] : a.composants)
@@ -183,7 +192,7 @@ namespace
         if (facteur > 1.0f && quest->GetRewOrReqMoney() > 0)
             player->ModifyMoney(int32(quest->GetRewOrReqMoney() * (facteur - 1.0f)));
         std::string texte = Acore::StringFormat("{} : {} Insignes et {} éclats rangés dans la Collection.", a.cle,
-            uint32(a.insignes * facteur), uint32(a.eclats * facteur));
+            Insignes(player, uint32(a.insignes * facteur)), uint32(a.eclats * facteur));
         if (!a.depart.empty())
         {
             static char const* const NOMS[] = { "sans médaille", "bronze", "argent", "or" };
@@ -218,7 +227,8 @@ namespace
             if (!c.fin && statut == QUEST_STATUS_COMPLETE)
                 c.fin = maintenant;
             uint32 ecoule = getMSTimeDiff(c.debut, c.fin ? c.fin : maintenant);
-            if (!c.fin && ecoule > a.bronze * IN_MILLISECONDS)
+            uint32 bonus = DefiTenu(player) / IN_MILLISECONDS;
+            if (!c.fin && ecoule > (a.bronze + bonus) * IN_MILLISECONDS)
             {
                 player->FailQuest(it->first);
                 Alerte(player, a.cle + " : temps écoulé. Abandonne la quête et reprends-la pour retenter.");
@@ -227,7 +237,7 @@ namespace
                 continue;
             }
             SolAzeroth::EnvoyerAddon(player, "SOLZONE", Acore::StringFormat("CHRONO;{};{};{};{};{};{}", it->first,
-                ecoule / IN_MILLISECONDS, a.bronze, a.argent, a.orTemps, c.fin ? 1 : 0));
+                ecoule / IN_MILLISECONDS, a.bronze + bonus, a.argent + bonus, a.orTemps + bonus, c.fin ? 1 : 0));
             ++it;
         }
     }
@@ -309,8 +319,8 @@ namespace
         if (tenues && j->jour != Aujourdhui())
         {
             j->jour = Aujourdhui();
-            SolAzeroth::AjouterACollection(player, INSIGNE, tenues);
-            texte += Acore::StringFormat(" {} Insigne(s) du jour.", tenues);
+            SolAzeroth::AjouterACollection(player, INSIGNE, Insignes(player, tenues));
+            texte += Acore::StringFormat(" {} Insigne(s) du jour.", Insignes(player, tenues));
         }
         SauverJoueur(player, j);
         Alerte(player, texte);

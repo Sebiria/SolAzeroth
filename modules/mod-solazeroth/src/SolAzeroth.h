@@ -20,8 +20,32 @@ namespace SolAzeroth
     // parts (v3_zone.cpp ; rang d'aventurier).
     void ObjectifsAcquis(Player* player, std::function<void(unsigned int, unsigned char, unsigned int)> const& f);
     std::vector<unsigned int> ZonesAvecParts();
-    // v3 : rang d'aventurier du compte (v3_aventurier.cpp) : modes de zone ouverts (0 aucun, 1 difficile, 2 cauchemar).
+    // v3 : rang d'aventurier du compte (v3_aventurier.cpp) : modes de zone ouverts (0 aucun, 1 difficile, 2 cauchemar),
+    // palier atteint et difficulté de donjon la plus haute ouverte (1 à 5).
     unsigned char ModesOuverts(Player* player);
+    unsigned char PalierAventurier(Player* player);
+    unsigned char DifficultesOuvertes(Player* player);
+    // v3 : difficulté du donjon de cette carte (1 à 5 ; 0 hors donjon), techniques de ses monstres (masque) et verrou
+    // (premier combat livré), et rang de réputation des donjons du compte (1 à 10) (v3_donjons.cpp).
+    unsigned char DifficulteDonjon(Map* map);
+    unsigned char TechniquesDonjon(Map* map);
+    bool DonjonVerrouille(Map* map);
+    unsigned char RangReputation(Player* player);
+    unsigned int PointsReputation(Player* player);
+    // v3 : passifs de donjon et du monde extérieur (v3_passifs.cpp ; numéros : outils\passifs_v3.py). PassifActif :
+    // le passif est dans un emplacement du joueur et vaut là où il est (passifs de donjon en donjon, les autres dehors).
+    enum Passif : unsigned char
+    {
+        PEAU_DE_BRAISE = 1, SOIF_DE_SANG, SECOND_SOUFFLE, EPINES, RECUPERATION, BOURREAU, ELAN, BRISE_CHEF,
+        CONTRE_LA_MEUTE, FUREUR_DU_NOMBRE, PREMIER_SANG, CARRURE, MAIN_VIVE, CUIRASSE, PIED_SUR, FIN_DE_COMBAT,
+        CONTRE_ATTAQUE, TENACE, DERNIER_REMPART, CHAROGNARD, PILLEUR_DE_FAILLE,
+        EMBUSCADE = 31, CHASSEUR_DE_RARES, SOLITAIRE, NETTOYEUR, DEFI_TENU, MAUVAIS_OEIL, FIN_DE_TRAQUE, SECOND_VENT,
+        INSTINCT_DE_FUITE, GORGEE_DE_PLUS, VEILLEE, GOURMET, AME_TENACE, CUEILLEUR, MAIN_EXPERTE, ECLATS_D_AVENTURE,
+        CHASSEUR_DE_PRIMES, PAS_LEGER, RODEUR, FOYER_PROCHE, MARCHANDAGE
+    };
+    bool PassifActif(Player* player, unsigned char passif);
+    // v3 : un monstre d'un lieu à nettoyer (v3_zone.cpp).
+    bool MonstreDeLieu(unsigned int entree);
     // v3 : meilleure médaille d'un défi (0 aucune, 1 bronze, 2 argent, 3 or) et carte des reliques achetée (v3_annexes.cpp).
     unsigned char MedailleDefi(Player* player, unsigned int quete);
     bool CarteReliques(Player* player);
@@ -107,6 +131,8 @@ namespace SolAzeroth
     char const* AffixeDeLaSemaine();
     // Dernier boss d'un donjon (sa mort valide le donjon).
     bool EstBossFinal(unsigned int entree);
+    // Charge les derniers boss (menace.cpp ; appelé aussi par v3_donjons.cpp, la v3 ne chargeant pas menace.cpp).
+    void ChargerBossFinaux();
     // Plus haut rang de menace débloqué par le compte.
     unsigned char RangMenaceDebloque(unsigned int compte);
 
@@ -203,5 +229,7 @@ void AddSC_solazeroth_v3_equipement();
 void AddSC_solazeroth_v3_ame();
 void AddSC_solazeroth_v3_modes();
 void AddSC_solazeroth_v3_aventurier();
+void AddSC_solazeroth_v3_donjons();
+void AddSC_solazeroth_v3_passifs();
 
 #endif

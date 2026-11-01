@@ -20,6 +20,11 @@
 //     fissure (900101) explose et retire 15 % de la vie à qui est resté dedans (dégâts réglés par affixes_mecanique.cpp).
 // - Interface (SolUI_Zone.lua, préfixe SOLMODE) : « MODE;zone;mode;débloqué;au repos;cauchemar actif;modes ouverts »
 //   (0 à 2) au changement et toutes les 10 s. Les éclats suivent le mode (SolAzeroth::FacteurEclatsMode, v3_collection.cpp).
+// - Donjons (01/11/2026, réputation des donjons, v3_donjons.cpp) : en difficulté 2 à 5, tous les monstres hostiles du
+//   donjon, boss compris, passent de même à la puissance de base du joueur + écart, vie et dégâts × facteur, éclats ×
+//   1,5 à × 3, avec les techniques tirées pour le donjon. Technique de plus, Explosif : en combat, toutes les 12 s, une
+//   sphère instable (900100) à 6 m du joueur, 5 % de sa vie ; non détruite en 6 s, elle retire 15 % de la vie à 30 m.
+// - Passif Mauvais œil (v3_passifs.cpp) : en mode difficile ou cauchemar, une technique de moins (au moins une).
 
 #include "SolAzeroth.h"
 #include "CellImpl.h"
@@ -60,18 +65,25 @@ namespace
         float eclats;
         float technique;    // force des techniques : 1 en difficile, 1,5 en cauchemar
     };
+    // Indexées par Mode, puis 4 à 8 : difficultés de donjon 1 à 5 (outils\passifs_v3.py).
     Regle const REGLES[] = { { 0, 1.0f, 0, 1.0f, 1.0f }, { 0, 1.0f, 0, 1.0f, 1.0f }, { 2, 1.25f, 1, 2.0f, 1.0f },
-                             { 2, 1.5f, 2, 3.0f, 1.5f } };
+                             { 2, 1.5f, 2, 3.0f, 1.5f }, { 0, 1.0f, 0, 1.0f, 1.0f }, { 0, 1.1f, 1, 1.5f, 1.0f },
+                             { 0, 1.25f, 2, 2.0f, 1.0f }, { 1, 1.3f, 2, 2.5f, 1.0f }, { 1, 1.4f, 3, 3.0f, 1.0f } };
+    uint8 const DONJON = 3;   // règle d'une difficulté : DONJON + difficulté
 
     uint32 const SEUIL = 6000;                 // 60 %, en centièmes
     uint32 const TICK = 1000, RENVOI = 10;
     float const VIE_RARE_CAUCHEMAR = 1.5f;
 
-    enum Technique : uint8 { ENRAGE = 1, RENFORCANT = 2, VOLCANIQUE = 4 };
+    enum Technique : uint8 { ENRAGE = 1, RENFORCANT = 2, VOLCANIQUE = 4, EXPLOSIF = 8 };
     float const ENRAGE_SEUIL = 30.0f, ENRAGE_DEGATS = 0.5f;
     float const RENFORT_PAR_CUMUL = 0.2f, RENFORT_PORTEE = 30.0f;
     uint8 const RENFORT_MAX = 5;
     uint32 const FISSURE = 900101, SORT_PLUIE_DE_FEU = 43440, SORT_NOVA_DE_FEU = 12470, SORT_RENFORT = 59449;
+    // Explosif (repris de affixes_mecanique.cpp, que la v3 ne charge pas).
+    uint32 const SPHERE = 900100, SORT_PROJECTILES = 15791, SORT_ASPECT_SPHERE = 50756;
+    uint32 const SPHERE_INTERVALLE = 12000;
+    float const SPHERE_VIE = 0.05f, SPHERE_DEGATS = 0.15f;
 
     // Événements du cauchemar : toutes les 4 à 6 minutes, hors combat ou non.
     uint32 const EVENEMENT_MIN = 4 * MINUTE * IN_MILLISECONDS, EVENEMENT_MAX = 6 * MINUTE * IN_MILLISECONDS;
@@ -82,6 +94,7 @@ namespace
         std::unordered_map<uint32, uint8> zones;
         uint32 attente = 0, renvoi = 0;
         int32 evenement = -1;   // ms avant le prochain événement du cauchemar ; -1 : à tirer
+        uint32 sphere = 0;      // ms de combat depuis la dernière sphère d'Explosif
         std::string envoye;
     };
 
@@ -138,6 +151,15 @@ namespace
         return !creature->GetCharmerOrOwnerPlayerOrPlayerItself() && !creature->IsDungeonBoss() && !creature->isWorldBoss()
             && modele->type != CREATURE_TYPE_CRITTER && !modele->npcflag && creature->GetEntry() != FISSURE
             && !creature->GetMap()->Instanceable();
+    }
+
+    // Monstre de donjon que les difficultés touchent : hostile, boss compris.
+    bool ConcerneDonjon(Creature* creature)
+    {
+        CreatureTemplate const* modele = creature->GetCreatureTemplate();
+        return !creature->GetCharmerOrOwnerPlayerOrPlayerItself() && modele->type != CREATURE_TYPE_CRITTER && !modele->npcflag
+            && creature->GetEntry() != FISSURE && creature->GetEntry() != SPHERE && creature->GetMap()->IsNonRaidDungeon()
+            && creature->IsHostileToPlayers();
     }
 
     float ForceTechnique(Creature* creature)
@@ -207,9 +229,15 @@ namespace
         if (etat->traite)
             return;
         etat->traite = true;
-        if (!Concerne(creature) || creature->GetZoneId() != player->GetZoneId())
-            return;
-        uint8 mode = ModeActif(player);
+        uint8 mode = AUCUN;
+        if (ConcerneDonjon(creature))
+        {
+            uint8 difficulte = SolAzeroth::DifficulteDonjon(creature->GetMap());
+            if (difficulte >= 2)
+                mode = DONJON + difficulte;
+        }
+        else if (Concerne(creature) && creature->GetZoneId() == player->GetZoneId())
+            mode = ModeActif(player);
         if (mode == AUCUN)
             return;
         Regle const& regle = REGLES[mode];
@@ -222,10 +250,18 @@ namespace
             facteurVie *= VIE_RARE_CAUCHEMAR;
         ChangerPuissance(creature, ancienne, std::max(ancienne, visee), facteurVie);
 
-        std::vector<uint8> techniques = { ENRAGE, RENFORCANT, VOLCANIQUE };
-        Acore::Containers::RandomShuffle(techniques);
-        for (uint8 i = 0; i < regle.techniques && i < techniques.size(); ++i)
-            etat->techniques |= techniques[i];
+        if (mode > DONJON)
+            etat->techniques = SolAzeroth::TechniquesDonjon(creature->GetMap());
+        else
+        {
+            std::vector<uint8> techniques = { ENRAGE, RENFORCANT, VOLCANIQUE };
+            Acore::Containers::RandomShuffle(techniques);
+            uint8 nombre = regle.techniques;
+            if (nombre > 1 && SolAzeroth::PassifActif(player, SolAzeroth::MAUVAIS_OEIL))
+                --nombre;
+            for (uint8 i = 0; i < nombre && i < techniques.size(); ++i)
+                etat->techniques |= techniques[i];
+        }
         if (etat->techniques & VOLCANIQUE)
             Volcan(creature);
     }
@@ -267,6 +303,47 @@ namespace
                 if (player->IsAlive() && ModeActif(player) == CAUCHEMAR)
                     Eruption(player);
             }, Milliseconds(i * 3000));
+    }
+
+    // Explosif : la sphère apparaît à 6 m du joueur ; non détruite en 6 s, elle explose sur les joueurs à 30 m.
+    void Sphere(Player* player)
+    {
+        Position position = player->GetFirstCollisionPosition(6.0f, frand(0.0f, 2 * float(M_PI)));
+        position.m_positionZ += 1.5f;
+        TempSummon* orbe = player->GetMap()->SummonCreature(SPHERE, position, nullptr, 9000);
+        if (!orbe)
+            return;
+        uint32 vie = std::max<uint32>(1, uint32(player->GetMaxHealth() * SPHERE_VIE));
+        orbe->SetLevel(player->GetLevel());
+        orbe->SetMaxHealth(vie);
+        orbe->SetHealth(vie);
+        orbe->SetReactState(REACT_PASSIVE);
+        orbe->SetControlled(true, UNIT_STATE_ROOT);
+        orbe->SetDisableGravity(true);
+        orbe->CastSpell(orbe, SORT_ASPECT_SPHERE, true);
+        orbe->TextEmote("apparaît ! Détruis-la avant qu'elle n'explose.", player, true);
+        orbe->m_Events.AddEventAtOffset([orbe]()
+        {
+            if (!orbe->IsAlive())
+                return;
+            for (auto const& ref : orbe->GetMap()->GetPlayers())
+                if (Player* cible = ref.GetSource(); cible && cible->IsAlive() && cible->IsWithinDistInMap(orbe, 30.0f))
+                    orbe->CastSpell(cible, SORT_PROJECTILES, true);
+            orbe->DespawnOrUnsummon(1500ms);
+        }, 6s);
+    }
+
+    // Le joueur se bat contre un monstre de donjon qui a la technique Explosif.
+    bool CombatExplosif(Player* player)
+    {
+        if (!player->IsInCombat() || !player->IsAlive() || player->IsGameMaster())
+            return false;
+        for (Unit* attaquant : player->getAttackers())
+            if (Creature* c = attaquant->ToCreature())
+                if (EtatMonstre* etat = c->CustomData.Get<EtatMonstre>("solazeroth_v3_mode"); etat && etat->mode > DONJON
+                    && (etat->techniques & EXPLOSIF))
+                    return true;
+        return false;
     }
 
     void ChargerRares()
@@ -313,7 +390,7 @@ public:
     template <typename T>
     static void Appliquer(Unit* cible, Unit* attaquant, T& degats)
     {
-        if (!cible || !attaquant || cible == attaquant)
+        if (!cible || !attaquant || cible == attaquant || attaquant->GetEntry() == SPHERE)
             return;
         // Monstre d'un mode qui frappe un joueur ou son familier : dégâts du mode et Enragé.
         if (Creature* monstre = attaquant->ToCreature(); monstre && JoueurDe(cible))
@@ -345,8 +422,14 @@ public:
 
     void ModifyMeleeDamage(Unit* cible, Unit* attaquant, uint32& degats) override { Appliquer(cible, attaquant, degats); }
 
-    void ModifySpellDamageTaken(Unit* cible, Unit* attaquant, int32& degats, SpellInfo const* /*sort*/) override
+    void ModifySpellDamageTaken(Unit* cible, Unit* attaquant, int32& degats, SpellInfo const* sort) override
     {
+        // Explosion de la sphère d'Explosif : part de la vie maximale.
+        if (attaquant && attaquant->GetEntry() == SPHERE && sort && sort->Id == SORT_PROJECTILES && cible && cible->IsPlayer())
+        {
+            degats = int32(cible->GetMaxHealth() * SPHERE_DEGATS);
+            return;
+        }
         Appliquer(cible, attaquant, degats);
     }
 
@@ -370,7 +453,8 @@ public:
         for (Unit* voisin : unites)
         {
             Creature* creature = voisin->ToCreature();
-            if (!creature || creature == mort || !creature->IsAlive() || !Concerne(creature) || !creature->IsHostileToPlayers())
+            if (!creature || creature == mort || !creature->IsAlive() || !(Concerne(creature) || ConcerneDonjon(creature))
+                || !creature->IsHostileToPlayers())
                 continue;
             Aura* aura = creature->GetAura(SORT_RENFORT);
             if (aura && aura->GetStackAmount() >= RENFORT_MAX)
@@ -436,6 +520,17 @@ public:
         if (force)
             m->renvoi = 0;
         EnvoyerEtat(player, force);
+
+        if (CombatExplosif(player))
+        {
+            if ((m->sphere += ecoule) >= SPHERE_INTERVALLE)
+            {
+                m->sphere = 0;
+                Sphere(player);
+            }
+        }
+        else
+            m->sphere = 0;
 
         if (ModeActif(player) != CAUCHEMAR || !player->IsAlive() || player->IsGameMaster())
         {

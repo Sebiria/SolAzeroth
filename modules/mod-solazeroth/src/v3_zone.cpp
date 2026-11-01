@@ -224,6 +224,11 @@ void SolAzeroth::ObjectifsAcquis(Player* player, std::function<void(unsigned int
                 f(zone, part.genre, part.cle);
 }
 
+bool SolAzeroth::MonstreDeLieu(unsigned int entree)
+{
+    return lieuxDuMonstre.count(entree) > 0;
+}
+
 std::vector<unsigned int> SolAzeroth::ZonesAvecParts()
 {
     std::vector<unsigned int> zones;

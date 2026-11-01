@@ -19,6 +19,7 @@
 #include "CommandScript.h"
 #include "DatabaseEnv.h"
 #include "Player.h"
+#include "Random.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
 #include "WorldSession.h"
@@ -133,7 +134,13 @@ public:
         Ame* a = AmeDe(player);
         if (a->valeur == 0)
             return;
-        uint32 perte = std::min(a->valeur, Perte(player));
+        uint32 perte = Perte(player);
+        if (SolAzeroth::PassifActif(player, SolAzeroth::AME_TENACE))   // − 20 %, arrondi au hasard (v3_passifs.cpp)
+        {
+            float reduite = perte * 0.8f;
+            perte = uint32(reduite) + (frand(0.0f, 1.0f) < reduite - uint32(reduite) ? 1 : 0);
+        }
+        perte = std::min(a->valeur, perte);
         a->valeur -= perte;
         ++a->morts;
         Sauver(player->GetGUID().GetCounter(), a->valeur, a->morts);
