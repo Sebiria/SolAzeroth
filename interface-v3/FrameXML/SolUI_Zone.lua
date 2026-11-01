@@ -118,7 +118,7 @@ MajPourcent()
 ------------------------------------------------------------------------
 -- Fenêtre des objectifs de zone
 ------------------------------------------------------------------------
-local objectifs = S.Fenetre("SolUIObjectifs", 760, 640, "Objectifs de la zone")
+local objectifs = S.Fenetre("SolUIObjectifs", 760, 700, "Objectifs de la zone")
 function S.BasculerObjectifs()
     if objectifs:IsShown() then objectifs:Hide() else objectifs:Show() end
 end
@@ -126,7 +126,13 @@ suivi:SetScript("OnMouseUp", function() S.BasculerObjectifs() end)
 
 local defile = CreateFrame("ScrollFrame", "SolUIObjectifsDefile", objectifs)
 defile:SetPoint("TOPLEFT", objectifs, "TOPLEFT", 28, -64)
-defile:SetPoint("BOTTOMRIGHT", objectifs, "BOTTOMRIGHT", -28, 64)
+-- Le bas de la liste s'arrête au-dessus du filet, de la consigne des modes et des boutons (01/11/2026 : la dernière
+-- ligne visible passait sous la consigne).
+defile:SetPoint("BOTTOMRIGHT", objectifs, "BOTTOMRIGHT", -28, 92)
+local filetBas = S.Texture(objectifs, "ARTWORK", nil, S.Couleur("bord"))
+filetBas:SetPoint("BOTTOMLEFT", objectifs, "BOTTOMLEFT", 1, 82)
+filetBas:SetPoint("BOTTOMRIGHT", objectifs, "BOTTOMRIGHT", -1, 82)
+filetBas:SetHeight(1)
 defile:EnableMouseWheel(true)
 local page = CreateFrame("Frame", nil, defile)
 page:SetSize(700, 10)

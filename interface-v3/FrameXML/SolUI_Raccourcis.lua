@@ -14,7 +14,7 @@ local POTION, FEU, PIERRE = 100029, 100030, 6948
 local MODIFICATEURS = { LSHIFT = true, RSHIFT = true, LCTRL = true, RCTRL = true, LALT = true, RALT = true,
     UNKNOWN = true }
 
-local f = S.Fenetre("SolUIRaccourcis", 1000, 690, "Techniques et raccourcis")
+local f = S.Fenetre("SolUIRaccourcis", 1000, 700, "Techniques et raccourcis")
 
 -- Bouton invisible : une touche peut ouvrir la fenêtre (« CLICK SolUIOuvrirRaccourcis:LeftButton »).
 local ouvrir = CreateFrame("Button", "SolUIOuvrirRaccourcis", UIParent)
@@ -133,7 +133,9 @@ end
 
 local aide = S.Texte(p1, "Regular", 13, "gris")
 aide:SetPoint("TOPLEFT", 24, -14)
-aide:SetText("Clique un bouton, puis appuie sur la touche voulue. Les boutons sont disposés comme à l'écran.")
+aide:SetWidth(576)
+aide:SetJustifyH("LEFT")
+aide:SetText("Clique un bouton, puis appuie sur la touche voulue ; disposés comme à l'écran.")
 
 local plateau = CreateFrame("Frame", nil, p1)
 plateau:SetPoint("TOPLEFT", 24, -40)
@@ -240,7 +242,7 @@ local function Titre(texte, y)
     t:SetText(texte)
 end
 local function Ligne(e, y)
-    local l = S.BoutonPlat(p1, "", 364, 32)
+    local l = S.BoutonPlat(p1, "", 364, 26)
     l:SetPoint("TOPLEFT", 612, y)
     l.texte:ClearAllPoints()
     l.texte:SetPoint("LEFT", 36, 0)
@@ -255,10 +257,11 @@ local function Ligne(e, y)
     l.entree = e
     table.insert(lignes, l)
 end
+-- Lignes de 28 : les 13 boutons et les 7 fenêtres tiennent dans la fenêtre (700 de haut, en-tête de 64).
 Titre("BOUTONS DE COMBAT", -14)
-for n, e in ipairs(ENTREES) do Ligne(e, -32 - (n - 1) * 34) end
-Titre("FENÊTRES", -32 - #ENTREES * 34 - 8)
-for n, e in ipairs(FENETRES) do Ligne(e, -32 - #ENTREES * 34 - 26 - (n - 1) * 34) end
+for n, e in ipairs(ENTREES) do Ligne(e, -32 - (n - 1) * 28) end
+Titre("FENÊTRES", -32 - #ENTREES * 28 - 8)
+for n, e in ipairs(FENETRES) do Ligne(e, -32 - #ENTREES * 28 - 26 - (n - 1) * 28) end
 
 function Maj()
     for n, e in ipairs(ENTREES) do
@@ -583,7 +586,7 @@ local function MajFiches()
         bas[colonne] = bas[colonne] - hauteur - 6
     end
     -- Fenêtre agrandie si la page 3 dépasse (en-tête de 64, marge de 20), dans la limite de la racine (900).
-    f:SetHeight(math.min(860, math.max(690, 64 - math.min(bas[1], bas[2]) + 20)))
+    f:SetHeight(math.min(860, math.max(700, 64 - math.min(bas[1], bas[2]) + 20)))
 end
 
 ------------------------------------------------------------------------
