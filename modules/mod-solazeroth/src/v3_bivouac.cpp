@@ -103,15 +103,13 @@ namespace
             || player->HasAura(REPOS_BRAISES_INTELLIGENCE) ? 2.0f : 1.0f;
     }
 
-    // Repos des nœuds 2 et 3 : celui de la caractéristique principale de la spécialisation. Seul le guerrier tank
-    // (Force) existe ; pour les autres classes, la caractéristique de leur classe, à revoir avec leurs spécialisations.
+    // Repos des nœuds 2 et 3 : celui de la caractéristique principale de la spécialisation (v3_kit.cpp).
     uint32 ReposBraises(Player* player)
     {
-        switch (player->getClass())
+        switch (SolAzeroth::CaracteristiquePrincipale(player))
         {
-            case CLASS_ROGUE: case CLASS_HUNTER: return REPOS_BRAISES_AGILITE;
-            case CLASS_MAGE: case CLASS_PRIEST: case CLASS_WARLOCK: case CLASS_SHAMAN: case CLASS_DRUID:
-                return REPOS_BRAISES_INTELLIGENCE;
+            case STAT_AGILITY: return REPOS_BRAISES_AGILITE;
+            case STAT_INTELLECT: return REPOS_BRAISES_INTELLIGENCE;
             default: return REPOS_BRAISES;
         }
     }
