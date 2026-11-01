@@ -254,7 +254,7 @@ namespace
         if (kit->debloquees && debloquees > kit->debloquees)
             for (size_t i = kit->debloquees; i < debloquees; ++i)
                 ChatHandler(player->GetSession()).PSendSysMessage("|cff40c0ffNouvelle technique débloquée : {}.|r "
-                    "Choisis tes 8 techniques dans /sol, page Techniques.", ORDRE[i].nom);
+                    "Équipe-la : carnet Techniques (touche K), onglet Techniques équipées.", ORDRE[i].nom);
         kit->debloquees = std::max<size_t>(debloquees, 1);
 
         // Techniques équipées : seulement celles qui sont débloquées, complétées dans l'ordre jusqu'à 8.
@@ -540,7 +540,7 @@ public:
         }
         // Le kit s'applique au premier passage de OnPlayerUpdate, une fois la puissance calculée (v3_combat.cpp).
         if (player->getClass() == CLASS_WARRIOR && kit->spe == SPE_AUCUNE)
-            ChatHandler(player->GetSession()).SendSysMessage("|cff40c0ffChoisis ta spécialisation : /sol, page Techniques.|r");
+            ChatHandler(player->GetSession()).SendSysMessage("|cff40c0ffChoisis ta spécialisation : carnet Personnage (touche C), onglet Spécialisation.|r");
     }
 
     void OnPlayerUpdate(Player* player, uint32 diff) override

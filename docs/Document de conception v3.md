@@ -787,6 +787,11 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - Un septième carnet, **Lexique** (touche J si elle est libre), un onglet par thème (Monnaies, Équipement, Zone, Survie, Progression) et une page courte par concept (25 pages : comment l'obtenir, comment le dépenser, les chiffres). Les chiffres viennent du relevé du serveur du 01/11/2026 : à tenir à jour avec lui.
   - Au premier passage d'un moment clé, une petite fenêtre « À savoir » résume le concept et mène à sa page : première puissance reçue, premier éclat, premières Marques, premier or gagné, premier composant, première forge, première prime, premier contrat ou défi pris, premier lieu entamé, première relique, zone à 60 %, vie sous 50 % (vie, camp, potion), première mort, nouvelle technique, palier d'aventurier, entrée en donjon. Hors combat, une à la fois, une seule fois par compte (gardé avec la disposition de l'interface).
   - Relevé à trancher : toute quête rendue donne encore 3 Marques (règle v2 de `marques.cpp`, toujours chargée), et le tableau de contrats v2 (`contrats.cpp`) tourne sans interface.
+- **Audit du jeu, lot 0** (02/11/2026, audit « Audit du jeu_consensus.md », accord de l'utilisateur) : construit, pas encore vérifié en jeu.
+  - L'Œil d'ombre ardente (4903), demandé par « Ombres ardentes », n'avait plus de source depuis la migration 100 : le Gouffre restait fermé. Il revient sur Gazz'uz et ne lance plus son ancienne quête (migration 108). Nouveau test `verifier_quetes.py` : chaque objet demandé par une quête v3 active doit avoir une source (butin, contenant, marchand, script, quête active).
+  - Le Journal de bord détrempé n'affiche plus la page d'Elune héritée de son objet d'origine (migration 109, `annexes_durotar.py`).
+  - Quand une quête du journal retient le chef renforcé d'un lieu (A26 et Benedict), la fenêtre Zone et le suivi le disent sur la ligne du lieu.
+  - Textes corrigés : infobulles du Rempart (40 % des coups, 8 % de la vie pour Frappe du bouclier), messages de déblocage et de spécialisation (carnets au lieu de /sol), Lexique au tutoiement, « quatre techniques au départ, jusqu'à huit », trois monnaies au lieu d'une (Lexique, README, LISEZMOI), « (à venir) » retiré des difficultés de donjon dans la liste des paliers.
 
 ## 5. Questions pour les prochaines séries
 

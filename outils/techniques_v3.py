@@ -97,7 +97,7 @@ def lignes(d, icones):
 
     # Passif d'identité, visible dans le grimoire, et le bouclier qu'il remplit.
     e = technique(d, 17498, 100009, "Rempart",
-                  "Passif. Chaque coup encaissé, après l'armure, verse 25 % de ses dégâts dans le Rempart, un bouclier qui "
+                  "Passif. Chaque coup encaissé, après l'armure, verse 40 % de ses dégâts dans le Rempart, un bouclier qui "
                   "absorbe les coups suivants, plafonné à 30 % de la vie maximale. Il se vide doucement hors combat. "
                   "Riposte du rempart et Second souffle le consomment.",
                   i["inv_shield_1h_artifactmagnar_d_01"], 0, duree=INFINIE)
@@ -112,7 +112,7 @@ def lignes(d, icones):
 
     # Les 8 techniques de départ (partie 3.2)
     e = technique(d, 23922, FRAPPE_DU_BOUCLIER, "Frappe du bouclier",
-                  "Frappe la cible : 200 % des dégâts de l'arme. Verse 5 % de la vie maximale dans le Rempart.",
+                  "Frappe la cible : 200 % des dégâts de l'arme. Verse 8 % de la vie maximale dans le Rempart.",
                   i["ability_warrior_shieldcharge"], 6000)
     effet(e, 0, ARME_POURCENT, 200, CIBLE)
     t.append(e)

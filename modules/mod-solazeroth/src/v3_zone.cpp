@@ -17,8 +17,9 @@
 // - genre 4 (31/10/2026), annexe à quête (primes, contrats, défis : migration 084, v3_annexes.cpp) : la quête rendue ;
 // - genre 5, relique : son objet dans la Collection.
 // Interface (SolUI_Zone.lua, préfixe SOLZONE), quand ça change et qu'on est dans une zone qui a des parts :
-// « POURCENT;total;histoire;exploration;annexes », « EXPLO;faites;total », « LIEU;lieu;nom;tués;requis;part;nettoyé »
-// pour chaque lieu (le chef renforcé compte dans « requis »), « ANNEXE;quête;état;médaille » (état : 0 à prendre,
+// « POURCENT;total;histoire;exploration;annexes », « EXPLO;faites;total », « LIEU;lieu;nom;tués;requis;part;nettoyé;quête »
+// pour chaque lieu (le chef renforcé compte dans « requis » ; « quête » : titre de la quête du journal qui retient le chef
+// renforcé, vide sinon), « ANNEXE;quête;état;médaille » (état : 0 à prendre,
 // 1 en cours, 2 à rendre, 3 rendue), « RELIQUE;objet;trouvée », « CARTE;0|1 » (carte des reliques achetée), puis
 // « FINZONE ». Les annexes du pourcentage regroupent les genres 3 à 5. Hors de ces zones : « POURCENT;-1 ».
 
@@ -130,6 +131,17 @@ namespace
         return 0;
     }
 
+    std::string TitreQuete(uint32 quete)
+    {
+        Quest const* q = sObjectMgr->GetQuestTemplate(quete);
+        if (!q)
+            return "";
+        std::string titre = q->GetTitle();
+        if (QuestLocale const* l = sObjectMgr->GetQuestLocale(quete))
+            ObjectMgr::GetLocaleString(l->Title, LOCALE_frFR, titre);
+        return titre;
+    }
+
     // Troupe tombée et joueur près de la place : le chef d'origine s'efface devant sa copie renforcée.
     void FaireApparaitre(Player* player, Progres* p, uint32 lieu, std::string const& nomLieu, Chef const& chef)
     {
@@ -149,14 +161,8 @@ namespace
                         it->second->Respawn(true);
             }
             if (p->prevenus.insert(lieu).second)
-                if (Quest const* q = sObjectMgr->GetQuestTemplate(quete))
-                {
-                    std::string titre = q->GetTitle();
-                    if (QuestLocale const* l = sObjectMgr->GetQuestLocale(quete))
-                        ObjectMgr::GetLocaleString(l->Title, LOCALE_frFR, titre);
-                    ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat(
-                        "|cfff6c27a{} :|r le chef renforcé attendra que « {} » soit remplie.", nomLieu, titre));
-                }
+                ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat(
+                    "|cfff6c27a{} :|r le chef renforcé attendra que « {} » soit remplie.", nomLieu, TitreQuete(quete)));
             return;
         }
         p->prevenus.erase(lieu);
@@ -202,13 +208,16 @@ namespace
             else if (part.genre == LIEU)
             {
                 auto [tues, requis] = Troupe(p, part.cle);
+                std::string attente;
                 if (auto c = chefs.find(part.cle); c != chefs.end())
                 {
                     FaireApparaitre(player, p, part.cle, part.nom, c->second);
+                    if (uint32 quete = acquis ? 0 : QueteSurLeChef(player, c->second))
+                        attente = TitreQuete(quete);
                     ++requis;
                 }
-                lieux.push_back(Acore::StringFormat("LIEU;{};{};{};{};{};{}", part.cle, part.nom, tues, requis, part.part,
-                    acquis ? 1 : 0));
+                lieux.push_back(Acore::StringFormat("LIEU;{};{};{};{};{};{};{}", part.cle, part.nom, tues, requis, part.part,
+                    acquis ? 1 : 0, attente));
             }
             else if (part.genre == ANNEXE)
             {

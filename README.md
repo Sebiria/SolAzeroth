@@ -4,7 +4,7 @@
 
 No bots, no group finder, no auction house. Since version 3, Sol'Azeroth is less a set of solo tweaks than a different game on the same world: no visible levels, no resources, no healer, and a progression measured in **power**.
 
-**Few keys, demanding goals.** Eight techniques and a camp, nothing more to press: the challenge is not in a rotation but in the objectives. Zones are reworked around a few hubs where their quests are gathered, and they take time: **Durotar alone asks for many hours** of quests, bounties, contracts, challenges, relics and crafting before you are ready for its dungeon.
+**Few keys, demanding goals.** At most eight techniques and a camp, nothing more to press: the challenge is not in a rotation but in the objectives. Zones are reworked around a few hubs where their quests are gathered, and they take time: **Durotar alone asks for many hours** of quests, bounties, contracts, challenges, relics and crafting before you are ready for its dungeon.
 
 > 🇫🇷 The game texts (NPCs, menus, interface, messages) are **in French** for now, and so is the design document. A French version of this page is in [LISEZMOI.md](LISEZMOI.md).
 
@@ -14,7 +14,7 @@ No bots, no group finder, no auction house. Since version 3, Sol'Azeroth is less
 
 - **Hidden, fixed level.** Every character and every monster stays at level 80 behind the scenes; the player never sees a level. A monster keeps the strength of its original level, which becomes its **power**.
 - **Power comes from gear.** A character's power is the average item level of what they wear, raised by upgrade ranks. Facing a monster stronger than you, your damage drops by 2 % per missing point.
-- **Combat without resources.** No rage, mana or energy: eight techniques on cooldowns and one identity passive per specialization. Every hit lands; armor is a flat reduction per hit; there is no threat, monsters only have you to hit.
+- **Combat without resources.** No rage, mana or energy: four techniques on cooldowns at first, up to eight equipped as your power grows, and one identity passive per specialization. Every hit lands; armor is a flat reduction per hit; there is no threat, monsters only have you to hit.
 - **Each zone stands on its own, and is reworked.** Its quests are rewritten and gathered around a few hubs; quests that send you to another zone are gone. A zone has its own story, side activities and dungeon, and a completion percentage. 60 % opens the dungeon; 100 % means you go in with the gear to be at ease.
 - **Long zones.** Story quests are only half of a zone: the other half is bounties, daily contracts, places to clear, timed challenges, waves and hidden relics, and the gear to face them is crafted and ranked up from what you gather there.
 - **Hard, but fair.** Healing comes only from the camp fire, a single upgradable potion and out-of-combat regeneration: no food, bandages or Blizzard potions. Every number is tuned by combat simulation.
@@ -38,7 +38,7 @@ No bots, no group finder, no auction house. Since version 3, Sol'Azeroth is less
 | Death and soul | Death sends you back to your hearthstone without loss, but costs soul points; a soul at zero ends the character |
 | Adventurer rank | Account rank fed by everything you do: titles, faster hearthstone, mounts (from 60 % to 150 % speed), zone modes, dungeon difficulties |
 | Dungeon reputation | Account reputation across all instances, unlocking passives to choose before each dungeon; outdoor passives too |
-| Currency | One currency everywhere: the Traveler's Mark |
+| Currency | Three, each with its role: Traveler's Marks (bounties, challenges, camp, mounts), gold (crafting, item ranks, repairs) and corpse shards (item ranks, soul) |
 
 ## Interface v3
 

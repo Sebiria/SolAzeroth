@@ -76,7 +76,7 @@ S.Message("SOLZONE", function(champs)
         recu.explorees, recu.sousZones = tonumber(champs[2]), tonumber(champs[3])
     elseif genre == "LIEU" then
         table.insert(recu.lieux, { nom = champs[3], tues = tonumber(champs[4]), requis = tonumber(champs[5]),
-            part = tonumber(champs[6]), fait = champs[7] == "1" })
+            part = tonumber(champs[6]), fait = champs[7] == "1", attente = champs[8] ~= "" and champs[8] or nil })
     elseif genre == "ANNEXE" then
         recu.quetes[tonumber(champs[2])] = { etat = tonumber(champs[3]), medaille = tonumber(champs[4]) }
     elseif genre == "RELIQUE" then
@@ -109,6 +109,9 @@ suivi:SetScript("OnEnter", function(self)
         if fait then r, g, b = 0.4, 1, 0.4 end
         GameTooltip:AddDoubleLine(l.nom, fait and ("nettoyé, " .. Pour(l.part)) or string.format("%d / %d", l.tues, l.requis),
             r, g, b, r, g, b)
+        if l.attente then
+            GameTooltip:AddLine("  Chef retenu tant que « " .. l.attente .. " » n'est pas remplie", 1, 0.6, 0.3)
+        end
     end
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine("Clic : objectifs de la zone", 0.7, 0.7, 0.7)
@@ -205,7 +208,8 @@ function MajObjectifs()
         Ecrire("Lieux à nettoyer", nil, nil, "ambreClair", true)
         for _, l in ipairs(progres.lieux) do
             Ecrire(l.nom, l.fait and ("nettoyé · " .. Pour(l.part))
-                or string.format("%d / %d · %s", l.tues, l.requis, Pour(l.part)), nil, l.fait and "vertClair" or "texte")
+                or string.format("%d / %d · %s", l.tues, l.requis, Pour(l.part)),
+                l.attente and ("Chef retenu tant que « " .. l.attente .. " » n'est pas remplie"), l.fait and "vertClair" or "texte")
         end
         for _, famille in ipairs(FAMILLES) do
             y = y + 10

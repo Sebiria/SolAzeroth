@@ -394,7 +394,7 @@ def construire():
     for i, (cle, nom, famille, source, *_r) in enumerate(RELIQUES):
         copie_objet(w, source, RELIQUE + i, nom, "class = 15, subclass = 0, InventoryType = 0, Quality = 3, bonding = 1, "
                     "stackable = 1, BuyPrice = 0, SellPrice = 0, armor = 0, dmg_min1 = 0, dmg_max1 = 0, delay = 0, "
-                    "block = 0, startquest = 0, spellid_1 = 0, spelltrigger_1 = 0, "
+                    "block = 0, startquest = 0, PageText = 0, PageMaterial = 0, spellid_1 = 0, spelltrigger_1 = 0, "
                     "description = %s" % s("Relique (%s), annexe %s de Durotar." % (FAMILLES[famille], cle)))
     w("INSERT IGNORE INTO solazeroth_v3_collectionnables VALUES %s;"
       % ", ".join("(%d)" % e for e in [INSIGNE] + [RELIQUE + i for i in range(len(RELIQUES))]))

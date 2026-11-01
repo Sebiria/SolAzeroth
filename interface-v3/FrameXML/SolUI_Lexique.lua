@@ -26,7 +26,7 @@ S.LEXIQUE = {
           .. "• Âme : 4 éclats par point, en auberge ou en ville.\n"
           .. "• Améliorations du camp, pièces bleues du Gouffre (40, 80 pour une arme)." },
         { "marques", "Marques du voyageur",
-          "La seule monnaie du jeu : un objet du sac (onglet Monnaie). Elle paie le camp, la carte des reliques, les passifs et les montures.",
+          "La monnaie de l'effort, à côté de l'or et des éclats : un objet du sac. Elle paie le camp, la carte des reliques, les passifs et les montures.",
           T("Obtenir")
           .. "• Primes, contrats et défis : 5 à 30 (médaille d'argent ×1,5, d'or ×2).\n"
           .. "• Chaque quête rendue : 3. Chaque relique : 5.\n"
@@ -49,7 +49,7 @@ S.LEXIQUE = {
     } },
     { "Équipement", {
         { "puissance", "Puissance",
-          "Pas de niveau ici : votre force est votre puissance, la moyenne des niveaux d'objet de ce que vous portez.",
+          "Pas de niveau ici : ta force est ta puissance, la moyenne des niveaux d'objet de ce que tu portes.",
           T("Calcul")
           .. "• Moyenne des niveaux d'objet des pièces portées (chemise et tabard exceptés), +10 % par rang d'amélioration.\n"
           .. "• Chaque monstre a la sienne (survol de la cible).\n\n"
@@ -58,7 +58,7 @@ S.LEXIQUE = {
           .. T("Combat")
           .. "• Tout coup porte : ni raté, ni esquive, ni parade. L'armure retire un montant fixe à chaque coup." },
         { "fabrication", "Fabrication",
-          "Votre équipement se fabrique avec ce que vous récoltez : carnet Artisanat (touche P).",
+          "Ton équipement se fabrique avec ce que tu récoltes : carnet Artisanat (touche P).",
           T("Fabriquer")
           .. "• Composants pris dans la Collection puis dans le sac, plus un peu d'or.\n"
           .. "• Puissance requise : celle de la pièce moins 4.\n"
@@ -76,7 +76,7 @@ S.LEXIQUE = {
           .. "• Rangs 4 et 5 : une pierre taillée en plus (Joaillerie).\n"
           .. "• L'enchantement est gardé." },
         { "enchantement", "Désenchantement et enchantement",
-          "Une pièce dont vous n'avez plus besoin se désenchante en composants d'enchantement.",
+          "Une pièce dont tu n'as plus besoin se désenchante en composants d'enchantement.",
           T("Désenchanter")
           .. "• Une pièce verte, bleue ou épique du sac ; les composants vont dans la Collection.\n\n"
           .. T("Enchanter")
@@ -118,7 +118,7 @@ S.LEXIQUE = {
           .. "• Tableaux des primes de Tranchecolline et de Sen'jin.\n\n"
           .. T("Récompense")
           .. "• Marques, éclats, or, une pièce d'équipement et une part de zone.\n\n"
-          .. G .. "Les primes sont dures : venez avec la puissance annoncée, le Repos et la potion." .. F },
+          .. G .. "Les primes sont dures : viens avec la puissance annoncée, le Repos et la potion." .. F },
         { "contrats", "Contrats",
           "Les contrats se font en paliers, puis reviennent chaque jour (épingle bleue).",
           T("Fonctionnement")
@@ -158,13 +158,13 @@ S.LEXIQUE = {
     } },
     { "Survie", {
         { "regeneration", "Vie et régénération",
-          "Ni nourriture, ni bandages : la vie remonte hors combat, au feu de camp et par votre potion.",
+          "Ni nourriture, ni bandages : la vie remonte hors combat, au feu de camp et par ta potion.",
           T("Sources")
           .. "• Hors combat : 2 % de la vie par seconde.\n"
           .. "• Repos au coin du feu : 1 % de plus par seconde, 30 min.\n"
           .. "• La potion unique, en combat." },
         { "camp", "Feu de camp",
-          "Posez un feu hors combat et asseyez-vous : vie rendue, puis le Repos et vos charges de potion.",
+          "Pose un feu hors combat et assieds-toi : vie rendue, puis le Repos et tes charges de potion.",
           T("Le feu")
           .. "• Hors combat, toutes les 2 min. Se lever ou combattre l'éteint.\n"
           .. "• Assis : 6 % de la vie toutes les 2 s.\n\n"
@@ -189,15 +189,15 @@ S.LEXIQUE = {
     } },
     { "Progression", {
         { "techniques", "Techniques",
-          "Ni rage ni mana : huit techniques à recharge et le passif de votre spécialisation.",
+          "Ni rage ni mana : quatre techniques à recharge au départ, jusqu'à huit équipées, et le passif de ta spécialisation.",
           T("Techniques")
           .. "• Une technique de plus tous les 5 points de puissance.\n"
           .. "• 8 équipées, changées hors combat (carnet Techniques, touche K).\n\n"
           .. T("Combat")
-          .. "• Pas de menace : les monstres n'ont que vous à frapper.\n"
+          .. "• Pas de menace : les monstres n'ont que toi à frapper.\n"
           .. "• Guerrier tank : Rempart, une part des coups reçus devient un bouclier." },
         { "aventurier", "Rang d'aventurier",
-          "Le rang du compte : tout ce que vous accomplissez le nourrit, une fois par compte.",
+          "Le rang du compte : tout ce que tu accomplis le nourrit, une fois par compte.",
           T("Points")
           .. "• Quête d'histoire 10, lieu 20, annexe 25, relique 10, zone à 60 % 50, à 100 % 300, donjon 150.\n\n"
           .. T("Paliers")

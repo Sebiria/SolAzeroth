@@ -4,7 +4,7 @@
 
 Pas de bots, pas de recherche de groupe, pas d'hôtel des ventes. Depuis la version 3, Sol'Azeroth n'est plus le jeu d'origine réglé pour le solo : c'est un autre jeu sur le même monde. Il n'a ni niveau visible, ni ressource, ni soigneur, et la progression se mesure en **puissance**.
 
-**Peu de touches, des objectifs exigeants.** Huit techniques et un camp, rien de plus à presser : la difficulté n'est pas dans un cycle de sorts, mais dans les objectifs. Les zones sont remaniées autour de quelques pôles qui rassemblent leurs quêtes, et elles prennent du temps : **Durotar demande à lui seul de nombreuses heures** de quêtes, de primes, de contrats, d'épreuves, de reliques et de fabrication avant d'être prêt pour son donjon.
+**Peu de touches, des objectifs exigeants.** Huit techniques au plus et un camp, rien de plus à presser : la difficulté n'est pas dans un cycle de sorts, mais dans les objectifs. Les zones sont remaniées autour de quelques pôles qui rassemblent leurs quêtes, et elles prennent du temps : **Durotar demande à lui seul de nombreuses heures** de quêtes, de primes, de contrats, d'épreuves, de reliques et de fabrication avant d'être prêt pour son donjon.
 
 > ⚠️ Projet en cours. La première zone, Durotar, et son donjon sont jouables ; beaucoup de systèmes sont construits mais pas encore testés en jeu. La version précédente (v2 : grimoire universel, ligues, raids mis à l'échelle…) est gardée sous le repère [`v2-final`](../../tree/v2-final).
 
@@ -12,7 +12,7 @@ Pas de bots, pas de recherche de groupe, pas d'hôtel des ventes. Depuis la vers
 
 - **Niveau caché et fixe.** En coulisses, personnages et monstres restent au niveau 80 ; le joueur ne voit jamais de niveau. Un monstre garde la force de son niveau d'origine, qui devient sa **puissance**.
 - **La puissance vient de l'équipement.** Celle du personnage est le niveau d'objet moyen de ce qu'il porte, augmenté par les rangs d'amélioration. Face à un monstre plus fort, on perd 2 % de dégâts par point de puissance manquant.
-- **Un combat sans ressource.** Ni rage, ni mana, ni énergie : huit techniques à temps de recharge et un passif d'identité par spécialisation. Tout coup porte ; l'armure retire un montant fixe à chaque coup ; il n'y a plus de menace, les monstres n'ont que le joueur à frapper.
+- **Un combat sans ressource.** Ni rage, ni mana, ni énergie : quatre techniques à temps de recharge au départ, jusqu'à huit équipées à mesure que la puissance monte, et un passif d'identité par spécialisation. Tout coup porte ; l'armure retire un montant fixe à chaque coup ; il n'y a plus de menace, les monstres n'ont que le joueur à frapper.
 - **Chaque zone se suffit à elle-même, et elle est remaniée.** Ses quêtes sont réécrites et rassemblées autour de quelques pôles ; celles qui envoyaient dans une autre zone sont écartées. Elle a son histoire, ses activités annexes, son donjon et un pourcentage de complétion. À 60 %, le donjon s'ouvre ; à 100 %, on y entre avec l'équipement pour être serein.
 - **Des zones longues.** Les quêtes d'histoire ne font que la moitié d'une zone : l'autre moitié, ce sont les primes, les contrats journaliers, les lieux à nettoyer, les épreuves contre la montre, les vagues et les reliques cachées. L'équipement pour y faire face se fabrique et s'améliore avec ce qu'on récolte sur place.
 - **Exigeant, mais juste.** La vie ne remonte que par le feu de camp, une potion unique améliorable et la régénération hors combat : ni nourriture, ni bandages, ni potions de Blizzard. Tous les chiffres sont réglés par simulation de combat.
@@ -36,7 +36,7 @@ Pas de bots, pas de recherche de groupe, pas d'hôtel des ventes. Depuis la vers
 | Mort et âme | La mort ramène à la pierre de foyer sans perte, mais coûte de l'âme ; une âme à zéro met fin au personnage |
 | Rang d'aventurier | Rang de compte nourri par tout ce qu'on accomplit : titres, pierre de foyer plus rapide, montures (de 60 % à 150 %), modes de zone, difficultés de donjon |
 | Réputation des donjons | Réputation de compte commune à toutes les instances, qui ouvre des passifs à choisir avant chaque donjon ; des passifs du monde extérieur aussi |
-| Monnaie | Une seule monnaie partout : la Marque du voyageur |
+| Monnaies | Trois, chacune son rôle : les Marques du voyageur (primes, défis, camp, montures), l'or (fabrication, rangs d'objet, réparations) et les éclats cadavériques (rangs d'objet, âme) |
 
 ## Interface v3
 
