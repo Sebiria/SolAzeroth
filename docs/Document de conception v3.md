@@ -146,6 +146,7 @@ En plus des difficultés de donjon, ses paliers débloquent du confort :
   - difficultés de donjon 2 à 5 (paliers 12, 20, 30, 38), notées pour le chantier de réputation des donjons.
 - **Montures** : plus aucune vente ni formation à la monte (249 ventes et 29 formations gardées dans des tables de retour). Avant le palier 10, on ne peut pas monter ; les montures volantes ne se lancent jamais (on en reparlera pour l'Outreterre et le Norfendre). C'est la monture qui donne sa vitesse : les 186 montures terrestres du jeu sont réparties de 60 % à 150 % par pas de 5 %, des plus simples aux plus belles (177 dans la boutique, une par nom).
 - **Boutique** : icône de la barre (fenêtre « Rang d'aventurier », pages Paliers et Montures), ou `.monture acheter <sort>`. Prix en Marques du voyageur, de 20 (60 %) à 1 400 (150 %). Les montures achetées sont au compte. `.aventurier` donne les points et le palier.
+- **Une seule monnaie (01/11/2026, demande de l'utilisateur)** : l'Insigne de Durotar disparaît ; annexes, épreuve du jour et reliques donnent des Marques du voyageur (1 Insigne = 1 Marque), et la carte des reliques et les nœuds du camp se paient en Marques (`outils\marques_v3.py`, migration 104). Les Insignes déjà gagnés sont versés en Marques à la connexion. Raison : faire évoluer le camp, valable partout, ne doit pas dépendre de la monnaie d'une zone.
 
 ### 2.8 Inventaire sans limite (série 4)
 - **Plus de banque.**

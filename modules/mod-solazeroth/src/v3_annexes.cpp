@@ -45,12 +45,12 @@
 
 namespace
 {
-    uint32 const INSIGNE = 910140, ECLAT = 910120, POTION = 100029, DECLENCHEUR = 15214;
+    uint32 const ECLAT = 910120, POTION = 100029, DECLENCHEUR = 15214;
     uint32 const ZUNJALA = 910023, VAGUE5 = 910026, VAGUE10 = 910028, EPREUVE = 910227, EPREUVE_2 = 910327;
     uint32 const FEPLOUF = 3203, ORAGE_QUETE = 910229, ANCIEN_MAKRURA = 3141;
     uint32 const OEUFS = 3240, RAPTOR = 3122, MONCEAU = 102986, TROLL = 3207;
     uint32 const BOUCLIER_FOUDRE = 20545, ECLAIR = 403, CONSECRATION = 26573;
-    uint32 const PRIX_CARTE_INSIGNES = 30, PRIX_CARTE_CUIVRE = 2 * GOLD;
+    uint32 const PRIX_CARTE_MARQUES = 30, PRIX_CARTE_CUIVRE = 2 * GOLD;
     uint32 const TICK = 500;
 
     struct Annexe
@@ -151,8 +151,9 @@ namespace
     // Passif Défi tenu (v3_passifs.cpp) : 5 s de plus à chaque épreuve contre la montre.
     uint32 DefiTenu(Player* player) { return SolAzeroth::PassifActif(player, SolAzeroth::DEFI_TENU) ? 5000 : 0; }
 
-    // Passif Chasseur de primes : + 20 % d'Insignes.
-    uint32 Insignes(Player* player, uint32 nombre)
+    // Passif Chasseur de primes : + 20 % de Marques. Les annexes donnaient des Insignes de Durotar ; depuis le
+    // 01/11/2026 (demande de l'utilisateur : une seule monnaie), des Marques du voyageur (colonne insignes gardée).
+    uint32 GainMarques(Player* player, uint32 nombre)
     {
         return SolAzeroth::PassifActif(player, SolAzeroth::CHASSEUR_DE_PRIMES) ? uint32(nombre * 1.2f + 0.5f) : nombre;
     }
@@ -183,16 +184,15 @@ namespace
             SolAzeroth::EnvoyerAddon(player, "SOLZONE", "CHRONO;-");
         }
         float facteur = medaille == 3 ? 2.0f : medaille == 2 ? 1.5f : 1.0f;
-        if (a.insignes)
-            SolAzeroth::AjouterACollection(player, INSIGNE, Insignes(player, uint32(a.insignes * facteur)));
+        SolAzeroth::DonnerMarques(player, GainMarques(player, uint32(a.insignes * facteur)), a.cle);
         if (a.eclats)
             SolAzeroth::AjouterACollection(player, ECLAT, uint32(a.eclats * facteur));
         for (auto const& [objet, nombre] : a.composants)
             SolAzeroth::AjouterACollection(player, objet, uint32(nombre * facteur + 0.5f));
         if (facteur > 1.0f && quest->GetRewOrReqMoney() > 0)
             player->ModifyMoney(int32(quest->GetRewOrReqMoney() * (facteur - 1.0f)));
-        std::string texte = Acore::StringFormat("{} : {} Insignes et {} éclats rangés dans la Collection.", a.cle,
-            Insignes(player, uint32(a.insignes * facteur)), uint32(a.eclats * facteur));
+        std::string texte = Acore::StringFormat("{} : {} éclats rangés dans la Collection.", a.cle,
+            uint32(a.eclats * facteur));
         if (!a.depart.empty())
         {
             static char const* const NOMS[] = { "sans médaille", "bronze", "argent", "or" };
@@ -319,8 +319,7 @@ namespace
         if (tenues && j->jour != Aujourdhui())
         {
             j->jour = Aujourdhui();
-            SolAzeroth::AjouterACollection(player, INSIGNE, Insignes(player, tenues));
-            texte += Acore::StringFormat(" {} Insigne(s) du jour.", Insignes(player, tenues));
+            SolAzeroth::DonnerMarques(player, GainMarques(player, tenues), "épreuve du jour");
         }
         SauverJoueur(player, j);
         Alerte(player, texte);
@@ -415,7 +414,7 @@ void RamasserRelique(Player* player, GameObject* go)
     }
     SolAzeroth::AjouterACollection(player, r.objet, 1);
     go->DespawnOrUnsummon(0ms, RELIQUE_ABSENTE);
-    SolAzeroth::AjouterACollection(player, INSIGNE, 5);
+    SolAzeroth::DonnerMarques(player, 5, "relique");
     SolAzeroth::AjouterACollection(player, r.composant, 1);
     uint32 trouvees = 0, total = 0;
     for (auto const& [objetMonde, autre] : reliques)
@@ -746,12 +745,12 @@ public:
             handler->SendSysMessage("Tu as déjà la carte des reliques.");
             return true;
         }
-        if (SolAzeroth::NombreEnCollection(player, INSIGNE) < PRIX_CARTE_INSIGNES || player->GetMoney() < PRIX_CARTE_CUIVRE)
+        if (SolAzeroth::Marques(player) < PRIX_CARTE_MARQUES || player->GetMoney() < PRIX_CARTE_CUIVRE)
         {
-            handler->SendErrorMessage("La carte des reliques coûte {} Insignes et 2 po.", PRIX_CARTE_INSIGNES);
+            handler->SendErrorMessage("La carte des reliques coûte {} Marques du voyageur et 2 po.", PRIX_CARTE_MARQUES);
             return false;
         }
-        SolAzeroth::RetirerDeCollection(player, INSIGNE, PRIX_CARTE_INSIGNES);
+        SolAzeroth::RetirerMarques(player, PRIX_CARTE_MARQUES);
         player->ModifyMoney(-int32(PRIX_CARTE_CUIVRE));
         j->carte = true;
         SauverJoueur(player, j);

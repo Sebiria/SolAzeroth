@@ -145,7 +145,7 @@ defile:SetScript("OnMouseWheel", function(self, sens)
 end)
 
 -- 300 de large : les quatre boutons de mode commencent à 346 du bord gauche (01/11/2026 : « Aucun » le chevauchait).
-local acheterCarte = S.BoutonPlat(objectifs, "Carte des reliques (30 Insignes, 2 po)", 300, 32, 12)
+local acheterCarte = S.BoutonPlat(objectifs, "Carte des reliques (30 Marques, 2 po)", 300, 32, 12)
 acheterCarte:SetPoint("BOTTOMLEFT", objectifs, "BOTTOMLEFT", 28, 18)
 acheterCarte:SetScript("OnClick", function() SendChatMessage(".annexes carte", "SAY") end)
 

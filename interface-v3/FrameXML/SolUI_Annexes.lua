@@ -52,12 +52,10 @@ SolUI.RELIQUES = {
     { objet = 910164, cle = "A45", nom = "Collier de perles de la grève", famille = 3, indice = "Au bout de la grève, là où le renégat compte ses prises.", x = -529, y = -5216, puissance = 9 },
     { objet = 910165, cle = "A46", nom = "Fétiche de jade", famille = 3, indice = "Le requin de l'Écho a avalé plus d'une offrande.", x = -1385, y = -5780, puissance = 11 },
 }
-SolUI.INSIGNE = 910140
 SolUI.PUISSANCES_QUETES = SolUI.PUISSANCES_QUETES or {}
 for quete, a in pairs(SolUI.ANNEXES) do SolUI.PUISSANCES_QUETES[quete] = a.puissance end
 if SolUI.CATALOGUE then
     table.insert(SolUI.CATALOGUE, { nom = "Durotar", objets = {
-        { 910140, "Insigne de Durotar", 2 },
         { 910150, "Dague rituelle ébréchée", 3 },
         { 910151, "Lettre de recrutement de la Lame", 3 },
         { 910152, "Collier éteint", 3 },

@@ -515,7 +515,8 @@ local function ListeDeCourses(couts)
             table.insert(morceaux, (GetMoney() >= nombre and "" or ROUGE) .. S.Argent(nombre) .. "|r")
         else
             local possede = S.NombreCollection(objet) + GetItemCount(objet)
-            table.insert(morceaux, (possede >= nombre and "" or ROUGE) .. nombre .. " " .. S.NomCollection(objet) .. "|r")
+            local nom = objet == 37711 and "Marques du voyageur" or S.NomCollection(objet)   -- hors Collection
+            table.insert(morceaux, (possede >= nombre and "" or ROUGE) .. nombre .. " " .. nom .. "|r")
         end
     end
     return table.concat(morceaux, ", ")

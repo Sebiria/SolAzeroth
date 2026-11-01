@@ -38,15 +38,15 @@ REPOS_BRAISES_STATS = [(REPOS_BRAISES, 0, "Force"), (100035, 1, "Agilité"), (10
 BONUS_CARACTERISTIQUE = 5
 
 # Listes de courses (objets de la Collection ; 0 = or, en cuivre). Rang 1 du feu : 15 Marques (v3_bivouac.cpp).
-ECLAT, INSIGNE = 910120, 910140
+ECLAT, MARQUE = 910120, 37711   # Marques du voyageur (sacs) : plus d'Insignes depuis le 01/11/2026
 PACIFIQUE, FEUILLARGENT, RACINE, CUIVRE, LIN, CUIR, PIERRE = 2447, 765, 2449, 2770, 2589, 2318, 2835
 MALACHITE_TAILLEE, OEIL_TIGRE_TAILLE = 910180, 910181
 GENRES = {"potion": 1, "feu": 2}
 COUTS = {
     ("potion", 1): {PACIFIQUE: 12, FEUILLARGENT: 8, RACINE: 4, ECLAT: 50, 0: 4000},
-    ("potion", 2): {RACINE: 12, OEIL_TIGRE_TAILLE: 2, ECLAT: 120, INSIGNE: 20, 0: 10000},
-    ("feu", 2): {CUIVRE: 20, LIN: 16, CUIR: 12, ECLAT: 60, INSIGNE: 20},
-    ("feu", 3): {PIERRE: 8, CUIVRE: 20, MALACHITE_TAILLEE: 2, ECLAT: 160, INSIGNE: 40, 0: 8000},
+    ("potion", 2): {RACINE: 12, OEIL_TIGRE_TAILLE: 2, ECLAT: 120, MARQUE: 20, 0: 10000},
+    ("feu", 2): {CUIVRE: 20, LIN: 16, CUIR: 12, ECLAT: 60, MARQUE: 20},
+    ("feu", 3): {PIERRE: 8, CUIVRE: 20, MALACHITE_TAILLEE: 2, ECLAT: 160, MARQUE: 40, 0: 8000},
 }
 NOMS = {("potion", 1): "Potion de Durotar", ("potion", 2): "Potion revigorante",
         ("feu", 1): "Flamme du guerrier", ("feu", 2): "Braises tenaces", ("feu", 3): "Feu de bivouac"}

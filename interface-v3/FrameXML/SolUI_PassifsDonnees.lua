@@ -52,7 +52,7 @@ SolUI.PASSIFS_EXTERIEUR = {
     { 44, "Récolte", "Cueilleur", "15 % de chances d'un composant de plus en récoltant (herbes, minerai, pêche)." },
     { 45, "Récolte", "Main experte", "20 % de chances d'un éclat cadavérique en récoltant." },
     { 46, "Récolte", "Éclats d'aventure", "+ 10 % d'éclats hors des instances." },
-    { 47, "Récolte", "Chasseur de primes", "+ 20 % d'Insignes des primes, contrats et défis." },
+    { 47, "Récolte", "Chasseur de primes", "+ 20 % de Marques du voyageur des primes, contrats et défis." },
     { 48, "Voyage", "Pas léger", "+ 8 % de vitesse de course à pied." },
     { 49, "Voyage", "Rôdeur", "Les monstres vous repèrent de 6 m moins loin." },
     { 50, "Voyage", "Foyer proche", "Pierre de foyer − 5 min." },

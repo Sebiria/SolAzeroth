@@ -355,13 +355,13 @@ def copie_go(w, source, entree, nom, maj):
 
 def recompense_texte(a):
     morceaux = []
-    if a["insignes"]:
-        morceaux.append("%d Insignes" % a["insignes"])
     if a["eclats"]:
         morceaux.append("%d éclats cadavériques" % a["eclats"])
     if a.get("composants"):
         morceaux.append("des composants")
     texte = "Rangé dans ta Collection : " + ", ".join(morceaux) + "." if morceaux else ""
+    if a["insignes"]:   # Marques du voyageur depuis le 01/11/2026 (champ insignes gardé)
+        texte = ("%d Marques du voyageur. " % a["insignes"] + texte).strip()
     if a.get("chrono"):
         texte += " Médaille d'argent : récompenses ×1,5 ; d'or : ×2."
     return texte
@@ -661,12 +661,10 @@ def interface():
         l.append("    { objet = %d, cle = %s, nom = %s, famille = %d, indice = %s, x = %d, y = %d, puissance = %d },"
                  % (RELIQUE + i, lua(cle), lua(nom), famille + 1, lua(indice), x, y, p))
     l.append("}")
-    l.append("SolUI.INSIGNE = %d" % INSIGNE)
     l.append("SolUI.PUISSANCES_QUETES = SolUI.PUISSANCES_QUETES or {}")
     l.append("for quete, a in pairs(SolUI.ANNEXES) do SolUI.PUISSANCES_QUETES[quete] = a.puissance end")
     l.append("if SolUI.CATALOGUE then")
     l.append("    table.insert(SolUI.CATALOGUE, { nom = \"Durotar\", objets = {")
-    l.append("        { %d, \"Insigne de Durotar\", 2 }," % INSIGNE)
     l += ["        { %d, %s, 3 }," % (RELIQUE + i, lua(r[1])) for i, r in enumerate(RELIQUES)]
     l.append("    } })")
     l.append("end")
