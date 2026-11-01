@@ -9,7 +9,7 @@ SolUI.CAMP = {
     feu = {
         [0] = { nom = "", effet = "Repos au coin du feu : vie maximale +5 % pendant 30 minutes, 1 % de la vie par seconde hors combat.", couts = {  } },
         [1] = { nom = "Flamme du guerrier", effet = "Le Repos donne aussi +10 % de dégâts.", couts = {  } },
-        [2] = { nom = "Braises tenaces", effet = "Repos : vie maximale +5 %, +10 % de dégâts, +5 Force, 2 % de la vie par seconde hors combat, 30 minutes.", couts = { { 2770, 20 }, { 2589, 16 }, { 2318, 12 }, { 910120, 60 }, { 910140, 20 } } },
+        [2] = { nom = "Braises tenaces", effet = "Repos : vie maximale +5 %, +10 % de dégâts, +5 à la caractéristique principale de la spécialisation, 2 % de la vie par seconde hors combat, 30 minutes.", couts = { { 2770, 20 }, { 2589, 16 }, { 2318, 12 }, { 910120, 60 }, { 910140, 20 } } },
         [3] = { nom = "Feu de bivouac", effet = "Le même Repos, pendant 40 minutes.", couts = { { 2835, 8 }, { 2770, 20 }, { 910180, 2 }, { 910120, 160 }, { 910140, 40 }, { 0, 8000 } } },
     },
 }

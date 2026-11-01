@@ -15,7 +15,8 @@
 //   écrites par outils\bivouac_v3.py) : achetables partout, sans condition de contenu.
 //   - Potion (.camp potion) : rang 1, 2 charges et 35 % ; rang 2, en plus la Potion revigorante (100034, 1 % de la vie
 //     par seconde pendant 10 s).
-//   - Arbre du camp (.camp acheter) : nœud 2, Repos 100033 (vie +5 %, dégâts +10 %, Force +5) et 2 % de la vie par
+//   - Arbre du camp (.camp acheter) : nœud 2, Repos 100033, 100035 ou 100036 (vie +5 %, dégâts +10 %, +5 Force, Agilité ou Intelligence selon la
+//     spécialisation) et 2 % de la vie par
 //     seconde hors combat ; nœud 3, le même Repos pendant 40 minutes.
 // L'interface reçoit « ETAT;charges;max;secondes avant le Repos;rang du feu;plat;rang de la potion » (préfixe SOLBIV) :
 // compte à rebours du feu, arbre du camp, et plat du bouton de repas (31/10/2026, demande de l'utilisateur : gardé
@@ -47,7 +48,10 @@ namespace
     uint32 const FEU = 100030;
     uint32 const REPOS = 100031;
     uint32 const REPOS_FLAMME = 100032;     // Repos avec +10 % de dégâts : premier nœud de l'arbre du camp
-    uint32 const REPOS_BRAISES = 100033;    // nœuds 2 et 3 : vie, dégâts, Force
+    uint32 const REPOS_BRAISES = 100033;    // nœuds 2 et 3 : vie, dégâts, Force (Agilité, Intelligence : les deux suivants)
+    uint32 const REPOS_BRAISES_AGILITE = 100035;
+    uint32 const REPOS_BRAISES_INTELLIGENCE = 100036;
+    uint32 const TOUS_LES_REPOS[] = { REPOS, REPOS_FLAMME, REPOS_BRAISES, REPOS_BRAISES_AGILITE, REPOS_BRAISES_INTELLIGENCE };
     uint32 const REVIGORANTE = 100034;      // potion de rang 2 : 1 % de la vie par seconde pendant 10 s
     uint8 const RANG_POTION_MAX = 2, RANG_FEU_MAX = 3;
     int32 const DUREE_REPOS_BIVOUAC = 40 * MINUTE * IN_MILLISECONDS;   // nœud 3
@@ -85,7 +89,32 @@ namespace
 
     uint8 Charges(Bivouac const* b) { return b->rangPotion >= 1 ? 2 : 1; }
     float SoinPotion(Bivouac const* b) { return b->rangPotion >= 1 ? 35.0f : 30.0f; }
-    float RegenRepos(Player* player) { return player->HasAura(REPOS_BRAISES) ? 2.0f : 1.0f; }   // % par seconde
+    bool EnRepos(Player* player)
+    {
+        for (uint32 repos : TOUS_LES_REPOS)
+            if (player->HasAura(repos))
+                return true;
+        return false;
+    }
+
+    float RegenRepos(Player* player)   // % par seconde
+    {
+        return player->HasAura(REPOS_BRAISES) || player->HasAura(REPOS_BRAISES_AGILITE)
+            || player->HasAura(REPOS_BRAISES_INTELLIGENCE) ? 2.0f : 1.0f;
+    }
+
+    // Repos des nœuds 2 et 3 : celui de la caractéristique principale de la spécialisation. Seul le guerrier tank
+    // (Force) existe ; pour les autres classes, la caractéristique de leur classe, à revoir avec leurs spécialisations.
+    uint32 ReposBraises(Player* player)
+    {
+        switch (player->getClass())
+        {
+            case CLASS_ROGUE: case CLASS_HUNTER: return REPOS_BRAISES_AGILITE;
+            case CLASS_MAGE: case CLASS_PRIEST: case CLASS_WARLOCK: case CLASS_SHAMAN: case CLASS_DRUID:
+                return REPOS_BRAISES_INTELLIGENCE;
+            default: return REPOS_BRAISES;
+        }
+    }
 
     void Sauver(Player* player)
     {
@@ -276,9 +305,9 @@ public:
             player->ModifyHealth(int32(std::lround(player->GetMaxHealth() * REGEN_FEU / 100.0f)));
             if (avant && b->assis >= ASSIS_POUR_REPOS)
             {
-                for (uint32 repos : { REPOS, REPOS_FLAMME, REPOS_BRAISES })
+                for (uint32 repos : TOUS_LES_REPOS)
                     player->RemoveAurasDueToSpell(repos);
-                uint32 repos = b->rangFeu >= 2 ? REPOS_BRAISES : b->rangFeu >= 1 ? REPOS_FLAMME : REPOS;
+                uint32 repos = b->rangFeu >= 2 ? ReposBraises(player) : b->rangFeu >= 1 ? REPOS_FLAMME : REPOS;
                 player->CastSpell(player, repos, true);
                 if (b->rangFeu >= 3)
                     if (Aura* aura = player->GetAura(repos))
@@ -290,8 +319,7 @@ public:
             }
         }
 
-        if ((player->HasAura(REPOS) || player->HasAura(REPOS_FLAMME) || player->HasAura(REPOS_BRAISES))
-            && !player->IsInCombat() && player->IsAlive() && !player->IsFullHealth())
+        if (EnRepos(player) && !player->IsInCombat() && player->IsAlive() && !player->IsFullHealth())
             player->ModifyHealth(int32(std::lround(player->GetMaxHealth() * RegenRepos(player) * TICK / 1000 / 100.0f)));
 
         Envoyer(player, b->depuisEnvoi >= RENVOI);

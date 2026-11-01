@@ -32,8 +32,10 @@ CAMP_LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Camp.lua"
 POTION, FEU, REPOS, REPOS_FLAMME, REPOS_BRAISES, REVIGORANTE = 100029, 100030, 100031, 100032, 100033, 100034
 D2MIN, D30MIN, D10 = 4, 30, 1       # SpellDuration.dbc : 120 s, 1800 s, 10 s
 MOD_STAT, SOIN_POURCENT_PERIODIQUE = 29, 20   # SPELL_AURA_MOD_STAT, SPELL_AURA_OBS_MOD_HEALTH (% de la vie maximale)
-# Caractéristique de la spécialisation (+5 du nœud 2) : Force pour le guerrier tank, seul kit v3 pour l'instant.
-CARACTERISTIQUE, BONUS_CARACTERISTIQUE = 0, 5   # 0 Force, 1 Agilité, 2 Endurance, 3 Intelligence, 4 Esprit
+# Repos des nœuds 2 et 3 : un sort par caractéristique principale (misc de l'aura : 0 Force, 1 Agilité, 3 Intelligence) ;
+# v3_bivouac.cpp choisit celui de la spécialisation.
+REPOS_BRAISES_STATS = [(REPOS_BRAISES, 0, "Force"), (100035, 1, "Agilité"), (100036, 3, "Intelligence")]
+BONUS_CARACTERISTIQUE = 5
 
 # Listes de courses (objets de la Collection ; 0 = or, en cuivre). Rang 1 du feu : 15 Marques (v3_bivouac.cpp).
 ECLAT, INSIGNE = 910120, 910140
@@ -54,7 +56,7 @@ EFFETS = {
     ("potion", 2): "2 charges, rendent 35 % de la vie, puis 1 % par seconde pendant 10 s.",
     ("feu", 0): "Repos au coin du feu : vie maximale +5 % pendant 30 minutes, 1 % de la vie par seconde hors combat.",
     ("feu", 1): "Le Repos donne aussi +10 % de dégâts.",
-    ("feu", 2): "Repos : vie maximale +5 %, +10 % de dégâts, +5 Force, 2 % de la vie par seconde hors combat, 30 minutes.",
+    ("feu", 2): "Repos : vie maximale +5 %, +10 % de dégâts, +5 à la caractéristique principale de la spécialisation, 2 % de la vie par seconde hors combat, 30 minutes.",
     ("feu", 3): "Le même Repos, pendant 40 minutes.",
 }
 
@@ -106,17 +108,19 @@ def lignes(d, icones):
     effet(e, 1, AURA, DEGATS_REPOS, SOI, aura=DEGATS_INFLIGES, misc=127)
     t.append(e)
 
-    e = technique(d, 12975, REPOS_BRAISES, "Repos au coin du feu",
-                  "Vie maximale +%d %%, dégâts infligés +%d %% et Force +%d pendant 30 minutes (40 avec le Feu de bivouac). "
-                  "Hors combat, rend 2 %% de la vie maximale par seconde." % (BONUS_VIE, DEGATS_REPOS, BONUS_CARACTERISTIQUE),
-                  i["campfire_rootflame"], 0,
-                  "Vie maximale augmentée de %d %%, dégâts infligés de %d %%, Force de %d. Hors combat, 2 %% de la vie "
-                  "maximale rendus par seconde." % (BONUS_VIE, DEGATS_REPOS, BONUS_CARACTERISTIQUE), duree=D30MIN)
-    e[131] = 0
-    effet(e, 0, AURA, BONUS_VIE, SOI, aura=VIE_POURCENT)
-    effet(e, 1, AURA, DEGATS_REPOS, SOI, aura=DEGATS_INFLIGES, misc=127)
-    effet(e, 2, AURA, BONUS_CARACTERISTIQUE, SOI, aura=MOD_STAT, misc=CARACTERISTIQUE)
-    t.append(e)
+    for sort, misc, carac in REPOS_BRAISES_STATS:
+        e = technique(d, 12975, sort, "Repos au coin du feu",
+                      "Vie maximale +%d %%, dégâts infligés +%d %% et %s +%d pendant 30 minutes (40 avec le Feu de "
+                      "bivouac). Hors combat, rend 2 %% de la vie maximale par seconde."
+                      % (BONUS_VIE, DEGATS_REPOS, carac, BONUS_CARACTERISTIQUE), i["campfire_rootflame"], 0,
+                      "Vie maximale augmentée de %d %%, dégâts infligés de %d %%, %s de %d. Hors combat, 2 %% de la vie "
+                      "maximale rendus par seconde." % (BONUS_VIE, DEGATS_REPOS, carac, BONUS_CARACTERISTIQUE),
+                      duree=D30MIN)
+        e[131] = 0
+        effet(e, 0, AURA, BONUS_VIE, SOI, aura=VIE_POURCENT)
+        effet(e, 1, AURA, DEGATS_REPOS, SOI, aura=DEGATS_INFLIGES, misc=127)
+        effet(e, 2, AURA, BONUS_CARACTERISTIQUE, SOI, aura=MOD_STAT, misc=misc)
+        t.append(e)
 
     e = technique(d, 441, REVIGORANTE, "Potion revigorante", "Rend 1 % de la vie maximale par seconde pendant 10 s.",
                   i["inv_alchemy_80_potion01red"], 0, "1 % de la vie maximale rendu par seconde.", duree=D10)
