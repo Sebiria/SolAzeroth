@@ -609,7 +609,7 @@ QuestLogFrame:HookScript("OnShow", function()
 end)
 
 ------------------------------------------------------------------------
--- Mini-carte : zones d'objectif des quêtes suivies
+-- Mini-carte : zones d'objectif des quêtes du journal
 ------------------------------------------------------------------------
 -- Diamètre de la mini-carte en mètres du jeu, selon le zoom (dehors, dedans).
 local DIAMETRE = { dehors = { 466.67, 400, 333.33, 266.67, 200, 133.33 }, dedans = { 300, 240, 180, 120, 80, 50 } }
@@ -634,7 +634,8 @@ local function Repere(n)
     return r
 end
 
--- Lit la position de chaque quête suivie sur la carte de la zone du joueur (sans toucher à la carte ouverte).
+-- Lit la position de chaque quête du journal sur la carte de la zone du joueur (sans toucher à la carte ouverte) :
+-- les quêtes suivies, et les autres pas encore remplies (01/11/2026, demande de l'utilisateur : savoir où chercher).
 local function LirePositions()
     if WorldMapFrame:IsShown() then return end
     SetMapToCurrentZone()
@@ -643,9 +644,9 @@ local function LirePositions()
     cartePositions = GetMapInfo()
     wipe(positions)
     for _, q in ipairs(Lire()) do
-        if q.suivie and q.id then
+        if q.id and not q.enTete and (q.suivie or not q.complete) then
             local _, x, y = QuestPOIGetIconInfo(q.id)
-            if x and y then table.insert(positions, { x = x, y = y, complete = q.complete }) end
+            if x and y then table.insert(positions, { x = x, y = y, complete = q.complete, suivie = q.suivie }) end
         end
     end
     SetCVar("questPOI", "0")
@@ -670,24 +671,27 @@ local function MajReperes(self, ecoule)
             local dx, dy = (p.x - px) * carte[1], (p.y - py) * carte[2]
             dx, dy = dx * c - dy * s, dx * s + dy * c
             local distance = math.sqrt(dx * dx + dy * dy)
-            n = n + 1
-            local r = Repere(n)
             local loin = distance + (p.complete and 0 or RAYON_ZONE * 0.3) > rayon
-            local echelle = pixels / rayon
-            if loin then
-                local bord = (pixels - 5) / math.max(distance, 0.01)
-                dx, dy = dx * bord / echelle, dy * bord / echelle
+            -- Une quête non suivie ne montre sa zone que sur la mini-carte, jamais en point au bord.
+            if p.suivie or not loin then
+                n = n + 1
+                local r = Repere(n)
+                local echelle = pixels / rayon
+                if loin then
+                    local bord = (pixels - 5) / math.max(distance, 0.01)
+                    dx, dy = dx * bord / echelle, dy * bord / echelle
+                end
+                local m = S.OPTIONS.reperes
+                local taille = (loin or p.complete) and 9 * m or math.max(9 * m, 2 * RAYON_ZONE * echelle)
+                r:SetSize(taille, taille)
+                r.point:SetSize(7 * m, 7 * m)
+                r:ClearAllPoints()
+                r:SetPoint("CENTER", Minimap, "CENTER", dx * echelle, -dy * echelle)
+                S.Montrer(r.zone, not loin and not p.complete)
+                S.Montrer(r.bord, not loin and not p.complete)
+                r.point:SetVertexColor(S.Couleur(p.complete and "vertClair" or "ambreClair"))
+                r:Show()
             end
-            local m = S.OPTIONS.reperes
-            local taille = (loin or p.complete) and 9 * m or math.max(9 * m, 2 * RAYON_ZONE * echelle)
-            r:SetSize(taille, taille)
-            r.point:SetSize(7 * m, 7 * m)
-            r:ClearAllPoints()
-            r:SetPoint("CENTER", Minimap, "CENTER", dx * echelle, -dy * echelle)
-            S.Montrer(r.zone, not loin and not p.complete)
-            S.Montrer(r.bord, not loin and not p.complete)
-            r.point:SetVertexColor(S.Couleur(p.complete and "vertClair" or "ambreClair"))
-            r:Show()
         end
     end
     for i = n + 1, #reperes do reperes[i]:Hide() end
@@ -867,7 +871,8 @@ S.Ecouter("WORLD_MAP_UPDATE", function() if WorldMapFrame:IsShown() then MajMarq
 -- ici comme sur la carte du monde, qui a ses propres zones). À leur place, une épingle par donneur, dont la pointe
 -- vise le PNJ, sur la mini-carte comme sur la carte du monde :
 --   « ! » ambre : quête à prendre ; « ! » gris : facile (puissance de la quête 6 sous la tienne ou plus) ;
---   « ? » pleine ambre : objectifs remplis, à rendre ; « ? » grise : quête en cours, le donneur attend.
+--   « ? » pleine ambre : objectifs remplis, à rendre ; « ? » grise : quête en cours, le donneur attend ;
+--   « ? » bleu : défi contre la montre à prendre, comme les quêtes à refaire du jeu (signalement du 01/11/2026).
 -- Hors de la mini-carte : collée au bord, plus petite et un peu pâle, avec une flèche vers l'extérieur (quêtes à rendre
 -- toujours ; quêtes à prendre jusqu'à PORTEE mètres). Survol : les quêtes à cet endroit et des épingles voisines.
 -- Les zones d'objectif des quêtes suivies (plus haut) restent.
@@ -878,6 +883,8 @@ local ETATS = {   -- ordre de priorité quand un PNJ a plusieurs quêtes
         signeCouleur = { S.Couleur("fond") }, texte = "objectifs remplis · à rendre", couleur = "vertClair" },
     { genre = "dispo", signe = "!", bord = { S.Couleur("ambre") }, fond = { S.Couleur("fond") },
         signeCouleur = { S.Couleur("ambreClair") }, texte = "à prendre", couleur = "ambreClair" },
+    { genre = "defi", signe = "?", bord = { S.Couleur("bleu") }, fond = { S.Couleur("fond") },
+        signeCouleur = { S.Couleur("bleu") }, texte = "défi contre la montre · à prendre", couleur = "bleu" },
     { genre = "encours", signe = "?", bord = GRIS, fond = { S.Couleur("fond") },
         signeCouleur = { S.Couleur("gris") }, texte = "en cours", couleur = "gris" },
     { genre = "facile", signe = "!", bord = GRIS, fond = { S.Couleur("fond") },
@@ -981,7 +988,9 @@ local function Grouper(nom, liste)
     end
     local puissance = S.etat and S.etat.puissance
     for _, q in ipairs(disponibles) do
-        Ajouter(q, (puissance and q.niveau and q.niveau <= puissance - 6) and "facile" or "dispo")
+        local annexe = S.ANNEXES and S.ANNEXES[q.id]
+        Ajouter(q, annexe and annexe.chrono and "defi"
+            or (puissance and q.niveau and q.niveau <= puissance - 6) and "facile" or "dispo")
     end
     for _, q in ipairs(aRendre) do Ajouter(q, q.remplie and "rendre" or "encours") end
     for _, g in ipairs(liste) do
@@ -1042,7 +1051,7 @@ MajEpingles = function(ecoule)
             dx, dy = dx * c - dy * s, dx * s + dy * c
             local distance = math.sqrt(dx * dx + dy * dy)
             local loin = distance * echelle > pixels - 10 * m
-            if not loin or g.genre == "rendre" or (g.genre == "dispo" and distance <= PORTEE) then
+            if not loin or g.genre == "rendre" or ((g.genre == "dispo" or g.genre == "defi") and distance <= PORTEE) then
                 local p = { g = g, rang = rang, loin = loin, cote = (loin and 15 or 20) * m }
                 if loin then
                     p.ox, p.oy = dx / distance, -dy / distance

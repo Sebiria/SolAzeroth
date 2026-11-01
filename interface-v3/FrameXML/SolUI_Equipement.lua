@@ -582,35 +582,43 @@ end
 local p4 = PageDePieces(pages[4], "Un enchantement par pièce : le nouveau remplace l'ancien, et il reste quand la pièce "
     .. "change de rang. Composants de la Collection (entre parenthèses, ce que tu as) et or.",
     "Aucune pièce à enchanter : plastron, brassards, cape, bouclier ou arme.", 1)
+-- Une ligne par pièce, et au bout une liste déroulante de ses enchantements, avec leur coût (signalement du
+-- 01/11/2026) ; en choisir un l'applique. Grisés : celui en place, et ceux dont il manque des composants ou de l'or.
+local deroulantEnchantements = CreateFrame("Frame", "SolUIEnchantementsMenu", UIParent, "UIDropDownMenuTemplate")
 for _, l in ipairs(p4.lignes) do
     l.boutons[1]:SetScript("OnClick", function(self)
-        local ligne = self.ligne.piece
-        if ligne and ligne.piece.enchantement ~= ligne.e[4] then
-            SendChatMessage(".equipement enchanter " .. ligne.sac .. " " .. ligne.case .. " " .. ligne.e[1], "SAY")
+        local piece = self.ligne.piece
+        if not piece then return end
+        local menu = { { text = NomObjet(piece.id), isTitle = true, notCheckable = true } }
+        for _, e in ipairs(EnchantementsDe(piece.type)) do
+            local enPlace = piece.enchantement == e[4]
+            local cout, ok = Cout(e)
+            table.insert(menu, { text = e[3] .. "  ·  " .. e[2] .. (enPlace and "  (en place)" or "  —  " .. cout),
+                notCheckable = true, disabled = enPlace or not ok,
+                func = function()
+                    SendChatMessage(".equipement enchanter " .. piece.sac .. " " .. piece.case .. " " .. e[1], "SAY")
+                end })
         end
+        EasyMenu(menu, deroulantEnchantements, self, 0, 0, "MENU")
     end)
 end
 
--- Une ligne par enchantement possible de chaque pièce (signalement du 01/11/2026 : avec deux choix sur la même ligne,
--- le bouton de gauche mordait sur la liste des composants).
 local function MajEnchantement()
     local liste = {}
     for _, piece in ipairs(armures) do
-        for _, e in ipairs(EnchantementsDe(piece.type)) do
-            table.insert(liste, { piece = piece, e = e, id = piece.id, sac = piece.sac, case = piece.case })
-        end
+        if #EnchantementsDe(piece.type) > 0 then table.insert(liste, piece) end
     end
-    Remplir(p4, liste, function(l, ligne)
-        local piece, e = ligne.piece, ligne.e
-        local enPlace = piece.enchantement == e[4]
-        l.haut:SetText(e[3] .. "  ·  " .. e[2] .. (enPlace and "  |cffb4b8bf(en place)|r"
-            or piece.enchantement > 0 and "  |cffb4b8bf(remplace l'enchantement actuel)|r" or ""))
-        local cout, ok = Cout(e)
-        l.bas:SetText(cout)
+    Remplir(p4, liste, function(l, piece)
+        local actuel = piece.enchantement > 0 and EnchantementsDe(piece.type, piece.enchantement)[1]
+        l.haut:SetText(actuel and ("Enchantée : " .. actuel[3] .. "  ·  " .. actuel[2])
+            or piece.enchantement > 0 and "Enchantée" or "Sans enchantement")
+        local effets = {}
+        for _, e in ipairs(EnchantementsDe(piece.type)) do table.insert(effets, e[3]) end
+        l.bas:SetText("Au choix : " .. table.concat(effets, ", "))
         local b = l.boutons[1]
-        b.texte:SetText(enPlace and "En place" or "Enchanter")
-        b:Choisir(enPlace)
-        b:SetAlpha((ok and not enPlace) and 1 or 0.5)
+        b.texte:SetText("Enchanter")
+        b:Choisir(false)
+        b:SetAlpha(1)
     end)
 end
 

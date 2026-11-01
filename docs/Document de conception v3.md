@@ -765,6 +765,11 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - plus de maîtres de classe, de profession ni de familiers dans le monde (703 apparitions retirées) ; les 293 qui donnent ou reprennent une quête restent sans leur fonction de maître ; les maîtres de monte restent (migration 099) ;
     - passif placé : la réponse donne son nom, plus son numéro (filtre de discussion dans `SolUI_Passifs.lua`) ;
     - les pièces rudimentaires restent non désenchantables (deux signalements contraires, le second l'emporte : déjà le cas).
+    - enchantements : une ligne par pièce, et au bout une liste déroulante de ses enchantements avec leur coût ; en choisir un l'applique (grisés : celui en place, ceux qu'on ne peut pas payer) ;
+    - les défis contre la montre à prendre ont une épingle « ? » bleue, comme les quêtes à refaire du jeu ;
+    - la mini-carte montre aussi la zone d'objectif des quêtes non suivies pas encore remplies, quand elle est à portée (jamais en point au bord) ;
+    - un objet qui lance une quête retirée disparaît du butin et des marchands : 44 objets, dont à Durotar l'Enveloppe vieillie du coffre de Benedict et l'Œil d'ombre ardente (migration 100) ;
+    - la matriarche (A11, puissance 5) est tombée vite à la puissance 8 : conforme.
 - **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
 
 ## 5. Questions pour les prochaines séries
