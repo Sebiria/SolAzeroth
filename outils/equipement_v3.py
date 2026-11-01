@@ -274,14 +274,14 @@ def main():
 
     lua = ["-- Généré par outils\\equipement_v3.py : ne pas modifier à la main.",
            "-- Recettes de la fenêtre Équipement, par catégorie : { objet, nom, puissance de la pièce,",
-           "-- puissance requise, prix en cuivre, { { composant, nombre }, … } }.",
+           "-- puissance requise, prix en cuivre, { { composant, nombre }, … }, genre (sous-catégorie du menu) }.",
            "SolUI.RECETTES = {"]
     for categorie in CATEGORIES:
         lua.append("    { nom = %s, forge = %s, recettes = {" % (lua_texte(categorie), "true" if categorie in FORGE else "false"))
-        for e, nom, _, p, composants, c in RECETTES:
+        for e, nom, source, p, composants, c in RECETTES:
             if c == categorie:
-                lua.append("        { %d, %s, %d, %d, %d, { %s } }," % (e, lua_texte(nom), p, max(0, p - 4), p * 5,
-                           ", ".join("{ %d, %d }" % kv for kv in composants.items())))
+                lua.append("        { %d, %s, %d, %d, %d, { %s }, %s }," % (e, lua_texte(nom), p, max(0, p - 4), p * 5,
+                           ", ".join("{ %d, %d }" % kv for kv in composants.items()), lua_texte(genre(sources[source]))))
         lua.append("    } },")
     lua.append("}")
     with open(RECETTES_LUA, "w", encoding="utf-8", newline="\n") as f:
@@ -294,6 +294,15 @@ def main():
         print(e, nom, "puissance", p, c)
     print("%d recettes, %d pièces améliorables, %d rangs : migration 078 et SolUI_Recettes.lua écrits."
           % (len(RECETTES), len(toutes), len(toutes) * RANGS))
+
+
+def genre(source):
+    """Sous-catégorie du menu de fabrication, d'après l'objet d'origine : tissu (capes comprises), cuir, maille,
+    plaque, ou armes et boucliers."""
+    classe, sous_classe = int(source["class"]), int(source["subclass"])
+    if classe == 2 or sous_classe == 6:
+        return "Armes et boucliers"
+    return {1: "Tissu", 2: "Cuir", 3: "Maille", 4: "Plaque"}[sous_classe]
 
 
 def lua_texte(t):

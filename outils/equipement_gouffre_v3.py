@@ -205,8 +205,9 @@ def main():
                  % (lua(nom), "true" if f else "false"))
         for e, n, src, cat, m, nb in PIECES:
             if cat == cle:
-                l.append("    { %d, %s, %d, %d, %d, { %s } }," % (e, lua(n), PUISSANCE, PUISSANCE - 4,
-                         prix(sources[src]), ", ".join("{ %d, %d }" % cn for cn in composants(sources[src], m, nb))))
+                l.append("    { %d, %s, %d, %d, %d, { %s }, %s }," % (e, lua(n), PUISSANCE, PUISSANCE - 4,
+                         prix(sources[src]), ", ".join("{ %d, %d }" % cn for cn in composants(sources[src], m, nb)),
+                         lua(e3.genre(sources[src]))))
         l.append("} })")
     l += ["for _, c in ipairs(SolUI.CATALOGUE or {}) do",
           "    if c.nom == \"Divers\" then table.insert(c.objets, 1, { %d, \"Braise du Gouffre\", 3 }) end" % BRAISE,

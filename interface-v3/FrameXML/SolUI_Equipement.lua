@@ -163,19 +163,57 @@ etatForge:SetPoint("TOPRIGHT", -56, -22)
 ------------------------------------------------------------------------
 -- Page 1 : fabrication
 ------------------------------------------------------------------------
+-- Menu à deux niveaux (01/11/2026, demande de l'utilisateur : la liste allait trop s'allonger) : Rudimentaire (zones
+-- de départ), Inhabituel (les vertes), Gouffre (les bleues), puis Cuisine ; dans chacune, sous-catégories tissu, cuir,
+-- maille, plaque, armes et boucliers (genre de la recette, 7e champ), les vides cachées. Seul le niveau choisi s'ouvre.
 local p1 = pages[1]
-local categorie, choisie = 1, nil
+local LIGNES_RECETTES = 9   -- 9 pièces de tissu au Gouffre
+local GENRES = { "Tissu", "Cuir", "Maille", "Plaque", "Armes et boucliers" }
+local niveaux, categorieDe = {}, {}   -- { nom, sous = { { nom, recettes } } } ; recette -> sa catégorie de S.RECETTES
+do
+    local index = {}
+    for _, c in ipairs(S.RECETTES) do
+        local nom = c.feu and c.nom or c.gouffre and "Gouffre" or c.nom == "Rudimentaire" and c.nom or "Inhabituel"
+        local niveau = index[nom]
+        if not niveau then
+            niveau = { nom = nom, sous = {}, parGenre = {} }
+            index[nom] = niveau
+            table.insert(niveaux, niveau)
+        end
+        for _, r in ipairs(c.recettes) do
+            categorieDe[r] = c
+            local genre = c.feu and c.nom or r[7]
+            local sous = niveau.parGenre[genre]
+            if not sous then
+                sous = { nom = genre, recettes = {} }
+                niveau.parGenre[genre] = sous
+                table.insert(niveau.sous, sous)
+            end
+            table.insert(sous.recettes, r)
+        end
+    end
+    local rang = {}
+    for i, g in ipairs(GENRES) do rang[g] = i end
+    for _, niveau in ipairs(niveaux) do
+        table.sort(niveau.sous, function(a, b) return (rang[a.nom] or 0) < (rang[b.nom] or 0) end)
+    end
+end
+local niveauChoisi, sousChoisie, choisie = 1, 1, nil
 
-local categories = {}
-for i, c in ipairs(S.RECETTES) do
-    local b = S.BoutonPlat(p1, c.nom, 180, 40)
-    b:SetPoint("TOPLEFT", 16, -16 - (i - 1) * 46)
-    b:SetScript("OnClick", function() categorie = i; choisie = nil; Maj() end)
-    categories[i] = b
+local boutonsNiveaux, boutonsSous = {}, {}
+for i, niveau in ipairs(niveaux) do
+    local b = S.BoutonPlat(p1, niveau.nom, 180, 40)
+    b:SetScript("OnClick", function() niveauChoisi, sousChoisie, choisie = i, 1, nil; Maj() end)
+    boutonsNiveaux[i] = b
+end
+for n = 1, #GENRES do
+    local b = S.BoutonPlat(p1, "", 164, 32, 12)
+    b:SetScript("OnClick", function() sousChoisie, choisie = n, nil; Maj() end)
+    boutonsSous[n] = b
 end
 
 local lignesRecettes = {}
-for n = 1, LIGNES do
+for n = 1, LIGNES_RECETTES do
     local l = S.BoutonPlat(p1, "", 360, 52)
     l:SetPoint("TOPLEFT", 212, -16 - (n - 1) * 58)
     l.icone = Icone(l, 36)
@@ -233,10 +271,31 @@ progression:SetPoint("BOTTOMLEFT", fabriquer, "TOPLEFT", 0, 10)
 progression:SetPoint("RIGHT", detail, "RIGHT")
 
 local function MajFabrication()
-    local c = S.RECETTES[categorie]
-    for i, b in ipairs(categories) do b:Choisir(i == categorie) end
+    local niveau = niveaux[niveauChoisi]
+    local y = -16
+    for i, b in ipairs(boutonsNiveaux) do
+        b:SetPoint("TOPLEFT", 16, y)
+        b:Choisir(i == niveauChoisi)
+        y = y - 46
+        if i == niveauChoisi and #niveau.sous > 1 then
+            for n, sb in ipairs(boutonsSous) do
+                local sous = niveau.sous[n]
+                S.Montrer(sb, sous)
+                if sous then
+                    sb.texte:SetText(sous.nom)
+                    sb:SetPoint("TOPLEFT", 32, y)
+                    sb:Choisir(n == sousChoisie)
+                    y = y - 38
+                end
+            end
+        end
+    end
+    if #niveau.sous <= 1 then
+        for _, sb in ipairs(boutonsSous) do sb:Hide() end
+    end
+    local liste = niveau.sous[sousChoisie] and niveau.sous[sousChoisie].recettes or {}
     for n, l in ipairs(lignesRecettes) do
-        local r = c.recettes[n]
+        local r = liste[n]
         S.Montrer(l, r)
         if r then
             l.recette, l.icone.id = r, r[1]
@@ -248,7 +307,7 @@ local function MajFabrication()
     end
     S.Montrer(detail, choisie)
     if not choisie then return end
-    local r = choisie
+    local r, c = choisie, categorieDe[choisie]
     grande.id = r[1]
     grande.icone:SetTexture(GetItemIcon(r[1]))
     detailNom:SetText(r[2])
@@ -725,8 +784,8 @@ end
 -- Carnets (SolUI_Carnets.lua) : page, et catégorie de recettes (la Cuisine du carnet Camp).
 function S.PageEquipement(n, nomCategorie)
     onglet = n
-    for i, c in ipairs(S.RECETTES) do
-        if c.nom == nomCategorie then categorie, choisie = i, nil end
+    for i, niveau in ipairs(niveaux) do
+        if niveau.nom == nomCategorie then niveauChoisi, sousChoisie, choisie = i, 1, nil end
     end
     if f:IsShown() then Maj() end
 end
