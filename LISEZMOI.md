@@ -2,52 +2,62 @@
 
 **World of Warcraft: Wrath of the Lich King (3.3.5a) en 100 % solo et hors ligne, sur [AzerothCore](https://www.azerothcore.org/).**
 
-Pas de bots, pas de recherche de groupe, pas d'hôtel des ventes. Chaque donjon et chaque raid est réglé pour un seul joueur. Une progression longue remplace la boucle du MMO : rangs de menace, contrats, collections et trois fins.
+Pas de bots, pas de recherche de groupe, pas d'hôtel des ventes. Depuis la version 3, Sol'Azeroth n'est plus le jeu d'origine réglé pour le solo : c'est un autre jeu sur le même monde. Il n'a ni niveau visible, ni ressource, ni soigneur, et la progression se mesure en **puissance**.
 
-> ⚠️ Projet en cours. Plusieurs fonctions sont construites mais pas encore testées en jeu. La feuille de route est dans `docs/`.
+> ⚠️ Projet en cours. La première zone, Durotar, et son donjon sont jouables ; beaucoup de systèmes sont construits mais pas encore testés en jeu. La version précédente (v2 : grimoire universel, ligues, raids mis à l'échelle…) est gardée sous le repère [`v2-final`](../../tree/v2-final).
 
-## Fonctions
+## Le principe
 
-**Personnage et compte**
-- Toutes les races avec toutes les classes (mod-arac).
-- Grimoire universel : on achète les sorts et les maîtrises d'armes et d'armures des autres classes. Chaque classe reçoit les ressources nécessaires (rage, énergie, puissance runique…).
-- Talents d'une autre classe : des points dans un arbre d'une deuxième classe.
-- Cinq spécialisations par personnage, chacune avec ses talents et ses glyphes.
-- Métiers partagés sur le compte, bonus de compte, banque de compte.
-- Ligues : Hardcore, Destin et Légende.
+- **Niveau caché et fixe.** En coulisses, personnages et monstres restent au niveau 80 ; le joueur ne voit jamais de niveau. Un monstre garde la force de son niveau d'origine, qui devient sa **puissance**.
+- **La puissance vient de l'équipement.** Celle du personnage est le niveau d'objet moyen de ce qu'il porte, augmenté par les rangs d'amélioration. Face à un monstre plus fort, on perd 2 % de dégâts par point de puissance manquant.
+- **Un combat sans ressource.** Ni rage, ni mana, ni énergie : huit techniques à temps de recharge et un passif d'identité par spécialisation. Tout coup porte ; l'armure retire un montant fixe à chaque coup ; il n'y a plus de menace, les monstres n'ont que le joueur à frapper.
+- **Chaque zone se suffit à elle-même.** Elle a son histoire, ses activités annexes, son donjon et un pourcentage de complétion. À 60 %, le donjon s'ouvre ; à 100 %, on y entre avec l'équipement pour être serein.
+- **Exigeant, mais juste.** La vie ne remonte que par le feu de camp, une potion unique améliorable et la régénération hors combat : ni nourriture, ni bandages, ni potions de Blizzard. Tous les chiffres sont réglés par simulation de combat.
 
-**Donjons et raids**
-- Mise à l'échelle solo de tous les donjons et raids (mod-autobalance, réglé).
-- **Rang de menace** du compte (rangs 0 à 5 et plus), avec Fortifié / Tyrannique, affixes de mécanique et affixes à points.
-- Défis de boss avec récompense, butin des boss de donjon au choix, protection contre la malchance.
-- Tous les raids du Norfendre étudiés boss par boss. Les mécaniques qui demandent un groupe sont adaptées pour un joueur seul (Naxxramas, Ulduar, l'épreuve du croisé, la citadelle de la Couronne de glace). Le guide de stratégie est dans `docs/`.
-- Écart d'équipement : être sous-équipé ou bien équipé change les dégâts faits et reçus.
+## Ce qui se joue aujourd'hui
 
-**Boucles de jeu**
-- Tableau de contrats (chasses et donjons) avec réserve du compte, primes de zone, thème de la semaine.
-- Mode défi en extérieur : monde plus dur, meilleures récompenses.
-- Chaîne d'histoire en 16 chapitres jusqu'au Roi-liche, avec générique pour la fin « Histoire ».
-- Codex, Renom, journal de collection, 50 hauts faits de compte, Marques du voyageur comme monnaie, intendants.
-- PNJ d'ambiance qui font vivre Hurlevent. Les autres capitales suivront, puis les villes, les routes et les camps du monde entier.
+**Durotar (puissance 1 à 11)**
+- Une histoire réécrite de 30 quêtes, de la Vallée des Épreuves à Razor Hill, Sen'jin, les Îles de l'Écho et la Lame ardente, jusque dans le Gouffre de Ragefeu.
+- Des activités annexes qui valent la moitié de la zone : lieux à nettoyer (avec chefs renforcés), primes, contrats journaliers, épreuves contre la montre avec médailles de bronze, d'argent et d'or, une épreuve de vagues avec record, et 16 reliques cachées (une carte qui les dévoile s'achète).
+- **Le Gouffre de Ragefeu**, ouvert à 60 % : difficultés 1 à 5, un composant de donjon (la Braise du Gouffre) et 31 pièces bleues à fabriquer avec.
 
-**Confort**
-- Lanceur en un clic : MySQL, connexion, monde, puis le jeu. Sauvegardes automatiques et manuelles, migrations SQL versionnées avec retour arrière.
-- Une vingtaine d'addons (sacs, plaques de nom, grimoire, talents, contrats, journal de collection…) derrière un seul bouton de la minicarte. Une interface unifiée et redessinée est en cours.
+**Guerrier tank**, première spécialisation au kit complet : le passif **Rempart** (une part de chaque coup reçu devient un bouclier que les techniques peuvent dépenser) et ses techniques.
+
+## Systèmes
+
+| Système | En bref |
+| --- | --- |
+| Équipement | Fabrication avec les matériaux récoltés, rangs 1 à 5 (+10 % chacun), désenchantement et enchantement, joaillerie réinventée pour les rangs 4 et 5 |
+| Collection | Un inventaire exhaustif et sans limite de tous les objets à collectionner (matériaux, composants, reliques), à côté d'un sac de 50 places |
+| Camp | Feu de camp (Repos, régénération) et potion, améliorés par des listes de courses |
+| Mort et âme | La mort ramène à la pierre de foyer sans perte, mais coûte de l'âme ; une âme à zéro met fin au personnage |
+| Rang d'aventurier | Rang de compte nourri par tout ce qu'on accomplit : titres, pierre de foyer plus rapide, montures (de 60 % à 150 %), modes de zone, difficultés de donjon |
+| Réputation des donjons | Réputation de compte commune à toutes les instances, qui ouvre des passifs à choisir avant chaque donjon ; des passifs du monde extérieur aussi |
+| Monnaie | Une seule monnaie partout : la Marque du voyageur |
+
+## Interface v3
+
+L'interface est réécrite **dans les fichiers du jeu** (FrameXML et GlueXML, livrés dans le patch client), et non en addons : ce code garde les droits de Blizzard en combat. Elle apporte ses propres cadres du personnage et de la cible, son journal de quêtes, son suivi et sa fenêtre de dialogue, des épingles sur la carte et la mini-carte (quêtes, quêtes à refaire, primes, reliques), un suivi de zone, et six carnets qui rassemblent toutes les fenêtres. Les sources sont dans `interface-v3` ; `outils/interface_v3.py` et `outils/construire_patch.py` fabriquent le patch.
+
+## Équilibrage
+
+Le serveur journalise les combats (`journaux/combat`), et les outils Python rejouent un personnage journalisé contre n'importe quel monstre : `outils/simulation_combat.py` et les outils bâtis dessus (camp, donjons, modes, âme, Gouffre de Ragefeu, primes). Les scripts de calibrage écrivent leurs propres migrations SQL : chaque chiffre remonte à une simulation.
 
 ## Contenu du dépôt
 
 | Dossier | Contenu |
 | --- | --- |
-| `modules/mod-solazeroth` | Le module C++ pour AzerothCore (l'essentiel du jeu) |
-| `lua_scripts` | Scripts ALE (Lua) |
-| `sql/migrations` | Changements de base versionnés (`NNN_nom.up.sql` / `.down.sql`) |
-| `addons` | Addons du client (copiés dans le jeu par le lanceur) |
+| `modules/mod-solazeroth` | Le module C++ d'AzerothCore : systèmes v3 (`v3_*.cpp`) et systèmes v2 encore utilisés |
+| `interface-v3` | L'interface du jeu réécrite (FrameXML / GlueXML) |
+| `sql/migrations` | Changements versionnés de la base (`NNN_nom.up.sql` / `.down.sql`) |
+| `outils` | Outils Python : générateurs de quêtes, de zones et d'objets, simulations de combat, lecture et écriture des MPQ et DBC, patch client |
 | `scripts` | Lanceur, migrations, sauvegardes, configuration du serveur (PowerShell) |
-| `outils` | Outils Python : lire et écrire les fichiers MPQ et DBC, construire le patch client |
-| `patches` | Correctifs locaux : mod-challenge-modes, et accroches de combat v3 ajoutées au moteur AzerothCore |
-| `docs` | Document de conception et guide des raids en solo |
+| `patches` | Correctifs locaux : mod-challenge-modes, et points d'accroche de combat v3 ajoutés au moteur d'AzerothCore |
+| `addons` | Addons que le lanceur copie encore dans le jeu (ceux de la v2 sont retirés) |
+| `lua_scripts` | Scripts ALE (Lua) |
+| `docs` | Documents de conception (v3, et v2 pour l'historique) et guide des raids en solo |
 
-Aucun fichier de Blizzard n'est fourni : il faut son propre client 3.3.5a (build 12340).
+Aucun fichier de Blizzard n'est inclus : il faut son propre client 3.3.5a (build 12340).
 
 ## Installation
 

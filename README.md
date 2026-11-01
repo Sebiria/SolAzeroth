@@ -2,52 +2,62 @@
 
 **A 100 % solo, offline World of Warcraft: Wrath of the Lich King (3.3.5a) experience, built on [AzerothCore](https://www.azerothcore.org/).**
 
-No bots, no group finder, no auction house: every dungeon and raid is tuned so one player can clear it, and a long-term progression (threat ranks, contracts, collections, three endings) replaces the MMO loop.
+No bots, no group finder, no auction house. Since version 3, Sol'Azeroth is less a set of solo tweaks than a different game on the same world: no visible levels, no resources, no healer, and a progression measured in **power**.
 
-> 🇫🇷 The game texts (NPCs, menus, addons, messages) are **in French** for now, and so is the design document. A French version of this page is in [LISEZMOI.md](LISEZMOI.md).
+> 🇫🇷 The game texts (NPCs, menus, interface, messages) are **in French** for now, and so is the design document. A French version of this page is in [LISEZMOI.md](LISEZMOI.md).
 
-> ⚠️ Work in progress. Several features are built but not yet tested in game; see `docs/` for the roadmap.
+> ⚠️ Work in progress. The first zone, Durotar, and its dungeon are playable; many systems are built but not yet tested in game. The previous version (v2: universal spellbook, leagues, scaled raids…) is kept at the tag [`v2-final`](../../tree/v2-final).
 
-## Features
+## The idea
 
-**Character and account**
-- All races with all classes (mod-arac).
-- Universal spellbook: buy spells, weapon and armor skills from other classes; every class gets the resources it needs (rage, energy, runic power…).
-- Talents from another class: spend points in one tree of a second class.
-- Five specializations per character, each with its own talents and glyphs.
-- Professions shared across the account, account bonuses, account-wide bank.
-- Leagues: Hardcore, Destiny and Legend modes.
+- **Hidden, fixed level.** Every character and every monster stays at level 80 behind the scenes; the player never sees a level. A monster keeps the strength of its original level, which becomes its **power**.
+- **Power comes from gear.** A character's power is the average item level of what they wear, raised by upgrade ranks. Facing a monster stronger than you, your damage drops by 2 % per missing point.
+- **Combat without resources.** No rage, mana or energy: eight techniques on cooldowns and one identity passive per specialization. Every hit lands; armor is a flat reduction per hit; there is no threat, monsters only have you to hit.
+- **Each zone stands on its own.** A zone has its own story, side activities and dungeon, and a completion percentage. 60 % opens the dungeon; 100 % means you go in with the gear to be at ease.
+- **Hard, but fair.** Healing comes only from the camp fire, a single upgradable potion and out-of-combat regeneration: no food, bandages or Blizzard potions. Every number is tuned by combat simulation.
 
-**Dungeons and raids**
-- Solo scaling of every dungeon and raid (mod-autobalance, tuned).
-- **Threat rank** per account (rank 0 to 5+), with Fortified / Tyrannical, mechanic affixes and point-based affixes.
-- Boss challenges with bonus rewards, choice of loot from dungeon bosses, bad-luck protection.
-- Every Northrend raid studied boss by boss; mechanics that need a group are adapted for one player (Naxxramas, Ulduar, Trial of the Crusader, Icecrown Citadel). A strategy guide is in `docs/`.
-- Gear gap: being under-geared or well-geared for a fight changes the damage you deal and take.
+## What you can play today
 
-**Game loops**
-- Daily contract board (hunts and dungeons) with an account reserve, zone bounties, a weekly theme.
-- Outdoor challenge mode (harder open world for better rewards).
-- A 16-chapter story chain to the Lich King, with credits for the "Story" ending.
-- Codex, Renown, collection journal, 50 account achievements, travelers' Marks as currency, quartermasters.
-- Ambient NPCs bringing Stormwind to life. Other capitals come next, then towns, roads and camps across the whole world.
+**Durotar (power 1 to 11)**
+- A rewritten story of 30 quests, from the Valley of Trials to Razor Hill, Sen'jin, the Echo Isles and the Burning Blade, down into Ragefire Chasm.
+- Side activities worth half the zone: places to clear (with reinforced chiefs), bounties, daily contracts, timed challenges with bronze, silver and gold medals, a wave trial with a record, and 16 hidden relics (a map that reveals them can be bought).
+- **Ragefire Chasm**, open at 60 %: difficulties 1 to 5, a dungeon component (Ember of the Chasm) and 31 blue pieces to craft with it.
 
-**Comfort**
-- One-click launcher: MySQL → auth → world → client, automatic and manual backups, versioned SQL migrations with rollback.
-- About twenty addons (bags, nameplates, spellbook, talents, contracts, collection journal…), gathered behind one minimap button. A unified, redesigned interface is in progress.
+**Warrior tank**, the first specialization with a full kit: the **Bulwark** passive (part of every hit taken becomes a shield that techniques can spend) and its techniques.
+
+## Systems
+
+| System | In short |
+| --- | --- |
+| Gear | Crafting from collected materials, ranks 1 to 5 (+10 % each), disenchanting and enchanting, a reinvented jewelcrafting for ranks 4 and 5 |
+| Collection | An unlimited, exhaustive inventory of every collectible (materials, components, relics), beside a 50-slot bag |
+| Camp | Camp fire (rest buff, regeneration) and potion, both upgraded with shopping lists |
+| Death and soul | Death sends you back to your hearthstone without loss, but costs soul points; a soul at zero ends the character |
+| Adventurer rank | Account rank fed by everything you do: titles, faster hearthstone, mounts (from 60 % to 150 % speed), zone modes, dungeon difficulties |
+| Dungeon reputation | Account reputation across all instances, unlocking passives to choose before each dungeon; outdoor passives too |
+| Currency | One currency everywhere: the Traveler's Mark |
+
+## Interface v3
+
+The interface is rewritten **inside the game's own files** (FrameXML and GlueXML, shipped in the client patch), not as addons: this code keeps Blizzard's rights in combat. It brings its own character and target frames, quest log, tracker and dialogue window, map and minimap pins (quests, repeatable quests, bounties, relics), a zone tracker, and six notebooks that gather every window. Sources are in `interface-v3`; `outils/interface_v3.py` and `outils/construire_patch.py` build the patch.
+
+## Balancing
+
+Fights are logged on the server (`journaux/combat`), and the Python tools replay a logged character against any monster: `outils/simulation_combat.py` and the tools built on it (camp, dungeons, modes, soul, Ragefire Chasm, bounties). Calibration scripts write their own SQL migrations, so every number can be traced back to a simulation.
 
 ## What is in this repository
 
 | Folder | Content |
 | --- | --- |
-| `modules/mod-solazeroth` | The C++ AzerothCore module (most of the gameplay) |
-| `lua_scripts` | ALE (Lua) scripts |
+| `modules/mod-solazeroth` | The C++ AzerothCore module: v3 systems (`v3_*.cpp`) and the v2 systems still in use |
+| `interface-v3` | The rewritten game interface (FrameXML / GlueXML) |
 | `sql/migrations` | Versioned database changes (`NNN_name.up.sql` / `.down.sql`) |
-| `addons` | Client addons (copied into the client by the launcher) |
+| `outils` | Python tools: quest, zone and item generators, combat simulations, MPQ / DBC reading and writing, client patch |
 | `scripts` | Launcher, migrations, backups, server configuration (PowerShell) |
-| `outils` | Python tools to read and write MPQ and DBC files and build the client patch |
 | `patches` | Local fixes: mod-challenge-modes, and v3 combat hooks added to the AzerothCore engine |
-| `docs` | Design document and solo raid guide (French) |
+| `addons` | Client addons still copied into the game by the launcher (the v2 ones are removed) |
+| `lua_scripts` | ALE (Lua) scripts |
+| `docs` | Design documents (v3, and v2 for history) and the solo raid guide, in French |
 
 Nothing from Blizzard is included: you need your own 3.3.5a client (build 12340).
 
@@ -68,7 +78,7 @@ The scripts expect everything in **`C:\SolAzeroth`**. Clone this repository ther
    | [mod-individual-xp](https://github.com/azerothcore/mod-individual-xp) | `503471f` |
    | [mod-transmog](https://github.com/azerothcore/mod-transmog) | `327753a` |
 
-   Modules go in `azerothcore\modules\`. Apply `patches\mod-challenge-modes.patch` inside mod-challenge-modes and `patcheszerothcore-v3-combat.patch` inside azerothcore (`git apply`). Link our module: `mklink /J C:\SolAzeroth\azerothcore\modules\mod-solazeroth C:\SolAzeroth\modules\mod-solazeroth`.
+   Modules go in `azerothcore\modules\`. Apply `patches\mod-challenge-modes.patch` inside mod-challenge-modes and `patches\azerothcore-v3-combat.patch` inside azerothcore (`git apply`). Link our module: `mklink /J C:\SolAzeroth\azerothcore\modules\mod-solazeroth C:\SolAzeroth\modules\mod-solazeroth`.
 3. **Build** — configure with CMake into `C:\SolAzeroth\build`, then build `RelWithDebInfo`.
 4. **Client data** — extract dbc, maps, vmaps and mmaps from your client into `C:\SolAzeroth\data`, then copy the three DBC files from `mod-arac\patch-contents\DBFilesContent` into `C:\SolAzeroth\data\dbc`.
 5. **Database** — create the AzerothCore databases as in the AzerothCore guide (the world server fills them on its first start). Copy `config\mysql-acore.cnf.example` to `config\mysql-acore.cnf` and put your MySQL login in it.
