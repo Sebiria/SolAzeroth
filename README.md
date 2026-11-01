@@ -4,6 +4,8 @@
 
 No bots, no group finder, no auction house. Since version 3, Sol'Azeroth is less a set of solo tweaks than a different game on the same world: no visible levels, no resources, no healer, and a progression measured in **power**.
 
+**Few keys, demanding goals.** Eight techniques and a camp, nothing more to press: the challenge is not in a rotation but in the objectives. Zones are reworked around a few hubs where their quests are gathered, and they take time: **Durotar alone asks for many hours** of quests, bounties, contracts, challenges, relics and crafting before you are ready for its dungeon.
+
 > 🇫🇷 The game texts (NPCs, menus, interface, messages) are **in French** for now, and so is the design document. A French version of this page is in [LISEZMOI.md](LISEZMOI.md).
 
 > ⚠️ Work in progress. The first zone, Durotar, and its dungeon are playable; many systems are built but not yet tested in game. The previous version (v2: universal spellbook, leagues, scaled raids…) is kept at the tag [`v2-final`](../../tree/v2-final).
@@ -13,7 +15,8 @@ No bots, no group finder, no auction house. Since version 3, Sol'Azeroth is less
 - **Hidden, fixed level.** Every character and every monster stays at level 80 behind the scenes; the player never sees a level. A monster keeps the strength of its original level, which becomes its **power**.
 - **Power comes from gear.** A character's power is the average item level of what they wear, raised by upgrade ranks. Facing a monster stronger than you, your damage drops by 2 % per missing point.
 - **Combat without resources.** No rage, mana or energy: eight techniques on cooldowns and one identity passive per specialization. Every hit lands; armor is a flat reduction per hit; there is no threat, monsters only have you to hit.
-- **Each zone stands on its own.** A zone has its own story, side activities and dungeon, and a completion percentage. 60 % opens the dungeon; 100 % means you go in with the gear to be at ease.
+- **Each zone stands on its own, and is reworked.** Its quests are rewritten and gathered around a few hubs; quests that send you to another zone are gone. A zone has its own story, side activities and dungeon, and a completion percentage. 60 % opens the dungeon; 100 % means you go in with the gear to be at ease.
+- **Long zones.** Story quests are only half of a zone: the other half is bounties, daily contracts, places to clear, timed challenges, waves and hidden relics, and the gear to face them is crafted and ranked up from what you gather there.
 - **Hard, but fair.** Healing comes only from the camp fire, a single upgradable potion and out-of-combat regeneration: no food, bandages or Blizzard potions. Every number is tuned by combat simulation.
 
 ## What you can play today
