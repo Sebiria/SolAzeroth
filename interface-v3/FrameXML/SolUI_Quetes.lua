@@ -872,7 +872,9 @@ S.Ecouter("WORLD_MAP_UPDATE", function() if WorldMapFrame:IsShown() then MajMarq
 -- vise le PNJ, sur la mini-carte comme sur la carte du monde :
 --   « ! » ambre : quête à prendre ; « ! » gris : facile (puissance de la quête 6 sous la tienne ou plus) ;
 --   « ? » pleine ambre : objectifs remplis, à rendre ; « ? » grise : quête en cours, le donneur attend ;
---   « ? » bleu : défi contre la montre à prendre, comme les quêtes à refaire du jeu (signalement du 01/11/2026).
+--   « ? » bleu : défi contre la montre à prendre, comme les quêtes à refaire du jeu (signalement du 01/11/2026) ;
+--   « ! » bleu : autre quête à refaire (journalière ou répétable, bleue dans le jeu) à prendre ; « ? » pleine bleue :
+--   quête à refaire à rendre (signalement du 01/11/2026 : les fétiches de Zalazane, devenus journaliers).
 -- Hors de la mini-carte : collée au bord, plus petite et un peu pâle, avec une flèche vers l'extérieur (quêtes à rendre
 -- toujours ; quêtes à prendre jusqu'à PORTEE mètres). Survol : les quêtes à cet endroit et des épingles voisines.
 -- Les zones d'objectif des quêtes suivies (plus haut) restent.
@@ -881,8 +883,12 @@ local GRIS = { 0.420, 0.439, 0.475 }   -- #6b7079
 local ETATS = {   -- ordre de priorité quand un PNJ a plusieurs quêtes
     { genre = "rendre", signe = "?", bord = { S.Couleur("ambreClair") }, fond = { S.Couleur("ambre") },
         signeCouleur = { S.Couleur("fond") }, texte = "objectifs remplis · à rendre", couleur = "vertClair" },
+    { genre = "rendreBleue", signe = "?", bord = { S.Couleur("bleu") }, fond = { S.Couleur("bleu") },
+        signeCouleur = { S.Couleur("fond") }, texte = "à refaire · objectifs remplis · à rendre", couleur = "vertClair" },
     { genre = "dispo", signe = "!", bord = { S.Couleur("ambre") }, fond = { S.Couleur("fond") },
         signeCouleur = { S.Couleur("ambreClair") }, texte = "à prendre", couleur = "ambreClair" },
+    { genre = "bleue", signe = "!", bord = { S.Couleur("bleu") }, fond = { S.Couleur("fond") },
+        signeCouleur = { S.Couleur("bleu") }, texte = "à refaire · à prendre", couleur = "bleu" },
     { genre = "defi", signe = "?", bord = { S.Couleur("bleu") }, fond = { S.Couleur("fond") },
         signeCouleur = { S.Couleur("bleu") }, texte = "défi contre la montre · à prendre", couleur = "bleu" },
     { genre = "encours", signe = "?", bord = GRIS, fond = { S.Couleur("fond") },
@@ -989,10 +995,13 @@ local function Grouper(nom, liste)
     local puissance = S.etat and S.etat.puissance
     for _, q in ipairs(disponibles) do
         local annexe = S.ANNEXES and S.ANNEXES[q.id]
-        Ajouter(q, annexe and annexe.chrono and "defi"
+        Ajouter(q, annexe and annexe.chrono and "defi" or annexe and annexe.bleue and "bleue"
             or (puissance and q.niveau and q.niveau <= puissance - 6) and "facile" or "dispo")
     end
-    for _, q in ipairs(aRendre) do Ajouter(q, q.remplie and "rendre" or "encours") end
+    for _, q in ipairs(aRendre) do
+        local annexe = S.ANNEXES and S.ANNEXES[q.id]
+        Ajouter(q, q.remplie and (annexe and annexe.bleue and "rendreBleue" or "rendre") or "encours")
+    end
     for _, g in ipairs(liste) do
         table.sort(g.quetes, function(a, b) return RANG[a.genre] < RANG[b.genre] end)
     end
@@ -1086,7 +1095,8 @@ MajEpingles = function(ecoule)
             dx, dy = dx * c - dy * s, dx * s + dy * c
             local distance = math.sqrt(dx * dx + dy * dy)
             local loin = distance * echelle > pixels - 10 * m
-            if not loin or g.genre == "rendre" or ((g.genre == "dispo" or g.genre == "defi") and distance <= PORTEE) then
+            if not loin or g.genre == "rendre" or g.genre == "rendreBleue"
+                or ((g.genre == "dispo" or g.genre == "bleue" or g.genre == "defi") and distance <= PORTEE) then
                 local p = { g = g, rang = rang, loin = loin, cote = (loin and 15 or 20) * m }
                 if loin then
                     p.ox, p.oy = dx / distance, -dy / distance

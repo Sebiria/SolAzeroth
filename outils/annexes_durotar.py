@@ -640,6 +640,7 @@ def lua(t):
 
 
 def interface():
+    # bleue : quête à refaire (journalière ou répétable), bleue dans le jeu ; épingle bleue sur les cartes.
     l = ["-- Généré par outils\\annexes_durotar.py : ne pas modifier à la main.",
          "-- Annexes de Durotar (quête -> clé, famille, titre, puissance, résumé), reliques (objet -> clé, nom, famille,",
          "-- indice, x, y) et catégorie « Durotar » de la Collection.",
@@ -647,7 +648,9 @@ def interface():
     for a in A:
         l.append("    [%d] = { cle = %s, famille = %s, titre = %s, puissance = %d, resume = %s, part = %d%s }," % (
             a["q"], lua(a["cle"]), lua(a["famille"]), lua(a["titre"]), a["p"], lua(a["resume"]), a["part"],
-            ", chrono = { %d, %d, %d }" % a["chrono"][1:] if a.get("chrono") else ""))
+            (", chrono = { %d, %d, %d }" % a["chrono"][1:] if a.get("chrono") else "")
+            + (", bleue = true" if a.get("journaliere") or a.get("chrono") or a.get("potion") or a["cle"] == "A27"
+               else "")))
     l.append("}")
     l.append("SolUI.FAMILLES_RELIQUES = { %s }" % ", ".join(
         "{ nom = %s, bonus = %s }" % (lua(f), lua(BONUS_FAMILLE[i])) for i, f in enumerate(FAMILLES)))
