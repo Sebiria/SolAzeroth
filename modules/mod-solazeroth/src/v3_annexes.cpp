@@ -459,10 +459,11 @@ void MontrerReliques(Player* player)
         if (it == reliques.end())
             continue;
         // Posée au sol (signalement du 01/11/2026 : une relique flottait) : la hauteur des tables est approchée, celle
-        // du terrain se lit ici, la grille étant chargée autour du joueur ; la correction est gardée en base.
+        // du terrain se lit ici, la grille étant chargée autour du joueur ; la correction est gardée en base. Vers le bas
+        // seulement : chercher au-dessus faisait grimper les reliques posées dans un décor, 2 m à chaque passage.
         float sol = go->GetMap()->GetHeight(go->GetPhaseMask(), go->GetPositionX(), go->GetPositionY(),
-            go->GetPositionZ() + 2.0f, true, 6.0f);
-        if (sol > INVALID_HEIGHT && std::fabs(sol - go->GetPositionZ()) > 0.05f)
+            go->GetPositionZ() + 0.5f, true, 50.0f);
+        if (sol > INVALID_HEIGHT && go->GetPositionZ() - sol > 0.05f)
         {
             go->GetMap()->GameObjectRelocation(go, go->GetPositionX(), go->GetPositionY(), sol, go->GetOrientation());
             go->DestroyForVisiblePlayers();
