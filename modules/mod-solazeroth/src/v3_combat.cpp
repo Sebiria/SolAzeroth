@@ -31,6 +31,7 @@
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "SpellAuraEffects.h"
 #include "SpellInfo.h"
 #include "StringFormat.h"
 #include <algorithm>
@@ -109,6 +110,23 @@ namespace
     // monstres sur leur niveau affiché, 80, et non sur leur puissance (niveau d'origine). Rapport qui ramène un sort à la
     // puissance du monstre : points par niveau (SpellEffectInfo::CalcValue), sinon mise à l'échelle des sorts de
     // créature (SPELL_ATTR0_SCALES_WITH_CREATURE_LEVEL, d'après les dégâts de base de CreatureBaseStats).
+    // Rapport entre la valeur d'un effet à points par niveau au niveau d'origine et au niveau affiché (0 à 1).
+    float RapportEffet(SpellInfo const* sort, SpellEffectInfo const& effet, int32 origine, int32 affiche)
+    {
+        auto Valeur = [&](int32 niveau)
+        {
+            if (niveau > int32(sort->MaxLevel) && sort->MaxLevel > 0)
+                niveau = int32(sort->MaxLevel);
+            else if (niveau < int32(sort->BaseLevel))
+                niveau = int32(sort->BaseLevel);
+            niveau -= int32(std::max(sort->BaseLevel, sort->SpellLevel));
+            return effet.BasePoints + 1 + std::abs(effet.DieSides) / 2.0f + niveau * effet.RealPointsPerLevel;
+        };
+        float haut = Valeur(affiche);
+        // Effets négatifs (baisse de caractéristique) : même rapport, en valeur absolue.
+        return haut != 0.0f ? std::clamp(Valeur(origine) / haut, 0.0f, 1.0f) : 1.0f;
+    }
+
     float EchelleSort(Unit* lanceur, SpellInfo const* sort)
     {
         Creature* creature = Monstre(lanceur);
@@ -121,17 +139,7 @@ namespace
         {
             if (!effet.Effect || effet.RealPointsPerLevel == 0.0f)
                 continue;
-            auto Valeur = [&](int32 niveau)
-            {
-                if (niveau > int32(sort->MaxLevel) && sort->MaxLevel > 0)
-                    niveau = int32(sort->MaxLevel);
-                else if (niveau < int32(sort->BaseLevel))
-                    niveau = int32(sort->BaseLevel);
-                niveau -= int32(std::max(sort->BaseLevel, sort->SpellLevel));
-                return effet.BasePoints + 1 + std::abs(effet.DieSides) / 2.0f + niveau * effet.RealPointsPerLevel;
-            };
-            float haut = Valeur(affiche);
-            return haut > 0.0f ? std::clamp(Valeur(origine) / haut, 0.0f, 1.0f) : 1.0f;
+            return RapportEffet(sort, effet, origine, affiche);
         }
         if (sort->HasAttribute(SPELL_ATTR0_SCALES_WITH_CREATURE_LEVEL) && sort->SpellLevel && int32(sort->SpellLevel) != affiche)
         {
@@ -209,7 +217,42 @@ public:
         UNITHOOK_ON_BEFORE_ROLL_MELEE_OUTCOME_AGAINST, UNITHOOK_ON_SPELL_HIT_ROLL,
         UNITHOOK_ON_AFTER_CALC_ARMOR_REDUCED_DAMAGE, UNITHOOK_ON_SPELL_POWER_COST,
         UNITHOOK_MODIFY_MELEE_DAMAGE, UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN, UNITHOOK_MODIFY_PERIODIC_DAMAGE_AURAS_TICK,
-        UNITHOOK_MODIFY_HEAL_RECEIVED }) { }
+        UNITHOOK_MODIFY_HEAL_RECEIVED, UNITHOOK_ON_AURA_APPLY }) { }
+
+    // 01/11/2026 (Zalazane : Rapetissement retirait 24 d'Endurance au lieu de 3, vie 152 -> 32) : les auras des monstres
+    // à points par niveau (baisse de caractéristique, d'armure…) sont ramenées à la puissance du lanceur, effet par
+    // effet, depuis la valeur du moteur (recalculée : rien ne se cumule à la réapplication). Dégâts et soins
+    // périodiques le sont déjà à chaque tick (plus bas).
+    void OnAuraApply(Unit* /*unite*/, Aura* aura) override
+    {
+        Creature* creature = aura ? Monstre(aura->GetCaster()) : nullptr;
+        if (!creature)
+            return;
+        int32 origine = SolAzeroth::PuissanceCreature(creature), affiche = creature->GetLevel();
+        if (origine <= 0 || origine >= affiche)
+            return;
+        SpellInfo const* sort = aura->GetSpellInfo();
+        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        {
+            AuraEffect* effet = aura->GetEffect(i);
+            SpellEffectInfo const& info = sort->GetEffect(SpellEffIndex(i));
+            if (!effet || info.RealPointsPerLevel == 0.0f)
+                continue;
+            switch (effet->GetAuraType())
+            {
+                case SPELL_AURA_PERIODIC_DAMAGE:
+                case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
+                case SPELL_AURA_PERIODIC_LEECH:
+                case SPELL_AURA_PERIODIC_HEAL:
+                case SPELL_AURA_PERIODIC_HEALTH_FUNNEL:
+                    continue;
+                default:
+                    break;
+            }
+            effet->ChangeAmount(int32(std::lround(effet->CalculateAmount(creature)
+                * RapportEffet(sort, info, origine, affiche))));
+        }
+    }
 
     // Compétences égalisées : ni bonus d'esquive ou de parade selon l'écart, ni coup érafle (attaquant = défense + 5),
     // ni coup écrasant (moins de 15 points d'écart), même face à un boss resté au-dessus du niveau 80.
