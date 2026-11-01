@@ -1,0 +1,3 @@
+USE acore_world;
+
+DELETE FROM gameobject WHERE guid BETWEEN 9100036 AND 9100049;
