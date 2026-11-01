@@ -118,6 +118,19 @@ En plus des difficultés de donjon, ses paliers débloquent du confort :
 - des montures, que l'on peut aussi obtenir autrement ;
 - une pierre de foyer qui se recharge plus vite.
 
+**Construit le 01/11/2026** (`v3_aventurier.cpp`, `outils\montures_v3.py`, migration 092 ; proposition validée : « Rang d'aventurier et montures — proposition.md »), pas encore vérifié en jeu :
+- **Rang de compte**, alimenté par tous les personnages ; chaque objectif ne rapporte qu'une fois par compte. Il remplace le Renom de la v2, qui n'est plus chargé en v3.
+- **Points de base** : quête d'histoire 10, sous-zone 2, lieu nettoyé 20, annexe 25 (+10 pour une médaille d'or), relique 10, zone à 60 % 50 et à 100 % 300, donjon terminé 150. Ils croissent avec la zone, × (1 + puissance haute conseillée / 100) ; pour un donjon, avec la puissance de son dernier boss. Durotar à 100 % et le Gouffre de Ragefeu donnent environ 2 000 points : la première monture arrive juste après (choix de l'utilisateur).
+- **40 paliers jusqu'à 20 000 points**, plafond à relever avec les zones suivantes. Récompenses :
+  - titres du jeu (« Éclaireur », « le pèlerin », « Traqueur », « l'explorateur », « l'assidu », « Ancien », et « le suprême » au dernier palier : le jeu n'a ni « l'Aventurier » ni « le Légendaire ») ;
+  - pierre de foyer (30 min de base, vérifié) : 25, 20, 15 puis 10 min ;
+  - six mascottes ;
+  - modes de zone : difficile au palier 5, cauchemar au palier 9 ;
+  - **palier 10** : compétence de monte, une monture à 60 % offerte (Loup des bois ou Cheval bai selon la faction), boutique ouverte de 60 à 70 % ; puis une vitesse tous les deux paliers, jusqu'à 150 % au palier 40 ;
+  - difficultés de donjon 2 à 5 (paliers 12, 20, 30, 38), notées pour le chantier de réputation des donjons.
+- **Montures** : plus aucune vente ni formation à la monte (249 ventes et 29 formations gardées dans des tables de retour). Avant le palier 10, on ne peut pas monter ; les montures volantes ne se lancent jamais (on en reparlera pour l'Outreterre et le Norfendre). C'est la monture qui donne sa vitesse : les 186 montures terrestres du jeu sont réparties de 60 % à 150 % par pas de 5 %, des plus simples aux plus belles (177 dans la boutique, une par nom).
+- **Boutique** : icône de la barre (fenêtre « Rang d'aventurier », pages Paliers et Montures), ou `.monture acheter <sort>`. Prix en Marques du voyageur, de 20 (60 %) à 1 400 (150 %). Les montures achetées sont au compte. `.aventurier` donne les points et le palier.
+
 ### 2.8 Inventaire sans limite (série 4)
 - **Plus de banque.**
 - **Un inventaire complet des objets à collectionner** (composants, matériaux…), sans limite de quantité.
@@ -712,15 +725,13 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **Techniques** (affixes de donjon de la v2) : Enragé (sous 30 % de vie, +50 % de dégâts), Renforçant (à sa mort, +20 % de dégâts et de vie aux monstres à 30 m, 5 fois au plus), Volcanique (pluie de feu sous le joueur toutes les 10 s, 15 % de la vie si on y reste 2 s).
   - **Cauchemar** : toutes les 4 à 6 minutes, une pluie de feu (trois éruptions) ou un rare de la zone qui apparaît à 20 m (5 minutes, il donne ses éclats) ; écran légèrement rougeâtre.
 - **F10, âme** : construite le 01/11/2026 (voir **F10 construite**), pas encore compilée.
+- **Rang d'aventurier et montures** : construit le 01/11/2026 (voir 2.7), pas encore vérifié en jeu.
 - **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
 
 ## 5. Questions pour les prochaines séries
 
 1. **Réputation des donjons** : la liste des techniques actives et passives d'entrée, et les paliers d'emplacements.
-2. **Rang d'aventurier** :
-   - combien de paliers ;
-   - ce qu'apporte chaque action ;
-   - les difficultés ouvertes par palier.
+2. **Rang d'aventurier** : réglé et construit le 01/11/2026 (voir 2.7). Reste à relever le plafond de 20 000 avec les zones suivantes, et à parler des montures volantes pour l'Outreterre et le Norfendre.
 3. **Puissance** : les chiffres par qualité et origine d'objet, et la courbe exacte du malus.
 4. **Kit du guerrier tank** : relire et corriger le brouillon de la partie 3. Il reste aussi à fixer :
    - l'ordre de déblocage du panel ;

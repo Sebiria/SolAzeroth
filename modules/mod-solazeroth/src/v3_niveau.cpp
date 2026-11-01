@@ -72,6 +72,12 @@ namespace
     }
 }
 
+unsigned char SolAzeroth::PuissanceHauteZone(unsigned int zone)
+{
+    auto it = puissanceDesZones.find(zone);
+    return it == puissanceDesZones.end() ? 0 : it->second.second;
+}
+
 unsigned char SolAzeroth::PuissanceCreature(Creature const* creature)
 {
     Puissance const* p = creature ? const_cast<Creature*>(creature)->CustomData.Get<Puissance>("solazeroth_puissance") : nullptr;

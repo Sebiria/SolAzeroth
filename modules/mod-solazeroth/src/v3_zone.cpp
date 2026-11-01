@@ -215,6 +215,23 @@ unsigned int SolAzeroth::PourcentZone(Player* player, unsigned int zone)
     return somme;
 }
 
+void SolAzeroth::ObjectifsAcquis(Player* player, std::function<void(unsigned int, unsigned char, unsigned int)> const& f)
+{
+    Progres* p = ProgresDe(player);
+    for (auto const& [zone, liste] : parts)
+        for (Part const& part : liste)
+            if (Acquis(player, p, part))
+                f(zone, part.genre, part.cle);
+}
+
+std::vector<unsigned int> SolAzeroth::ZonesAvecParts()
+{
+    std::vector<unsigned int> zones;
+    for (auto const& [zone, liste] : parts)
+        zones.push_back(zone);
+    return zones;
+}
+
 class solazeroth_v3_zone_joueur : public PlayerScript
 {
 public:

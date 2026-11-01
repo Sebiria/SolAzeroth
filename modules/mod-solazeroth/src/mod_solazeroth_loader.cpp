@@ -27,6 +27,7 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_metiers();         // métiers partagés : en v3, plus de niveau de métier
         AddSC_solazeroth_hauts_faits();     // hauts faits v2 (points de talent, Marques) : retirés en v3 le 31/10/2026
         AddSC_solazeroth_butin();           // choix du butin des boss : en v3, les chefs ne laissent que des composants (F6)
+        AddSC_solazeroth_renom();           // Renom : en v3, le rang d'aventurier le remplace (v3_aventurier.cpp)
     }
     else
     {
@@ -45,6 +46,7 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_v3_cuisine();
         AddSC_solazeroth_v3_ame();
         AddSC_solazeroth_v3_modes();
+        AddSC_solazeroth_v3_aventurier();
     }
     AddSC_solazeroth_reinitialisation();
     AddSC_solazeroth_journal();
@@ -56,7 +58,6 @@ void Addmod_solazerothScripts()
     AddSC_solazeroth_contrats();
     AddSC_solazeroth_malchance();
     AddSC_solazeroth_codex();
-    AddSC_solazeroth_renom();
     AddSC_solazeroth_journal_collection();
     AddSC_solazeroth_hardcore();
     AddSC_solazeroth_ambiance();

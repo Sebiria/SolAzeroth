@@ -16,6 +16,12 @@ namespace SolAzeroth
     void EnvoyerAddon(Player* player, std::string const& prefixe, std::string const& message);
     // v3 : pourcentage d'une zone, en centièmes de % (v3_zone.cpp).
     unsigned int PourcentZone(Player* player, unsigned int zone);
+    // v3 : objectifs de zone acquis, (zone, genre, clé) aux genres de solazeroth_v3_zone_parts, et zones qui ont des
+    // parts (v3_zone.cpp ; rang d'aventurier).
+    void ObjectifsAcquis(Player* player, std::function<void(unsigned int, unsigned char, unsigned int)> const& f);
+    std::vector<unsigned int> ZonesAvecParts();
+    // v3 : rang d'aventurier du compte (v3_aventurier.cpp) : modes de zone ouverts (0 aucun, 1 difficile, 2 cauchemar).
+    unsigned char ModesOuverts(Player* player);
     // v3 : meilleure médaille d'un défi (0 aucune, 1 bronze, 2 argent, 3 or) et carte des reliques achetée (v3_annexes.cpp).
     unsigned char MedailleDefi(Player* player, unsigned int quete);
     bool CarteReliques(Player* player);
@@ -38,6 +44,8 @@ namespace SolAzeroth
 
     // v3 : puissance d'une créature = son niveau d'origine, avant d'être affichée au niveau 80 (v3_niveau.cpp).
     unsigned char PuissanceCreature(Creature const* creature);
+    // v3 : puissance haute conseillée d'une zone, 0 sans puissance conseillée (v3_niveau.cpp).
+    unsigned char PuissanceHauteZone(unsigned int zone);
     // v3 : puissance du personnage, moyenne de ses objets équipés (v3_combat.cpp) ; de base : sans les rangs.
     float PuissanceJoueur(Player* player);
     float PuissanceDeBase(Player* player);
@@ -194,5 +202,6 @@ void AddSC_solazeroth_v3_gouffre();
 void AddSC_solazeroth_v3_equipement();
 void AddSC_solazeroth_v3_ame();
 void AddSC_solazeroth_v3_modes();
+void AddSC_solazeroth_v3_aventurier();
 
 #endif

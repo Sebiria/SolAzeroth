@@ -11,6 +11,7 @@ import dbc
 import bivouac_v3
 import cuisine_v3
 import icones_retail
+import montures_v3
 import techniques_v3
 from hauts_faits_natifs import DBC_CLIENT, DBC_SERVEUR, FRFR, IDENTIFIANTS, MASQUE, MYSQL, sql_texte
 
@@ -137,6 +138,7 @@ def main():
     bivouac = bivouac_v3.lignes(d, icones_retail.identifiants())
     plats = cuisine_v3.plats()
     cuisine = cuisine_v3.lignes(d, plats)
+    montures, catalogue = montures_v3.lignes(d)
     d.enregistrements.extend(lignes + incantations + kit + bivouac + cuisine)
     os.makedirs(DBC_CLIENT, exist_ok=True)
     d.enregistrer(os.path.join(DBC_CLIENT, "Spell.dbc"))
@@ -195,8 +197,10 @@ def main():
                                                   "USE acore_world;", up[3]])
     cuisine_v3.ecrire(plats, ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e))
                               for e in cuisine])
+    montures_v3.ecrire(montures, catalogue, ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(
+        valeur_sql(d, t, v) for t, v in zip(types, e)) for e in montures])
     print(len(lignes), "auras,", len(incantations), "incantation(s),", len(kit), "techniques,", len(bivouac),
-          "sorts de bivouac et", len(plats), "plats : Spell.dbc client, migrations 050, 058, 061, 067, 073 et 079,",
+          "sorts de bivouac et", len(plats), "plats : Spell.dbc client, migrations 050, 058, 061, 067, 073, 079 et 092,",
           "SolUI_Cuisine.lua écrits.")
 
 

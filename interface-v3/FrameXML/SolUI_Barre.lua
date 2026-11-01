@@ -29,6 +29,7 @@ local ENTREES = {
     { "Objectifs de la zone", "INV_Misc_Map_01", function() S.BasculerObjectifs() end },
     { "Carte du monde", "INV_Misc_Map02", function() ToggleFrame(WorldMapFrame) end },
     { "Hauts faits", "Achievement_General", function() ToggleAchievementFrame() end },
+    { "Rang d'aventurier et montures", "Ability_Mount_RidingHorse", function() S.BasculerAventurier() end },
     { "Social", "INV_Misc_GroupNeedMore", function() ToggleFriendsFrame() end },
     { "Sol'Azeroth", "INV_Enchant_ShardBrilliantLarge", function() Slash("/sol") end },
     { "Menu du jeu", "INV_Misc_Gear_01", function()

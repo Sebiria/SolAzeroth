@@ -1,6 +1,7 @@
 // v3, F9 (01/11/2026) : modes de zone (document v3, « Un jeu dur, mais permissif pour qui veut récolter »).
 // - À 60 % d'une zone (v3_zone.cpp), le joueur choisit dans une zone de repos (auberge, ville) le mode de cette zone :
 //   .mode normal|difficile|cauchemar|aucun. Gardé dans acore_characters.solazeroth_v3_modes (migration 091).
+//   Le difficile s'ouvre au palier 5 du rang d'aventurier, le cauchemar au palier 9 (v3_aventurier.cpp).
 // - Quand un monstre de la zone engage le joueur, il est remis à la puissance du mode : la puissance de base du joueur
 //   (moyenne des niveaux d'objet, sans les rangs : les rangs restent un vrai gain, outils\simulation_modes.py), plus
 //   l'écart du mode. Un monstre plus fort la garde. Vie, dégâts d'arme, puissance d'attaque et armure suivent les
@@ -17,8 +18,8 @@
 //     (aura 59449) ;
 //   - Volcanique : en combat, toutes les 10 s (8 en cauchemar), une pluie de feu sous le joueur ; 2 s plus tard la
 //     fissure (900101) explose et retire 15 % de la vie à qui est resté dedans (dégâts réglés par affixes_mecanique.cpp).
-// - Interface (SolUI_Zone.lua, préfixe SOLMODE) : « MODE;zone;mode;débloqué;au repos;cauchemar actif » au changement et
-//   toutes les 10 s. Les éclats suivent le mode (SolAzeroth::FacteurEclatsMode, v3_collection.cpp).
+// - Interface (SolUI_Zone.lua, préfixe SOLMODE) : « MODE;zone;mode;débloqué;au repos;cauchemar actif;modes ouverts »
+//   (0 à 2) au changement et toutes les 10 s. Les éclats suivent le mode (SolAzeroth::FacteurEclatsMode, v3_collection.cpp).
 
 #include "SolAzeroth.h"
 #include "CellImpl.h"
@@ -117,6 +118,8 @@ namespace
         uint32 zone = player->GetZoneId();
         uint8 mode = ModeChoisi(player, zone);
         if (mode == AUCUN || SolAzeroth::PourcentZone(player, zone) < SEUIL || player->GetMap()->Instanceable())
+            return AUCUN;
+        if (mode > NORMAL && SolAzeroth::ModesOuverts(player) < mode - NORMAL)
             return AUCUN;
         if (mode == CAUCHEMAR && AuRepos(player))
             return AUCUN;
@@ -231,9 +234,9 @@ namespace
     {
         Modes* m = ModesDe(player);
         uint32 zone = player->GetZoneId();
-        std::string message = Acore::StringFormat("MODE;{};{};{};{};{}", zone, uint32(ModeChoisi(player, zone)),
+        std::string message = Acore::StringFormat("MODE;{};{};{};{};{};{}", zone, uint32(ModeChoisi(player, zone)),
             SolAzeroth::PourcentZone(player, zone) >= SEUIL ? 1 : 0, AuRepos(player) ? 1 : 0,
-            ModeActif(player) == CAUCHEMAR ? 1 : 0);
+            ModeActif(player) == CAUCHEMAR ? 1 : 0, uint32(SolAzeroth::ModesOuverts(player)));
         if (!force && message == m->envoye)
             return;
         m->envoye = message;
@@ -508,6 +511,12 @@ public:
             return false;
         }
         uint8 mode = uint8(trouve - std::begin(NOMS));
+        if (mode > NORMAL && SolAzeroth::ModesOuverts(player) < mode - NORMAL)
+        {
+            handler->SendErrorMessage(mode == DIFFICILE ? "Le mode difficile s'ouvre au palier 5 du rang d'aventurier."
+                : "Le mode cauchemar s'ouvre au palier 9 du rang d'aventurier.");
+            return false;
+        }
         ModesDe(player)->zones[zone] = mode;
         CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_modes (guid, zone, mode) VALUES ({}, {}, {})",
             player->GetGUID().GetCounter(), zone, uint32(mode));

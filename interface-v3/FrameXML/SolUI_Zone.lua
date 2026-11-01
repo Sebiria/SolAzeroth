@@ -247,7 +247,8 @@ end
 objectifs:SetScript("OnShow", function() MajObjectifs() end)
 
 ------------------------------------------------------------------------
--- F9 (01/11/2026) : mode de la zone (v3_modes.cpp, « MODE;zone;mode;débloqué;au repos;cauchemar actif »).
+-- F9 (01/11/2026) : mode de la zone (v3_modes.cpp, « MODE;zone;mode;débloqué;au repos;cauchemar actif;modes
+-- ouverts » : difficile au palier 5 du rang d'aventurier, cauchemar au palier 9).
 -- Choix dans la fenêtre des objectifs (à 60 % de la zone, dans une auberge ou une ville), rappel dans le suivi,
 -- et un voile rouge sur le monde quand le cauchemar est actif.
 ------------------------------------------------------------------------
@@ -281,10 +282,12 @@ local function MajMode()
     if m == 3 then texteMode:SetTextColor(S.Couleur("rouge")) else texteMode:SetTextColor(S.Couleur("gris")) end
     for n, b in pairs(boutonsMode) do
         b:Choisir(n == m)
-        if etatMode.debloque and etatMode.repos and n ~= m then b:Enable() else b:Disable() end
+        local ouvert = n < 2 or (etatMode.ouverts or 0) >= n - 1
+        if etatMode.debloque and etatMode.repos and ouvert and n ~= m then b:Enable() else b:Disable() end
     end
     consigne:SetText(not etatMode.debloque and "Modes de zone : à 60 % de la zone."
         or not etatMode.repos and "Mode de zone : à choisir dans une auberge ou une ville."
+        or (etatMode.ouverts or 0) < 2 and "Difficile au palier 5 du rang d'aventurier, cauchemar au palier 9."
         or "Mode de zone : difficile et cauchemar donnent plus d'éclats.")
     S.Montrer(voile, etatMode.cauchemar)
 end
@@ -292,7 +295,7 @@ end
 S.Message("SOLMODE", function(champs)
     if champs[1] ~= "MODE" then return end
     etatMode = { zone = tonumber(champs[2]), mode = tonumber(champs[3]) or 0, debloque = champs[4] == "1",
-        repos = champs[5] == "1", cauchemar = champs[6] == "1" }
+        repos = champs[5] == "1", cauchemar = champs[6] == "1", ouverts = tonumber(champs[7]) or 0 }
     MajMode()
 end)
 MajMode()
