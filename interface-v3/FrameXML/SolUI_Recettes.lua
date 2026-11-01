@@ -2,6 +2,16 @@
 -- Recettes de la fenêtre Équipement, par catégorie : { objet, nom, puissance de la pièce,
 -- puissance requise, prix en cuivre, { { composant, nombre }, … } }.
 SolUI.RECETTES = {
+    { nom = "Rudimentaire", forge = false, recettes = {
+        { 910227, "Épée grossière en cuivre", 4, 0, 20, { { 2770, 3 }, { 2934, 1 } } },
+        { 910228, "Hache grossière en cuivre", 4, 0, 20, { { 2770, 3 }, { 2934, 1 } } },
+        { 910229, "Masse grossière en cuivre", 4, 0, 20, { { 2770, 3 }, { 2934, 1 } } },
+        { 910230, "Dague grossière en cuivre", 4, 0, 20, { { 2770, 2 }, { 2934, 1 } } },
+        { 910231, "Rondache en cuivre", 3, 0, 15, { { 2770, 4 } } },
+        { 910232, "Gilet grossier en cuivre", 3, 0, 15, { { 2770, 5 } } },
+        { 910233, "Gilet en cuir cousu main", 3, 0, 15, { { 2934, 5 } } },
+        { 910234, "Gilet en lin brun", 3, 0, 15, { { 2589, 4 } } },
+    } },
     { nom = "Maille", forge = true, recettes = {
         { 910201, "Haubert en anneaux de cuivre", 10, 6, 50, { { 2770, 16 }, { 2835, 4 } } },
         { 910202, "Jambières en anneaux de cuivre", 9, 5, 45, { { 2770, 10 }, { 2835, 2 } } },

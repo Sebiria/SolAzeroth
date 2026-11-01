@@ -10,6 +10,9 @@ l'utilisateur du 31/10/2026).
 - Recettes (fenêtre Équipement, v3_equipement.cpp) : composants bruts de la Collection et un peu d'or. Maille, bouclier
   et armes se fabriquent près d'une enclume ou d'une forge ; cuir et tissu partout. Une recette s'ouvre à la puissance
   de la pièce moins 4.
+- Recettes rudimentaires (01/11/2026, demande de l'utilisateur) : 8 pièces de puissance 3 et 4, sans forge, ouvertes
+  dès le départ, pour fabriquer dans la vallée des Épreuves (filons de cuivre et lin des Vils quasits : migration 086).
+  Elles comblent le creux avant l'Épée d'officier de Kul Tiras (puissance 6, quête 12).
 - Marchands de Razor Hill (Uhgar, Cutac, Wuark) : leurs pièces d'équipement d'origine sont remplacées par nos pièces
   fabriquées, plus chères en or que la fabrication.
 - Rangs 1 à 5 : chaque pièce existe en 6 versions, caractéristiques +10 % par rang (entrée 920000 + (pièce - 910000)
@@ -58,9 +61,17 @@ RECETTES = [
     (910224, "Brassards en lin", 4308, 7, {LIN: 6}, "Tissu"),
     (910225, "Ceinture en lin", 7026, 8, {LIN: 6}, "Tissu"),
     (910226, "Cape en lin renforcé", 2580, 9, {LIN: 8}, "Tissu"),
+    (910227, "Épée grossière en cuivre", 25, 4, {CUIVRE: 3, LANIERES: 1}, "Rudimentaire"),
+    (910228, "Hache grossière en cuivre", 37, 4, {CUIVRE: 3, LANIERES: 1}, "Rudimentaire"),
+    (910229, "Masse grossière en cuivre", 36, 4, {CUIVRE: 3, LANIERES: 1}, "Rudimentaire"),
+    (910230, "Dague grossière en cuivre", 2092, 4, {CUIVRE: 2, LANIERES: 1}, "Rudimentaire"),
+    (910231, "Rondache en cuivre", 2210, 3, {CUIVRE: 4}, "Rudimentaire"),
+    (910232, "Gilet grossier en cuivre", 10421, 3, {CUIVRE: 5}, "Rudimentaire"),
+    (910233, "Gilet en cuir cousu main", 5957, 3, {LANIERES: 5}, "Rudimentaire"),
+    (910234, "Gilet en lin brun", 2568, 3, {LIN: 4}, "Rudimentaire"),
 ]
 FORGE = {"Maille", "Armes"}
-CATEGORIES = ["Maille", "Armes", "Cuir", "Tissu"]
+CATEGORIES = ["Rudimentaire", "Maille", "Armes", "Cuir", "Tissu"]
 
 # Poids de l'emplacement (InventoryType) dans le barème.
 POIDS = {5: 1.0, 20: 1.0, 7: 1.0, 17: 1.0, 8: 0.75, 10: 0.75, 6: 0.75, 1: 0.75, 3: 0.75,
