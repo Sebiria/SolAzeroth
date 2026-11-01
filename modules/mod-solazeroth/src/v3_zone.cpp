@@ -10,6 +10,10 @@
 // copie renforcée apparaît, annoncée dans la discussion avec sa distance (essai du 31/10/2026 : bloqué à 45/46 au fort de
 // Tiragarde sans savoir que le chef attendait en haut). C'est sa mort qui clôt le lieu ; la troupe repart alors à zéro, pour que le chef revienne
 // au prochain nettoyage (défis à venir).
+// Le chef renforcé n'apparaît pas tant qu'une quête du journal, pas encore remplie, vise le chef d'origine (le tuer ou
+// prendre un objet de quête sur lui : histoire, défis comme « Le Convent en cinq minutes »). Sinon la puissance annoncée
+// de la quête serait fausse dès que la troupe est tombée, ses monstres comptant aussi pour les quêtes (remarque de
+// l'utilisateur du 01/11/2026). Un chef renforcé déjà apparu, hors combat, s'efface alors et le chef d'origine revient.
 // - genre 4 (31/10/2026), annexe à quête (primes, contrats, défis : migration 084, v3_annexes.cpp) : la quête rendue ;
 // - genre 5, relique : son objet dans la Collection.
 // Interface (SolUI_Zone.lua, préfixe SOLZONE), quand ça change et qu'on est dans une zone qui a des parts :
@@ -30,6 +34,7 @@
 #include "StringFormat.h"
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace
@@ -54,7 +59,9 @@ namespace
     struct Chef
     {
         uint32 origine = 0, renforce = 0, carte = 0;
+        ObjectGuid::LowType apparition = 0;   // apparition du chef d'origine
         Position place;
+        std::vector<uint32> quetes;           // quêtes qui visent le chef d'origine
     };
     std::unordered_map<uint32, Chef> chefs;              // lieu -> chef renforcé
     std::unordered_map<uint32, uint32> lieuDuRenforce;   // copie renforcée -> lieu
@@ -63,6 +70,7 @@ namespace
     {
         std::unordered_map<uint64, uint32> tues;   // (lieu << 32 | créature) -> nombre ; chef renforcé : 1 = lieu clos
         std::unordered_map<uint32, ObjectGuid> invoques;   // lieu -> chef renforcé apparu
+        std::unordered_set<uint32> prevenus;               // lieux dont le chef attend la fin d'une quête (annoncé)
         uint32 attente = 0;
         size_t empreinte = 0;
     };
@@ -113,6 +121,15 @@ namespace
         return requis && tues >= requis;
     }
 
+    // Quête du journal, pas encore remplie, qui vise le chef d'origine (0 : aucune).
+    uint32 QueteSurLeChef(Player* player, Chef const& chef)
+    {
+        for (uint32 quete : chef.quetes)
+            if (player->GetQuestStatus(quete) == QUEST_STATUS_INCOMPLETE)
+                return quete;
+        return 0;
+    }
+
     // Troupe tombée et joueur près de la place : le chef d'origine s'efface devant sa copie renforcée.
     void FaireApparaitre(Player* player, Progres* p, uint32 lieu, std::string const& nomLieu, Chef const& chef)
     {
@@ -120,6 +137,29 @@ namespace
         if (tues < requis || player->GetMapId() != chef.carte || player->GetDistance(chef.place) > PROCHE)
             return;
         Creature* renforce = ObjectAccessor::GetCreature(*player, p->invoques[lieu]);
+        if (uint32 quete = QueteSurLeChef(player, chef))
+        {
+            if (renforce && renforce->IsAlive() && !renforce->IsInCombat())
+            {
+                renforce->DespawnOrUnsummon();
+                p->invoques.erase(lieu);
+                auto [debut, fin] = player->GetMap()->GetCreatureBySpawnIdStore().equal_range(chef.apparition);
+                for (auto it = debut; it != fin; ++it)
+                    if (!it->second->IsAlive())
+                        it->second->Respawn(true);
+            }
+            if (p->prevenus.insert(lieu).second)
+                if (Quest const* q = sObjectMgr->GetQuestTemplate(quete))
+                {
+                    std::string titre = q->GetTitle();
+                    if (QuestLocale const* l = sObjectMgr->GetQuestLocale(quete))
+                        ObjectMgr::GetLocaleString(l->Title, LOCALE_frFR, titre);
+                    ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat(
+                        "|cfff6c27a{} :|r le chef renforcé attendra que « {} » soit remplie.", nomLieu, titre));
+                }
+            return;
+        }
+        p->prevenus.erase(lieu);
         if (!renforce)
         {
             renforce = player->SummonCreature(chef.renforce, chef.place, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, DUREE_CHEF);
@@ -352,11 +392,32 @@ public:
                 lieuDuRenforce[chef.renforce] = f[0].Get<uint32>();
             } while (r->NextRow());
         }
+        // Quêtes qui visent le chef d'origine : le tuer, ou un objet de quête qu'il laisse.
+        if (QueryResult r = WorldDatabase.Query(
+            "SELECT c.entry, q.ID FROM creature_template c JOIN quest_template q ON c.entry IN (q.RequiredNpcOrGo1, "
+            "q.RequiredNpcOrGo2, q.RequiredNpcOrGo3, q.RequiredNpcOrGo4) "
+            "WHERE c.entry IN (SELECT origine FROM solazeroth_v3_lieux_chefs) "
+            "UNION SELECT c.entry, q.ID FROM creature_template c "
+            "JOIN creature_loot_template l ON l.Entry = c.lootid AND c.lootid > 0 AND l.Item > 0 "
+            "JOIN item_template i ON i.entry = l.Item AND (l.QuestRequired = 1 OR i.class = 12) "
+            "JOIN quest_template q ON l.Item IN (q.RequiredItemId1, q.RequiredItemId2, q.RequiredItemId3, "
+            "q.RequiredItemId4, q.RequiredItemId5, q.RequiredItemId6) "
+            "WHERE c.entry IN (SELECT origine FROM solazeroth_v3_lieux_chefs)"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                for (auto& [numero, chef] : chefs)
+                    if (chef.origine == f[0].Get<uint32>())
+                        chef.quetes.push_back(f[1].Get<uint32>());
+            } while (r->NextRow());
+        }
         // Place du chef : celle de l'apparition d'origine.
         for (auto const& [guid, lieu] : sObjectMgr->GetAllCreatureData())
             for (auto& [numero, chef] : chefs)
                 if (lieu.id == chef.origine)
                 {
+                    chef.apparition = guid;
                     chef.carte = lieu.mapid;
                     chef.place.Relocate(lieu.posX, lieu.posY, lieu.posZ, lieu.orientation);
                 }
