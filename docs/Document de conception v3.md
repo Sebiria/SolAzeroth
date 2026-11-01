@@ -110,6 +110,7 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
 
 ### 2.6 Mort
 - **Retour à la pierre de foyer, sans aucune perte.**
+- Depuis F10 (01/11/2026), chaque mort coûte aussi de l'âme : voir « L'âme, à la manière de Dofus » et **F10 construite** dans la partie F5.
 
 ### 2.7 Rang d'aventurier : le confort de jeu (série 4)
 En plus des difficultés de donjon, ses paliers débloquent du confort :
@@ -469,6 +470,25 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - **à zéro, le personnage est verrouillé** : le serveur refuse de le connecter (« Âme éteinte ») et le joueur le supprime lui-même. Une commande MJ peut le déverrouiller en cas de mort due à un bogue ;
     - **zones de repos = auberges et villes**, celles où le jeu donne déjà le repos. Le mode s'y choisit.
 
+**F10 construite (01/11/2026)**, chiffres validés par l'utilisateur, pas encore compilée ni vérifiée en jeu :
+- **Les chiffres** :
+  - âme maximale : **100** ; un personnage neuf commence plein ;
+  - perte par mort : **1 + puissance / 15** (arrondi vers le bas), **au plus 10** ; 1 par mort dans tout Durotar ;
+  - régénération : **4 éclats cadavériques par point**, multipliés comme le prix des rangs (1 + (puissance − 12) / 12 au-delà de 12), pris dans la Collection.
+- **Les règles** :
+  - toute mort compte, sauf en champ de bataille et pour un personnage Hardcore ;
+  - la régénération se fait en zone de repos (auberge ou ville) : `.ame regenerer` rend autant de points que les éclats le permettent, jusqu'au maximum ;
+  - à zéro : « Âme éteinte » au milieu de l'écran, personnage immobilisé, déconnecté au bout de 5 s ; chaque connexion suivante fait de même. Le joueur le supprime lui-même ;
+  - `.ame` affiche l'état ; `.ame fixer <nom> <valeur>` (MJ, même hors ligne) fixe l'âme et déverrouille le personnage au-dessus de 0.
+- **L'interface** : jauge d'âme sous la puissance, dans le cadre du personnage (`SolUI_Perso.lua`). Violette, rouge sous 25 %. Au survol : perte à la prochaine mort, prix d'un point, éclats en Collection. En auberge ou en ville, un clic propose la régénération.
+- **Le code** : `v3_ame.cpp` ; table `acore_characters.solazeroth_v3_ame` (migration 088, appliquée) ; message d'addon `SOLAME`.
+- **Simulation** (`outils\simulation_ame.py`) : le joueur régénère en auberge tous les 5 % quand son âme passe sous 70, avec au plus la moitié de ses éclats. Les zones après Durotar sont hypothétiques (puissance 14 à 200).
+  - **Prudent** (une mort tous les 10 %) : jamais d'extinction. Âme quasi intacte à Durotar ; 3 à 12 % du revenu d'éclats en milieu de jeu, ~22 % en fin de jeu.
+  - **Moyen** (une mort tous les 4 %) : 0,2 % d'extinction. 1 % du revenu à Durotar, 12 à 30 % en milieu de jeu, ~55 % en fin de jeu.
+  - **Téméraire** (plus d'une mort tous les 2 %) : 58 % d'extinction, surtout après la puissance 100. En fin de jeu, l'âme coûte plus que le revenu.
+  - Sans jamais régénérer : 100 morts à Durotar ; 10 morts suffisent au-delà de la puissance 135.
+  - À revoir au calibrage final : le coût de fin de jeu pour un joueur moyen (la moitié du revenu) est lourd ; les taux de mort réels restent à mesurer en jeu.
+
 **F5c construite (31/10/2026)**, pas encore vérifiée en jeu :
 - `outils\quetes_durotar.py` lit les textes du document de l'histoire et écrit la migration 063 : quêtes 910001 à 910030, 19 récompenses d'équipement 910101 à 910119 (avec l'Item.dbc du patch client), Ruga Brise-cendre au Rocher du crâne, et la Sacoche du Totem-sinistre près de Maur ;
 - 102 quêtes d'origine de Durotar, de la Vallée et du Gouffre sont retirées par la table `disables` ; les quêtes de fête restent ;
@@ -678,10 +698,14 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 
 **Suite proposée par Claude** (après F5c à F5f) :
 - **F6, butin** : construit (onzième série).
-- **F7, potion et camp** : les deux boutons du cadre du personnage, et leurs listes de courses.
+- **F7, potion et camp** : construit le 01/11/2026 avec les chiffres de l'utilisateur, pas encore vérifié en jeu. Aucune contrainte de contenu ; chaque rang s'achète dans la page 3 de la fenêtre Techniques et raccourcis, avec sa liste de courses (le manquant en rouge) :
+  - **potion rang 1** (`.camp potion`) : 2 charges, 35 % de la vie ; **rang 2** : en plus 1 % de la vie par seconde pendant 10 s (sort 100034) ;
+  - **camp nœud 2** (`.camp acheter`) : Repos de 30 min, vie maximale +5 %, 2 % de vie par seconde hors combat, +5 de puissance selon la spécialisation (pour l'instant +5 Force, à confirmer), et les +10 % de dégâts du nœud 1 (sort 100033) ; **nœud 3** : le même Repos pour 40 min ;
+  - listes de courses doublées, sans Mage royal ; elles sont dans `outils\bivouac_v3.py`, qui écrit la migration 089 et `SolUI_Camp.lua` ;
+  - **simulation** (`outils\simulation_camp.py`) : potion et Repos ne changent rien contre les monstres faciles. Au mur de difficulté, ils le repoussent d'un niveau environ : à puissance 10 contre un monstre de niveau 11, victoire de 3 % sans rien, 40 % avec la potion de départ, 80 % au rang 2, 98 à 100 % avec en plus le Repos des nœuds 2-3 ; à niveau 12, au plus 7 %.
 - **F8, rangs d'objet et joaillerie** : rangs 1 à 5, composants rares, et nos recettes de joaillerie.
 - **F9, modes de zone** : normal rehaussé, difficile et cauchemar.
-- **F10, âme** : perte à la mort, régénération avec les éclats, verrouillage à zéro.
+- **F10, âme** : construite le 01/11/2026 (voir **F10 construite**), pas encore compilée.
 - **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
 
 ## 5. Questions pour les prochaines séries

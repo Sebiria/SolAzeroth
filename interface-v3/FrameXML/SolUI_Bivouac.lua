@@ -15,7 +15,8 @@ local PECHE = 51294   -- pêche de grand maître, sans canne (v3_collection.cpp,
 S.etat.charges, S.etat.chargesMax = nil, 0
 
 local RepasDuServeur
--- SOLBIV (v3_bivouac.cpp) : « ETAT;charges;charges max;secondes avant le Repos;rang du feu;plat du bouton de repas ».
+-- SOLBIV (v3_bivouac.cpp) : « ETAT;charges;charges max;secondes avant le Repos;rang du feu;plat du bouton de repas;
+-- rang de la potion ».
 S.Message("SOLBIV", function(champs)
     if champs[1] ~= "ETAT" then return end
     S.etat.charges = tonumber(champs[2])
@@ -26,6 +27,7 @@ S.Message("SOLBIV", function(champs)
     -- Nœuds achetés dans l'arbre du camp (.camp acheter).
     S.etat.rangFeu = tonumber(champs[5]) or 0
     RepasDuServeur(tonumber(champs[6]) or 0)
+    S.etat.rangPotion = tonumber(champs[7]) or 0
     S.Prevenir("camp")
 end)
 
@@ -99,6 +101,15 @@ local function NouveauBouton(sort, colonne, ligne, objet, nom)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         if self.id then
             GameTooltip:SetHyperlink((objet and "item:" or "spell:") .. self.id)
+            -- Potion et feu : le texte du sort est celui du départ ; on ajoute le rang atteint (F7, SolUI_Camp.lua).
+            local genre = self.id == POTION and "potion" or self.id == FEU and "feu"
+            local rang = genre and (genre == "potion" and S.etat.rangPotion or S.etat.rangFeu) or 0
+            if genre and rang > 0 and S.CAMP then
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddLine("Rang " .. rang .. " : " .. S.CAMP[genre][rang].nom, 1, 0.82, 0)
+                GameTooltip:AddLine(S.CAMP[genre][rang].effet, 1, 1, 1, true)
+                GameTooltip:Show()
+            end
         else
             GameTooltip:SetText("Repas")
             GameTooltip:AddLine("Glisse ici un plat de la cuisine.", 1, 1, 1, true)

@@ -4,8 +4,8 @@
 --   Ctrl et Alt se combinent ; souris : bouton du milieu, 4, 5 et molette ; Échap annule, Suppr retire). Une touche
 --   déjà prise est retirée de son ancien usage, et la fenêtre le dit. Les touches sont celles du jeu (SetBinding), enregistrées à la fermeture.
 -- - Techniques équipées : 8 au plus parmi les techniques débloquées, hors combat (.kit equiper, v3_kit.cpp).
--- - Feu de camp et potion : leurs effets au rang de départ (v3_bivouac.cpp), et l'arbre du camp (31/10/2026) : un
---   premier nœud, +10 % de dégâts pendant le Repos au coin du feu, pour 15 Marques (.camp acheter). La suite est à débattre.
+-- - Feu de camp et potion : leurs effets au rang atteint (v3_bivouac.cpp), les rangs de la potion (.camp potion) et
+--   l'arbre du camp (.camp acheter), avec leurs listes de courses (F7, 01/11/2026 ; SolUI_Camp.lua).
 
 local S = SolUI
 
@@ -424,14 +424,14 @@ S.Abonner("kit", function() if f:IsShown() then MajTechniques() end end)
 local p3 = pages[3]
 local fiches = {}
 local TEXTES = {
-    [POTION] = { "Rend 30 % de la vie maximale.", "1 charge au départ, 30 s de recharge.",
+    [POTION] = { "30 s de recharge, hors du temps global.",
         "Les charges reviennent avec le Repos au coin du feu, et en zone de repos." },
     [FEU] = { "Pose un feu pour 2 minutes ; le personnage s'assoit à côté.", "Se lever, entrer en combat ou mourir l'éteint. Recharge : 2 minutes.",
-        "Assis : 6 % de la vie toutes les 2 s. Au bout de 60 s : Repos au coin du feu (vie maximale +5 %, 1 % de vie par seconde hors combat, 30 minutes) et potions rendues." },
+        "Assis : 6 % de la vie toutes les 2 s. Au bout de 60 s : Repos au coin du feu et potions rendues." },
 }
 for n, sort in ipairs({ POTION, FEU }) do
     local c = CreateFrame("Frame", nil, p3)
-    c:SetSize(466, 300)
+    c:SetSize(466, 220)
     c:SetPoint("TOPLEFT", 24 + (n - 1) * 482, -20)
     S.Panneau(c, 0.6, "bordCreux")
     c.icone = c:CreateTexture(nil, "ARTWORK")
@@ -442,68 +442,119 @@ for n, sort in ipairs({ POTION, FEU }) do
     c.nom:SetPoint("TOPLEFT", c.icone, "TOPRIGHT", 16, -4)
     c.rang = S.Texte(c, "Regular", 12, "gris")
     c.rang:SetPoint("TOPLEFT", c.nom, "BOTTOMLEFT", 0, -6)
-    c.rang:SetText("Rang de départ · améliorations à venir")
-    local y = -100
-    for _, ligne in ipairs(TEXTES[sort]) do
-        local t = S.Texte(c, "Regular", 14, "texte")
-        t:SetPoint("TOPLEFT", 20, y)
+    -- Effet du rang atteint, puis les règles qui ne changent pas.
+    c.effet = S.Texte(c, "SemiBold", 14, "clair")
+    c.effet:SetPoint("TOPLEFT", 20, -92)
+    c.effet:SetWidth(426)
+    c.effet:SetJustifyH("LEFT")
+    c.lignes = {}
+    for i, ligne in ipairs(TEXTES[sort]) do
+        local t = S.Texte(c, "Regular", 13, "texte")
         t:SetWidth(426)
         t:SetJustifyH("LEFT")
         t:SetText(ligne)
-        y = y - t:GetStringHeight() - 12
+        c.lignes[i] = t
     end
     c.etat = S.Texte(c, "SemiBold", 14, "ambreClair")
-    c.etat:SetPoint("BOTTOMLEFT", 20, 20)
+    c.etat:SetPoint("BOTTOMLEFT", 20, 16)
     c.sort = sort
     fiches[n] = c
 end
 
--- Arbre du camp : le premier nœud, puis la suite à venir.
+-- Améliorations (F7) : rangs de la potion sous sa fiche, arbre du camp sous celle du feu. Chacune a sa liste de
+-- courses (SolUI_Camp.lua, écrit par outils\bivouac_v3.py) ; ce qui manque est en rouge. Le nœud 1 du camp coûte
+-- 15 Marques (v3_bivouac.cpp).
 local COUT_NOEUD_1 = 15
-local arbre = S.Texte(p3, "Bold", 11, "gris")
-arbre:SetPoint("TOPLEFT", 24, -340)
-arbre:SetText("ARBRE DU CAMP")
-local noeud = CreateFrame("Frame", nil, p3)
-noeud:SetSize(466, 96)
-noeud:SetPoint("TOPLEFT", 24, -362)
-S.Panneau(noeud, 0.6, "bordCreux")
-noeud.icone = noeud:CreateTexture(nil, "ARTWORK")
-noeud.icone:SetSize(48, 48)
-noeud.icone:SetPoint("LEFT", 20, 0)
-noeud.icone:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-noeud.nom = S.Texte(noeud, "Bold", 15, "clair")
-noeud.nom:SetPoint("TOPLEFT", noeud.icone, "TOPRIGHT", 14, -2)
-noeud.nom:SetText("Flamme du guerrier")
-noeud.texte = S.Texte(noeud, "Regular", 13, "texte")
-noeud.texte:SetPoint("TOPLEFT", noeud.nom, "BOTTOMLEFT", 0, -6)
-noeud.texte:SetWidth(220)
-noeud.texte:SetJustifyH("LEFT")
-noeud.texte:SetText("Le Repos au coin du feu donne aussi +10 % de dégâts.")
-local acheter = S.BoutonPlat(noeud, "", 130, 36, 13)
-acheter:SetPoint("RIGHT", -18, 0)
-acheter:SetScript("OnClick", function() SendChatMessage(".camp acheter", "SAY") end)
-local suite = S.Texte(p3, "Regular", 13, "gris")
-suite:SetPoint("TOPLEFT", noeud, "TOPRIGHT", 16, -8)
-suite:SetWidth(450)
-suite:SetJustifyH("LEFT")
-suite:SetText("La suite de l'arbre est à venir : régénération, potion, durée du Repos…")
+local ROUGE, VERT = "|cfff0918a", "|cff8cc4a6"
+local ameliorations = {}
+for n, genre in ipairs({ "potion", "feu" }) do
+    local titre = S.Texte(p3, "Bold", 11, "gris")
+    titre:SetPoint("TOPLEFT", 24 + (n - 1) * 482, -256)
+    titre:SetText(genre == "potion" and "RANGS DE LA POTION" or "ARBRE DU CAMP")
+    local maximum = genre == "potion" and 2 or 3
+    for rang = 1, maximum do
+        local l = CreateFrame("Frame", nil, p3)
+        l:SetSize(466, 66)
+        l:SetPoint("TOPLEFT", 24 + (n - 1) * 482, -274 - (rang - 1) * 72)
+        S.Panneau(l, 0.6, "bordCreux")
+        l.nom = S.Texte(l, "Bold", 14, "clair")
+        l.nom:SetPoint("TOPLEFT", 14, -8)
+        l.effet = S.Texte(l, "Regular", 12, "texte")
+        l.effet:SetPoint("TOPLEFT", l.nom, "BOTTOMLEFT", 0, -3)
+        l.effet:SetWidth(310)
+        l.effet:SetJustifyH("LEFT")
+        l.cout = S.Texte(l, "Regular", 11, "gris")
+        l.cout:SetPoint("BOTTOMLEFT", 14, 7)
+        l.cout:SetWidth(320)
+        l.cout:SetJustifyH("LEFT")
+        l.bouton = S.BoutonPlat(l, "", 112, 32, 13)
+        l.bouton:SetPoint("RIGHT", -12, 0)
+        l.bouton:SetScript("OnClick", function()
+            SendChatMessage(genre == "potion" and ".camp potion" or ".camp acheter", "SAY")
+        end)
+        l.genre, l.rang = genre, rang
+        table.insert(ameliorations, l)
+    end
+end
+
+local function ListeDeCourses(couts)
+    local morceaux = {}
+    for _, c in ipairs(couts) do
+        local objet, nombre = c[1], c[2]
+        if objet == 0 then
+            table.insert(morceaux, (GetMoney() >= nombre and "" or ROUGE) .. S.Argent(nombre) .. "|r")
+        else
+            local possede = S.NombreCollection(objet) + GetItemCount(objet)
+            table.insert(morceaux, (possede >= nombre and "" or ROUGE) .. nombre .. " " .. S.NomCollection(objet) .. "|r")
+        end
+    end
+    return table.concat(morceaux, ", ")
+end
 
 local function MajFiches()
-    local acquis = (S.etat.rangFeu or 0) >= 1
-    noeud.icone:SetTexture(select(3, GetSpellInfo(FEU)))
-    noeud.icone:SetDesaturated(not acquis)
-    acheter.texte:SetText(acquis and "Acquis" or (COUT_NOEUD_1 .. " Marques"))
-    acheter:Choisir(acquis)
-    if acquis then acheter:Disable() else acheter:Enable() end
+    local rangs = { potion = S.etat.rangPotion or 0, feu = S.etat.rangFeu or 0 }
     for _, c in ipairs(fiches) do
         local nom, _, icone = GetSpellInfo(c.sort)
+        local genre = c.sort == POTION and "potion" or "feu"
+        local actuel = S.CAMP[genre][rangs[genre]]
         c.nom:SetText(nom or "")
         c.icone:SetTexture(icone)
+        c.rang:SetText(rangs[genre] == 0 and "Rang de départ" or ("Rang " .. rangs[genre] .. " · " .. actuel.nom))
+        -- Effet cumulé : celui de chaque rang atteint (les nœuds du camp s'ajoutent les uns aux autres).
+        local effets = {}
+        -- Potion : l'effet du rang seul ; camp : départ et Flamme, ou le Repos complet du nœud 2 et le nœud 3.
+        local debut = genre == "potion" and rangs[genre] or (rangs[genre] >= 2 and 2 or 0)
+        for r = debut, rangs[genre] do table.insert(effets, S.CAMP[genre][r].effet) end
+        c.effet:SetText(table.concat(effets, " "))
+        local y = -92 - c.effet:GetStringHeight() - 10
+        for _, t in ipairs(c.lignes) do
+            t:ClearAllPoints()
+            t:SetPoint("TOPLEFT", 20, y)
+            y = y - t:GetStringHeight() - 6
+        end
         if c.sort == POTION then
             c.etat:SetText(S.etat.charges and ("Charges : " .. S.etat.charges .. " / " .. S.etat.chargesMax) or "")
         else
             c.etat:SetText("Touche : " .. (Touche("CLICK SolUIBivouac" .. FEU .. ":LeftButton") or "aucune"))
         end
+    end
+    for _, l in ipairs(ameliorations) do
+        local info = S.CAMP[l.genre][l.rang]
+        local acquis = rangs[l.genre] >= l.rang
+        local prochain = rangs[l.genre] + 1 == l.rang
+        l.nom:SetText((acquis and VERT or "") .. info.nom .. "|r")
+        l.effet:SetText(info.effet)
+        if acquis then
+            l.cout:SetText("Acquis")
+        elseif l.genre == "feu" and l.rang == 1 then
+            l.cout:SetText(COUT_NOEUD_1 .. " Marques du voyageur")
+        else
+            l.cout:SetText(ListeDeCourses(info.couts))
+        end
+        l.bouton.texte:SetText(acquis and "Acquis" or prochain and "Acheter" or "Plus tard")
+        l.bouton:Choisir(acquis)
+        if prochain then l.bouton:Enable() else l.bouton:Disable() end
+        l:SetAlpha((acquis or prochain) and 1 or 0.55)
     end
 end
 

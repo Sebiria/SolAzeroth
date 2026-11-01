@@ -10,14 +10,53 @@ et retouchés comme les techniques (techniques_v3.technique) :
 - Repos au coin du feu, premier nœud de l'arbre du camp (31/10/2026, choix de l'utilisateur : 15 Marques) : le même,
   avec +DEGATS_REPOS % de dégâts infligés. v3_bivouac.cpp le lance à la place du premier quand le nœud est acheté.
 
-Appelé par auras_nommees.py, qui écrit le Spell.dbc du client et la migration 067.
+F7 (01/11/2026, chiffres de l'utilisateur) : deux rangs de potion et deux nœuds de plus pour l'arbre du camp, chacun
+avec sa liste de courses (COUTS), achetables partout et sans condition de contenu :
+- potion rang 1 : 2 charges, soin 35 % ; rang 2 : en plus, 1 % de la vie par seconde pendant 10 s (Potion
+  revigorante, 100034) ;
+- camp nœud 2 : Repos au coin du feu de 30 minutes, vie maximale +5 %, 2 % de la vie par seconde hors combat, +5 à la
+  caractéristique de la spécialisation (sort 100033, avec les +10 % de dégâts du nœud 1) ; nœud 3 : le même pendant
+  40 minutes (v3_bivouac.cpp fixe la durée : pas de durée de 40 minutes dans SpellDuration.dbc).
+
+Appelé par auras_nommees.py, qui écrit le Spell.dbc du client et la migration 067. Lancé seul (py bivouac_v3.py), il
+écrit la migration 089 (listes de courses) et SolUI_Camp.lua (les mêmes, pour l'interface).
 """
+import os
+
 from techniques_v3 import AURA, DEGATS_INFLIGES, HORS_COMBAT, SOI, SOIN, VIE_POURCENT, effet, technique
 
 MIGRATION = r"C:\SolAzeroth\sql\migrations\067_v3_bivouac"
+MIGRATION_COUTS = r"C:\SolAzeroth\sql\migrations\089_v3_camp_rangs"
+CAMP_LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Camp.lua"
 
-POTION, FEU, REPOS, REPOS_FLAMME = 100029, 100030, 100031, 100032
-D2MIN, D30MIN = 4, 30               # SpellDuration.dbc : 120 s, 1800 s
+POTION, FEU, REPOS, REPOS_FLAMME, REPOS_BRAISES, REVIGORANTE = 100029, 100030, 100031, 100032, 100033, 100034
+D2MIN, D30MIN, D10 = 4, 30, 1       # SpellDuration.dbc : 120 s, 1800 s, 10 s
+MOD_STAT, SOIN_POURCENT_PERIODIQUE = 29, 20   # SPELL_AURA_MOD_STAT, SPELL_AURA_OBS_MOD_HEALTH (% de la vie maximale)
+# Caractéristique de la spécialisation (+5 du nœud 2) : Force pour le guerrier tank, seul kit v3 pour l'instant.
+CARACTERISTIQUE, BONUS_CARACTERISTIQUE = 0, 5   # 0 Force, 1 Agilité, 2 Endurance, 3 Intelligence, 4 Esprit
+
+# Listes de courses (objets de la Collection ; 0 = or, en cuivre). Rang 1 du feu : 15 Marques (v3_bivouac.cpp).
+ECLAT, INSIGNE = 910120, 910140
+PACIFIQUE, FEUILLARGENT, RACINE, CUIVRE, LIN, CUIR, PIERRE = 2447, 765, 2449, 2770, 2589, 2318, 2835
+MALACHITE_TAILLEE, OEIL_TIGRE_TAILLE = 910180, 910181
+GENRES = {"potion": 1, "feu": 2}
+COUTS = {
+    ("potion", 1): {PACIFIQUE: 12, FEUILLARGENT: 8, RACINE: 4, ECLAT: 50, 0: 4000},
+    ("potion", 2): {RACINE: 12, OEIL_TIGRE_TAILLE: 2, ECLAT: 120, INSIGNE: 20, 0: 10000},
+    ("feu", 2): {CUIVRE: 20, LIN: 16, CUIR: 12, ECLAT: 60, INSIGNE: 20},
+    ("feu", 3): {PIERRE: 8, CUIVRE: 20, MALACHITE_TAILLEE: 2, ECLAT: 160, INSIGNE: 40, 0: 8000},
+}
+NOMS = {("potion", 1): "Potion de Durotar", ("potion", 2): "Potion revigorante",
+        ("feu", 1): "Flamme du guerrier", ("feu", 2): "Braises tenaces", ("feu", 3): "Feu de bivouac"}
+EFFETS = {
+    ("potion", 0): "1 charge, rend 30 % de la vie.",
+    ("potion", 1): "2 charges, rendent 35 % de la vie.",
+    ("potion", 2): "2 charges, rendent 35 % de la vie, puis 1 % par seconde pendant 10 s.",
+    ("feu", 0): "Repos au coin du feu : vie maximale +5 % pendant 30 minutes, 1 % de la vie par seconde hors combat.",
+    ("feu", 1): "Le Repos donne aussi +10 % de dégâts.",
+    ("feu", 2): "Repos : vie maximale +5 %, +10 % de dégâts, +5 Force, 2 % de la vie par seconde hors combat, 30 minutes.",
+    ("feu", 3): "Le même Repos, pendant 40 minutes.",
+}
 
 SCRIPTS = {POTION: "spell_solazeroth_v3_potion", FEU: "spell_solazeroth_v3_feu"}
 
@@ -66,4 +105,61 @@ def lignes(d, icones):
     effet(e, 0, AURA, BONUS_VIE, SOI, aura=VIE_POURCENT)
     effet(e, 1, AURA, DEGATS_REPOS, SOI, aura=DEGATS_INFLIGES, misc=127)
     t.append(e)
+
+    e = technique(d, 12975, REPOS_BRAISES, "Repos au coin du feu",
+                  "Vie maximale +%d %%, dégâts infligés +%d %% et Force +%d pendant 30 minutes (40 avec le Feu de bivouac). "
+                  "Hors combat, rend 2 %% de la vie maximale par seconde." % (BONUS_VIE, DEGATS_REPOS, BONUS_CARACTERISTIQUE),
+                  i["campfire_rootflame"], 0,
+                  "Vie maximale augmentée de %d %%, dégâts infligés de %d %%, Force de %d. Hors combat, 2 %% de la vie "
+                  "maximale rendus par seconde." % (BONUS_VIE, DEGATS_REPOS, BONUS_CARACTERISTIQUE), duree=D30MIN)
+    e[131] = 0
+    effet(e, 0, AURA, BONUS_VIE, SOI, aura=VIE_POURCENT)
+    effet(e, 1, AURA, DEGATS_REPOS, SOI, aura=DEGATS_INFLIGES, misc=127)
+    effet(e, 2, AURA, BONUS_CARACTERISTIQUE, SOI, aura=MOD_STAT, misc=CARACTERISTIQUE)
+    t.append(e)
+
+    e = technique(d, 441, REVIGORANTE, "Potion revigorante", "Rend 1 % de la vie maximale par seconde pendant 10 s.",
+                  i["inv_alchemy_80_potion01red"], 0, "1 % de la vie maximale rendu par seconde.", duree=D10)
+    effet(e, 0, AURA, 1, SOI, aura=SOIN_POURCENT_PERIODIQUE)
+    e[98] = 1000                    # une fois par seconde
+    t.append(e)
     return t
+
+
+def lua_texte(t):
+    return '"%s"' % t.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def main():
+    lignes = ["(%d, %d, %d, %d)" % (GENRES[g], r, o, n) for (g, r), c in sorted(COUTS.items()) for o, n in c.items()]
+    up = ["-- v3, F7 (01/11/2026) : listes de courses des rangs de potion et des nœuds du camp. Généré par",
+          "-- outils\\bivouac_v3.py : ne pas modifier à la main. genre 1 = potion, 2 = feu ; objet 0 = or (en cuivre).",
+          "USE acore_world;",
+          "DROP TABLE IF EXISTS solazeroth_v3_camp_couts;",
+          "CREATE TABLE solazeroth_v3_camp_couts (genre TINYINT UNSIGNED NOT NULL, rang TINYINT UNSIGNED NOT NULL, "
+          "objet INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, PRIMARY KEY (genre, rang, objet));",
+          "INSERT INTO solazeroth_v3_camp_couts VALUES %s;" % ", ".join(lignes), ""]
+    down = ["USE acore_world;", "DROP TABLE IF EXISTS solazeroth_v3_camp_couts;", ""]
+    for suffixe, texte in ((".up.sql", up), (".down.sql", down)):
+        with open(MIGRATION_COUTS + suffixe, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(texte))
+
+    lua = ["-- Généré par outils\\bivouac_v3.py : ne pas modifier à la main.",
+           "-- F7 : rangs de la potion et nœuds de l'arbre du camp. couts : { { objet, nombre }, … } (objet 0 : or, en cuivre).",
+           "SolUI.CAMP = {"]
+    for genre, maximum in (("potion", 2), ("feu", 3)):
+        lua.append("    %s = {" % genre)
+        for r in range(maximum + 1):
+            couts = COUTS.get((genre, r), {})
+            lua.append("        [%d] = { nom = %s, effet = %s, couts = { %s } }," % (
+                r, lua_texte(NOMS.get((genre, r), "")), lua_texte(EFFETS[(genre, r)]),
+                ", ".join("{ %d, %d }" % kv for kv in couts.items())))
+        lua.append("    },")
+    lua.append("}")
+    with open(CAMP_LUA, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lua) + "\n")
+    print("Migration 089 et SolUI_Camp.lua écrits.")
+
+
+if __name__ == "__main__":
+    main()

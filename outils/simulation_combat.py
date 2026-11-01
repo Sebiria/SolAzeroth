@@ -13,6 +13,8 @@ Les règles reprennent celles du serveur (v3_combat.cpp, v3_kit.cpp) :
   (100 %, 8 s, le monstre frappe 20 % moins vite pendant 10 s), Riposte du rempart (consomme le Rempart, 150 % du
   montant, 10 s ; sans armure, supposé), mêlée automatique ;
 - Rempart : 40 % de chaque coup encaissé après l'armure (absorbé ou subi), plafonné à 30 % de la vie maximale.
+- potion (option potion=(charges, soin %, soin % par seconde, durée en s), F7 du 01/11/2026) : bue dès que la vie
+  passe sous SEUIL_POTION, 30 s de recharge, rend sa part de la vie maximale puis, au rang 2, 1 % par seconde ;
 - contre un groupe (combat_groupe) : mêlée et Frappe du bouclier sur un monstre à la fois, Coup de tonnerre sur tous,
   et Cri de défi (12 s) qui verse 3 % de la vie maximale au Rempart par monstre attiré.
 
@@ -43,6 +45,7 @@ REMPART_PART, REMPART_PLAFOND, REMPART_FRAPPE = 0.40, 0.30, 0.08
 REMPART_CRI_DEFI = 0.03
 CRITIQUE_MONSTRE = 5.0
 DUREE_MAX = 180.0
+SEUIL_POTION, RECHARGE_POTION = 0.35, 30.0
 
 
 class Fiche:
@@ -63,7 +66,7 @@ def apres_armure(degats, armure):
     return math.ceil(max(degats - armure / ARMURE_PAR_POINT, degats * ARMURE_MINIMUM))
 
 
-def combat(joueur, monstre, alea, riposte=False, reaction=1.4):
+def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None):
     """Un combat ; renvoie (victoire, durée, vie restante du joueur, dégâts infligés, dégâts subis).
     reaction : délai moyen (tiré entre 0 et 2 × reaction) entre la fin d'une recharge et la technique, d'après le
     journal du 31/10/2026 (Frappe du bouclier toutes les 7,4 s pour 6 s de recharge). Riposte du rempart n'est
@@ -74,9 +77,21 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4):
     malus = min(max(0.0, monstre.puissance - joueur.puissance) * MALUS_PAR_POINT, MALUS_MAX) / 100.0
     t = 0.0
     prochain = {"melee_j": 0.1, "melee_m": 2.0 * monstre.vitesse / 2.0, "frappe": 0.0, "tonnerre": 1.5,
-                "riposte": 0.0 if riposte else None, "poison": monstre.poison[2] if monstre.poison else None}
+                "riposte": 0.0 if riposte else None, "poison": monstre.poison[2] if monstre.poison else None,
+                "soin": None}
     ralenti_jusqua = -1.0
     inflige = subi = 0
+    charges, potion_prete, soins_restants = (potion[0] if potion else 0), 0.0, 0
+
+    def boire():
+        nonlocal vie_j, charges, potion_prete, soins_restants
+        if charges and t >= potion_prete and vie_j < joueur.vie * SEUIL_POTION:
+            vie_j = min(joueur.vie, vie_j + round(joueur.vie * potion[1] / 100.0))
+            charges -= 1
+            potion_prete = t + RECHARGE_POTION
+            if potion[2]:
+                soins_restants = potion[3]
+                prochain["soin"] = t + 1.0
 
     def coup_joueur(pourcent):
         d = alea.uniform(joueur.bas, joueur.haut) * pourcent * (1 - malus)
@@ -125,10 +140,17 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4):
             encaisser(d)
             prochain[quoi] = t + monstre.vitesse * (1.25 if t < ralenti_jusqua else 1.0)
             d = 0
+        elif quoi == "soin":
+            vie_j = min(joueur.vie, vie_j + round(joueur.vie * potion[2] / 100.0))
+            soins_restants -= 1
+            prochain[quoi] = t + 1.0 if soins_restants > 0 else None
+            d = 0
         else:  # poison
             encaisser(round(monstre.poison[0] * MONSTRES_DUREE))
             prochain[quoi] = t + monstre.poison[1]
             d = 0
+        if vie_j > 0:
+            boire()
         vie_m -= d
         inflige += d
         if vie_m <= 0:
