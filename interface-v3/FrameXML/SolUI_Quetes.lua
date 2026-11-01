@@ -1151,6 +1151,8 @@ MajZonesMonde = function()
     local n = 0
     if carte then
         SetCVar("questPOI", "1")
+        -- La carte du monde a ses propres données de quête, à mettre à jour avant de les lire (comme le fait le jeu).
+        if QuestMapUpdateAllQuests then QuestMapUpdateAllQuests() end
         QuestPOIUpdateIcons()
         for _, q in ipairs(Lire()) do
             if not q.enTete and q.id and not q.complete then
