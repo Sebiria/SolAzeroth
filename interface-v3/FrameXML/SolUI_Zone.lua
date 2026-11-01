@@ -67,7 +67,7 @@ S.Message("SOLZONE", function(champs)
         return
     end
     if genre == "POURCENT" then
-        if tonumber(champs[2]) < 0 then progres, recu = nil, nil; MajPourcent(); return end
+        if tonumber(champs[2]) < 0 then progres, recu, S.progresZone = nil, nil, nil; MajPourcent(); return end
         recu = { total = tonumber(champs[2]), histoire = tonumber(champs[3]), exploration = tonumber(champs[4]),
             annexes = tonumber(champs[5]), lieux = {}, quetes = {}, reliques = {} }
     elseif not recu then
@@ -85,6 +85,8 @@ S.Message("SOLZONE", function(champs)
         recu.carte = champs[2] == "1"
     elseif genre == "FINZONE" then
         progres = recu
+        S.progresZone = progres   -- reliques sur les cartes (SolUI_Quetes.lua)
+        S.Prevenir("zone")
         MajPourcent()
         MajObjectifs()
     end

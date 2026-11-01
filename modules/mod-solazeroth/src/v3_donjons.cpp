@@ -10,6 +10,9 @@
 //   par difficulté au-dessus de 2 d'une pierre taillée (joaillerie, F8), rangée dans la Collection.
 // - Réputation des donjons, au compte (donjons et raids) : 1 par monstre tué, 10 par boss, 100 au dernier boss, le tout
 //   × la difficulté (1 en raid). 10 rangs ; ils ouvrent les emplacements des passifs de donjon (v3_passifs.cpp).
+// - Composant de donjon (01/11/2026, demande de l'utilisateur ; solazeroth_v3_donjons_composants, migration 101) :
+//   chaque boss (rencontres d'instance) en donne un avec 15 % de chances par difficulté, et le dernier des boss
+//   tués d'une instance en donne un de plus. Il sert aux pièces bleues (outils\equipement_gouffre_v3.py).
 // - Interface (préfixe SOLDONJON) : « DONJON;difficulté;ouvertes;verrouillé;techniques » en donjon, « AUCUN » dehors.
 
 #include "SolAzeroth.h"
@@ -19,11 +22,13 @@
 #include "Creature.h"
 #include "DatabaseEnv.h"
 #include "Map.h"
+#include "ObjectMgr.h"
 #include "Player.h"
 #include "Random.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
 #include "WorldSession.h"
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -42,10 +47,15 @@ namespace
         uint8 difficulte = 1;
         uint8 techniques = 0;
         bool verrouille = false;
+        std::set<uint32> bossTues;
     };
     std::unordered_map<uint32, Instance> instances;
     std::unordered_map<uint32, uint32> reputations;     // compte -> points
     std::unordered_map<uint32, uint8> dernieres;        // compte -> dernière difficulté choisie
+    std::unordered_map<uint32, uint32> bosses;          // boss (rencontre d'instance) -> carte
+    std::unordered_map<uint32, uint32> bossesParCarte;  // carte -> nombre de boss
+    std::unordered_map<uint32, uint32> composants;      // carte -> composant de donjon
+    uint32 const CHANCE_COMPOSANT = 15;                 // % par difficulté, à chaque boss
 
     struct Suivi : DataMap::Base
     {
@@ -117,6 +127,32 @@ namespace
             return;
         s->envoye = message;
         SolAzeroth::EnvoyerAddon(player, "SOLDONJON", message);
+    }
+
+    // Boss tué : composant du donjon, au hasard, et un de plus quand c'est le dernier des boss de l'instance.
+    void ComposantDeDonjon(Player* player, Map* map, uint32 boss, uint8 difficulte)
+    {
+        auto c = composants.find(map->GetId());
+        Instance* e = InstanceDe(player);
+        if (c == composants.end() || !e)
+            return;
+        uint32 nombre = urand(1, 100) <= CHANCE_COMPOSANT * difficulte ? 1 : 0;
+        if (e->bossTues.insert(boss).second)
+        {
+            CharacterDatabase.Execute("INSERT IGNORE INTO solazeroth_v3_donjons_boss (instance, boss) VALUES ({}, {})",
+                map->GetInstanceId(), boss);
+            if (e->bossTues.size() == bossesParCarte[map->GetId()])
+            {
+                ++nombre;
+                ChatHandler(player->GetSession()).SendSysMessage("|cffffd100Tous les boss du donjon sont tombés.|r");
+            }
+        }
+        if (!nombre)
+            return;
+        SolAzeroth::AjouterACollection(player, c->second, nombre);
+        ItemTemplate const* objet = sObjectMgr->GetItemTemplate(c->second);
+        ChatHandler(player->GetSession()).PSendSysMessage("|cffffd100{} × {} rangé dans la Collection.|r",
+            objet ? objet->Name1 : "Composant de donjon", nombre);
     }
 
     void Gagner(Player* player, uint32 points)
@@ -195,8 +231,12 @@ public:
             return;
         uint8 difficulte = std::max<uint8>(1, SolAzeroth::DifficulteDonjon(map));
         bool final = SolAzeroth::EstBossFinal(creature->GetEntry());
-        uint32 points = final ? 100 : creature->IsDungeonBoss() ? 10 : 1;
+        // Les boss se lisent dans les rencontres d'instance : ceux du Gouffre de Ragefeu n'ont pas le drapeau de boss.
+        bool boss = bosses.count(creature->GetEntry()) > 0;
+        uint32 points = final ? 100 : (boss || creature->IsDungeonBoss()) ? 10 : 1;
         Gagner(player, points * difficulte);
+        if (boss)
+            ComposantDeDonjon(player, map, creature->GetEntry(), difficulte);
         if (!final || difficulte < 2)
             return;
         SolAzeroth::DonnerMarques(player, 2 * (difficulte - 1), Acore::StringFormat("difficulté {}", uint32(difficulte)));
@@ -240,6 +280,7 @@ public:
     {
         instances.erase(instance);
         CharacterDatabase.Execute("DELETE FROM solazeroth_v3_donjons WHERE instance = {}", instance);
+        CharacterDatabase.Execute("DELETE FROM solazeroth_v3_donjons_boss WHERE instance = {}", instance);
     }
 };
 
@@ -257,8 +298,35 @@ public:
             do
             {
                 Field* f = r->Fetch();
-                instances[f[0].Get<uint32>()] = { f[1].Get<uint8>(), f[2].Get<uint8>(), f[3].Get<uint8>() != 0 };
+                instances[f[0].Get<uint32>()] = { f[1].Get<uint8>(), f[2].Get<uint8>(), f[3].Get<uint8>() != 0, {} };
             } while (r->NextRow());
+        }
+        if (QueryResult r = CharacterDatabase.Query("SELECT instance, boss FROM solazeroth_v3_donjons_boss"))
+        {
+            do
+            {
+                auto it = instances.find((*r)[0].Get<uint32>());
+                if (it != instances.end())
+                    it->second.bossTues.insert((*r)[1].Get<uint32>());
+            } while (r->NextRow());
+        }
+        bosses.clear();
+        bossesParCarte.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT DISTINCT e.creditEntry, c.map FROM instance_encounters e "
+            "JOIN creature c ON c.id = e.creditEntry WHERE e.creditType = 0"))
+        {
+            do
+            {
+                if (bosses.emplace((*r)[0].Get<uint32>(), (*r)[1].Get<uint32>()).second)
+                    ++bossesParCarte[(*r)[1].Get<uint32>()];
+            } while (r->NextRow());
+        }
+        composants.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT carte, composant FROM solazeroth_v3_donjons_composants"))
+        {
+            do
+                composants[(*r)[0].Get<uint32>()] = (*r)[1].Get<uint32>();
+            while (r->NextRow());
         }
         LOG_INFO("module", ">> Sol'Azeroth v3 : difficultés de donjon, {} instance(s) en cours", instances.size());
     }

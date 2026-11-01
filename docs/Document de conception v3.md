@@ -119,6 +119,9 @@ On se réapproprie la maison : on garde les murs porteurs et on refait le reste.
 - **Passifs du monde extérieur** (21, valent hors des instances), en arbre à trois branches sans prérequis (combat, survie, récolte et voyage) : 6 emplacements ouverts aux paliers 2, 5, 9, 15, 23 et 31 du rang d'aventurier, puis achetés en Marques (25, 50, 100, 175, 275, 400) ; se changent dans une zone de repos. Main experte devient « 20 % de chances d'un éclat cadavérique en récoltant » (le temps de récolte ne peut pas être changé par le serveur).
 - **Interface** : icône de la barre « Passifs et réputation des donjons » (pages Donjon et Extérieur), commandes `.passif`, `.passif donjon|exterieur <emplacement> <passif|0>`, `.passif acheter`.
 - **Corrigé en passant** : la liste des derniers boss n'était chargée que par la v2 (`menace.cpp`) ; en v3 elle était vide, si bien que les donjons terminés ne rapportaient rien au rang d'aventurier. `v3_donjons.cpp` la charge maintenant.
+- **Récompense propre aux donjons** (01/11/2026, demande de l'utilisateur ; `v3_donjons.cpp`, `outils\equipement_gouffre_v3.py`, migration 101), construite, pas encore vérifiée en jeu :
+  - **Braise du Gouffre** (910190), composant de donjon rangé dans la Collection : chaque boss en donne une avec 15 % de chances par difficulté (15 % en difficulté 1, 75 % en 5), et le dernier des boss tués d'une instance en donne une de plus. Les boss se lisent dans les rencontres d'instance : ceux du Gouffre n'avaient pas le drapeau de boss et ne rapportaient que 1 point de réputation au lieu de 10 (corrigé).
+  - **31 pièces bleues de puissance 14** (fenêtre Équipement, catégories « Gouffre : maille, cuir, tissu, armes ») : chaque emplacement sauf bagues, cou et bijoux (plus tard, avec la joaillerie d'une autre zone), même barème et mêmes rangs 1 à 5 que les vertes. Recette : 1 Braise par pièce d'armure et par bouclier, 3 par arme (choix de l'utilisateur), plus le matériau de base, 40 éclats et 1 Malachite taillée (armure) ou 80 éclats et 1 Œil de tigre taillé (arme), et 50 pa ou 1 po. Chiffres provisoires, à calibrer.
 - **À noter** : le Gouffre de Ragefeu n'est pas calibré pour la v3 : en simulation, les fiches actuelles ne gagnent pas contre ses élites même en difficulté 1 (armure ~665, qui ramène les coups à 25 %).
 
 ### 2.6 Mort
@@ -770,6 +773,7 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - la mini-carte montre aussi la zone d'objectif des quêtes non suivies pas encore remplies, quand elle est à portée (jamais en point au bord) ;
     - un objet qui lance une quête retirée disparaît du butin et des marchands : 44 objets, dont à Durotar l'Enveloppe vieillie du coffre de Benedict et l'Œil d'ombre ardente (migration 100) ;
     - la matriarche (A11, puissance 5) est tombée vite à la puissance 8 : conforme.
+    - **reliques** : avec la carte des reliques achetée, un coffre marque chaque relique pas encore trouvée sur la mini-carte (à portée) et la carte du monde, avec son indice au survol ; une relique se ramasse aussi en se tenant à moins de 3 m (le Fétiche de jade ne se cliquait pas).
 - **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
 
 ## 5. Questions pour les prochaines séries

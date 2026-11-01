@@ -276,7 +276,7 @@ local function MajFabrication()
     end
     conditions:SetText(table.concat(lignes, "\n"))
     local tout = okPuissance and (forge or not c.forge) and (feu or not c.feu)
-    S.Montrer(achat, not c.feu and not progression:IsShown())
+    S.Montrer(achat, not c.feu and not c.gouffre and not progression:IsShown())   -- les bleues ne se vendent pas
     for n, ligne in ipairs(composants) do
         local comp = r[6][n]
         S.Montrer(ligne, comp)

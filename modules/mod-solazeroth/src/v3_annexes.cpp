@@ -400,7 +400,50 @@ bool SolAzeroth::CarteReliques(Player* player)
     return JoueurDe(player)->carte;
 }
 
-// Près du joueur : relique déjà trouvée cachée, relique pas encore trouvée remise.
+// Ramassage d'une relique : au clic, ou en se tenant à moins de 3 m (signalement du 01/11/2026 : une relique
+// enfouie ou derrière un rocher ne se cliquait pas).
+void RamasserRelique(Player* player, GameObject* go)
+{
+    auto it = reliques.find(go->GetEntry());
+    if (it == reliques.end())
+        return;
+    Relique const& r = it->second;
+    if (SolAzeroth::NombreEnCollection(player, r.objet))
+    {
+        Dire(player, "Tu as déjà trouvé cette relique.");
+        return;
+    }
+    SolAzeroth::AjouterACollection(player, r.objet, 1);
+    go->DespawnOrUnsummon(0ms, RELIQUE_ABSENTE);
+    SolAzeroth::AjouterACollection(player, INSIGNE, 5);
+    SolAzeroth::AjouterACollection(player, r.composant, 1);
+    uint32 trouvees = 0, total = 0;
+    for (auto const& [objetMonde, autre] : reliques)
+        if (autre.famille == r.famille)
+        {
+            ++total;
+            trouvees += SolAzeroth::NombreEnCollection(player, autre.objet) ? 1 : 0;
+        }
+    ItemTemplate const* objet = sObjectMgr->GetItemTemplate(r.objet);
+    Alerte(player, Acore::StringFormat("Relique trouvée : {} ({} / {} de la famille).",
+        objet ? objet->Name1 : "relique", trouvees, total));
+    if (trouvees == total)
+    {
+        // Bonus de famille : Lame ardente, bouclier ; Kul Tiras, 3 po et 2 Œil ténébreux ; Sombrelances, bottes.
+        if (r.famille == 0)
+            player->AddItem(910131, 1);
+        else if (r.famille == 1)
+        {
+            player->ModifyMoney(3 * GOLD);
+            SolAzeroth::AjouterACollection(player, 1210, 2);
+        }
+        else
+            player->AddItem(910132, 1);
+        Alerte(player, "Famille de reliques complète : bonus reçu !");
+    }
+}
+
+// Près du joueur : relique déjà trouvée cachée, relique pas encore trouvée remise, ramassée à moins de 3 m.
 void MontrerReliques(Player* player)
 {
     for (auto const& [carte, spawn] : placesReliques)
@@ -431,6 +474,8 @@ void MontrerReliques(Player* player)
             go->DespawnOrUnsummon(0ms, RELIQUE_ABSENTE);
         else if (!trouvee && !go->isSpawned())
             go->Respawn();
+        else if (!trouvee && player->IsWithinDist(go, 3.0f))
+            RamasserRelique(player, go);
     }
 }
 
@@ -595,43 +640,7 @@ public:
 
     bool OnGossipHello(Player* player, GameObject* go) override
     {
-        auto it = reliques.find(go->GetEntry());
-        if (it == reliques.end())
-            return true;
-        Relique const& r = it->second;
-        if (SolAzeroth::NombreEnCollection(player, r.objet))
-        {
-            Dire(player, "Tu as déjà trouvé cette relique.");
-            return true;
-        }
-        SolAzeroth::AjouterACollection(player, r.objet, 1);
-        go->DespawnOrUnsummon(0ms, RELIQUE_ABSENTE);
-        SolAzeroth::AjouterACollection(player, INSIGNE, 5);
-        SolAzeroth::AjouterACollection(player, r.composant, 1);
-        uint32 trouvees = 0, total = 0;
-        for (auto const& [objetMonde, autre] : reliques)
-            if (autre.famille == r.famille)
-            {
-                ++total;
-                trouvees += SolAzeroth::NombreEnCollection(player, autre.objet) ? 1 : 0;
-            }
-        ItemTemplate const* objet = sObjectMgr->GetItemTemplate(r.objet);
-        Alerte(player, Acore::StringFormat("Relique trouvée : {} ({} / {} de la famille).",
-            objet ? objet->Name1 : "relique", trouvees, total));
-        if (trouvees == total)
-        {
-            // Bonus de famille : Lame ardente, bouclier ; Kul Tiras, 3 po et 2 Œil ténébreux ; Sombrelances, bottes.
-            if (r.famille == 0)
-                player->AddItem(910131, 1);
-            else if (r.famille == 1)
-            {
-                player->ModifyMoney(3 * GOLD);
-                SolAzeroth::AjouterACollection(player, 1210, 2);
-            }
-            else
-                player->AddItem(910132, 1);
-            Alerte(player, "Famille de reliques complète : bonus reçu !");
-        }
+        RamasserRelique(player, go);
         return true;
     }
 };

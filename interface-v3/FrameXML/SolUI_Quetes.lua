@@ -1024,6 +1024,45 @@ local function Fusionner(places)
     return gardees
 end
 
+-- Reliques (01/11/2026, demande de l'utilisateur) : avec la carte des reliques achetée, un coffre marque chaque relique
+-- pas encore trouvée, sur la mini-carte (à portée) et sur la carte du monde. Survol : son indice.
+local coffresMini, coffresMonde = {}, {}
+local function Coffre(liste, n, parent, bulle)
+    if liste[n] then return liste[n] end
+    local c = CreateFrame("Frame", nil, parent)
+    c:SetFrameLevel(parent:GetFrameLevel() + 4)
+    c:EnableMouse(true)
+    c.cadre = S.Texture(c, "BACKGROUND", nil, S.Couleur("ambre"))
+    c.cadre:SetAllPoints()
+    c.icone = c:CreateTexture(nil, "ARTWORK")
+    c.icone:SetTexture("Interface\Icons\INV_Box_02")
+    c.icone:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    c.icone:SetPoint("TOPLEFT", 1, -1)
+    c.icone:SetPoint("BOTTOMRIGHT", -1, 1)
+    c:SetScript("OnEnter", function(self)
+        bulle:SetOwner(self, "ANCHOR_LEFT")
+        bulle:AddLine("Relique cachée (" .. self.relique.cle .. ")", S.Couleur("ambreClair"))
+        bulle:AddLine("« " .. self.relique.indice .. " »", S.Couleur("texte"))
+        bulle:Show()
+    end)
+    c:SetScript("OnLeave", function() bulle:Hide() end)
+    liste[n] = c
+    return c
+end
+
+-- Reliques à marquer sur la carte « nom » : { r, x, y } en coordonnées de la carte (de 0 à 1).
+local function ReliquesSur(nom)
+    local progres, carte = S.progresZone, S.CARTES and S.CARTES[nom or ""]
+    local liste = {}
+    if not progres or not progres.carte or not carte or carte[5] ~= disponibles.carte then return liste end
+    for _, r in ipairs(S.RELIQUES or {}) do
+        if not progres.reliques[r.objet] then
+            table.insert(liste, { r = r, x = (carte[3] - r.y) / carte[1], y = (carte[4] - r.x) / carte[2] })
+        end
+    end
+    return liste
+end
+
 local attenteEpingles = 0
 MajEpingles = function(ecoule)
     attenteEpingles = attenteEpingles - ecoule
@@ -1035,7 +1074,7 @@ MajEpingles = function(ecoule)
     end
     local carte = S.CARTES and S.CARTES[cartePositions or ""]
     local px, py = GetPlayerMapPosition("player")
-    local n = 0
+    local n, k = 0, 0
     if carte and px and not WorldMapFrame:IsShown() and GetMapInfo() == cartePositions and (px > 0 or py > 0) then
         local zoom = Minimap:GetZoom() + 1
         local rayon = (IsIndoors() and DIAMETRE.dedans or DIAMETRE.dehors)[zoom] / 2
@@ -1082,8 +1121,22 @@ MajEpingles = function(ecoule)
             end
             e:Show()
         end
+        for _, q in ipairs(ReliquesSur(cartePositions)) do
+            local dx, dy = (q.x - px) * carte[1], (q.y - py) * carte[2]
+            dx, dy = dx * c - dy * s, dx * s + dy * c
+            if math.sqrt(dx * dx + dy * dy) * echelle <= pixels - 8 * m then
+                k = k + 1
+                local f = Coffre(coffresMini, k, Minimap, GameTooltip)
+                f.relique = q.r
+                f:SetSize(14 * m, 14 * m)
+                f:ClearAllPoints()
+                f:SetPoint("CENTER", Minimap, "CENTER", dx * echelle, -dy * echelle)
+                f:Show()
+            end
+        end
     end
     for i = n + 1, #epingles do epingles[i]:Hide() end
+    for i = k + 1, #coffresMini do coffresMini[i]:Hide() end
 end
 S.Abonner("puissance", function() carteGroupes = nil end)
 
@@ -1108,6 +1161,19 @@ MajMarques = function()
         e:Show()
     end
     for i = n + 1, #marques do marques[i]:Hide() end
+    local k = 0
+    for _, c in ipairs(ReliquesSur(GetMapInfo())) do
+        if c.x >= 0 and c.x <= 1 and c.y >= 0 and c.y <= 1 then
+            k = k + 1
+            local f = Coffre(coffresMonde, k, WorldMapButton, WorldMapTooltip)
+            f.relique = c.r
+            f:SetSize(18 * S.OPTIONS.reperes, 18 * S.OPTIONS.reperes)
+            f:ClearAllPoints()
+            f:SetPoint("CENTER", WorldMapButton, "TOPLEFT", c.x * largeur, -c.y * hauteur)
+            f:Show()
+        end
+    end
+    for i = k + 1, #coffresMonde do coffresMonde[i]:Hide() end
     MajZonesMonde()
 end
 
