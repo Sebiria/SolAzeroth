@@ -617,6 +617,7 @@ local RAYON_ZONE = 45   -- rayon des zones d'objectif (outils\quetes_durotar.py)
 
 local reperes = {}
 local positions = {}   -- quêtes suivies : { x, y (de 0 à 1 sur la carte de la zone), complete }
+local primes = {}      -- primes du journal pas encore remplies (quête -> vrai) : tête de mort sur leur cible
 local cartePositions
 
 local function Repere(n)
@@ -643,7 +644,10 @@ local function LirePositions()
     QuestPOIUpdateIcons()
     cartePositions = GetMapInfo()
     wipe(positions)
+    wipe(primes)
     for _, q in ipairs(Lire()) do
+        local annexe = q.id and S.ANNEXES and S.ANNEXES[q.id]
+        if annexe and annexe.cible and not q.complete and not q.echouee then primes[q.id] = true end
         if q.id and not q.enTete and (q.suivie or not q.complete) then
             local _, x, y = QuestPOIGetIconInfo(q.id)
             if x and y then table.insert(positions, { x = x, y = y, complete = q.complete, suivie = q.suivie }) end
@@ -1035,19 +1039,23 @@ end
 
 -- Reliques (01/11/2026, demande de l'utilisateur) : avec la carte des reliques achetée, un coffre marque chaque relique
 -- pas encore trouvée, sur la mini-carte (à portée) et sur la carte du monde. Survol : son indice.
-local coffresMini, coffresMonde = {}, {}
-local function Coffre(liste, n, parent, bulle)
+-- Primes (01/11/2026, demande de l'utilisateur) : une tête de mort marque la cible de chaque prime du journal pas
+-- encore remplie, de la même façon. Survol : la prime et son résumé.
+local COFFRE = "Interface\\WorldMap\\TreasureChest_64"
+local CRANE = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8"
+local signesMini, signesMonde = {}, {}
+local function Signe(liste, n, parent, bulle)
     if liste[n] then return liste[n] end
     local c = CreateFrame("Frame", nil, parent)
     c:SetFrameLevel(parent:GetFrameLevel() + 4)
     c:EnableMouse(true)
     c.icone = c:CreateTexture(nil, "ARTWORK")
-    c.icone:SetTexture("Interface\\WorldMap\\TreasureChest_64")
     c.icone:SetAllPoints()
     c:SetScript("OnEnter", function(self)
         bulle:SetOwner(self, "ANCHOR_LEFT")
-        bulle:AddLine("Relique cachée (" .. self.relique.cle .. ")", S.Couleur("ambreClair"))
-        bulle:AddLine("« " .. self.relique.indice .. " »", S.Couleur("texte"))
+        bulle:AddLine(self.signe.titre, S.Couleur(self.signe.couleur))
+        local r, g, b = S.Couleur("texte")
+        bulle:AddLine(self.signe.texte, r, g, b, true)
         bulle:Show()
     end)
     c:SetScript("OnLeave", function() bulle:Hide() end)
@@ -1055,15 +1063,25 @@ local function Coffre(liste, n, parent, bulle)
     return c
 end
 
--- Reliques à marquer sur la carte « nom » : { r, x, y } en coordonnées de la carte (de 0 à 1).
-local function ReliquesSur(nom)
+-- Signes à poser sur la carte « nom » : { x, y (de 0 à 1), texture, titre, couleur, texte }.
+local function SignesSur(nom)
     local progres, carte = S.progresZone, S.CARTES and S.CARTES[nom or ""]
     local liste = {}
-    if not progres or not progres.carte or not carte or carte[5] ~= disponibles.carte then return liste end
-    for _, r in ipairs(S.RELIQUES or {}) do
-        if not progres.reliques[r.objet] then
-            table.insert(liste, { r = r, x = (carte[3] - r.y) / carte[1], y = (carte[4] - r.x) / carte[2] })
+    if not carte or carte[5] ~= disponibles.carte then return liste end
+    local function Ajouter(x, y, texture, titre, couleur, texte)
+        table.insert(liste, { x = (carte[3] - y) / carte[1], y = (carte[4] - x) / carte[2], texture = texture,
+            titre = titre, couleur = couleur, texte = texte })
+    end
+    if progres and progres.carte then
+        for _, r in ipairs(S.RELIQUES or {}) do
+            if not progres.reliques[r.objet] then
+                Ajouter(r.x, r.y, COFFRE, "Relique cachée (" .. r.cle .. ")", "ambreClair", "« " .. r.indice .. " »")
+            end
         end
+    end
+    for id in pairs(primes) do
+        local a = S.ANNEXES[id]
+        Ajouter(a.cible[1], a.cible[2], CRANE, "Prime : " .. a.titre, "rougeClair", a.resume)
     end
     return liste
 end
@@ -1127,13 +1145,14 @@ MajEpingles = function(ecoule)
             end
             e:Show()
         end
-        for _, q in ipairs(ReliquesSur(cartePositions)) do
+        for _, q in ipairs(SignesSur(cartePositions)) do
             local dx, dy = (q.x - px) * carte[1], (q.y - py) * carte[2]
             dx, dy = dx * c - dy * s, dx * s + dy * c
             if math.sqrt(dx * dx + dy * dy) * echelle <= pixels - 8 * m then
                 k = k + 1
-                local f = Coffre(coffresMini, k, Minimap, GameTooltip)
-                f.relique = q.r
+                local f = Signe(signesMini, k, Minimap, GameTooltip)
+                f.signe = q
+                f.icone:SetTexture(q.texture)
                 f:SetSize(14 * m, 14 * m)
                 f:ClearAllPoints()
                 f:SetPoint("CENTER", Minimap, "CENTER", dx * echelle, -dy * echelle)
@@ -1142,7 +1161,7 @@ MajEpingles = function(ecoule)
         end
     end
     for i = n + 1, #epingles do epingles[i]:Hide() end
-    for i = k + 1, #coffresMini do coffresMini[i]:Hide() end
+    for i = k + 1, #signesMini do signesMini[i]:Hide() end
 end
 S.Abonner("puissance", function() carteGroupes = nil end)
 
@@ -1168,18 +1187,19 @@ MajMarques = function()
     end
     for i = n + 1, #marques do marques[i]:Hide() end
     local k = 0
-    for _, c in ipairs(ReliquesSur(GetMapInfo())) do
+    for _, c in ipairs(SignesSur(GetMapInfo())) do
         if c.x >= 0 and c.x <= 1 and c.y >= 0 and c.y <= 1 then
             k = k + 1
-            local f = Coffre(coffresMonde, k, WorldMapButton, WorldMapTooltip)
-            f.relique = c.r
+            local f = Signe(signesMonde, k, WorldMapButton, WorldMapTooltip)
+            f.signe = c
+            f.icone:SetTexture(c.texture)
             f:SetSize(18 * S.OPTIONS.reperes, 18 * S.OPTIONS.reperes)
             f:ClearAllPoints()
             f:SetPoint("CENTER", WorldMapButton, "TOPLEFT", c.x * largeur, -c.y * hauteur)
             f:Show()
         end
     end
-    for i = k + 1, #coffresMonde do coffresMonde[i]:Hide() end
+    for i = k + 1, #signesMonde do signesMonde[i]:Hide() end
     MajZonesMonde()
 end
 
