@@ -47,6 +47,10 @@ reboursFond:SetHeight(4)
 local reboursBarre = S.Texture(rebours, "OVERLAY", nil, S.Couleur("ambre"))
 reboursBarre:SetPoint("TOPLEFT", reboursFond, "TOPLEFT")
 reboursBarre:SetPoint("BOTTOMLEFT", reboursFond, "BOTTOMLEFT")
+-- Au feu, le carnet Camp (potion, arbre du camp, cuisine) est à un clic (SolUI_Carnets.lua, 01/11/2026).
+local versCamp = S.BoutonPlat(rebours, "Camp", 80, 40, 13)
+versCamp:SetPoint("LEFT", rebours, "RIGHT", 6, 0)
+versCamp:SetScript("OnClick", function() S.OuvrirCarnet("camp") end)
 
 local function MajRebours()
     local reste = S.etat.reposFin and (S.etat.reposFin - GetTime()) or 0

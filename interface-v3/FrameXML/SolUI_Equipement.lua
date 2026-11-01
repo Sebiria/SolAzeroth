@@ -131,18 +131,19 @@ for i, titre in ipairs({ "Fabrication", "Amélioration", "Désenchantement", "En
     local o = S.BoutonPlat(f, titre, 130, 36, 13)
     o:SetPoint("TOPLEFT", 24 + (i - 1) * 138, -60)
     o:SetScript("OnClick", function() onglet = i; Maj() end)
+    o:Hide()   -- carnets Artisanat et Camp (SolUI_Carnets.lua)
     onglets[i] = o
     local page = CreateFrame("Frame", nil, f)
-    page:SetPoint("TOPLEFT", 1, -108)
+    page:SetPoint("TOPLEFT", 1, -64)
     page:SetPoint("BOTTOMRIGHT", -1, 1)
     pages[i] = page
 end
 local filet = S.Texture(f, "ARTWORK", nil, S.Couleur("bord"))
-filet:SetPoint("TOPLEFT", 1, -104)
-filet:SetPoint("TOPRIGHT", -1, -104)
+filet:SetPoint("TOPLEFT", 1, -60)
+filet:SetPoint("TOPRIGHT", -1, -60)
 filet:SetHeight(1)
 local etatForge = S.Texte(f, "Regular", 13, "gris")
-etatForge:SetPoint("TOPRIGHT", -24, -72)
+etatForge:SetPoint("TOPRIGHT", -56, -22)
 
 ------------------------------------------------------------------------
 -- Page 1 : fabrication
@@ -701,6 +702,15 @@ function Maj()
     elseif onglet == 3 then MajDesenchantement()
     elseif onglet == 4 then MajEnchantement()
     else MajJoaillerie() end
+end
+
+-- Carnets (SolUI_Carnets.lua) : page, et catégorie de recettes (la Cuisine du carnet Camp).
+function S.PageEquipement(n, nomCategorie)
+    onglet = n
+    for i, c in ipairs(S.RECETTES) do
+        if c.nom == nomCategorie then categorie, choisie = i, nil end
+    end
+    if f:IsShown() then Maj() end
 end
 
 -- Pendant que la fenêtre est ouverte : l'état du serveur toutes les 3 s (distance de la forge), et après chaque

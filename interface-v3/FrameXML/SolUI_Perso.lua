@@ -173,11 +173,13 @@ local function MajAme()
     ame:Show()
 end
 
+local MajFenetreAme
 S.Message("SOLAME", function(champs)
     if champs[1] == "AME" then
         etatAme = { valeur = tonumber(champs[2]) or 0, max = tonumber(champs[3]) or 100, perte = tonumber(champs[4]) or 1,
                     prix = tonumber(champs[5]) or 1, repos = champs[6] == "1" }
         MajAme()
+        if MajFenetreAme then MajFenetreAme() end
     elseif champs[1] == "ETEINTE" then
         RaidNotice_AddMessage(RaidWarningFrame, "Âme éteinte : ce personnage ne peut plus jouer.",
             ChatTypeInfo["RAID_WARNING"])
@@ -216,7 +218,7 @@ ame:SetScript("OnEnter", function(self)
     GameTooltip:Show()
 end)
 ame:SetScript("OnLeave", function() GameTooltip:Hide() end)
-ame:SetScript("OnClick", function()
+function S.RegenererAme()
     local e = etatAme
     if not e or e.valeur >= e.max then return end
     if not e.repos then
@@ -229,7 +231,49 @@ ame:SetScript("OnClick", function()
         return
     end
     StaticPopup_Show("SOLUI_AME_REGENERER", points, S.Nombre(points * e.prix))
-end)
+end
+ame:SetScript("OnClick", function() S.RegenererAme() end)
+
+-- Carnet Personnage › Âme (SolUI_Carnets.lua, 01/11/2026) : l'état de l'âme, en clair, et la régénération.
+local fenetreAme = S.Fenetre("SolUIAme", 620, 330, "Âme")
+local ameValeur = S.Texte(fenetreAme, "Bold", 28, "clair")
+ameValeur:SetPoint("TOPLEFT", 28, -76)
+local ameFond = S.Texture(fenetreAme, "ARTWORK", nil, S.Couleur("creux"))
+ameFond:SetPoint("TOPLEFT", ameValeur, "BOTTOMLEFT", 0, -12)
+ameFond:SetSize(564, 10)
+local amePlein = S.Texture(fenetreAme, "OVERLAY", nil, VIOLET[1], VIOLET[2], VIOLET[3])
+amePlein:SetPoint("TOPLEFT", ameFond, "TOPLEFT")
+amePlein:SetHeight(10)
+local ameLignes = S.Texte(fenetreAme, "Regular", 13, "texte")
+ameLignes:SetPoint("TOPLEFT", ameFond, "BOTTOMLEFT", 0, -18)
+ameLignes:SetWidth(564)
+ameLignes:SetJustifyH("LEFT")
+local ameBouton = S.BoutonPlat(fenetreAme, "Régénérer", 180, 36, 13)
+ameBouton:SetPoint("BOTTOMLEFT", 28, 24)
+ameBouton:SetScript("OnClick", function() S.RegenererAme() end)
+
+function MajFenetreAme()
+    local e = etatAme
+    if not fenetreAme:IsShown() then return end
+    if not e then
+        ameValeur:SetText("Âme")
+        ameLignes:SetText("En attente du serveur.")
+        S.Montrer(ameBouton, false)
+        return
+    end
+    local part = e.max > 0 and e.valeur / e.max or 0
+    ameValeur:SetText("Âme  " .. e.valeur .. " |cffb4b8bf/ " .. e.max .. "|r")
+    amePlein:SetWidth(math.max(0.01, 564 * part))
+    amePlein:SetVertexColor(unpack(part < 0.25 and { S.Couleur("rouge") } or VIOLET))
+    S.Montrer(amePlein, part > 0)
+    ameLignes:SetText("Chaque mort en coûte ; à zéro, le personnage est perdu.\n\n"
+        .. "Prochaine mort : |cfff0918a-" .. e.perte .. "|r\n"
+        .. "Régénération : " .. e.prix .. " éclats cadavériques par point, en auberge ou en ville\n"
+        .. "Éclats en Collection : " .. S.Nombre(S.NombreCollection(ECLAT)))
+    S.Montrer(ameBouton, e.valeur < e.max)
+    ameBouton:SetAlpha(e.repos and 1 or 0.5)
+end
+fenetreAme:SetScript("OnShow", MajFenetreAme)
 
 S.Ecouter("UNIT_HEALTH", function(_, unite) if unite == "player" then MajVie() end end)
 S.Ecouter("UNIT_MAXHEALTH", function(_, unite) if unite == "player" then MajVie() end end)

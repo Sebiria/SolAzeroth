@@ -10,25 +10,9 @@ local ENTETE_PARCHEMIN = 58
 
 -- page : cadre accueilli (nom global) et commande qui le remplit, ou fonction de construction (pages simples).
 local SECTIONS = {
-    -- v3 (31/10/2026) : la section Personnage (apprentissage, grimoire, talents, spécialisations, défis) et les pages
-    -- Rang de menace et Défi extérieur sont retirées avec leurs addons.
-    -- v3, F3 : la section Personnage revient avec la page Techniques (spécialisation et kit).
-    { nom = "Personnage", icone = "Interface\\Icons\\INV_Shield_06", pages = {
-        { nom = "Techniques", cadre = "SolAzerothKitCadre", commande = "SOLAZEROTHKIT" },
-    } },
-    { nom = "Aventure", icone = "Interface\\Icons\\INV_Misc_Map_01", pages = {
-        { nom = "Contrats", cadre = "SolAzerothContratsCadre", commande = "SOLAZEROTHCONTRATS" },
-        { nom = "Amélioration", cadre = "SolAzerothAmeliorationCadre", commande = "SOLAZEROTHAMELIORER" },
-        { nom = "Butin", cadre = "SolAzerothButinCadre", commande = "SOLAZEROTHBUTIN", vide = "Aucun butin en attente.", pastille = true },
-    } },
-    { nom = "Collection", icone = "Interface\\Icons\\INV_Misc_Book_09", parchemin = true, pages = {
-        { nom = "Codex et Renom", cadre = "SolAzerothCodexCadre", commande = "SOLAZEROTHCODEX",
-          sousTitre = "Ce que le voyageur a vu, vaincu et consigné." },
-        { nom = "Journal de collection", cadre = "SolAzerothJournalCadre", commande = "SOLAZEROTHJOURNAL",
-          sousTitre = "Le butin de chaque donjon et de chaque raid, boss par boss." },
-        { nom = "Hauts faits du compte", cadre = "SolAzerothHautsFaitsCadre", commande = "SOLAZEROTHHAUTSFAITS",
-          sousTitre = "Ils valent pour tout le compte, et figurent aussi dans la fenêtre Hauts faits du jeu.", hautsFaits = true },
-    } },
+    -- v3 (01/11/2026, « Accès aux fonctionnalités — proposition.md ») : /sol ne garde que les réglages. La page
+    -- Techniques (spécialisation) est dans le carnet Personnage (Interface\FrameXML\SolUI_Carnets.lua) ; les pages de
+    -- la v2 (Contrats, Amélioration, Butin, Codex et Renom, Journal de collection, Hauts faits du compte) sont retirées.
     { nom = "Réglages", icone = "Interface\\Icons\\INV_Misc_Gear_01", pages = {
         -- v3, F4 : disposition de l'écran de combat (Interface\FrameXML\SolUI_Reglages.lua).
         { nom = "Interface", construire = "Interface" },
@@ -682,6 +666,7 @@ local function Rafraichir()
 end
 
 Selectionner = function(numSection, numPage, depuisAddon)
+    numSection = math.max(1, math.min(numSection, #SECTIONS))   -- section gardée d'avant le 01/11/2026
     local section = SECTIONS[numSection]
     numPage = math.min(numPage, #section.pages)
     local page = section.pages[numPage]

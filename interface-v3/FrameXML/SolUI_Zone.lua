@@ -122,7 +122,7 @@ local objectifs = S.Fenetre("SolUIObjectifs", 760, 640, "Objectifs de la zone")
 function S.BasculerObjectifs()
     if objectifs:IsShown() then objectifs:Hide() else objectifs:Show() end
 end
-suivi:SetScript("OnMouseUp", S.BasculerObjectifs)
+suivi:SetScript("OnMouseUp", function() S.BasculerObjectifs() end)
 
 local defile = CreateFrame("ScrollFrame", "SolUIObjectifsDefile", objectifs)
 defile:SetPoint("TOPLEFT", objectifs, "TOPLEFT", 28, -64)
@@ -294,8 +294,13 @@ end
 
 S.Message("SOLMODE", function(champs)
     if champs[1] ~= "MODE" then return end
+    local avant = etatMode
     etatMode = { zone = tonumber(champs[2]), mode = tonumber(champs[3]) or 0, debloque = champs[4] == "1",
         repos = champs[5] == "1", cauchemar = champs[6] == "1", ouverts = tonumber(champs[7]) or 0 }
+    -- 60 % atteint pendant la partie : annonce cliquable vers Aventure › Zone (SolUI_Carnets.lua).
+    if etatMode.debloque and avant.zone == etatMode.zone and avant.debloque == false then
+        S.Annonce("Les modes de zone sont ouverts", "Aventure › Zone", function() S.OuvrirCarnet("aventure", 2) end)
+    end
     MajMode()
 end)
 MajMode()
@@ -419,37 +424,7 @@ end)
 
 local deroulant = CreateFrame("Frame", "SolUIMenuDeroulant", UIParent, "UIDropDownMenuTemplate")
 
-local function Slash(commande)
-    for nom, fonction in pairs(SlashCmdList) do
-        for i = 1, 5 do
-            local alias = _G["SLASH_" .. nom .. i]
-            if not alias then break end
-            if alias == commande then return fonction("") end
-        end
-    end
-end
-
-local ENTREES = {
-    { "Personnage", function() ToggleCharacter("PaperDollFrame") end },
-    { "Sacs", function() ToggleBackpack() end },
-    { "Techniques et raccourcis", function() S.BasculerRaccourcis() end },
-    { "Collection", function() S.BasculerCollection() end },
-    { "Sorts", function() ToggleSpellBook(BOOKTYPE_SPELL) end },
-    { "Quêtes", function() S.BasculerJournal() end },
-    { "Carte", function() ToggleFrame(WorldMapFrame) end },
-    { "Hauts faits", function() ToggleAchievementFrame() end },
-    { "Social", function() ToggleFriendsFrame() end },
-    { "Sol'Azeroth", function() Slash("/sol") end },
-    { "Menu du jeu", function()
-        if GameMenuFrame:IsShown() then HideUIPanel(GameMenuFrame) else ShowUIPanel(GameMenuFrame) end
-    end },
-}
-
-local liste = {}
-for _, entree in ipairs(ENTREES) do
-    table.insert(liste, { text = entree[1], func = entree[2], notCheckable = true })
-end
-
+-- Les carnets, la carte et le menu du jeu (SolUI_Carnets.lua : une seule liste pour la barre et ce menu).
 menu:SetScript("OnClick", function(self)
-    EasyMenu(liste, deroulant, self, 0, 0, "MENU")
+    EasyMenu(S.ListeMenu(), deroulant, self, 0, 0, "MENU")
 end)

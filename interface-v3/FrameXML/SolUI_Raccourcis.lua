@@ -53,9 +53,12 @@ table.insert(ENTREES, { place = "R", commande = "CLICK SolUIBivouacRepas:LeftBut
 table.insert(ENTREES, { place = "Pê", commande = "CLICK SolUIBivouacPeche:LeftButton",
     nom = function() return (GetSpellInfo(51294)) or "Pêche" end, icone = function() return select(3, GetSpellInfo(51294)) end })
 local FENETRES = {
-    { nom = function() return "Techniques et raccourcis" end, commande = "CLICK SolUIOuvrirRaccourcis:LeftButton" },
-    { nom = function() return "Collection" end, commande = "CLICK SolUIOuvrirCollection:LeftButton" },
-    { nom = function() return "Équipement" end, commande = "CLICK SolUIOuvrirEquipement:LeftButton" },
+    { nom = function() return "Carnet Personnage" end, commande = "CLICK SolUICarnetpersonnage:LeftButton" },
+    { nom = function() return "Carnet Techniques" end, commande = "CLICK SolUICarnettechniques:LeftButton" },
+    { nom = function() return "Carnet Camp" end, commande = "CLICK SolUICarnetcamp:LeftButton" },
+    { nom = function() return "Carnet Artisanat" end, commande = "CLICK SolUICarnetartisanat:LeftButton" },
+    { nom = function() return "Carnet Collection" end, commande = "CLICK SolUICarnetcollection:LeftButton" },
+    { nom = function() return "Carnet Aventure" end, commande = "CLICK SolUICarnetaventure:LeftButton" },
     { nom = function() return "Carte" end, commande = "TOGGLEWORLDMAP" },
 }
 
@@ -91,16 +94,18 @@ for i, titre in ipairs({ "Raccourcis", "Techniques équipées", "Feu de camp et 
     local o = S.BoutonPlat(f, titre, 190, 36, 14)
     o:SetPoint("TOPLEFT", 24 + (i - 1) * 198, -60)
     o:SetScript("OnClick", function() Onglet(i) end)
+    o:Hide()   -- carnets Techniques et Camp (SolUI_Carnets.lua)
     onglets[i] = o
     local page = CreateFrame("Frame", nil, f)
-    page:SetPoint("TOPLEFT", 1, -108)
+    page:SetPoint("TOPLEFT", 1, -64)
     page:SetPoint("BOTTOMRIGHT", -1, 1)
     pages[i] = page
 end
 local filet = S.Texture(f, "ARTWORK", nil, S.Couleur("bord"))
-filet:SetPoint("TOPLEFT", 1, -104)
-filet:SetPoint("TOPRIGHT", -1, -104)
+filet:SetPoint("TOPLEFT", 1, -60)
+filet:SetPoint("TOPRIGHT", -1, -60)
 filet:SetHeight(1)
+function S.PageRaccourcis(n) Onglet(n) end
 
 ------------------------------------------------------------------------
 -- Page 1 : raccourcis
@@ -340,7 +345,7 @@ local compte = S.Texte(p2, "SemiBold", 14, "ambreClair")
 compte:SetPoint("TOPRIGHT", -24, -14)
 local sansSpe = S.Texte(p2, "Regular", 15, "texte")
 sansSpe:SetPoint("CENTER", 0, 40)
-sansSpe:SetText("Choisis d'abord ta spécialisation : /sol, page Techniques.")
+sansSpe:SetText("Choisis d'abord ta spécialisation : carnet Personnage, onglet Spécialisation.")
 
 local tuiles = {}
 local MajTechniques
@@ -577,8 +582,8 @@ local function MajFiches()
         l:SetPoint("TOPLEFT", 24 + (colonne - 1) * 482, bas[colonne])
         bas[colonne] = bas[colonne] - hauteur - 6
     end
-    -- Fenêtre agrandie si la page 3 dépasse (en-tête de 108, marge de 20), dans la limite de la racine (900).
-    f:SetHeight(math.min(860, math.max(690, 108 - math.min(bas[1], bas[2]) + 20)))
+    -- Fenêtre agrandie si la page 3 dépasse (en-tête de 64, marge de 20), dans la limite de la racine (900).
+    f:SetHeight(math.min(860, math.max(690, 64 - math.min(bas[1], bas[2]) + 20)))
 end
 
 ------------------------------------------------------------------------

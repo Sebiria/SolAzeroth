@@ -739,6 +739,12 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
 - **F10, âme** : construite le 01/11/2026 (voir **F10 construite**), pas encore compilée.
 - **Rang d'aventurier et montures** : construit le 01/11/2026 (voir 2.7), pas encore vérifié en jeu.
 - **Réputation des donjons, difficultés et passifs** : construits le 01/11/2026 (voir 2.5), pas encore vérifiés en jeu.
+- **Accès aux fonctionnalités : les carnets** (01/11/2026, proposition et maquette validées : « Accès aux fonctionnalités — proposition.md ») : construits, essayés à blanc, pas encore vérifiés en jeu (`SolUI_Carnets.lua`).
+  - Six carnets à onglets rangent toutes les fenêtres : **Personnage** (C : Fiche, Âme, Spécialisation), **Techniques** (K : Raccourcis, Techniques équipées), **Camp** (N : Feu, potion et arbre ; Cuisine), **Artisanat** (P : Fabrication, Amélioration, Désenchantement, Enchantement, Joaillerie), **Collection** (B : Inventaire), **Aventure** (L : Quêtes, Zone, Rang d'aventurier, Montures, Passifs extérieurs, Donjons). Une colonne à gauche de la fenêtre donne le carnet et ses onglets ; un seul carnet ouvert à la fois, chacun retient son dernier onglet.
+  - Une seule liste pour la barre (8 icônes : les six carnets, la carte, le menu), le menu de la mini-carte et les touches. Les touches sont posées à la première connexion à la place de celles du jeu, sauf si le joueur les a changées ; les sacs du jeu passent sur Maj-B. Le menu donne Sorts, Hauts faits, Réglages Sol'Azeroth et le Menu du jeu.
+  - Accès là où l'on agit : bouton « Camp » à côté du compte à rebours du feu ; annonce cliquable quand les modes d'une zone s'ouvrent (vers Aventure › Zone) et en entrant dans une zone de repos (vers Passifs extérieurs, au plus toutes les 10 minutes) ; la fenêtre d'entrée de donjon mène à Aventure › Donjons.
+  - **Social retiré** (demande de l'utilisateur, « le social ne sert à rien ») : plus dans la barre ni le menu, et sa fenêtre est refermée aussitôt si elle s'ouvre (touche O).
+  - **/sol ne garde que les réglages** ; les pages v2 (Contrats, Amélioration, Butin, Codex et Renom, Journal de collection, Hauts faits du compte) et la page Techniques en sont retirées.
 - **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
 
 ## 5. Questions pour les prochaines séries

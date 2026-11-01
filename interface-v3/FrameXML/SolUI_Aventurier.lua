@@ -35,6 +35,7 @@ for n, nom in ipairs({ "Paliers", "Montures" }) do
     local b = S.BoutonPlat(f, nom, 140, 30, 12)
     b:SetPoint("TOPLEFT", f, "TOPLEFT", 28 + (n - 1) * 148, -130)
     b:SetScript("OnClick", function() page, decalage = n, 0; Maj() end)
+    b:Hide()   -- carnet Aventure (SolUI_Carnets.lua)
     onglets[n] = b
 end
 
@@ -43,7 +44,7 @@ local lignes = {}
 for i = 1, LIGNES do
     local l = CreateFrame("Frame", nil, f)
     l:SetSize(764, HAUTEUR - 4)
-    l:SetPoint("TOPLEFT", f, "TOPLEFT", 28, -170 - (i - 1) * HAUTEUR)
+    l:SetPoint("TOPLEFT", f, "TOPLEFT", 28, -130 - (i - 1) * HAUTEUR)
     l:EnableMouseWheel(true)
     l:SetScript("OnMouseWheel", function(_, sens) decalage = math.max(0, decalage - sens); Maj() end)
     l.icone = l:CreateTexture(nil, "ARTWORK")
@@ -130,6 +131,11 @@ function Maj()
 end
 
 f:SetScript("OnShow", function() Maj() end)
+
+function S.PageAventurier(n)
+    page, decalage = n, 0
+    if f:IsShown() then Maj() end
+end
 S.Ecouter("BAG_UPDATE", function() if f:IsShown() then Maj() end end)
 
 local recu = { points = 0, palier = 0, possede = {} }

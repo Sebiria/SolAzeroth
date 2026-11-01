@@ -27,6 +27,11 @@ for _, cadre in ipairs(REMPLACES) do
     S.Ranger(cadre)
 end
 
+-- Social (amis, qui, raid) : inaccessible à la demande de l'utilisateur (01/11/2026, « le social ne sert à rien »).
+-- Rangé, et refermé aussitôt s'il s'ouvre (touche O, commandes) pour ne pas réserver de place aux fenêtres.
+S.Ranger(FriendsFrame)
+FriendsFrame:HookScript("OnShow", function(self) HideUIPanel(self) end)
+
 -- Ces cadres se replacent d'eux-mêmes (UIParent_ManageFramePositions) : rangés, ils restent invisibles.
 
 -- Messages d'erreur rouges au centre de l'écran (« pas encore disponible », « hors de portée »…) : coupés à la

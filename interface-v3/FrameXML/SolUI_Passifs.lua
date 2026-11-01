@@ -47,11 +47,12 @@ for n, nom in ipairs({ "Donjon", "Extérieur" }) do
     local b = S.BoutonPlat(f, nom, 140, 30, 12)
     b:SetPoint("TOPLEFT", f, "TOPLEFT", 28 + (n - 1) * 148, -130)
     b:SetScript("OnClick", function() page = n; Maj() end)
+    b:Hide()   -- carnet Aventure (SolUI_Carnets.lua)
     onglets[n] = b
 end
 
 local titreEmplacements = S.Texte(f, "SemiBold", 12, "gris")
-titreEmplacements:SetPoint("TOPLEFT", f, "TOPLEFT", 28, -180)
+titreEmplacements:SetPoint("TOPLEFT", f, "TOPLEFT", 28, -136)
 titreEmplacements:SetText("Emplacements")
 
 local function Commande(texte) SendChatMessage(texte, "SAY") end
@@ -69,7 +70,7 @@ local function Effet(p) return page == 1 and p[3] or p[4] end
 local emplacements = {}
 for i = 1, 6 do
     local b = S.BoutonPlat(f, "", 220, 40, 12)
-    b:SetPoint("TOPLEFT", f, "TOPLEFT", 28, -200 - (i - 1) * 48)
+    b:SetPoint("TOPLEFT", f, "TOPLEFT", 28, -156 - (i - 1) * 48)
     b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     b:HookScript("OnEnter", function(self)
         if not self.passif then return end
@@ -87,7 +88,7 @@ end
 local entetes = {}
 for c, x in ipairs(COLONNES) do
     local t = S.Texte(f, "SemiBold", 12, "gris")
-    t:SetPoint("TOPLEFT", f, "TOPLEFT", x, -180)
+    t:SetPoint("TOPLEFT", f, "TOPLEFT", x, -136)
     entetes[c] = t
 end
 local boutons = {}
@@ -200,7 +201,7 @@ local function MajPassifs()
             local p = e[1]
             b.passif = p
             b:ClearAllPoints()
-            b:SetPoint("TOPLEFT", f, "TOPLEFT", COLONNES[e[2]], -200 - e[3] * 36)
+            b:SetPoint("TOPLEFT", f, "TOPLEFT", COLONNES[e[2]], -156 - e[3] * 36)
             b.texte:SetText(Nom(p))
             b:Choisir(places[p[1]] == true)
             b:SetScript("OnClick", function() Placer(p[1]) end)
@@ -239,6 +240,11 @@ function Maj()
 end
 
 f:SetScript("OnShow", function() Maj() end)
+
+function S.PagePassifs(n)
+    page = n
+    if f:IsShown() then Maj() end
+end
 S.Ecouter("BAG_UPDATE", function() if f:IsShown() then Maj() end end)
 
 local recu
@@ -304,7 +310,7 @@ techniques:SetJustifyH("LEFT")
 
 local versPassifs = S.BoutonPlat(d, "Passifs de donjon", 200, 32, 12)
 versPassifs:SetPoint("BOTTOMLEFT", d, "BOTTOMLEFT", 28, 24)
-versPassifs:SetScript("OnClick", function() S.BasculerPassifs("donjon") end)
+versPassifs:SetScript("OnClick", function() S.OuvrirCarnet("aventure", 6) end)
 local fermer = S.BoutonPlat(d, "Entrer", 140, 32, 12)
 fermer:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -28, 24)
 fermer:SetScript("OnClick", function() d:Hide() end)

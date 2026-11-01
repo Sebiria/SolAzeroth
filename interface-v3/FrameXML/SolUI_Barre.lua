@@ -7,36 +7,20 @@ local S = SolUI
 
 local TAILLE, ECART = 26, 3
 
-local function Slash(commande)
-    for nom, fonction in pairs(SlashCmdList) do
-        for i = 1, 5 do
-            local alias = _G["SLASH_" .. nom .. i]
-            if not alias then break end
-            if alias == commande then return fonction("") end
-        end
-    end
+-- { nom, icône du client, action, touche } : les six carnets (SolUI_Carnets.lua), la carte, puis le menu du jeu
+-- (01/11/2026, « Accès aux fonctionnalités — proposition.md » : le Social est retiré à la demande de l'utilisateur).
+local ENTREES = {}
+for _, c in ipairs(S.CARNETS) do
+    table.insert(ENTREES, { c.nom, c.icone, function() S.BasculerCarnet(c.id) end, function() return S.ToucheCarnet(c) end })
 end
-
--- { nom, icône du client, action }
-local ENTREES = {
-    { "Personnage", "INV_Helmet_04", function() ToggleCharacter("PaperDollFrame") end },
-    { "Sacs", "INV_Misc_Bag_08", function() ToggleBackpack() end },
-    { "Équipement : fabriquer, améliorer, joaillerie", "Trade_BlackSmithing", function() S.BasculerEquipement() end },
-    { "Collection", "INV_Crate_04", function() S.BasculerCollection() end },
-    { "Techniques et raccourcis", "Ability_Warrior_DefensiveStance", function() S.BasculerRaccourcis() end },
-    { "Sorts", "INV_Misc_Book_09", function() ToggleSpellBook(BOOKTYPE_SPELL) end },
-    { "Quêtes", "INV_Scroll_03", function() S.BasculerJournal() end },
-    { "Objectifs de la zone", "INV_Misc_Map_01", function() S.BasculerObjectifs() end },
-    { "Carte du monde", "INV_Misc_Map02", function() ToggleFrame(WorldMapFrame) end },
-    { "Hauts faits", "Achievement_General", function() ToggleAchievementFrame() end },
-    { "Rang d'aventurier et montures", "Ability_Mount_RidingHorse", function() S.BasculerAventurier() end },
-    { "Passifs et réputation des donjons", "INV_Misc_Rune_01", function() S.BasculerPassifs() end },
-    { "Social", "INV_Misc_GroupNeedMore", function() ToggleFriendsFrame() end },
-    { "Sol'Azeroth", "INV_Enchant_ShardBrilliantLarge", function() Slash("/sol") end },
-    { "Menu du jeu", "INV_Misc_Gear_01", function()
-        if GameMenuFrame:IsShown() then HideUIPanel(GameMenuFrame) else ShowUIPanel(GameMenuFrame) end
-    end },
-}
+table.insert(ENTREES, { "Carte", "INV_Misc_Map02", function() ToggleFrame(WorldMapFrame) end,
+    function() local t = GetBindingKey("TOGGLEWORLDMAP"); return t and S.ToucheCourte(t) end })
+local deroulant = CreateFrame("Frame", "SolUIBarreMenu", UIParent, "UIDropDownMenuTemplate")
+local menuJeu = {}
+for _, e in ipairs(S.MENU_JEU) do table.insert(menuJeu, { text = e[1], func = e[2], notCheckable = true }) end
+table.insert(ENTREES, { "Menu : sorts, hauts faits, réglages", "INV_Misc_Gear_01", function(self)
+    EasyMenu(menuJeu, deroulant, self, 0, 0, "MENU")
+end })
 
 local barre = CreateFrame("Frame", "SolUIBarre", S.racine)
 barre:SetSize(#ENTREES * (TAILLE + ECART) - ECART + 12, TAILLE + 12)
@@ -58,6 +42,9 @@ for n, entree in ipairs(ENTREES) do
     b:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText(entree[1])
+        local touche = entree[4] and entree[4]()
+        if touche then GameTooltip:AddLine("Touche " .. touche, 0.706, 0.722, 0.749) end
+        GameTooltip:Show()
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
