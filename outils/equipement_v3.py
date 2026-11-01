@@ -220,9 +220,11 @@ def main():
             w("INSERT INTO item_template SELECT * FROM sol_objet;")
             w("DROP TEMPORARY TABLE sol_objet;")
     w("")
-    w("DROP TABLE IF EXISTS solazeroth_v3_rangs;")
-    w("CREATE TABLE solazeroth_v3_rangs (entree INT UNSIGNED NOT NULL PRIMARY KEY, base INT UNSIGNED NOT NULL, "
-      "rang TINYINT UNSIGNED NOT NULL);")
+    # La table reçoit aussi les pièces d'autres migrations (084, annexes) : on n'efface que les nôtres, pour pouvoir
+    # rejouer cette migration sans les perdre (01/11/2026).
+    w("CREATE TABLE IF NOT EXISTS solazeroth_v3_rangs (entree INT UNSIGNED NOT NULL PRIMARY KEY, "
+      "base INT UNSIGNED NOT NULL, rang TINYINT UNSIGNED NOT NULL);")
+    w("DELETE FROM solazeroth_v3_rangs WHERE base IN (%s);" % ", ".join(str(e) for e, *_ in toutes))
     valeurs = ["(%d, %d, %d)" % (entree_rang(e, r) if r else e, e, r) for e, *_ in toutes for r in range(RANGS + 1)]
     w("INSERT INTO solazeroth_v3_rangs VALUES %s;" % ", ".join(valeurs))
     w("DROP TABLE IF EXISTS solazeroth_v3_recettes;")
