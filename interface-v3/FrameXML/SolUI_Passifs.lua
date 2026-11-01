@@ -349,3 +349,14 @@ S.Message("SOLDONJON", function(champs)
     dedans = true
     if d:IsShown() then MajDonjon() end
 end)
+
+-- Réponse du serveur « Emplacement 2 : passif 47. » : le nom du passif à la place de son numéro (signalement du
+-- 01/11/2026 ; le serveur ne connaît que les numéros).
+local NOMS_PASSIFS = {}
+for _, p in ipairs(S.PASSIFS_DONJON) do NOMS_PASSIFS[p[1]] = p[2] end
+for _, p in ipairs(S.PASSIFS_EXTERIEUR) do NOMS_PASSIFS[p[1]] = p[3] end
+ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", function(_, _, message, ...)
+    local debut, numero = (message or ""):match("^(Emplacement %d+ : )passif (%d+)%.$")
+    local nom = numero and NOMS_PASSIFS[tonumber(numero)]
+    if nom then return false, debut .. nom .. ".", ... end
+end)

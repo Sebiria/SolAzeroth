@@ -763,6 +763,7 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - plaques de nom des monstres : la puissance à la place du niveau, colorée comme le cadre de la cible ; le serveur envoie le nom des monstres proches avec leur puissance, car une plaque ne dit pas de quel monstre elle est (`SolUI_Plaques.lua`, `v3_combat.cpp`) ;
     - enchantements en liste : une ligne par enchantement possible de chaque pièce, avec son coût et un seul bouton ;
     - plus de maîtres de classe, de profession ni de familiers dans le monde (703 apparitions retirées) ; les 293 qui donnent ou reprennent une quête restent sans leur fonction de maître ; les maîtres de monte restent (migration 099) ;
+    - passif placé : la réponse donne son nom, plus son numéro (filtre de discussion dans `SolUI_Passifs.lua`) ;
     - les pièces rudimentaires restent non désenchantables (deux signalements contraires, le second l'emporte : déjà le cas).
 - **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
 
