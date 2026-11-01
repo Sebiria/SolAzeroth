@@ -456,7 +456,6 @@ for n, sort in ipairs({ POTION, FEU }) do
         c.lignes[i] = t
     end
     c.etat = S.Texte(c, "SemiBold", 14, "ambreClair")
-    c.etat:SetPoint("BOTTOMLEFT", 20, 16)
     c.sort = sort
     fiches[n] = c
 end
@@ -466,16 +465,18 @@ end
 -- 15 Marques (v3_bivouac.cpp).
 local COUT_NOEUD_1 = 15
 local ROUGE, VERT = "|cfff0918a", "|cff8cc4a6"
+-- Les hauteurs suivent les textes (01/11/2026 : les effets et listes de courses sur deux ou trois lignes se
+-- chevauchaient dans des cadres de hauteur fixe) ; MajFiches place tout et agrandit la fenêtre au besoin.
 local ameliorations = {}
+local titres = {}
 for n, genre in ipairs({ "potion", "feu" }) do
     local titre = S.Texte(p3, "Bold", 11, "gris")
-    titre:SetPoint("TOPLEFT", 24 + (n - 1) * 482, -256)
     titre:SetText(genre == "potion" and "RANGS DE LA POTION" or "ARBRE DU CAMP")
+    titres[n] = titre
     local maximum = genre == "potion" and 2 or 3
     for rang = 1, maximum do
         local l = CreateFrame("Frame", nil, p3)
-        l:SetSize(466, 66)
-        l:SetPoint("TOPLEFT", 24 + (n - 1) * 482, -274 - (rang - 1) * 72)
+        l:SetWidth(466)
         S.Panneau(l, 0.6, "bordCreux")
         l.nom = S.Texte(l, "Bold", 14, "clair")
         l.nom:SetPoint("TOPLEFT", 14, -8)
@@ -484,11 +485,11 @@ for n, genre in ipairs({ "potion", "feu" }) do
         l.effet:SetWidth(310)
         l.effet:SetJustifyH("LEFT")
         l.cout = S.Texte(l, "Regular", 11, "gris")
-        l.cout:SetPoint("BOTTOMLEFT", 14, 7)
+        l.cout:SetPoint("TOPLEFT", l.effet, "BOTTOMLEFT", 0, -4)
         l.cout:SetWidth(320)
         l.cout:SetJustifyH("LEFT")
         l.bouton = S.BoutonPlat(l, "", 112, 32, 13)
-        l.bouton:SetPoint("RIGHT", -12, 0)
+        l.bouton:SetPoint("TOPRIGHT", -12, -10)
         l.bouton:SetScript("OnClick", function()
             SendChatMessage(genre == "potion" and ".camp potion" or ".camp acheter", "SAY")
         end)
@@ -537,6 +538,19 @@ local function MajFiches()
         else
             c.etat:SetText("Touche : " .. (Touche("CLICK SolUIBivouac" .. FEU .. ":LeftButton") or "aucune"))
         end
+        c.etat:ClearAllPoints()
+        c.etat:SetPoint("TOPLEFT", 20, y - 6)
+        c.hauteur = -(y - 6) + 18 + 16
+    end
+    -- Les deux fiches à la hauteur de la plus haute.
+    local hauteurFiches = 220
+    for _, c in ipairs(fiches) do hauteurFiches = math.max(hauteurFiches, c.hauteur) end
+    for _, c in ipairs(fiches) do c:SetHeight(hauteurFiches) end
+    local hautTitres = -20 - hauteurFiches - 16
+    local bas = { hautTitres - 18, hautTitres - 18 }
+    for n, titre in ipairs(titres) do
+        titre:ClearAllPoints()
+        titre:SetPoint("TOPLEFT", 24 + (n - 1) * 482, hautTitres)
     end
     for _, l in ipairs(ameliorations) do
         local info = S.CAMP[l.genre][l.rang]
@@ -555,7 +569,16 @@ local function MajFiches()
         l.bouton:Choisir(acquis)
         if prochain then l.bouton:Enable() else l.bouton:Disable() end
         l:SetAlpha((acquis or prochain) and 1 or 0.55)
+        local colonne = l.genre == "potion" and 1 or 2
+        local hauteur = math.max(52, 8 + l.nom:GetStringHeight() + 3 + l.effet:GetStringHeight() + 4
+            + l.cout:GetStringHeight() + 8)
+        l:SetHeight(hauteur)
+        l:ClearAllPoints()
+        l:SetPoint("TOPLEFT", 24 + (colonne - 1) * 482, bas[colonne])
+        bas[colonne] = bas[colonne] - hauteur - 6
     end
+    -- Fenêtre agrandie si la page 3 dépasse (en-tête de 108, marge de 20), dans la limite de la racine (900).
+    f:SetHeight(math.min(860, math.max(690, 108 - math.min(bas[1], bas[2]) + 20)))
 end
 
 ------------------------------------------------------------------------
