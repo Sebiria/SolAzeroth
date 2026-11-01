@@ -31,6 +31,10 @@ end
 -- Grimoire et macros du jeu : inaccessibles à la demande de l'utilisateur (01/11/2026) ; les techniques et leurs
 -- raccourcis les remplacent. Grimoire rangé et refermé s'il s'ouvre (touche, commandes) ; macros : la fenêtre ne se
 -- charge plus (/macro, menu du jeu) et le bouton Macros du menu du jeu disparaît.
+-- Comparaison d'équipement : seulement en tenant Maj, elle disparaît au relâchement (01/11/2026, demande de
+-- l'utilisateur). Les cases d'objet du jeu la réévaluent à chaque image tant que l'infobulle est la leur.
+SetCVar("alwaysCompareItems", "0")
+S.Ecouter("VARIABLES_LOADED", function() SetCVar("alwaysCompareItems", "0") end)
 S.Ranger(SpellBookFrame)
 SpellBookFrame:HookScript("OnShow", function(self) HideUIPanel(self) end)
 function ShowMacroFrame() end

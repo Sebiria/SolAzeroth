@@ -31,6 +31,12 @@ local function Case(sac, place)
     c:SetSize(TAILLE, TAILLE)
     local fond = S.Texture(c, "BACKGROUND", nil, S.Couleur("creux"))
     fond:SetAllPoints()
+    -- Contour à la couleur de la rareté de l'objet (01/11/2026, demande de l'utilisateur) ; filet gris si la case est vide.
+    c.contour = CreateFrame("Frame", nil, c)
+    c.contour:SetPoint("TOPLEFT", -1, 1)
+    c.contour:SetPoint("BOTTOMRIGHT", 1, -1)
+    c.contour:SetFrameLevel(c:GetFrameLevel() + 2)
+    c.contour:SetBackdrop({ edgeFile = S.BLANC, edgeSize = 2 })
     cases[sac][place] = c
     return c
 end
@@ -51,7 +57,13 @@ local function Maj()
                 local x, y = n % COLONNES, math.floor(n / COLONNES)
                 c:ClearAllPoints()
                 c:SetPoint("TOPLEFT", f, "TOPLEFT", 28 + x * (TAILLE + ECART), -64 - y * (TAILLE + ECART))
-                local texture, nombre, verrou = GetContainerItemInfo(sac, place)
+                local texture, nombre, verrou, qualite = GetContainerItemInfo(sac, place)
+                local teinte = texture and ITEM_QUALITY_COLORS[qualite or -1]
+                if teinte then
+                    c.contour:SetBackdropBorderColor(teinte.r, teinte.g, teinte.b, 1)
+                else
+                    c.contour:SetBackdropBorderColor(S.Couleur("bord"))
+                end
                 SetItemButtonTexture(c, texture)
                 SetItemButtonCount(c, nombre)
                 SetItemButtonDesaturated(c, verrou)
