@@ -38,8 +38,14 @@ namespace SolAzeroth
 
     // v3 : puissance d'une créature = son niveau d'origine, avant d'être affichée au niveau 80 (v3_niveau.cpp).
     unsigned char PuissanceCreature(Creature const* creature);
-    // v3 : puissance du personnage, moyenne de ses objets équipés (v3_combat.cpp).
+    // v3 : puissance du personnage, moyenne de ses objets équipés (v3_combat.cpp) ; de base : sans les rangs.
     float PuissanceJoueur(Player* player);
+    float PuissanceDeBase(Player* player);
+    // v3, F9 : change la puissance d'une créature (v3_niveau.cpp) ; éclats du mode de zone et rare appelé par le
+    // cauchemar (v3_modes.cpp).
+    void FixerPuissanceCreature(Creature* creature, unsigned char puissance);
+    float FacteurEclatsMode(Creature* creature);
+    bool RareDeCauchemar(Creature* creature);
 
     // Ajoute une ligne au journal de donjon de cette carte, s'il y en a un (journal.cpp)
     void Journaliser(Map const* map, std::string const& ligne);
@@ -187,5 +193,6 @@ void AddSC_solazeroth_v3_annexes();
 void AddSC_solazeroth_v3_gouffre();
 void AddSC_solazeroth_v3_equipement();
 void AddSC_solazeroth_v3_ame();
+void AddSC_solazeroth_v3_modes();
 
 #endif

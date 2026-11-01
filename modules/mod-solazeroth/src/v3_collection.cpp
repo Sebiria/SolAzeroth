@@ -64,7 +64,7 @@ namespace
         if (modele->type == CREATURE_TYPE_CRITTER)
             return 0;
         bool renforce = modele->Entry >= CHEF_RENFORCE_PREMIER && modele->Entry <= CHEF_RENFORCE_DERNIER;
-        if (creature->IsSummon() && !renforce)   // les renforts appelés en combat ne donnent rien
+        if (creature->IsSummon() && !renforce && !SolAzeroth::RareDeCauchemar(creature))   // renforts appelés : rien
             return 0;
         uint32 tirage = urand(1, 100);
         float nombre = tirage <= 25 ? 0 : tirage <= 65 ? 1 : tirage <= 90 ? 2 : 3;
@@ -73,7 +73,9 @@ namespace
             nombre *= 5;
         else if (modele->rank == CREATURE_ELITE_ELITE)
             nombre *= 3;
-        nombre *= 1.0f + std::max(0, int32(modele->maxlevel) - 12) / 12.0f;
+        // F9 : puissance du monstre (rehaussée par le mode de zone) et éclats du mode (v3_modes.cpp).
+        nombre *= 1.0f + std::max(0, int32(SolAzeroth::PuissanceCreature(creature)) - 12) / 12.0f;
+        nombre *= SolAzeroth::FacteurEclatsMode(creature);
         return uint32(nombre + 0.5f);
     }
 

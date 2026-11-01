@@ -246,6 +246,57 @@ end
 objectifs:SetScript("OnShow", function() MajObjectifs() end)
 
 ------------------------------------------------------------------------
+-- F9 (01/11/2026) : mode de la zone (v3_modes.cpp, « MODE;zone;mode;débloqué;au repos;cauchemar actif »).
+-- Choix dans la fenêtre des objectifs (à 60 % de la zone, dans une auberge ou une ville), rappel dans le suivi,
+-- et un voile rouge sur le monde quand le cauchemar est actif.
+------------------------------------------------------------------------
+local MODES = { [0] = "Aucun", "Normal", "Difficile", "Cauchemar" }
+local COMMANDES = { [0] = "aucun", "normal", "difficile", "cauchemar" }
+local etatMode = { mode = 0 }
+
+local texteMode = S.Texte(suivi, "SemiBold", 11, "gris")
+texteMode:SetPoint("RIGHT", pourcent, "LEFT", -8, 0)
+
+local consigne = S.Texte(objectifs, "Regular", 11, "gris")
+consigne:SetPoint("BOTTOMRIGHT", objectifs, "BOTTOMRIGHT", -28, 56)
+local boutonsMode = {}
+for m = 3, 0, -1 do
+    local b = S.BoutonPlat(objectifs, MODES[m], 92, 32, 12)
+    b:SetPoint("BOTTOMRIGHT", objectifs, "BOTTOMRIGHT", -28 - (3 - m) * 98, 18)
+    b:SetScript("OnClick", function() SendChatMessage(".mode " .. COMMANDES[m], "SAY") end)
+    boutonsMode[m] = b
+end
+
+local voile = CreateFrame("Frame", nil, WorldFrame)
+voile:SetAllPoints()
+local rouge = S.Texture(voile, "BACKGROUND", nil, 0.55, 0.05, 0.05)
+rouge:SetAllPoints()
+rouge:SetAlpha(0.12)
+voile:Hide()
+
+local function MajMode()
+    local m = etatMode.mode
+    texteMode:SetText(m > 0 and MODES[m] or "")
+    if m == 3 then texteMode:SetTextColor(S.Couleur("rouge")) else texteMode:SetTextColor(S.Couleur("gris")) end
+    for n, b in pairs(boutonsMode) do
+        b:Choisir(n == m)
+        if etatMode.debloque and etatMode.repos and n ~= m then b:Enable() else b:Disable() end
+    end
+    consigne:SetText(not etatMode.debloque and "Modes de zone : à 60 % de la zone."
+        or not etatMode.repos and "Mode de zone : à choisir dans une auberge ou une ville."
+        or "Mode de zone : difficile et cauchemar donnent plus d'éclats.")
+    S.Montrer(voile, etatMode.cauchemar)
+end
+
+S.Message("SOLMODE", function(champs)
+    if champs[1] ~= "MODE" then return end
+    etatMode = { zone = tonumber(champs[2]), mode = tonumber(champs[3]) or 0, debloque = champs[4] == "1",
+        repos = champs[5] == "1", cauchemar = champs[6] == "1" }
+    MajMode()
+end)
+MajMode()
+
+------------------------------------------------------------------------
 -- Chrono d'un défi : « CHRONO;quête;écoulé;bronze;argent;or;fini », ou « CHRONO;- »
 ------------------------------------------------------------------------
 local chrono = CreateFrame("Frame", nil, zone)

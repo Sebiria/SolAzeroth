@@ -78,6 +78,11 @@ unsigned char SolAzeroth::PuissanceCreature(Creature const* creature)
     return p ? p->valeur : (creature ? creature->GetLevel() : 0);
 }
 
+void SolAzeroth::FixerPuissanceCreature(Creature* creature, unsigned char puissance)
+{
+    creature->CustomData.GetDefault<Puissance>("solazeroth_puissance")->valeur = puissance;
+}
+
 class solazeroth_v3_niveau_creatures : public AllCreatureScript
 {
 public:

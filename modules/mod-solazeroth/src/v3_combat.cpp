@@ -68,7 +68,7 @@ namespace
         std::unordered_set<ObjectGuid> proches;   // monstres proches dont la puissance est déjà partie
     };
 
-    float CalculerPuissance(Player* player)
+    float CalculerPuissance(Player* player, bool avecRangs = true)
     {
         float somme = 0.0f;
         uint32 nombre = 0;
@@ -80,7 +80,7 @@ namespace
             if (!objet)
                 continue;
             somme += objet->GetTemplate()->ItemLevel
-                * (1.0f + reglages.pourcentParRang * SolAzeroth::RangEquipement(objet->GetEntry()));
+                * (avecRangs ? 1.0f + reglages.pourcentParRang * SolAzeroth::RangEquipement(objet->GetEntry()) : 1.0f);
             ++nombre;
         }
         return nombre ? somme / nombre : 0.0f;
@@ -186,6 +186,11 @@ namespace
             SolAzeroth::EnvoyerAddon(player, PREFIXE, message);
         }
     }
+}
+
+float SolAzeroth::PuissanceDeBase(Player* player)
+{
+    return CalculerPuissance(player, false);
 }
 
 float SolAzeroth::PuissanceJoueur(Player* player)
