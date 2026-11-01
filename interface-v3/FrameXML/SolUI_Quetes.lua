@@ -800,59 +800,10 @@ WorldMapFrame:HookScript("OnHide", S.MajQuetes)
 -- Quêtes à prendre, sur la carte du monde
 ------------------------------------------------------------------------
 -- Le serveur (v3_carte.cpp) envoie les quêtes que le personnage peut accepter sur son continent, avec la position en
--- mètres du jeu de qui les donne. Un point d'exclamation par donneur ; survol : les titres et leur niveau.
--- Il envoie aussi qui reprend les quêtes du journal (« R », pour les épingles de la mini-carte).
+-- mètres du jeu de qui les donne, et qui reprend les quêtes du journal (« R »). Les deux sont dessinés en épingles
+-- (plus bas), sur la carte du monde comme sur la mini-carte.
 local disponibles, aRendre, recues = {}, {}, {}
-local marques = {}
-
-local function Marque(n)
-    if marques[n] then return marques[n] end
-    local m = CreateFrame("Frame", nil, WorldMapButton)
-    m:SetSize(18, 18)
-    m:SetFrameLevel(WorldMapButton:GetFrameLevel() + 5)
-    m:EnableMouse(true)
-    local icone = m:CreateTexture(nil, "OVERLAY")
-    icone:SetAllPoints()
-    icone:SetTexture("Interface\\GossipFrame\\AvailableQuestIcon")
-    m:SetScript("OnEnter", function(self)
-        WorldMapTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        WorldMapTooltip:AddLine("Quêtes à prendre", 1, 0.82, 0)
-        for _, q in ipairs(self.quetes) do
-            WorldMapTooltip:AddLine(string.format("[%d] %s", q.niveau, q.titre), 1, 1, 1)
-        end
-        WorldMapTooltip:Show()
-    end)
-    m:SetScript("OnLeave", function() WorldMapTooltip:Hide() end)
-    marques[n] = m
-    return m
-end
-
-local function MajMarques()
-    local carte = S.CARTES and S.CARTES[GetMapInfo() or ""]
-    local largeur, hauteur = WorldMapButton:GetWidth(), WorldMapButton:GetHeight()
-    local groupes, ordre = {}, {}
-    if carte and carte[5] == disponibles.carte then
-        for _, q in ipairs(disponibles) do
-            local x, y = (carte[3] - q.y) / carte[1], (carte[4] - q.x) / carte[2]
-            if x >= 0 and x <= 1 and y >= 0 and y <= 1 then
-                local cle = q.x .. ":" .. q.y
-                if not groupes[cle] then
-                    groupes[cle] = { x = x, y = y, quetes = {} }
-                    table.insert(ordre, groupes[cle])
-                end
-                table.insert(groupes[cle].quetes, q)
-            end
-        end
-    end
-    for n, g in ipairs(ordre) do
-        local m = Marque(n)
-        m.quetes = g.quetes
-        m:ClearAllPoints()
-        m:SetPoint("CENTER", WorldMapButton, "TOPLEFT", g.x * largeur, -g.y * hauteur)
-        m:Show()
-    end
-    for n = #ordre + 1, #marques do marques[n]:Hide() end
-end
+local MajMarques   -- plus bas (Épingles)
 
 S.Message("SOLQDISPO", function(champs)
     if champs[1] == "DEBUT" then
@@ -872,15 +823,14 @@ S.Message("SOLQDISPO", function(champs)
     end
 end)
 S.Ecouter("WORLD_MAP_UPDATE", function() if WorldMapFrame:IsShown() then MajMarques() end end)
-WorldMapFrame:HookScript("OnShow", MajMarques)
 
 ------------------------------------------------------------------------
--- Épingles de la mini-carte (01/11/2026, demande de l'utilisateur, maquette « Épingle »)
+-- Épingles : mini-carte et carte du monde (01/11/2026, demandes de l'utilisateur, maquette « Épingle »)
 ------------------------------------------------------------------------
 -- Les marques du jeu sur la mini-carte disparaissent : « ! » et « ? » des donneurs (cases effacées de
 -- Interface\Minimap\ObjectIcons.blp par outils\minicarte_v3.py), zones et flèche d'objectif (option questPOI coupée,
 -- sauf sur la carte du monde, qui montre toujours les objectifs). À leur place, une épingle par donneur, dont la pointe
--- vise le PNJ :
+-- vise le PNJ, sur la mini-carte comme sur la carte du monde :
 --   « ! » ambre : quête à prendre ; « ! » gris : facile (puissance de la quête 6 sous la tienne ou plus) ;
 --   « ? » pleine ambre : objectifs remplis, à rendre ; « ? » grise : quête en cours, le donneur attend.
 -- Hors de la mini-carte : collée au bord, plus petite et un peu pâle, avec une flèche vers l'extérieur (quêtes à rendre
@@ -901,7 +851,8 @@ local ETATS = {   -- ordre de priorité quand un PNJ a plusieurs quêtes
 local RANG = {}
 for n, e in ipairs(ETATS) do RANG[e.genre] = n end
 
-local epingles, groupes = {}, {}
+local epingles, groupes = {}, {}   -- mini-carte
+local marques = {}                  -- carte du monde
 local carteGroupes, recuesGroupes
 
 -- Tourne une texture d'un angle (radians, sens inverse des aiguilles) autour de son centre.
@@ -915,30 +866,32 @@ local function Tourner(t, a)
     t:SetTexCoord(hgx, hgy, bgx, bgy, hdx, hdy, bdx, bdy)
 end
 
+-- Infobulle : les quêtes de cette épingle et des épingles voisines de la même carte.
 local function InfobulleEpingle(self)
-    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+    local bulle = self.bulle
+    bulle:SetOwner(self, "ANCHOR_LEFT")
     local x, y = self:GetCenter()
     local premier = true
-    for _, e in ipairs(epingles) do
+    for _, e in ipairs(self.liste) do
         local ex, ey = e:GetCenter()
         if e:IsShown() and ex and math.abs(ex - x) < 14 and math.abs(ey - y) < 14 then
             for _, q in ipairs(e.quetes) do
                 local etat = ETATS[RANG[q.genre]]
-                if not premier then GameTooltip:AddLine(" ") end
+                if not premier then bulle:AddLine(" ") end
                 premier = false
-                GameTooltip:AddLine(q.titre, S.Couleur("texte"))
+                bulle:AddLine(q.titre, S.Couleur("texte"))
                 local puissance = q.niveau and q.niveau > 0 and ("Puissance " .. q.niveau .. " · ") or ""
-                GameTooltip:AddLine(puissance .. etat.texte, S.Couleur(etat.couleur))
+                bulle:AddLine(puissance .. etat.texte, S.Couleur(etat.couleur))
             end
         end
     end
-    GameTooltip:Show()
+    bulle:Show()
 end
 
-local function Epingle(n)
-    if epingles[n] then return epingles[n] end
-    local e = CreateFrame("Frame", nil, Minimap)
-    e:SetFrameLevel(Minimap:GetFrameLevel() + 5)
+local function Epingle(liste, n, parent, bulle)
+    if liste[n] then return liste[n] end
+    local e = CreateFrame("Frame", nil, parent)
+    e:SetFrameLevel(parent:GetFrameLevel() + 5)
     e:EnableMouse(true)
     e.ombre = S.Texture(e, "BACKGROUND", "EpingleOmbre", 0, 0, 0, 0.6)
     e.ombre:SetPoint("TOPLEFT", 0, -1)
@@ -951,18 +904,34 @@ local function Epingle(n)
     e.signe:SetShadowOffset(0, 0)
     e.fleche = S.Texture(e, "OVERLAY", "Fleche", S.Couleur("ambre"))
     e.fleche:SetSize(10, 10)
+    e.fleche:Hide()
+    e.liste, e.bulle = liste, bulle
     e:SetScript("OnEnter", InfobulleEpingle)
-    e:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    epingles[n] = e
+    e:SetScript("OnLeave", function() bulle:Hide() end)
+    liste[n] = e
     return e
 end
 
--- Donneurs et finisseurs regroupés par position, en coordonnées de la carte de la zone (de 0 à 1, parfois au-delà).
-local function Regrouper()
-    wipe(groupes)
-    carteGroupes, recuesGroupes = cartePositions, disponibles
-    local carte = S.CARTES and S.CARTES[cartePositions or ""]
-    if not carte or carte[5] ~= disponibles.carte then return end
+-- Dessin d'une épingle de « cote » de côté (texture carrée : l'épingle en occupe 80 % de large).
+local function Habiller(e, g, cote)
+    local etat = ETATS[RANG[g.genre]]
+    e:SetSize(cote, cote)
+    e.bord:SetVertexColor(unpack(etat.bord))
+    e.fond:SetVertexColor(unpack(etat.fond))
+    S.Police(e.signe, "Bold", math.floor(cote * 0.5 + 0.5))
+    e.signe:SetText(etat.signe)
+    e.signe:SetTextColor(unpack(etat.signeCouleur))
+    e.signe:ClearAllPoints()
+    e.signe:SetPoint("CENTER", e, "TOP", 0.5, -cote * 0.4)   -- centre du rond (25,6 / 64)
+    e.quetes = g.quetes
+    e:ClearAllPoints()
+end
+
+-- Donneurs et finisseurs regroupés par position, en coordonnées de la carte « nom » (de 0 à 1, parfois au-delà).
+local function Grouper(nom, liste)
+    wipe(liste)
+    local carte = S.CARTES and S.CARTES[nom or ""]
+    if not carte or carte[5] ~= disponibles.carte then return liste end
     local index = {}
     local function Ajouter(q, genre)
         local cle = q.x .. ":" .. q.y
@@ -970,7 +939,7 @@ local function Regrouper()
         if not g then
             g = { x = (carte[3] - q.y) / carte[1], y = (carte[4] - q.x) / carte[2], quetes = {} }
             index[cle] = g
-            table.insert(groupes, g)
+            table.insert(liste, g)
         end
         table.insert(g.quetes, { titre = q.titre, niveau = q.niveau, genre = genre })
         if not g.genre or RANG[genre] < RANG[g.genre] then g.genre = genre end
@@ -980,9 +949,10 @@ local function Regrouper()
         Ajouter(q, (puissance and q.niveau and q.niveau <= puissance - 6) and "facile" or "dispo")
     end
     for _, q in ipairs(aRendre) do Ajouter(q, q.remplie and "rendre" or "encours") end
-    for _, g in ipairs(groupes) do
+    for _, g in ipairs(liste) do
         table.sort(g.quetes, function(a, b) return RANG[a.genre] < RANG[b.genre] end)
     end
+    return liste
 end
 
 local attenteEpingles = 0
@@ -990,7 +960,10 @@ MajEpingles = function(ecoule)
     attenteEpingles = attenteEpingles - ecoule
     if attenteEpingles > 0 then return end
     attenteEpingles = 0.05
-    if carteGroupes ~= cartePositions or recuesGroupes ~= disponibles then Regrouper() end
+    if carteGroupes ~= cartePositions or recuesGroupes ~= disponibles then
+        carteGroupes, recuesGroupes = cartePositions, disponibles
+        Grouper(cartePositions, groupes)
+    end
     local carte = S.CARTES and S.CARTES[cartePositions or ""]
     local px, py = GetPlayerMapPosition("player")
     local n = 0
@@ -1009,19 +982,9 @@ MajEpingles = function(ecoule)
             local loin = distance * echelle > pixels - 10 * m
             if not loin or g.genre == "rendre" or (g.genre == "dispo" and distance <= PORTEE) then
                 n = n + 1
-                local e = Epingle(n)
-                local etat = ETATS[RANG[g.genre]]
-                local cote = (loin and 15 or 20) * m   -- texture carrée : l'épingle en occupe 80 % de large
-                e:SetSize(cote, cote)
-                e.bord:SetVertexColor(unpack(etat.bord))
-                e.fond:SetVertexColor(unpack(etat.fond))
-                S.Police(e.signe, "Bold", math.floor(cote * 0.5 + 0.5))
-                e.signe:SetText(etat.signe)
-                e.signe:SetTextColor(unpack(etat.signeCouleur))
-                e.signe:ClearAllPoints()
-                e.signe:SetPoint("CENTER", e, "TOP", 0.5, -cote * 0.4)   -- centre du rond (25,6 / 64)
-                e.quetes = g.quetes
-                e:ClearAllPoints()
+                local e = Epingle(epingles, n, Minimap, GameTooltip)
+                local cote = (loin and 15 or 20) * m
+                Habiller(e, g, cote)
                 if loin then
                     local ox, oy = dx / distance, -dy / distance
                     local r = pixels - 6 * m
@@ -1045,12 +1008,31 @@ MajEpingles = function(ecoule)
 end
 S.Abonner("puissance", function() carteGroupes = nil end)
 
+-- Carte du monde : les mêmes épingles, sur la carte affichée (celle du continent du joueur), un peu plus grandes.
+local groupesMonde = {}
+MajMarques = function()
+    local largeur, hauteur = WorldMapButton:GetWidth(), WorldMapButton:GetHeight()
+    local n = 0
+    for _, g in ipairs(Grouper(GetMapInfo(), groupesMonde)) do
+        if g.x >= 0 and g.x <= 1 and g.y >= 0 and g.y <= 1 then
+            n = n + 1
+            local e = Epingle(marques, n, WorldMapButton, WorldMapTooltip)
+            local cote = 24 * S.OPTIONS.reperes
+            Habiller(e, g, cote)
+            e:SetPoint("BOTTOM", WorldMapButton, "TOPLEFT", g.x * largeur, -g.y * hauteur - cote * 0.04)
+            e:Show()
+        end
+    end
+    for i = n + 1, #marques do marques[i]:Hide() end
+end
+
 -- Objectifs de quête : sur la carte du monde seulement (la mini-carte a nos zones et nos épingles).
 if Minimap.SetPOIArrowTexture then Minimap:SetPOIArrowTexture(S.MEDIA .. "Textures\\Vide") end
 local surMonde = WorldMapFrame:GetScript("OnShow")
 WorldMapFrame:SetScript("OnShow", function(...)
     SetCVar("questPOI", "1")
-    if surMonde then return surMonde(...) end
+    if surMonde then surMonde(...) end
+    MajMarques()
 end)
 WorldMapFrame:HookScript("OnHide", function() SetCVar("questPOI", "0") end)
 S.Ecouter("PLAYER_ENTERING_WORLD", function() SetCVar("questPOI", WorldMapFrame:IsShown() and "1" or "0") end)
