@@ -7,7 +7,7 @@
 local S = SolUI
 
 local NOMS = { perso = "Personnage", techniques = "Techniques", cible = "Cible", zone = "Zone", quetes = "Quêtes",
-    chat = "Discussion" }
+    chat = "Discussion", barre = "Barre d'icônes" }
 S.NOMS_BLOCS = NOMS
 S.LIMITES = { echelle = { 0.6, 1.6 }, largeur = { 420, 1100 }, carte = { 70, 220 }, reperes = { 0.5, 2.5 } }
 

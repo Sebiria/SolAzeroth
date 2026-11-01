@@ -119,9 +119,10 @@ MajPourcent()
 -- Fenêtre des objectifs de zone
 ------------------------------------------------------------------------
 local objectifs = S.Fenetre("SolUIObjectifs", 760, 640, "Objectifs de la zone")
-suivi:SetScript("OnMouseUp", function()
+function S.BasculerObjectifs()
     if objectifs:IsShown() then objectifs:Hide() else objectifs:Show() end
-end)
+end
+suivi:SetScript("OnMouseUp", S.BasculerObjectifs)
 
 local defile = CreateFrame("ScrollFrame", "SolUIObjectifsDefile", objectifs)
 defile:SetPoint("TOPLEFT", objectifs, "TOPLEFT", 28, -64)

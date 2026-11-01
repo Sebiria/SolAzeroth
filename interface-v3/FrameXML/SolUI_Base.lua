@@ -69,6 +69,7 @@ S.DISPOSITION = {
     techniques = { point = "BOTTOM", x = 0, y = 30, echelle = 1 },
     cible = { point = "TOP", x = 0, y = -18, echelle = 1, largeur = 720 },
     zone = { point = "TOPRIGHT", x = -20, y = -20, echelle = 1 },
+    barre = { point = "BOTTOMRIGHT", x = -20, y = 20, echelle = 1 },
 }
 S.blocs = {}
 
