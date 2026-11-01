@@ -232,5 +232,6 @@ void AddSC_solazeroth_v3_aventurier();
 void AddSC_solazeroth_v3_donjons();
 void AddSC_solazeroth_v3_passifs();
 void AddSC_solazeroth_v3_inventaire();
+void AddSC_solazeroth_v3_signalement();
 
 #endif

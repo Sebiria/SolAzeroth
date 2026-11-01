@@ -14,7 +14,7 @@ local POTION, FEU, PIERRE = 100029, 100030, 6948
 local MODIFICATEURS = { LSHIFT = true, RSHIFT = true, LCTRL = true, RCTRL = true, LALT = true, RALT = true,
     UNKNOWN = true }
 
-local f = S.Fenetre("SolUIRaccourcis", 1000, 700, "Techniques et raccourcis")
+local f = S.Fenetre("SolUIRaccourcis", 1000, 730, "Techniques et raccourcis")
 
 -- Bouton invisible : une touche peut ouvrir la fenêtre (« CLICK SolUIOuvrirRaccourcis:LeftButton »).
 local ouvrir = CreateFrame("Button", "SolUIOuvrirRaccourcis", UIParent)
@@ -60,6 +60,7 @@ local FENETRES = {
     { nom = function() return "Carnet Collection" end, commande = "CLICK SolUICarnetcollection:LeftButton" },
     { nom = function() return "Carnet Aventure" end, commande = "CLICK SolUICarnetaventure:LeftButton" },
     { nom = function() return "Carte" end, commande = "TOGGLEWORLDMAP" },
+    { nom = function() return "Signaler un bug" end, commande = "CLICK SolUISignaler:LeftButton" },
 }
 
 local function Touche(commande)
@@ -257,7 +258,7 @@ local function Ligne(e, y)
     l.entree = e
     table.insert(lignes, l)
 end
--- Lignes de 28 : les 13 boutons et les 7 fenêtres tiennent dans la fenêtre (700 de haut, en-tête de 64).
+-- Lignes de 28 : les 13 boutons et les 8 fenêtres (avec Signaler un bug) tiennent dans la fenêtre (730 de haut, en-tête de 64).
 Titre("BOUTONS DE COMBAT", -14)
 for n, e in ipairs(ENTREES) do Ligne(e, -32 - (n - 1) * 28) end
 Titre("FENÊTRES", -32 - #ENTREES * 28 - 8)
@@ -586,7 +587,7 @@ local function MajFiches()
         bas[colonne] = bas[colonne] - hauteur - 6
     end
     -- Fenêtre agrandie si la page 3 dépasse (en-tête de 64, marge de 20), dans la limite de la racine (900).
-    f:SetHeight(math.min(860, math.max(700, 64 - math.min(bas[1], bas[2]) + 20)))
+    f:SetHeight(math.min(860, math.max(730, 64 - math.min(bas[1], bas[2]) + 20)))
 end
 
 ------------------------------------------------------------------------

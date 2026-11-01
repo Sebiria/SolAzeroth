@@ -5,6 +5,8 @@
 // renvoyée que si elle a changé (quête prise ou rendue, niveau gagné, changement de carte).
 // Messages d'addon SOLQDISPO (SolUI_Quetes.lua) : « DEBUT;carte », puis « Q;quête;niveau;x;y;titre » (position en mètres
 // du jeu), puis « FIN ».
+// 01/11/2026 (épingles de la mini-carte, demande de l'utilisateur) : aussi qui reprend chaque quête du journal,
+// « R;quête;niveau;x;y;remplie;titre » (remplie : 1 si les objectifs sont faits), sur la carte du joueur.
 
 #include "SolAzeroth.h"
 #include "ObjectMgr.h"
@@ -29,6 +31,15 @@ namespace
 
     std::unordered_map<uint32, std::vector<Donneur>> donneurs;   // carte -> donneurs de quête
 
+    struct Finisseur
+    {
+        uint32 carte;
+        float x, y;
+        uint32 phases;
+    };
+
+    std::unordered_map<uint32, std::vector<Finisseur>> finisseurs;   // quête -> qui la reprend
+
     struct Suivi : DataMap::Base
     {
         uint32 attente = 0;
@@ -42,6 +53,26 @@ namespace
             donneurs[lieu.mapid].push_back({ it->second, lieu.posX, lieu.posY, lieu.phaseMask });
     }
 
+    void AjouterFinisseur(QuestRelations const& relations, uint32 entree, SpawnData const& lieu)
+    {
+        auto [debut, fin] = relations.equal_range(entree);
+        for (auto it = debut; it != fin; ++it)
+            finisseurs[it->second].push_back({ lieu.mapid, lieu.posX, lieu.posY, lieu.phaseMask });
+    }
+
+    std::string Titre(Quest const* quete)
+    {
+        std::string titre = quete->GetTitle();
+        if (QuestLocale const* l = sObjectMgr->GetQuestLocale(quete->GetQuestId()))
+            ObjectMgr::GetLocaleString(l->Title, LOCALE_frFR, titre);
+        return titre.substr(0, 120);
+    }
+
+    int32 Niveau(Quest const* quete)
+    {
+        return quete->GetQuestLevel() > 0 ? quete->GetQuestLevel() : int32(quete->GetMinLevel());
+    }
+
     void Envoyer(Player* player, Suivi* suivi)
     {
         std::vector<std::string> lignes;
@@ -52,14 +83,28 @@ namespace
                 Quest const* quete = sObjectMgr->GetQuestTemplate(d.quete);
                 if (!quete || !(d.phases & player->GetPhaseMask()) || !player->CanTakeQuest(quete, false))
                     continue;
-                std::string titre = quete->GetTitle();
-                if (QuestLocale const* l = sObjectMgr->GetQuestLocale(d.quete))
-                    ObjectMgr::GetLocaleString(l->Title, LOCALE_frFR, titre);
-                int32 niveau = quete->GetQuestLevel() > 0 ? quete->GetQuestLevel() : int32(quete->GetMinLevel());
-                lignes.push_back(Acore::StringFormat("Q;{};{};{};{};{}", d.quete, niveau, int32(d.x), int32(d.y),
-                    titre.substr(0, 120)));
+                lignes.push_back(Acore::StringFormat("Q;{};{};{};{};{}", d.quete, Niveau(quete), int32(d.x), int32(d.y),
+                    Titre(quete)));
                 tout += lignes.back();
             }
+        for (uint16 place = 0; place < MAX_QUEST_LOG_SIZE; ++place)
+        {
+            uint32 id = player->GetQuestSlotQuestId(place);
+            Quest const* quete = id ? sObjectMgr->GetQuestTemplate(id) : nullptr;
+            auto it = quete ? finisseurs.find(id) : finisseurs.end();
+            if (it == finisseurs.end())
+                continue;
+            QuestStatus etat = player->GetQuestStatus(id);
+            if (etat != QUEST_STATUS_INCOMPLETE && etat != QUEST_STATUS_COMPLETE)
+                continue;
+            for (Finisseur const& f : it->second)
+                if (f.carte == player->GetMapId() && (f.phases & player->GetPhaseMask()))
+                {
+                    lignes.push_back(Acore::StringFormat("R;{};{};{};{};{};{}", id, Niveau(quete), int32(f.x), int32(f.y),
+                        etat == QUEST_STATUS_COMPLETE ? 1 : 0, Titre(quete)));
+                    tout += lignes.back();
+                }
+        }
         size_t empreinte = std::hash<std::string>{}(tout) ^ player->GetMapId();
         if (empreinte == suivi->empreinte)
             return;
@@ -98,10 +143,17 @@ public:
     void OnStartup() override
     {
         donneurs.clear();
+        finisseurs.clear();
         for (auto const& [guid, lieu] : sObjectMgr->GetAllCreatureData())
+        {
             Ajouter(*sObjectMgr->GetCreatureQuestRelationMap(), lieu.id, lieu);
+            AjouterFinisseur(*sObjectMgr->GetCreatureQuestInvolvedRelationMap(), lieu.id, lieu);
+        }
         for (auto const& [guid, lieu] : sObjectMgr->GetAllGOData())
+        {
             Ajouter(*sObjectMgr->GetGOQuestRelationMap(), lieu.id, lieu);
+            AjouterFinisseur(*sObjectMgr->GetGOQuestInvolvedRelationMap(), lieu.id, lieu);
+        }
         size_t total = 0;
         for (auto const& [carte, liste] : donneurs)
             total += liste.size();

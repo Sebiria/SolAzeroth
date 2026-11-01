@@ -28,7 +28,7 @@ CODE = ["SolUI_Base.lua", "SolUI_Cacher.lua", "SolUI_Perso.lua", "SolUI_Techniqu
         "SolUI_Zone.lua", "SolUI_Cartes.lua", "SolUI_Puissances.lua", "SolUI_Quetes.lua", "SolUI_Dialogue.lua",
         "SolUI_Discussion.lua", "SolUI_Camp.lua", "SolUI_Bivouac.lua", "SolUI_Raccourcis.lua",
         "SolUI_Catalogue.lua", "SolUI_Annexes.lua", "SolUI_Joaillerie.lua", "SolUI_Collection.lua", "SolUI_Inventaire.lua", "SolUI_Recettes.lua", "SolUI_Cuisine.lua",
-        "SolUI_Enchantements.lua", "SolUI_Equipement.lua", "SolUI_AventurierDonnees.lua", "SolUI_Aventurier.lua", "SolUI_PassifsDonnees.lua", "SolUI_Passifs.lua", "SolUI_Carnets.lua", "SolUI_Barre.lua", "SolUI_Soldes.lua",
+        "SolUI_Enchantements.lua", "SolUI_Equipement.lua", "SolUI_AventurierDonnees.lua", "SolUI_Aventurier.lua", "SolUI_PassifsDonnees.lua", "SolUI_Passifs.lua", "SolUI_Carnets.lua", "SolUI_Barre.lua", "SolUI_Soldes.lua", "SolUI_Signalement.lua",
         "SolUI_Reglages.lua"]
 GENERES = {"SolUI_Cartes.lua"}   # écrits par ce script, pas copiés de interface-v3\FrameXML
 
@@ -138,6 +138,36 @@ def bouclier(nom, taille, epaisseur):
     enregistrer(image, nom, taille, taille)
 
 
+def epingle(nom, retrait=0.0, flou=0):
+    """Épingle de la mini-carte (maquette « Épingle », 01/11/2026) dans une texture de 64 x 64 : rond en haut, pointe en
+    bas au centre (le point visé). Rond de rayon 23 centré en (32, 25,6), pointe en (32, 61,4). « retrait » rétrécit la
+    forme de ce nombre de pixels (intérieur, sous le contour) ; « flou » l'adoucit (ombre)."""
+    image = blanc(64, 64)
+    dessin = ImageDraw.Draw(image)
+    k = SUR
+    cx, cy, r, pointe = 32 * k, 25.6 * k, (23 - retrait) * k, (61.4 - retrait * 1.6) * k
+    dessin.ellipse((cx - r, cy - r, cx + r, cy + r), fill="white")
+    # Tangentes du rond vers la pointe.
+    d = pointe - cy
+    angle = math.asin(min(1.0, r / d))
+    tx = r * math.cos(angle)
+    ty = r * math.sin(angle)
+    dessin.polygon([(cx - tx, cy + ty), (cx + tx, cy + ty), (cx, pointe)], fill="white")
+    if flou:
+        from PIL import ImageFilter
+        image = image.filter(ImageFilter.GaussianBlur(flou * k))
+    enregistrer(image, nom, 64, 64)
+
+
+def fleche(nom):
+    """Petit triangle tourné vers la droite, au centre d'une texture de 32 x 32 (tourné en jeu par SetTexCoord)."""
+    image = blanc(32, 32)
+    dessin = ImageDraw.Draw(image)
+    k = SUR
+    dessin.polygon([(10 * k, 8 * k), (24 * k, 16 * k), (10 * k, 24 * k)], fill="white")
+    enregistrer(image, nom, 32, 32)
+
+
 def textures():
     os.makedirs(TEXTURES, exist_ok=True)
     arc("Arc", 3)
@@ -149,6 +179,11 @@ def textures():
     halo("Halo", 64, 20)
     losange("Losange", 64, 3)
     bouclier("Bouclier", 64, 1.2)
+    epingle("Epingle")
+    epingle("EpingleCreux", 4)
+    epingle("EpingleOmbre", 0, 2)
+    fleche("Fleche")
+    enregistrer(blanc(8, 8), "Vide", 8, 8)   # transparente : flèche d'objectif du jeu sur la mini-carte
 
 
 # ---------------------------------------------------------------- Code et FrameXML.toc
