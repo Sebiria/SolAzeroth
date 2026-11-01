@@ -990,6 +990,31 @@ local function Grouper(nom, liste)
     return liste
 end
 
+-- Épingles qui se chevauchent (PNJ côte à côte, signalement du 01/11/2026) : seule la plus importante reste, son
+-- infobulle reprend les quêtes des autres. « places » : { g, x, y (pointe, en pixels), cote, rang }.
+local function Fusionner(places)
+    table.sort(places, function(a, b)
+        if RANG[a.g.genre] ~= RANG[b.g.genre] then return RANG[a.g.genre] < RANG[b.g.genre] end
+        return a.rang < b.rang
+    end)
+    local gardees = {}
+    for _, p in ipairs(places) do
+        local hote
+        for _, h in ipairs(gardees) do
+            if math.abs(h.x - p.x) < h.cote * 0.7 and math.abs(h.y - p.y) < h.cote * 0.7 then hote = h; break end
+        end
+        if not hote then
+            hote, p.quetes = p, {}
+            table.insert(gardees, p)
+        end
+        for _, q in ipairs(p.g.quetes) do table.insert(hote.quetes, q) end
+    end
+    for _, h in ipairs(gardees) do
+        table.sort(h.quetes, function(a, b) return RANG[a.genre] < RANG[b.genre] end)
+    end
+    return gardees
+end
+
 local attenteEpingles = 0
 MajEpingles = function(ecoule)
     attenteEpingles = attenteEpingles - ecoule
@@ -1010,33 +1035,43 @@ MajEpingles = function(ecoule)
         local angle = GetCVar("rotateMinimap") == "1" and GetPlayerFacing() or 0
         local c, s = math.cos(angle), math.sin(angle)
         local m = S.OPTIONS.reperes
-        for _, g in ipairs(groupes) do
+        local r = pixels - 6 * m
+        local places = {}
+        for rang, g in ipairs(groupes) do
             local dx, dy = (g.x - px) * carte[1], (g.y - py) * carte[2]
             dx, dy = dx * c - dy * s, dx * s + dy * c
             local distance = math.sqrt(dx * dx + dy * dy)
             local loin = distance * echelle > pixels - 10 * m
             if not loin or g.genre == "rendre" or (g.genre == "dispo" and distance <= PORTEE) then
-                n = n + 1
-                local e = Epingle(epingles, n, Minimap, GameTooltip)
-                local cote = (loin and 15 or 20) * m
-                Habiller(e, g, cote)
+                local p = { g = g, rang = rang, loin = loin, cote = (loin and 15 or 20) * m }
                 if loin then
-                    local ox, oy = dx / distance, -dy / distance
-                    local r = pixels - 6 * m
-                    e:SetPoint("CENTER", Minimap, "CENTER", ox * (r - 9 * m), oy * (r - 9 * m))
-                    e.fleche:ClearAllPoints()
-                    e.fleche:SetPoint("CENTER", Minimap, "CENTER", ox * r, oy * r)
-                    Tourner(e.fleche, math.atan2(oy, ox))
-                    e.fleche:Show()
-                    e:SetAlpha(0.85)
+                    p.ox, p.oy = dx / distance, -dy / distance
+                    p.x, p.y = p.ox * (r - 9 * m), p.oy * (r - 9 * m)
                 else
-                    -- La pointe (à 4 % du bas de la texture) vise le PNJ.
-                    e:SetPoint("BOTTOM", Minimap, "CENTER", dx * echelle, -dy * echelle - cote * 0.04)
-                    e.fleche:Hide()
-                    e:SetAlpha(1)
+                    p.x, p.y = dx * echelle, -dy * echelle
                 end
-                e:Show()
+                table.insert(places, p)
             end
+        end
+        for _, p in ipairs(Fusionner(places)) do
+            n = n + 1
+            local e = Epingle(epingles, n, Minimap, GameTooltip)
+            Habiller(e, p.g, p.cote)
+            e.quetes = p.quetes
+            if p.loin then
+                e:SetPoint("CENTER", Minimap, "CENTER", p.x, p.y)
+                e.fleche:ClearAllPoints()
+                e.fleche:SetPoint("CENTER", Minimap, "CENTER", p.ox * r, p.oy * r)
+                Tourner(e.fleche, math.atan2(p.oy, p.ox))
+                e.fleche:Show()
+                e:SetAlpha(0.85)
+            else
+                -- La pointe (à 4 % du bas de la texture) vise le PNJ.
+                e:SetPoint("BOTTOM", Minimap, "CENTER", p.x, p.y - p.cote * 0.04)
+                e.fleche:Hide()
+                e:SetAlpha(1)
+            end
+            e:Show()
         end
     end
     for i = n + 1, #epingles do epingles[i]:Hide() end
@@ -1048,15 +1083,20 @@ local groupesMonde = {}
 MajMarques = function()
     local largeur, hauteur = WorldMapButton:GetWidth(), WorldMapButton:GetHeight()
     local n = 0
-    for _, g in ipairs(Grouper(GetMapInfo(), groupesMonde)) do
+    local cote = 24 * S.OPTIONS.reperes
+    local places = {}
+    for rang, g in ipairs(Grouper(GetMapInfo(), groupesMonde)) do
         if g.x >= 0 and g.x <= 1 and g.y >= 0 and g.y <= 1 then
-            n = n + 1
-            local e = Epingle(marques, n, WorldMapButton, WorldMapTooltip)
-            local cote = 24 * S.OPTIONS.reperes
-            Habiller(e, g, cote)
-            e:SetPoint("BOTTOM", WorldMapButton, "TOPLEFT", g.x * largeur, -g.y * hauteur - cote * 0.04)
-            e:Show()
+            table.insert(places, { g = g, rang = rang, cote = cote, x = g.x * largeur, y = -g.y * hauteur })
         end
+    end
+    for _, p in ipairs(Fusionner(places)) do
+        n = n + 1
+        local e = Epingle(marques, n, WorldMapButton, WorldMapTooltip)
+        Habiller(e, p.g, cote)
+        e.quetes = p.quetes
+        e:SetPoint("BOTTOM", WorldMapButton, "TOPLEFT", p.x, p.y - cote * 0.04)
+        e:Show()
     end
     for i = n + 1, #marques do marques[i]:Hide() end
     MajZonesMonde()

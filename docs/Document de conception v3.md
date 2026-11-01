@@ -755,6 +755,15 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **Journal trié par puissance** (`SolUI_Quetes.lua`) : la liste du journal est toujours rangée par puissance croissante (à égalité, par titre) dans chaque zone, et les zones dans l'ordre de leur quête la plus faible.
   - **Chefs renforcés et quêtes** (`v3_zone.cpp`, remarque sur « Le Convent en cinq minutes ») : la troupe d'un lieu tombe aussi avec les monstres tués pour les quêtes, et le chef renforcé prenait alors la place du chef d'origine, même pour une quête ou un défi qui le vise (puissance annoncée faussée). Désormais, tant qu'une quête du journal pas encore remplie vise le chef d'origine (le tuer ou prendre un objet de quête sur lui), le chef renforcé n'apparaît pas ; s'il est déjà là hors combat, il s'efface et le chef d'origine revient. Un message l'annonce une fois. Quêtes concernées dans Durotar : le médaillon (Yarrog), le Convent en cinq minutes, les traîtres et l'assaut des remparts (Benedict), le seigneur de guerre (Kolkanis), Zalazane, Ombres ardentes (Gazz'uz).
   - **Signaler un bug** (`SolUI_Signalement.lua`, serveur `v3_signalement.cpp`, migration 097) : la touche « ! » (ou /bug ; réglable dans Techniques et raccourcis) fait noter au serveur la position exacte du personnage et sa cible, puis ouvre une fenêtre pour décrire le problème. Les signalements vont dans `acore_characters.solazeroth_v3_signalements` (colonne `traite` à 0 tant qu'ils ne sont pas traités), pour être repris tous ensemble.
+  - **Premiers signalements traités** (01/11/2026, onze bugs notés avec « ! ») :
+    - les reliques se posent au sol quand un personnage passe à moins de 150 m ; la hauteur corrigée est gardée en base (`v3_annexes.cpp`) ;
+    - deux épingles qui se chevauchent n'en font plus qu'une, la plus importante, dont l'infobulle reprend les quêtes de l'autre (mini-carte et carte du monde) ;
+    - comparaison avec la pièce portée en tenant Maj dans la fenêtre Équipement, comme dans les sacs ;
+    - A11, la matriarche des scorpides, passe de puissance 4 à 5 : avec ses trois ouvriers, la simulation donne 38 % de victoires à la puissance 3,2 et 100 % (65 % de vie restante) à 4,9 ;
+    - plaques de nom des monstres : la puissance à la place du niveau, colorée comme le cadre de la cible ; le serveur envoie le nom des monstres proches avec leur puissance, car une plaque ne dit pas de quel monstre elle est (`SolUI_Plaques.lua`, `v3_combat.cpp`) ;
+    - enchantements en liste : une ligne par enchantement possible de chaque pièce, avec son coût et un seul bouton ;
+    - plus de maîtres de classe, de profession ni de familiers dans le monde (703 apparitions retirées) ; les 293 qui donnent ou reprennent une quête restent sans leur fonction de maître ; les maîtres de monte restent (migration 099) ;
+    - les pièces rudimentaires restent non désenchantables (deux signalements contraires, le second l'emporte : déjà le cas).
 - **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
 
 ## 5. Questions pour les prochaines séries

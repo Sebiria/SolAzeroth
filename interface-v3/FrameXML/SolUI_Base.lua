@@ -294,19 +294,22 @@ S.Message("SOLKIT", function(champs)
     end
 end)
 
--- SOLPUISSANCE (v3_combat.cpp) : « PUISSANCE;joueur[;puissance de la cible;malus en %] », et « PROCHES;guid:puissance;… »
--- pour les monstres à moins de 60 m, gardés ici pour afficher la puissance d'une cible dès qu'on la choisit.
-S.puissancesProches, S.nombreProches = {}, 0
+-- SOLPUISSANCE (v3_combat.cpp) : « PUISSANCE;joueur[;puissance de la cible;malus en %] », et
+-- « PROCHES;guid:puissance:nom;… » pour les monstres à moins de 60 m, gardés ici pour afficher la puissance d'une cible
+-- dès qu'on la choisit, et sur les plaques de nom (par le nom, SolUI_Plaques.lua).
+S.puissancesProches, S.nomsProches, S.nombreProches = {}, {}, 0
 S.Message("SOLPUISSANCE", function(champs)
     if champs[1] == "PROCHES" then
-        if S.nombreProches > 2000 then S.puissancesProches, S.nombreProches = {}, 0 end
+        if S.nombreProches > 2000 then S.puissancesProches, S.nomsProches, S.nombreProches = {}, {}, 0 end
         for n = 2, #champs do
-            local guid, valeur = champs[n]:match("^(%x+):(%d+)$")
+            local guid, valeur, nom = champs[n]:match("^(%x+):(%d+):?(.*)$")
             if guid then
                 if not S.puissancesProches[guid] then S.nombreProches = S.nombreProches + 1 end
                 S.puissancesProches[guid] = tonumber(valeur)
+                S.nomsProches[guid] = nom ~= "" and nom or nil
             end
         end
+        Prevenir("proches")
         return
     end
     if champs[1] ~= "PUISSANCE" then return end

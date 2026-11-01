@@ -109,8 +109,23 @@ local function Infobulle(cadre)
         if not self.id then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetHyperlink("item:" .. self.id)
+        self.compare = nil
     end)
     cadre:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    -- Comparaison avec la pièce portée en tenant Maj, comme dans les sacs (signalement du 01/11/2026).
+    cadre:SetScript("OnUpdate", function(self)
+        if not self.id or not GameTooltip:IsOwned(self) then return end
+        local compare = IsModifiedClick("COMPAREITEMS") and true or false
+        if compare == self.compare then return end
+        self.compare = compare
+        if compare then
+            GameTooltip_ShowCompareItem(GameTooltip)
+        else
+            ShoppingTooltip1:Hide()
+            ShoppingTooltip2:Hide()
+            ShoppingTooltip3:Hide()
+        end
+    end)
 end
 
 local function Icone(parent, taille)
@@ -566,41 +581,36 @@ end
 
 local p4 = PageDePieces(pages[4], "Un enchantement par pièce : le nouveau remplace l'ancien, et il reste quand la pièce "
     .. "change de rang. Composants de la Collection (entre parenthèses, ce que tu as) et or.",
-    "Aucune pièce à enchanter : plastron, brassards, cape, bouclier ou arme.", 2)
+    "Aucune pièce à enchanter : plastron, brassards, cape, bouclier ou arme.", 1)
 for _, l in ipairs(p4.lignes) do
-    for _, b in ipairs(l.boutons) do
-        b:SetScript("OnClick", function(self)
-            local piece = self.ligne.piece
-            if piece and self.enchantement then
-                SendChatMessage(".equipement enchanter " .. piece.sac .. " " .. piece.case .. " " .. self.enchantement[1],
-                    "SAY")
-            end
-        end)
-    end
+    l.boutons[1]:SetScript("OnClick", function(self)
+        local ligne = self.ligne.piece
+        if ligne and ligne.piece.enchantement ~= ligne.e[4] then
+            SendChatMessage(".equipement enchanter " .. ligne.sac .. " " .. ligne.case .. " " .. ligne.e[1], "SAY")
+        end
+    end)
 end
 
+-- Une ligne par enchantement possible de chaque pièce (signalement du 01/11/2026 : avec deux choix sur la même ligne,
+-- le bouton de gauche mordait sur la liste des composants).
 local function MajEnchantement()
     local liste = {}
     for _, piece in ipairs(armures) do
-        if #EnchantementsDe(piece.type) > 0 then table.insert(liste, piece) end
-    end
-    Remplir(p4, liste, function(l, piece)
-        local actuel = piece.enchantement > 0 and EnchantementsDe(piece.type, piece.enchantement)[1]
-        local possibles = EnchantementsDe(piece.type)
-        l.haut:SetText(piece.enchantement == 0 and "|cffb4b8bfSans enchantement|r"
-            or actuel and ("Enchantée : " .. actuel[2] .. " (" .. actuel[3] .. ")") or "Enchantée")
-        local cout, ok = Cout(possibles[1])
-        l.bas:SetText(cout)
-        for n, b in ipairs(l.boutons) do
-            local e = possibles[n]
-            b.enchantement = e
-            S.Montrer(b, e)
-            if e then
-                b.texte:SetText(e[3])
-                b:Choisir(piece.enchantement == e[4])
-                b:SetAlpha((ok and piece.enchantement ~= e[4]) and 1 or 0.5)
-            end
+        for _, e in ipairs(EnchantementsDe(piece.type)) do
+            table.insert(liste, { piece = piece, e = e, id = piece.id, sac = piece.sac, case = piece.case })
         end
+    end
+    Remplir(p4, liste, function(l, ligne)
+        local piece, e = ligne.piece, ligne.e
+        local enPlace = piece.enchantement == e[4]
+        l.haut:SetText(e[3] .. "  ·  " .. e[2] .. (enPlace and "  |cffb4b8bf(en place)|r"
+            or piece.enchantement > 0 and "  |cffb4b8bf(remplace l'enchantement actuel)|r" or ""))
+        local cout, ok = Cout(e)
+        l.bas:SetText(cout)
+        local b = l.boutons[1]
+        b.texte:SetText(enPlace and "En place" or "Enchanter")
+        b:Choisir(enPlace)
+        b:SetAlpha((ok and not enPlace) and 1 or 0.5)
     end)
 end
 

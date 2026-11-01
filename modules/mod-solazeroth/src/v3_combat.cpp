@@ -9,7 +9,7 @@
 // - Puissance du personnage : moyenne des niveaux d'objet équipés, rang d'amélioration compris (E1 : rang de la version
 //   d'équipement, SolAzeroth.V3.PuissanceParRang par rang ; provisoire : les chiffres par qualité et origine restent à
 //   fixer, question 3 du document). Envoyée à l'interface (« SOLPUISSANCE ») et
-//   affichée par .puissance. La puissance des monstres à moins de 60 m part aussi d'avance (« PROCHES;guid:puissance;… »,
+//   affichée par .puissance. La puissance des monstres à moins de 60 m part aussi d'avance (« PROCHES;guid:puissance:nom;… »,
 //   seulement les nouveaux, chaque seconde) : l'interface l'affiche dès qu'on cible, sans attendre le serveur (31/10/2026).
 // - Malus hors de sa puissance : face à un monstre plus fort, les dégâts infligés par le joueur et ses familiers baissent
 //   de SolAzeroth.V3.MalusParPoint % par point de puissance manquant, au plus SolAzeroth.V3.MalusMax %.
@@ -33,6 +33,7 @@
 #include "ScriptMgr.h"
 #include "SpellInfo.h"
 #include "StringFormat.h"
+#include <algorithm>
 #include <cmath>
 #include <unordered_set>
 
@@ -161,9 +162,12 @@ namespace
             presents.insert(creature->GetGUID());
             if (p->proches.count(creature->GetGUID()))
                 continue;
-            paquet += Acore::StringFormat(";{:016X}:{}", creature->GetGUID().GetRawValue(),
-                uint32(SolAzeroth::PuissanceCreature(creature)));
-            if (paquet.size() > 200)
+            // Le nom sert aux plaques de nom, qui ne disent pas de quel monstre elles sont (SolUI_Plaques.lua).
+            std::string nom = creature->GetNameForLocaleIdx(player->GetSession()->GetSessionDbLocaleIndex());
+            std::replace(nom.begin(), nom.end(), ';', ',');
+            paquet += Acore::StringFormat(";{:016X}:{}:{}", creature->GetGUID().GetRawValue(),
+                uint32(SolAzeroth::PuissanceCreature(creature)), nom);
+            if (paquet.size() > 150)   // un nom fait au plus 64 caractères ; message de 255 au plus
             {
                 SolAzeroth::EnvoyerAddon(player, PREFIXE, "PROCHES" + paquet);
                 paquet.clear();

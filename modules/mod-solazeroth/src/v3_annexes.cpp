@@ -415,6 +415,17 @@ void MontrerReliques(Player* player)
         auto it = reliques.find(go->GetEntry());
         if (it == reliques.end())
             continue;
+        // Posée au sol (signalement du 01/11/2026 : une relique flottait) : la hauteur des tables est approchée, celle
+        // du terrain se lit ici, la grille étant chargée autour du joueur ; la correction est gardée en base.
+        float sol = go->GetMap()->GetHeight(go->GetPhaseMask(), go->GetPositionX(), go->GetPositionY(),
+            go->GetPositionZ() + 2.0f, true, 6.0f);
+        if (sol > INVALID_HEIGHT && std::fabs(sol - go->GetPositionZ()) > 0.05f)
+        {
+            go->GetMap()->GameObjectRelocation(go, go->GetPositionX(), go->GetPositionY(), sol, go->GetOrientation());
+            go->DestroyForVisiblePlayers();
+            go->UpdateObjectVisibility();
+            WorldDatabase.Execute("UPDATE gameobject SET position_z = {} WHERE guid = {}", sol, spawn);
+        }
         bool trouvee = SolAzeroth::NombreEnCollection(player, it->second.objet) > 0;
         if (trouvee && go->isSpawned())
             go->DespawnOrUnsummon(0ms, RELIQUE_ABSENTE);

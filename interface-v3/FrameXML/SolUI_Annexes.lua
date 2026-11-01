@@ -2,7 +2,7 @@
 -- Annexes de Durotar (quête -> clé, famille, titre, puissance, résumé), reliques (objet -> clé, nom, famille,
 -- indice, x, y) et catégorie « Durotar » de la Collection.
 SolUI.ANNEXES = {
-    [910211] = { cle = "A11", famille = "Primes", titre = "La matriarche des scorpides", puissance = 4, resume = "Tue la Matriarche des scorpides, dans la crevasse à l'est du champ des scorpides ouvriers.", part = 75 },
+    [910211] = { cle = "A11", famille = "Primes", titre = "La matriarche des scorpides", puissance = 5, resume = "Tue la Matriarche des scorpides, dans la crevasse à l'est du champ des scorpides ouvriers.", part = 75 },
     [910212] = { cle = "A12", famille = "Primes", titre = "Le commandant de la garde", puissance = 7, resume = "Tue le Commandant de la garde Zalaphil, au Donjon de Tiragarde.", part = 125 },
     [910213] = { cle = "A13", famille = "Primes", titre = "Dent-de-l'Écho", puissance = 11, resume = "Tue Dent-de-l'Écho, en eau profonde au sud des Îles de l'Écho.", part = 125 },
     [910214] = { cle = "A14", famille = "Primes", titre = "Le renégat de la grève", puissance = 9, resume = "Tue Makasgar, au bout de la Grève des Sombrelances.", part = 100 },

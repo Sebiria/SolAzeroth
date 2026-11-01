@@ -58,7 +58,7 @@ PIECES = [
 # laquelle la potion est interdite. equip_or : pièce donnée à la première médaille d'or.
 TRANCHE, SENJIN = ("go", TABLEAU_TRANCHE), ("go", TABLEAU_SENJIN)
 A = [
-    dict(q=910211, cle="A11", famille="Primes", titre="La matriarche des scorpides", de=3287, a=3287, prev=910006, p=4,
+    dict(q=910211, cle="A11", famille="Primes", titre="La matriarche des scorpides", de=3287, a=3287, prev=910006, p=5,
          part=75, tuer=[(MATRIARCHE, 1, (-432, -4217), None)], argent=4500, insignes=15, eclats=6, equip=910121,
          resume="Tue la Matriarche des scorpides, dans la crevasse à l'est du champ des scorpides ouvriers.",
          intro="Sarkoth avait une compagne, plus vieille et plus grosse. Elle niche dans la crevasse, à l'est du champ "
