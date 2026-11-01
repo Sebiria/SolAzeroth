@@ -1,5 +1,5 @@
 -- Sol'Azeroth v3 (01/11/2026, proposition validée : « Accès aux fonctionnalités — proposition.md », maquette du même
--- jour) : les carnets. Six carnets à onglets rangent toutes les fenêtres ; la barre, le menu de la mini-carte et les
+-- jour) : les carnets. Six carnets à onglets (et le Lexique, ajouté le même jour) rangent toutes les fenêtres ; la barre, le menu de la mini-carte et les
 -- touches lisent cette seule liste (S.CARNETS).
 -- - Un onglet montre une fenêtre existante (et sa page) ; une colonne à gauche de la fenêtre donne le nom du carnet et
 --   ses onglets. Un seul carnet est ouvert à la fois ; chacun se souvient de son dernier onglet.
@@ -47,6 +47,8 @@ S.CARNETS = {
         { nom = "Passifs extérieurs", cadre = Fenetre("SolUIPassifs"), page = function() S.PagePassifs(2) end },
         { nom = "Donjons", cadre = Fenetre("SolUIPassifs"), page = function() S.PagePassifs(1) end },
     } },
+    -- 01/11/2026 : le lexique, un onglet par thème (SolUI_Lexique.lua).
+    { id = "lexique", nom = "Lexique", touche = "J", icone = "INV_Misc_Book_09", onglets = S.OngletsLexique() },
 }
 S.CARNET = {}
 for _, c in ipairs(S.CARNETS) do S.CARNET[c.id] = c end

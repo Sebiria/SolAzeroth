@@ -778,6 +778,10 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - la matriarche (A11, puissance 5) est tombée vite à la puissance 8 : conforme.
     - **reliques** : avec la carte des reliques achetée, un coffre marque chaque relique pas encore trouvée sur la mini-carte (à portée) et la carte du monde, avec son indice au survol ; une relique se ramasse aussi en se tenant à moins de 3 m (le Fétiche de jade ne se cliquait pas).
 - **Annexes de Durotar** (44 %) : écrites par l'équipe d'agents, à valider, puis construites avec F5e.
+- **Lexique et explications** (01/11/2026, demande de l'utilisateur : « beaucoup d'information qu'on ne peut pas deviner ») : construits, essayés à blanc, pas encore vérifiés en jeu (`SolUI_Lexique.lua`).
+  - Un septième carnet, **Lexique** (touche J si elle est libre), un onglet par thème (Monnaies, Équipement, Zone, Survie, Progression) et une page courte par concept (25 pages : comment l'obtenir, comment le dépenser, les chiffres). Les chiffres viennent du relevé du serveur du 01/11/2026 : à tenir à jour avec lui.
+  - Au premier passage d'un moment clé, une petite fenêtre « À savoir » résume le concept et mène à sa page : première puissance reçue, premier éclat, premières Marques, premier or gagné, premier composant, première forge, première prime, premier contrat ou défi pris, premier lieu entamé, première relique, zone à 60 %, vie sous 50 % (vie, camp, potion), première mort, nouvelle technique, palier d'aventurier, entrée en donjon. Hors combat, une à la fois, une seule fois par compte (gardé avec la disposition de l'interface).
+  - Relevé à trancher : toute quête rendue donne encore 3 Marques (règle v2 de `marques.cpp`, toujours chargée), et le tableau de contrats v2 (`contrats.cpp`) tourne sans interface.
 
 ## 5. Questions pour les prochaines séries
 

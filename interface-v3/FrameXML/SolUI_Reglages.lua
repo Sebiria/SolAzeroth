@@ -28,9 +28,11 @@ local function Prevenir()
     if S.surChangement then
         local d = Copier(S.DISPOSITION)
         d.options = Copier(S.OPTIONS)
+        d.vus = Copier(S.VUS)
         S.surChangement(d)
     end
 end
+S.Enregistrer = Prevenir   -- fenêtres d'explication déjà vues (SolUI_Lexique.lua), même en combat
 
 -- Change un réglage qui n'est pas un bloc (S.OPTIONS) ; les cadres concernés sont prévenus par S.Abonner("options").
 function S.ModifierOption(nom, valeur)
@@ -52,7 +54,14 @@ end
 
 -- Reprend une disposition enregistrée (champs connus seulement, valeurs bornées).
 function S.Appliquer(sauvegarde)
-    if InCombatLockdown() or type(sauvegarde) ~= "table" then return end
+    if type(sauvegarde) ~= "table" then return end
+    -- Explications vues : reprises même en combat, sinon la prochaine sauvegarde les effacerait.
+    if type(sauvegarde.vus) == "table" then
+        for cle, vu in pairs(sauvegarde.vus) do
+            if type(cle) == "string" and vu == true then S.VUS[cle] = true end
+        end
+    end
+    if InCombatLockdown() then return end
     for nom, d in pairs(sauvegarde) do
         local actuel = S.DISPOSITION[nom]
         if actuel and type(d) == "table" and S.blocs[nom] then
