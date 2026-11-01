@@ -49,6 +49,7 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_v3_aventurier();
         AddSC_solazeroth_v3_donjons();
         AddSC_solazeroth_v3_passifs();
+        AddSC_solazeroth_v3_inventaire();
     }
     AddSC_solazeroth_reinitialisation();
     AddSC_solazeroth_journal();

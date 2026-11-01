@@ -27,7 +27,7 @@ FRAMEXML = os.path.join(FICHIERS, "Interface", "FrameXML")
 CODE = ["SolUI_Base.lua", "SolUI_Cacher.lua", "SolUI_Perso.lua", "SolUI_Techniques.lua", "SolUI_Cible.lua",
         "SolUI_Zone.lua", "SolUI_Cartes.lua", "SolUI_Puissances.lua", "SolUI_Quetes.lua", "SolUI_Dialogue.lua",
         "SolUI_Discussion.lua", "SolUI_Camp.lua", "SolUI_Bivouac.lua", "SolUI_Raccourcis.lua",
-        "SolUI_Catalogue.lua", "SolUI_Annexes.lua", "SolUI_Joaillerie.lua", "SolUI_Collection.lua", "SolUI_Recettes.lua", "SolUI_Cuisine.lua",
+        "SolUI_Catalogue.lua", "SolUI_Annexes.lua", "SolUI_Joaillerie.lua", "SolUI_Collection.lua", "SolUI_Inventaire.lua", "SolUI_Recettes.lua", "SolUI_Cuisine.lua",
         "SolUI_Enchantements.lua", "SolUI_Equipement.lua", "SolUI_AventurierDonnees.lua", "SolUI_Aventurier.lua", "SolUI_PassifsDonnees.lua", "SolUI_Passifs.lua", "SolUI_Carnets.lua", "SolUI_Barre.lua",
         "SolUI_Reglages.lua"]
 GENERES = {"SolUI_Cartes.lua"}   # écrits par ce script, pas copiés de interface-v3\FrameXML

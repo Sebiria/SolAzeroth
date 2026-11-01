@@ -4,8 +4,8 @@
 -- - Un onglet montre une fenêtre existante (et sa page) ; une colonne à gauche de la fenêtre donne le nom du carnet et
 --   ses onglets. Un seul carnet est ouvert à la fois ; chacun se souvient de son dernier onglet.
 -- - Touches : C, K, N, P, B et L, posées à la première connexion à la place de celles du jeu (personnage, talents,
---   grimoire, sacs, journal), sauf si le joueur les a déjà changées. Les sacs du jeu passent sur Maj-B. Elles se
---   changent dans Techniques › Raccourcis.
+--   grimoire, sacs, journal), sauf si le joueur les a déjà changées. Elles se changent dans Techniques › Raccourcis.
+--   Les sacs du jeu sont remplacés par Collection › Inventaire (SolUI_Inventaire.lua).
 -- - S.Annonce(texte, action) : bandeau cliquable en haut de l'écran (modes de zone ouverts, zone de repos).
 
 local S = SolUI
@@ -36,7 +36,8 @@ S.CARNETS = {
         { nom = "Joaillerie", cadre = Fenetre("SolUIEquipement"), page = function() S.PageEquipement(5) end },
     } },
     { id = "collection", nom = "Collection", touche = "B", icone = "INV_Crate_04", onglets = {
-        { nom = "Inventaire", cadre = Fenetre("SolUICollection") },
+        { nom = "Inventaire", cadre = Fenetre("SolUIInventaire") },
+        { nom = "Composants", cadre = Fenetre("SolUICollection") },
     } },
     { id = "aventure", nom = "Aventure", touche = "L", icone = "INV_Misc_Map_01", onglets = {
         { nom = "Quêtes", cadre = Fenetre("SolUIJournal"), ouvrir = function() S.OuvrirJournal() end },
@@ -206,10 +207,6 @@ S.Ecouter("PLAYER_ENTERING_WORLD", function()
             modifie = true
         end
     end
-    if not GetBindingKey("OPENALLBAGS") and (GetBindingAction("SHIFT-B") or "") == "" then
-        SetBinding("SHIFT-B", "OPENALLBAGS")
-        modifie = true
-    end
     if modifie then SaveBindings(GetCurrentBindingSet()) end
 end)
 
@@ -227,7 +224,6 @@ local function Slash(commande)
 end
 
 S.MENU_JEU = {
-    { "Sorts", function() ToggleSpellBook(BOOKTYPE_SPELL) end },
     { "Hauts faits", function() ToggleAchievementFrame() end },
     { "Réglages Sol'Azeroth", function() Slash("/sol") end },
     { "Menu du jeu", function()

@@ -17,8 +17,8 @@ local SECTIONS = {
         -- v3, F4 : disposition de l'écran de combat (Interface\FrameXML\SolUI_Reglages.lua).
         { nom = "Interface", construire = "Interface" },
         { nom = "Plaques de nom", cadre = "SolAzerothPlaquesCadre", commande = "SOLAZEROTHPLAQUES" },
-        { nom = "Macros", cadre = "SolAzerothMacrosCadre", commande = "SOLAZEROTHMACROS" },
-        { nom = "Barres et sacs", construire = "BarresEtSacs" },
+        -- Macros, barres de postures et de totems, sacs : retirés le 01/11/2026 (demande de l'utilisateur ; l'inventaire
+        -- est dans Collection › Inventaire, Interface\FrameXML\SolUI_Inventaire.lua).
         { nom = "Sauvegarde", construire = "Sauvegarde" },
         { nom = "Monde", construire = "Monde" },
     } },
@@ -583,14 +583,6 @@ local CONSTRUCTEURS = {
             if p:IsShown() then Lire() end
         end
         Lire()
-    end,
-    BarresEtSacs = function(p)
-        local barres = Carte(p, -20, 110, "Interface\\Icons\\Ability_Warrior_DefensiveStance", "Barres de postures et de totems",
-            "Déplace les deux barres à la souris, puis valide (commande /barres).")
-        Bouton(barres, "Déplacer les barres", 180, 60, -66, function() SlashCmdList.SOLAZEROTHBARRES("") end)
-        local sacs = Carte(p, -146, 110, "Interface\\Icons\\INV_Misc_Bag_08", "Sacs",
-            "Une seule fenêtre pour tous les sacs et la banque, recherche par nom (touche B ou /sacs).")
-        Bouton(sacs, "Ouvrir les sacs", 180, 60, -66, function() SlashCmdList.SOLAZEROTHSACS("") end)
     end,
     Sauvegarde = function(p)
         local maintenant = Carte(p, -20, 110, "Interface\\Icons\\INV_Misc_Note_01", "Sauvegarde de la partie",

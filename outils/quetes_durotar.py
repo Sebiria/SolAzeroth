@@ -26,6 +26,7 @@ MIGRATION = r"C:\SolAzeroth\sql\migrations\063_v3_quetes_durotar"
 ITEM_DBC_ORIGINE = r"C:\SolAzeroth\data\dbc\Item.dbc"
 ITEM_DBC_PATCH = r"C:\SolAzeroth\patch-client\fichiers\DBFilesClient\Item.dbc"
 ECLAT, FRAGMENT_AME = 910120, 6265   # Éclat cadavérique (F6), copié du Fragment d'âme
+BESACE = 910235                      # Besace d'aventurier (migration 095)
 PUISSANCES = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Puissances.lua"
 
 QUETE = 910000          # D01 = 910001
@@ -384,6 +385,11 @@ def item_dbc():
                 ligne[1], ligne[2], ligne[6] = genre
             table.enregistrements.append(ligne)
             existants.add(e)
+    # Besace d'aventurier (migration 095, v3_inventaire.cpp) : sac de 34 places, copié du Sac à dos de voyageur.
+    if BESACE not in existants:
+        ligne = list(table.chercher(4500))
+        ligne[0] = BESACE
+        table.enregistrements.append(ligne)
     # Apparences propres (icônes retail des pierres taillées, ItemDisplayInfo.dbc du patch).
     affichages = joaillerie_v3.affichages()
     for ligne in table.enregistrements:
