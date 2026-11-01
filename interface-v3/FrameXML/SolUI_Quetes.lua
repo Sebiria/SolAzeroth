@@ -493,7 +493,42 @@ boutons.suivre = Bouton("Suivre", 130, function()
 end)
 boutons.suivre:SetPoint("RIGHT", boutons.carte, "LEFT", -8, 0)
 
+-- Journal trié par puissance croissante (01/11/2026, demande de l'utilisateur) : dans chaque zone, ses quêtes de la
+-- plus faible à la plus forte (à égalité, par titre), et les zones dans l'ordre de leur quête la plus faible.
+local function Trier(liste)
+    local groupes, groupe = {}, nil
+    for _, q in ipairs(liste) do
+        if q.enTete or not groupe then
+            groupe = { entete = q.enTete and q or nil, quetes = {} }
+            table.insert(groupes, groupe)
+        end
+        if not q.enTete then
+            q.puissance = S.PuissanceQuete(q.id, q.niveau) or 0
+            table.insert(groupe.quetes, q)
+        end
+    end
+    local function Avant(a, b)
+        if a.puissance ~= b.puissance then return a.puissance < b.puissance end
+        return a.titre < b.titre
+    end
+    for n, g in ipairs(groupes) do
+        table.sort(g.quetes, Avant)
+        g.min, g.rang = g.quetes[1] and g.quetes[1].puissance or math.huge, n
+    end
+    table.sort(groupes, function(a, b)
+        if a.min ~= b.min then return a.min < b.min end
+        return a.rang < b.rang
+    end)
+    local triee = {}
+    for _, g in ipairs(groupes) do
+        if g.entete then table.insert(triee, g.entete) end
+        for _, q in ipairs(g.quetes) do table.insert(triee, q) end
+    end
+    return triee
+end
+
 local function MajJournal(liste)
+    liste = Trier(liste)
     local quetes = 0
     local existe = false
     for _, q in ipairs(liste) do
