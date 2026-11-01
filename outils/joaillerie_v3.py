@@ -14,7 +14,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from quetes_durotar import s
+from quetes_durotar import s, sql
 
 MIGRATION = r"C:\SolAzeroth\sql\migrations\085_v3_joaillerie"
 LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Joaillerie.lua"
@@ -28,12 +28,20 @@ TAILLES = [
     (910181, "Œil de tigre taillé", OEIL_TIGRE, 2),
     (910182, "Œil ténébreux taillé", OEIL_TENEBREUX, 2),
 ]
+# Icône retail de chaque pierre (icones_retail.py) : apparence numérotée comme la pierre, copiée de sa gemme brute.
+ICONES = {910180: "inv_jewelcrafting_80_cutgem01_green", 910181: "inv_jewelcrafting_80_cutgem01_orange",
+          910182: "inv_jewelcrafting_80_cutgem01_purple"}
 # Pierres taillées demandées pour passer au rang 4 et au rang 5.
 RANGS = {4: [(910180, 2), (910181, 1)], 5: [(910181, 2), (910182, 1)]}
 
 
 def lignes_dbc():
     return [(e, brute, None) for e, _, brute, _ in TAILLES]
+
+
+def affichages():
+    """{pierre: apparence} pour l'Item.dbc du patch (quetes_durotar.item_dbc)."""
+    return {e: e for e in ICONES}
 
 
 def lua(t):
@@ -50,8 +58,8 @@ def main():
           "DELETE FROM item_template_locale WHERE ID IN (%s);" % pierres]
     for e, nom, brute, _ in TAILLES:
         up += ["CREATE TEMPORARY TABLE sol_objet SELECT * FROM item_template WHERE entry = %d;" % brute,
-               "UPDATE sol_objet SET entry = %d, name = %s, Quality = 3, BuyPrice = 0, SellPrice = 0, "
-               "description = 'Pierre taillée : améliore les rangs 4 et 5.';" % (e, s(nom)),
+               "UPDATE sol_objet SET entry = %d, name = %s, displayid = %d, Quality = 3, BuyPrice = 0, "
+               "SellPrice = 0, description = 'Pierre taillée : améliore les rangs 4 et 5.';" % (e, s(nom), e),
                "INSERT INTO item_template SELECT * FROM sol_objet;",
                "DROP TEMPORARY TABLE sol_objet;",
                "INSERT INTO item_template_locale (ID, locale, Name, Description, VerifiedBuild) VALUES "
@@ -103,7 +111,12 @@ def main():
     l.append("end")
     with open(LUA, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(l) + "\n")
+    import icones_retail
     import quetes_durotar
+    affichage_brut = {int(e): int(affichage) for e, affichage in sql(
+        "SELECT entry, displayid FROM acore_world.item_template WHERE entry IN (%s)"
+        % ", ".join(str(b) for _, _, b, _ in TAILLES))}
+    icones_retail.affichages_objets({e: (affichage_brut[b], ICONES[e]) for e, _, b, _ in TAILLES})
     quetes_durotar.item_dbc()
     print("%d pierres taillées, prospection et pierres des rangs 4 et 5 : migration 085 et SolUI_Joaillerie.lua écrits."
           % len(TAILLES))

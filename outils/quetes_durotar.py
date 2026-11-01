@@ -384,6 +384,11 @@ def item_dbc():
                 ligne[1], ligne[2], ligne[6] = genre
             table.enregistrements.append(ligne)
             existants.add(e)
+    # Apparences propres (icônes retail des pierres taillées, ItemDisplayInfo.dbc du patch).
+    affichages = joaillerie_v3.affichages()
+    for ligne in table.enregistrements:
+        if ligne[0] in affichages:
+            ligne[5] = affichages[ligne[0]]
     table.enregistrer(ITEM_DBC_PATCH)
 
 

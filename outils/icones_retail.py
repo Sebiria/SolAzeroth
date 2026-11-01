@@ -5,7 +5,9 @@ rangées dans C:\\SolAzeroth\\icones-retail\\sources. Ce script :
 - les convertit en BLP 64 x 64 dans patch-client\\fichiers\\Interface\\Icons (il faut Pillow : py -3.11, celui de
   Python 3.14 est cassé) ;
 - les ajoute à patch-client\\fichiers\\DBFilesClient\\SpellIcon.dbc (fonction ajouter_au_dbc, aussi appelée par
-  icones_macros.py, qui réécrit ce fichier).
+  icones_macros.py, qui réécrit ce fichier) ;
+- celles des objets (ICONES_OBJETS) vont dans l'ItemDisplayInfo.dbc du patch (fonction affichages_objets, appelée par
+  joaillerie_v3.py).
 
 Usage : py -3.11 outils\\icones_retail.py   puis   py outils\\auras_nommees.py   puis   py outils\\construire_patch.py
 """
@@ -39,6 +41,15 @@ ICONES = [
     "inv_alchemy_80_potion01red",           # Potion de soins (bivouac_v3.py)
     "campfire_rootflame",                   # Feu de camp : icône 7479490 de Wowhead (Rootflame Campfire), sans nom
 ]
+
+# Icônes d'objets : pierres taillées de la joaillerie (joaillerie_v3.py, F8 du 01/11/2026).
+ICONES_OBJETS = [
+    "inv_jewelcrafting_80_cutgem01_green",    # Malachite taillée
+    "inv_jewelcrafting_80_cutgem01_orange",   # Œil de tigre taillé
+    "inv_jewelcrafting_80_cutgem01_purple",   # Œil ténébreux taillé
+]
+ITEMDISPLAYINFO_SERVEUR = r"C:\SolAzeroth\data\dbc\ItemDisplayInfo.dbc"
+ITEMDISPLAYINFO = r"C:\SolAzeroth\patch-client\fichiers\DBFilesClient\ItemDisplayInfo.dbc"
 
 # Part centrale gardée (le reste est coupé) : le feu de camp était petit dans son bouton (demande du 31/10/2026).
 RECADRAGE = {"campfire_rootflame": 0.72}
@@ -75,7 +86,7 @@ def identifiants():
 def convertir():
     from PIL import Image
     os.makedirs(DOSSIER, exist_ok=True)
-    for nom in ICONES:
+    for nom in ICONES + ICONES_OBJETS:
         image = Image.open(os.path.join(SOURCES, nom + ".jpg")).convert("RGB")
         if nom in RECADRAGE:
             cote = image.width * RECADRAGE[nom]
@@ -84,6 +95,20 @@ def convertir():
         image = image.resize((64, 64), Image.LANCZOS)
         with open(os.path.join(DOSSIER, "SolAzeroth_" + nom + ".blp"), "wb") as f:
             f.write(blp_avec_mipmaps(image))
+
+
+def affichages_objets(affichages):
+    """Écrit l'ItemDisplayInfo.dbc du patch : celui du serveur, plus une ligne par {affichage: (affichage copié, icône)},
+    l'icône (InventoryIcon_1, colonne 5) étant une icône retail de ICONES_OBJETS. Le serveur garde son fichier."""
+    d = dbc.Dbc.ouvrir(ITEMDISPLAYINFO_SERVEUR)
+    lignes = {e[0]: e for e in d.enregistrements}
+    for affichage, (source, nom) in sorted(affichages.items()):
+        assert affichage not in lignes and nom in ICONES_OBJETS
+        ligne = list(lignes[source])
+        ligne[0] = affichage
+        ligne[5] = d.ajouter_texte("SolAzeroth_" + nom)
+        d.enregistrements.append(ligne)
+    d.enregistrer(ITEMDISPLAYINFO)
 
 
 def blp_avec_mipmaps(image):
