@@ -8,7 +8,8 @@
 //   reprend). L'interface (SolUI_Zone.lua) reçoit « CHRONO;quête;écoulé;bronze;argent;or » chaque seconde, puis
 //   « CHRONO;- ».
 // - solazeroth_v3_reliques : la relique (objet du monde) range son objet dans la Collection avec 5 Insignes et 1
-//   composant du secteur ; une famille complète donne son bonus.
+//   composant du secteur ; une famille complète donne son bonus. La relique trouvée disparaît (7 jours) ; elle revient
+//   quand passe à moins de 150 m un personnage qui ne l'a pas trouvée (serveur solo, MontrerReliques).
 // - solazeroth_v3_vagues : l'épreuve de Zun'jala (A27), 10 vagues, 20 s de pause, record et 1 Insigne par vague tenue,
 //   une fois par jour. Les vagues 5 et 10 valident les quêtes 910227 et 910327.
 // Techniques sans SmartAI : T14 carapace des Anciens makrura (dégâts subis ÷ 2, sauf dans les 6 s qui suivent un
@@ -67,6 +68,10 @@ namespace
         uint8 famille = 0;
     };
     std::unordered_map<uint32, Relique> reliques;   // objet du monde -> relique
+    // Relique trouvée : elle disparaît (01/11/2026). Le jeu ne cache pas un objet du monde pour un seul joueur ; le
+    // serveur étant solo, elle disparaît pour tous, puis revient quand passe un personnage qui ne l'a pas trouvée.
+    std::vector<std::pair<uint32, ObjectGuid::LowType>> placesReliques;   // (carte, guid de l'apparition)
+    Seconds const RELIQUE_ABSENTE = Days(7);
     std::vector<std::vector<std::pair<uint32, uint32>>> vagues;
 
     // Flaques du sang gangrené (T15), communes à tous.
@@ -102,7 +107,7 @@ namespace
         bool carte = false;
         uint8 recordVague = 0;
         uint32 recordTemps = 0, jour = 0;
-        uint32 attente = 0, orage = 0, envoiChrono = 0;
+        uint32 attente = 0, orage = 0, envoiChrono = 0, reliques = 0;
         Position foudre;
         uint32 foudreA = 0;
         Epreuve epreuve;
@@ -385,6 +390,29 @@ bool SolAzeroth::CarteReliques(Player* player)
     return JoueurDe(player)->carte;
 }
 
+// Près du joueur : relique déjà trouvée cachée, relique pas encore trouvée remise.
+void MontrerReliques(Player* player)
+{
+    for (auto const& [carte, spawn] : placesReliques)
+    {
+        if (carte != player->GetMapId())
+            continue;
+        auto const& apparitions = player->GetMap()->GetGameObjectBySpawnIdStore();
+        auto trouve = apparitions.find(spawn);
+        GameObject* go = trouve != apparitions.end() ? trouve->second : nullptr;
+        if (!go || !player->IsWithinDist(go, 150.0f))
+            continue;
+        auto it = reliques.find(go->GetEntry());
+        if (it == reliques.end())
+            continue;
+        bool trouvee = SolAzeroth::NombreEnCollection(player, it->second.objet) > 0;
+        if (trouvee && go->isSpawned())
+            go->DespawnOrUnsummon(0ms, RELIQUE_ABSENTE);
+        else if (!trouvee && !go->isSpawned())
+            go->Respawn();
+    }
+}
+
 class solazeroth_v3_annexes_joueur : public PlayerScript
 {
 public:
@@ -494,6 +522,11 @@ public:
             return;
         if (!flaques.empty())
             Flaques(player);
+        if ((j->reliques += TICK) >= 5 * IN_MILLISECONDS)
+        {
+            j->reliques = 0;
+            MontrerReliques(player);
+        }
         Orage(player, j);
         SuivreEpreuve(player, j);
         if (!j->chronos.empty() && (j->envoiChrono += TICK) >= IN_MILLISECONDS)
@@ -533,6 +566,7 @@ public:
 };
 
 // Reliques (A31-A46).
+
 class go_solazeroth_v3_relique : public GameObjectScript
 {
 public:
@@ -550,6 +584,7 @@ public:
             return true;
         }
         SolAzeroth::AjouterACollection(player, r.objet, 1);
+        go->DespawnOrUnsummon(0ms, RELIQUE_ABSENTE);
         SolAzeroth::AjouterACollection(player, INSIGNE, 5);
         SolAzeroth::AjouterACollection(player, r.composant, 1);
         uint32 trouvees = 0, total = 0;
@@ -735,6 +770,14 @@ public:
         {
             do
                 reliques[(*r)[0].Get<uint32>()] = { (*r)[1].Get<uint32>(), (*r)[3].Get<uint32>(), (*r)[2].Get<uint8>() };
+            while (r->NextRow());
+        }
+        placesReliques.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT g.map, g.guid FROM gameobject g JOIN solazeroth_v3_reliques r "
+            "ON r.objet_monde = g.id"))
+        {
+            do
+                placesReliques.emplace_back((*r)[0].Get<uint32>(), (*r)[1].Get<ObjectGuid::LowType>());
             while (r->NextRow());
         }
         if (QueryResult r = WorldDatabase.Query("SELECT vague, creature, nombre FROM solazeroth_v3_vagues ORDER BY vague"))
