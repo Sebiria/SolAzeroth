@@ -4,5 +4,7 @@
 -- socles voisins (38,0). D'abord posées près de Thazz'ril : l'utilisateur les voulait plus près du départ.
 USE acore_world;
 
-DELETE FROM gameobject WHERE guid IN (9100034, 50983, 1, 14, 363, 1, 1, -601.0, -4262.0, 38.4, 2.2, 0, 0, 0.891207, 0.453596, 0, 100, 1),
+DELETE FROM gameobject WHERE guid IN (9100034, 9100035);
+INSERT INTO gameobject (guid, id, map, zoneId, areaId, spawnMask, phaseMask, position_x, position_y, position_z, orientation, rotation0, rotation1, rotation2, rotation3, spawntimesecs, animprogress, state) VALUES
+(9100034, 50983, 1, 14, 363, 1, 1, -601.0, -4262.0, 38.4, 2.2, 0, 0, 0.891207, 0.453596, 0, 100, 1),
 (9100035, 51702, 1, 14, 363, 1, 1, -596.0, -4266.5, 38.3, 2.2, 0, 0, 0.891207, 0.453596, 0, 100, 1);
