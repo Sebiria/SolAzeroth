@@ -39,6 +39,12 @@ local groupe = CreateFrame("Frame", "SolUITechniques", S.racine)
 groupe:SetSize(26 + 18 + 4 * TAILLE + 3 * ECART + 18 + 26, 2 * TAILLE + ECART)
 S.Placer(groupe, "techniques")
 
+-- Barre d'incantation du jeu : au-dessus des techniques, et suit le bloc s'il est déplacé (signalement 26 : le jeu la
+-- plaçait sur la deuxième rangée). Retirée des cadres que le jeu replace de lui-même.
+UIPARENT_MANAGED_FRAME_POSITIONS["CastingBarFrame"] = nil
+CastingBarFrame:ClearAllPoints()
+CastingBarFrame:SetPoint("BOTTOM", groupe, "TOP", 0, 18)
+
 ------------------------------------------------------------------------
 -- Losange du passif
 ------------------------------------------------------------------------

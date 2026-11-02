@@ -35,6 +35,10 @@ MIGRATION = r"C:\SolAzeroth\sql\migrations\129_v3_kit_voleur"
 ASSOMMER = 100322                   # lot V7 : l'Éventail de couteaux lancé en Camouflage (v3_voleur.cpp)
 TECHNIQUES = (100302, 100320)
 SANS_RECHARGE_GLOBALE = (ESTROPIER_MG, GARROT, OUVERTURE)   # déclenchés
+# AttributesEx : SPELL_ATTR1_FINISHING_MOVE_DAMAGE | SPELL_ATTR1_FINISHING_MOVE_DURATION. Les coups de grâce de
+# Blizzard (Envenimer, Rupture, Coup bas, Lancer mortel) les portent : le client exige alors des points de combo, qui
+# n'existent plus (signalement 27, 02/11/2026).
+COUP_DE_GRACE = 0x00100000 | 0x00400000
 
 DAGUES = (2, 1 << 15, 0)            # ITEM_CLASS_WEAPON, ITEM_SUBCLASS_WEAPON_DAGGER
 DECLENCHEMENT = 42                  # SPELL_AURA_PROC_TRIGGER_SPELL
@@ -78,6 +82,7 @@ def sort(d, modele, ident, nom, description, infobulle="", duree=None, ecole=PHY
     icone = d.chercher(icone_de or modele)[133]
     e = t.technique(d, modele, ident, nom, description, icone, RECHARGES.get(ident, 0), infobulle, duree)
     e[225] = ecole
+    e[5] &= ~COUP_DE_GRACE
     if TECHNIQUES[0] <= ident <= TECHNIQUES[1] and ident not in SANS_RECHARGE_GLOBALE:
         e[68], e[69], e[70] = DAGUES
         e[205], e[206] = t.RECHARGE_GLOBALE, 750

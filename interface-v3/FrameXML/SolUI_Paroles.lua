@@ -24,7 +24,7 @@ local LECONS = {
     } },
     { "marques", 10176, "Kaltunk", { "marques", "or" }, {
         "Une Marque du voyageur ! C'est la monnaie de l'effort : primes, contrats, défis et reliques en donnent.",
-        "Elle paie ton camp, les passifs et, plus tard, tes montures. Elle va dans le sac : garde-lui de la place.",
+        "Elle paie ton camp, les passifs et, plus tard, tes montures. Elle ne prend pas de place dans ton sac.",
         "L'or, lui, vient des quêtes. Il paie la fabrication, les rangs et les réparations.",
     } },
     { "regles", 3143, "Gornek", { "regles", "rempart" }, {
@@ -174,8 +174,9 @@ end
 local function Prochaine()
     if h:IsShown() or #file == 0 or InCombatLockdown() or UnitIsDeadOrGhost("player") then return end
     lecon, n, orateur = table.remove(file, 1), 1, nil
-    Afficher()
+    -- Fenêtre affichée avant le portrait : un modèle chargé dans un cadre caché reste blanc (signalements 22 et 25).
     h:Show()
+    Afficher()
     PlaySound("igQuestListOpen")
 end
 

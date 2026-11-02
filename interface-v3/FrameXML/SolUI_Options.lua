@@ -83,7 +83,7 @@ end
 ------------------------------------------------------------------------
 -- Techniques › Spécialisation
 ------------------------------------------------------------------------
-local spe = S.Fenetre("SolUISpecialisation", 680, 330, "Spécialisation")
+local spe = S.Fenetre("SolUISpecialisation", 680, 370, "Spécialisation")   -- 330 : la ligne d'état passait sous le bouton
 local carte = CreateFrame("Frame", nil, spe)
 carte:SetPoint("TOPLEFT", 24, -72)
 carte:SetPoint("TOPRIGHT", -24, -72)

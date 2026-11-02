@@ -28,7 +28,7 @@ S.LEXIQUE = {
           .. "• Âme : 4 éclats par point, en auberge ou en ville.\n"
           .. "• Améliorations du camp, pièces bleues du Gouffre (40, 80 pour une arme)." },
         { "marques", "Marques du voyageur",
-          "La monnaie de l'effort, à côté de l'or et des éclats : un objet du sac. Elle paie le camp, la carte des reliques, les passifs et les montures.",
+          "La monnaie de l'effort, à côté de l'or et des éclats : un jeton qui ne prend pas de place dans le sac. Elle paie le camp, la carte des reliques, les passifs et les montures.",
           T("Obtenir")
           .. "• Primes, contrats et défis : 5 à 30 (médaille d'argent ×1,5, d'or ×2).\n"
           .. "• Chaque relique : 5.\n"
@@ -38,8 +38,7 @@ S.LEXIQUE = {
           .. T("Dépenser")
           .. "• Améliorations du feu et de la potion (Camp).\n"
           .. "• Carte des reliques : 30 Marques et 2 po.\n"
-          .. "• Emplacements de passifs extérieurs : 25 à 400. Montures.\n\n"
-          .. G .. "Les Marques vont dans le sac : sac plein, Marques perdues." .. F },
+          .. "• Emplacements de passifs extérieurs : 25 à 400. Montures." },
         { "or", "Or",
           "L'or vient des quêtes et des annexes ; il paie la fabrication, les rangs, le camp et les réparations.",
           T("Obtenir")
@@ -313,9 +312,26 @@ S.LEXIQUE = {
 
 S.VUS = S.VUS or {}
 local PLACE = {}   -- clé -> thème, concept
-for t, theme in ipairs(S.LEXIQUE) do
-    for c, concept in ipairs(theme[2]) do PLACE[concept[1]] = { t, c } end
+local function Indexer()
+    wipe(PLACE)
+    for t, theme in ipairs(S.LEXIQUE) do
+        for c, concept in ipairs(theme[2]) do PLACE[concept[1]] = { t, c } end
+    end
 end
+Indexer()
+-- Pages d'un passif de classe : seulement pour cette classe (signalement 20, 02/11/2026 : le voleur lisait le Rempart).
+-- La classe n'est sûre qu'à la connexion.
+local CLASSE_DE_LA_PAGE = { rempart = "WARRIOR", moisson = "WARLOCK", toxines = "ROGUE" }
+S.Ecouter("PLAYER_LOGIN", function()
+    local classe = select(2, UnitClass("player"))
+    for _, theme in ipairs(S.LEXIQUE) do
+        for c = #theme[2], 1, -1 do
+            local pour = CLASSE_DE_LA_PAGE[theme[2][c][1]]
+            if pour and pour ~= classe then table.remove(theme[2], c) end
+        end
+    end
+    Indexer()
+end)
 
 ------------------------------------------------------------------------
 -- Fenêtre du lexique

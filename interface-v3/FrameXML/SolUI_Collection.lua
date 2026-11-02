@@ -121,7 +121,7 @@ local total = S.Texte(f.barre, "Regular", 12, "gris")
 total:SetPoint("LEFT", jauge, "RIGHT", 10, 0)
 
 local champ = CreateFrame("EditBox", "SolUICollectionRecherche", f.barre)
-champ:SetSize(260, 32)
+champ:SetSize(200, 32)   -- 260 mordait sur « 0 / 76 » sous le titre long du carnet (signalement 28)
 champ:SetPoint("RIGHT", -340, 0)
 champ:SetAutoFocus(false)
 champ:SetTextInsets(12, 12, 0, 0)
