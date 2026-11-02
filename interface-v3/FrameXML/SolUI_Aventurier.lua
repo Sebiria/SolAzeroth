@@ -17,7 +17,8 @@ function S.BasculerAventurier()
 end
 
 local etat = { points = 0, palier = 0, possede = {}, sources = {}, donjons = {}, maitrise = {} }
-local page, decalage = 1, 0
+local page = 1
+local defil   -- lot 6c : S.Liste sur les lignes
 local filtre = 1
 local FILTRES = { "Toutes", "Ouvertes", "Possédées", "À acheter" }
 -- Sources de points (genres de v3_aventurier.cpp).
@@ -46,7 +47,7 @@ local onglets = {}
 for n, nom in ipairs({ "Paliers", "Montures" }) do
     local b = S.BoutonPlat(f, nom, 140, 30, 12)
     b:SetPoint("TOPLEFT", f, "TOPLEFT", 28 + (n - 1) * 148, -130)
-    b:SetScript("OnClick", function() page, decalage = n, 0; Maj() end)
+    b:SetScript("OnClick", function() page = n; defil:Remonter(); Maj() end)
     b:Hide()   -- carnet Aventure (SolUI_Carnets.lua)
     onglets[n] = b
 end
@@ -57,8 +58,6 @@ for i = 1, LIGNES do
     local l = CreateFrame("Frame", nil, f)
     l:SetSize(764, HAUTEUR - 4)
     l:SetPoint("TOPLEFT", f, "TOPLEFT", 28, -130 - (i - 1) * HAUTEUR)
-    l:EnableMouseWheel(true)
-    l:SetScript("OnMouseWheel", function(_, sens) decalage = math.max(0, decalage - sens); Maj() end)
     l.icone = l:CreateTexture(nil, "ARTWORK")
     l.icone:SetSize(28, 28)
     l.icone:SetPoint("LEFT", 2, 0)
@@ -71,6 +70,7 @@ for i = 1, LIGNES do
     l.bouton:SetPoint("RIGHT", 0, 0)
     lignes[i] = l
 end
+defil = S.Liste(f, lignes, function() Maj() end)
 
 -- Lot 5 : en-tête de la boutique, à la place de la première ligne : compteur et filtre.
 local entete = CreateFrame("Frame", nil, f)
@@ -82,14 +82,15 @@ local boutonsFiltre = {}
 for n, nom in ipairs(FILTRES) do
     local b = S.BoutonPlat(entete, nom, 104, 26, 11)
     b:SetPoint("RIGHT", entete, "RIGHT", -(#FILTRES - n) * 110, 0)
-    b:SetScript("OnClick", function() filtre, decalage = n, 0; Maj() end)
+    b:SetScript("OnClick", function() filtre = n; defil:Remonter(); Maj() end)
     boutonsFiltre[n] = b
 end
 entete:Hide()
 
 local function MajPaliers()
     local total = #S.PALIERS
-    decalage = math.min(decalage, math.max(0, total - LIGNES))
+    defil:Capacite()
+    local decalage = defil:Regler(total)
     for i, l in ipairs(lignes) do
         local n = decalage + i
         local p = S.PALIERS[n]
@@ -121,7 +122,8 @@ local function MajMontures()
     entete:Show()
     S.Montrer(lignes[1], false)
     local total = #liste
-    decalage = math.min(decalage, math.max(0, total - (LIGNES - 1)))
+    defil:Capacite(LIGNES - 1)   -- la première ligne porte l'en-tête
+    local decalage = defil:Regler(total)
     local avoir = GetItemCount(MARQUE, true)
     for i = 2, LIGNES do
         local l = lignes[i]
@@ -173,7 +175,8 @@ local function MajRegistre()
             .. (m.mode == 2 and "difficile" or "cauchemar"), fini and "Maîtrisée" or (m.tues .. " / " .. m.seuil
             .. " monstres tués"), fini and "vertClair" or "texte" })
     end
-    decalage = math.min(decalage, math.max(0, #entrees - LIGNES))
+    defil:Capacite()
+    local decalage = defil:Regler(#entrees)
     for i, l in ipairs(lignes) do
         local e = entrees[decalage + i]
         S.Montrer(l, e ~= nil)
@@ -213,7 +216,8 @@ end
 f:SetScript("OnShow", function() Maj() end)
 
 function S.PageAventurier(n)
-    page, decalage = n, 0
+    page = n
+    defil:Remonter()
     if f:IsShown() then Maj() end
 end
 S.Ecouter("BAG_UPDATE", function() if f:IsShown() then Maj() end end)

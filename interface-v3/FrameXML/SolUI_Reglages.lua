@@ -1,8 +1,9 @@
 -- Sol'Azeroth v3, F4 : interface paramétrable (demande de l'utilisateur, 31/10/2026).
 -- Mode édition : chaque bloc se couvre d'un calque ambre ; on le déplace à la souris, la molette change son échelle
 -- (Maj + molette : la largeur du cadre de la cible). Hors combat seulement : il se ferme à l'entrée en combat.
--- La page Réglages > Interface de /sol (addon SolAzeroth) ouvre ce mode, propose les mêmes réglages en curseurs et
--- garde la disposition entre deux sessions (SolAzerothDB.interface) : elle est prévenue par S.surChangement.
+-- La page Réglages › Interface (SolUI_Options.lua, lot 6c ; avant : /sol) ouvre ce mode et propose les mêmes réglages
+-- en curseurs (prévenue par S.Abonner("disposition")) ; l'addon SolAzeroth garde la disposition entre deux sessions
+-- (SolAzerothDB.interface) : il est prévenu par S.surChangement.
 
 local S = SolUI
 
@@ -31,6 +32,7 @@ local function Prevenir()
         d.vus = Copier(S.VUS)
         S.surChangement(d)
     end
+    if S.Prevenir then S.Prevenir("disposition") end
 end
 S.Enregistrer = Prevenir   -- fenêtres d'explication déjà vues (SolUI_Lexique.lua), même en combat
 

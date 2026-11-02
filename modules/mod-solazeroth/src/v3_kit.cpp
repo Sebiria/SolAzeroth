@@ -575,7 +575,7 @@ public:
         }
         // Le kit s'applique au premier passage de OnPlayerUpdate, une fois la puissance calculée (v3_combat.cpp).
         if (player->getClass() == CLASS_WARRIOR && kit->spe == SPE_AUCUNE)
-            ChatHandler(player->GetSession()).SendSysMessage("|cff40c0ffChoisis ta spécialisation : carnet Personnage (touche C), onglet Spécialisation.|r");
+            ChatHandler(player->GetSession()).SendSysMessage("|cff40c0ffChoisis ta spécialisation : carnet Techniques (touche K), onglet Spécialisation.|r");
     }
 
     void OnPlayerUpdate(Player* player, uint32 diff) override

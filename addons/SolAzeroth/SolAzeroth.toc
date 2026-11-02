@@ -1,6 +1,5 @@
 ## Interface: 30300
 ## Title: Sol'Azeroth
-## Notes: Fenêtre unique de Sol'Azeroth : Personnage, Aventure, Collection, Réglages (/sol)
+## Notes: Réglages gardés pour le compte et noms des objets (les réglages sont dans le carnet Réglages, /sol)
 ## SavedVariables: SolAzerothDB
-## OptionalDeps: SolAzerothKit, SolAzerothFormation, SolAzerothGrimoire, SolAzerothTalents, SolAzerothSpes, SolAzerothDefis, SolAzerothMenace, SolAzerothContrats, SolAzerothButin, SolAzerothCodex, SolAzerothJournal, SolAzerothHautsFaits, SolAzerothPlaques, SolAzerothBarres, SolAzerothSacs
 SolAzeroth.lua

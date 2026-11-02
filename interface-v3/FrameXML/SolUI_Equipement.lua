@@ -258,6 +258,8 @@ for n = 1, LIGNES_RECETTES do
     l:SetScript("OnClick", function(self) choisie = self.recette; Maj() end)
     lignesRecettes[n] = l
 end
+local defilRecettes = S.Liste(p1, lignesRecettes, function() Maj() end)   -- lot 6c
+local listeAffichee
 
 local detail = CreateFrame("Frame", nil, p1)
 detail:SetPoint("TOPLEFT", 596, -16)
@@ -344,8 +346,10 @@ local function MajFabrication()
         for _, sb in ipairs(boutonsSous) do sb:Hide() end
     end
     local liste = niveau.sous[sousChoisie] and niveau.sous[sousChoisie].recettes or {}
+    if liste ~= listeAffichee then defilRecettes:Remonter(); listeAffichee = liste end
+    local d = defilRecettes:Regler(#liste)
     for n, l in ipairs(lignesRecettes) do
-        local r = liste[n]
+        local r = liste[n + d]
         S.Montrer(l, r)
         if r then
             l.recette, l.icone.id = r, r[1]
@@ -434,7 +438,6 @@ end
 ------------------------------------------------------------------------
 local p2 = pages[2]
 local BRAISE, transfert = 910190, nil   -- lot 4b : transfert de rang en attente de confirmation
-local decalage = 0
 local intro = S.Texte(p2, "Regular", 13, "gris")
 intro:SetPoint("TOPLEFT", 24, -16)
 intro:SetWidth(950)
@@ -452,7 +455,6 @@ for n = 1, LIGNES do
     l:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
     l:SetBackdropColor(0.11, 0.118, 0.133, 1)
     l:SetBackdropBorderColor(S.Couleur("bord"))
-    l:EnableMouseWheel(true)
     l.icone = Icone(l, 36)
     l.icone:SetPoint("LEFT", 8, 0)
     l.nom = S.Texte(l, "SemiBold", 13, "clair")
@@ -487,6 +489,7 @@ for n = 1, LIGNES do
     end)
     lignesPieces[n] = l
 end
+local defilPieces = S.Liste(p2, lignesPieces, function() Maj() end)   -- lot 6c
 local vide = S.Texte(p2, "Regular", 14, "gris")
 vide:SetPoint("TOP", 0, -140)
 vide:SetText("Aucune pièce améliorable : seules nos pièces (quêtes, fabrication, marchands) ont des rangs.")
@@ -523,7 +526,7 @@ end
 local function MajAmelioration()
     local eclats = S.NombreCollection(ECLAT)
     soldes:SetText("Éclats cadavériques : " .. eclats .. "     Or : " .. (GetMoney() > 0 and S.Argent(GetMoney()) or "0"))
-    decalage = math.max(0, math.min(decalage, #pieces - LIGNES))
+    local decalage = defilPieces:Regler(#pieces)
     S.Montrer(vide, #pieces == 0)
     for n, l in ipairs(lignesPieces) do
         local p = pieces[n + decalage]
@@ -561,9 +564,6 @@ local function MajAmelioration()
     end
 end
 
-for _, l in ipairs(lignesPieces) do
-    l:SetScript("OnMouseWheel", function(_, sens) decalage = math.max(0, decalage - sens); Maj() end)
-end
 
 -- Liste de courses d'une pièce jusqu'au rang 4 et au rang 5 : éclats, or, pierres taillées, et ce qu'il faut encore
 -- tailler (gemmes brutes) et prospecter (minerai) pour les pierres qui manquent. Les gemmes brutes déjà rangées
@@ -661,9 +661,9 @@ local function Cout(e)
     return table.concat(morceaux, "  ·  "), ok
 end
 
--- Une page de pièces : intro, lignes de LIGNES, molette, texte si vide.
+-- Une page de pièces : intro, lignes de LIGNES qui défilent (S.Liste), texte si vide.
 local function PageDePieces(page, texteIntro, texteVide, boutons)
-    local p = { decalage = 0, lignes = {} }
+    local p = { lignes = {} }
     p.intro = S.Texte(page, "Regular", 13, "gris")
     p.intro:SetPoint("TOPLEFT", 24, -16)
     p.intro:SetWidth(950)
@@ -676,8 +676,6 @@ local function PageDePieces(page, texteIntro, texteVide, boutons)
         l:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
         l:SetBackdropColor(0.11, 0.118, 0.133, 1)
         l:SetBackdropBorderColor(S.Couleur("bord"))
-        l:EnableMouseWheel(true)
-        l:SetScript("OnMouseWheel", function(_, sens) p.decalage = math.max(0, p.decalage - sens); Maj() end)
         l.icone = Icone(l, 36)
         l.icone:SetPoint("LEFT", 8, 0)
         l.nom = S.Texte(l, "SemiBold", 13, "clair")
@@ -701,6 +699,7 @@ local function PageDePieces(page, texteIntro, texteVide, boutons)
         end
         p.lignes[n] = l
     end
+    p.defil = S.Liste(page, p.lignes, function() Maj() end)   -- lot 6c
     p.vide = S.Texte(page, "Regular", 14, "gris")
     p.vide:SetPoint("TOP", 0, -140)
     p.vide:SetText(texteVide)
@@ -708,10 +707,10 @@ local function PageDePieces(page, texteIntro, texteVide, boutons)
 end
 
 local function Remplir(p, liste, Ligne)
-    p.decalage = math.max(0, math.min(p.decalage, #liste - LIGNES))
+    local decalage = p.defil:Regler(#liste)
     S.Montrer(p.vide, #liste == 0)
     for n, l in ipairs(p.lignes) do
-        local piece = liste[n + p.decalage]
+        local piece = liste[n + decalage]
         S.Montrer(l, piece)
         if piece then
             l.piece, l.icone.id = piece, piece.id

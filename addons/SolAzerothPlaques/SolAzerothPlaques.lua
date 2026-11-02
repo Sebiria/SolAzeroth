@@ -1,7 +1,8 @@
 -- Plaques de nom (demande de l'utilisateur du 28/10/2026, dans l'esprit de Plater). Le jeu 3.3.5 ne donne pas d'accès
 -- direct aux plaques : ce sont des cadres sans nom, enfants de WorldFrame, qu'on reconnaît à leur bordure. On réutilise
 -- leur barre de vie et leur barre d'incantation (le jeu continue de les remplir et de les colorer), on cache le reste et
--- on ajoute nom, texte de vie et affaiblissements. Réglages : « /plaques » (gardés pour le compte).
+-- on ajoute nom, texte de vie et affaiblissements. Réglages : carnet Réglages › Plaques de nom, ou « /plaques »
+-- (gardés pour le compte). Le niveau du jeu porte la puissance du monstre (Interface\FrameXML\SolUI_Plaques.lua).
 -- Les affaiblissements d'un monstre ne sont lisibles que quand il est cible, focalisation ou sous la souris. On les
 -- garde donc par GUID, et le journal de combat tient à jour ceux qu'on pose soi-même quand il n'est plus ciblé.
 -- Monstres de quête (demande de l'utilisateur du 29/10/2026) : un point d'exclamation devant le nom des monstres encore
@@ -306,106 +307,27 @@ moteur:SetScript("OnUpdate", function(_, ecoule)
 end)
 
 ------------------------------------------------------------------------
--- Fenêtre de réglages
+-- Réglages (lot 6c, 02/11/2026) : la page Réglages › Plaques de nom de l'interface (Interface\FrameXML\SolUI_Options.lua)
+-- les lit et les change par cette table ; plus de fenêtre propre. « /plaques » ouvre cette page.
 ------------------------------------------------------------------------
-local fen = CreateFrame("Frame", "SolAzerothPlaquesCadre", UIParent)
-fen:SetSize(320, 486)
-fen:SetPoint("CENTER", 0, 60)
-fen:SetFrameStrata("DIALOG")
-fen:SetBackdrop({
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Gold-Border",
-    edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 },
-})
-fen:EnableMouse(true)
-fen:SetMovable(true)
-fen:RegisterForDrag("LeftButton")
-fen:SetScript("OnDragStart", fen.StartMoving)
-fen:SetScript("OnDragStop", fen.StopMovingOrSizing)
-fen:Hide()
-tinsert(UISpecialFrames, "SolAzerothPlaquesCadre")
-
-local titre = fen:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-titre:SetPoint("TOP", 0, -18)
-titre:SetText("Plaques de nom")
-local fermer = CreateFrame("Button", nil, fen, "UIPanelCloseButton")
-fermer:SetPoint("TOPRIGHT", -6, -6)
-
-local rafraichir = {}
-local y = -50
-
-local function Curseur(cle, texte, mini, maxi, pas)
-    local nom = "SolAzerothPlaquesCurseur" .. cle
-    local c = CreateFrame("Slider", nom, fen, "OptionsSliderTemplate")
-    c:SetPoint("TOP", 0, y)
-    c:SetWidth(240)
-    c:SetMinMaxValues(mini, maxi)
-    c:SetValueStep(pas)
-    _G[nom .. "Low"]:SetText(mini)
-    _G[nom .. "High"]:SetText(maxi)
-    c:SetScript("OnValueChanged", function(self, v)
-        v = math.floor(v / pas + 0.5) * pas
-        db[cle] = v
-        _G[nom .. "Text"]:SetText(texte .. " : " .. v)
+SolAzerothPlaques = {
+    TEXTURES = TEXTURES, TEXTES_VIE = TEXTES_VIE, DEFAUTS = DEFAUTS,
+    Lire = function(cle) return db and db[cle] end,
+    Changer = function(cle, valeur)
+        if not db then return end
+        db[cle] = valeur
         for p in pairs(plaques) do Habiller(p) PlacerIncantation(p) end
-    end)
-    rafraichir[#rafraichir + 1] = function() c:SetValue(db[cle]) end
-    y = y - 42
-end
-
-local function Case(cle, texte)
-    local nom = "SolAzerothPlaquesCase" .. cle
-    local c = CreateFrame("CheckButton", nom, fen, "UICheckButtonTemplate")
-    c:SetPoint("TOPLEFT", 36, y)
-    _G[nom .. "Text"]:SetText(texte)
-    c:SetScript("OnClick", function(self)
-        db[cle] = self:GetChecked() and true or false
-        for p in pairs(plaques) do Habiller(p) end
-        if cle == "ennemisAuto" and db.ennemisAuto then SetCVar("nameplateShowEnemies", 1) end
-    end)
-    rafraichir[#rafraichir + 1] = function() c:SetChecked(db[cle]) end
-    y = y - 26
-end
-
-local function Choix(cle, texte, liste, libelle)
-    local b = CreateFrame("Button", nil, fen, "UIPanelButtonTemplate")
-    b:SetPoint("TOP", 0, y)
-    b:SetSize(240, 22)
-    local function Texte() b:SetText(texte .. " : " .. libelle(liste[db[cle]])) end
-    b:SetScript("OnClick", function()
-        db[cle] = db[cle] % #liste + 1
-        Texte()
-        for p in pairs(plaques) do Habiller(p) end
-    end)
-    rafraichir[#rafraichir + 1] = Texte
-    y = y - 28
-end
-
-Curseur("largeur", "Largeur", 60, 200, 5)
-Curseur("hauteur", "Hauteur", 4, 24, 1)
-Curseur("police", "Taille du texte", 6, 16, 1)
-Curseur("icone", "Taille des affaiblissements", 12, 36, 1)
-Curseur("maxIcones", "Affaiblissements au plus", 1, 12, 1)
-Choix("texture", "Texture", TEXTURES, function(t) return t.nom end)
-Choix("texteVie", "Texte de vie", TEXTES_VIE, function(t) return t end)
-Case("mesSeuls", "Seulement mes affaiblissements")
-Case("niveau", "Afficher le niveau")
-Case("ennemisAuto", "Toujours afficher les plaques ennemies")
-Case("quetes", "Marquer les monstres de quête")
-
-local defaut = CreateFrame("Button", nil, fen, "UIPanelButtonTemplate")
-defaut:SetPoint("TOP", 0, y - 12)  -- sous la dernière case, pour ne pas la chevaucher
-defaut:SetSize(160, 22)
-defaut:SetText("Réglages d'origine")
-defaut:SetScript("OnClick", function()
-    for k, v in pairs(DEFAUTS) do db[k] = v end
-    for _, f in ipairs(rafraichir) do f() end
-end)
-
-fen:SetScript("OnShow", function() for _, f in ipairs(rafraichir) do f() end end)
+        if cle == "ennemisAuto" and valeur then SetCVar("nameplateShowEnemies", 1) end
+    end,
+    Reinitialiser = function()
+        if not db then return end
+        for k, v in pairs(DEFAUTS) do db[k] = v end
+        for p in pairs(plaques) do Habiller(p) PlacerIncantation(p) end
+    end,
+}
 
 SLASH_SOLAZEROTHPLAQUES1 = "/plaques"
-SlashCmdList["SOLAZEROTHPLAQUES"] = function() if fen:IsShown() then fen:Hide() else fen:Show() end end
+SlashCmdList["SOLAZEROTHPLAQUES"] = function() if SolUI then SolUI.OuvrirCarnet("reglages", 2) end end
 
 ------------------------------------------------------------------------
 -- Événements

@@ -83,7 +83,9 @@ foreach ($ancien in 'SolAzerothEcart', 'SolAzerothFormation', 'SolAzerothGrimoir
                     # 02/11/2026, audit du jeu (lot 1) : amélioration en Marques, Codex, contrats, hauts faits
                     # et journal de collection de la v2
                     'SolAzerothAmelioration', 'SolAzerothCodex', 'SolAzerothContrats', 'SolAzerothHautsFaits',
-                    'SolAzerothJournal') {
+                    'SolAzerothJournal',
+                    # 02/11/2026, lot 6c : la page Spécialisation est un onglet du carnet Techniques
+                    'SolAzerothKit') {
     Remove-Item "$client\Interface\AddOns\$ancien" -Recurse -Force -ErrorAction SilentlyContinue
 }
 # Patch client unique (V7) : il contient aussi les fichiers de mod-arac, donc Patch-A.MPQ est rangé dans les archives.

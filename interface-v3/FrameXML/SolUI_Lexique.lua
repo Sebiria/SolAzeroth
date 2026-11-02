@@ -153,7 +153,7 @@ S.LEXIQUE = {
         { "modes", "Modes de zone",
           "Dès 60 % d'une zone, elle peut se jouer plus dure, pour plus d'éclats.",
           T("Choisir")
-          .. "• En auberge ou en ville (Aventure › Passifs extérieurs).\n\n"
+          .. "• En auberge ou en ville, dans les objectifs de la zone (Aventure › Zone, ou un clic sur le suivi de zone).\n\n"
           .. T("Modes")
           .. "• Difficile : vie et dégâts ×1,25, une technique de monstre, éclats ×2.\n"
           .. "• Cauchemar : ×1,5, deux techniques, éclats ×3, des événements.\n"
@@ -293,6 +293,7 @@ end
 -- Fenêtre du lexique
 ------------------------------------------------------------------------
 local LIGNES = 7
+local themeOuvert
 local f = S.Fenetre("SolUILexique", 820, 560, "Lexique")
 local separation = S.Texture(f, "ARTWORK", nil, S.Couleur("bord"))
 separation:SetPoint("TOPLEFT", 252, -64)
@@ -304,6 +305,7 @@ for i = 1, LIGNES do
     b:SetPoint("TOPLEFT", 20, -68 - (i - 1) * 42)
     boutons[i] = b
 end
+local defil = S.Liste(f, boutons, function() S.PageLexique(themeOuvert) end)   -- lot 6c
 local nom = S.Texte(f, "Bold", 20, "ambreClair")
 nom:SetPoint("TOPLEFT", 276, -72)
 local resume = S.Texte(f, "SemiBold", 14, "clair")
@@ -317,20 +319,25 @@ texte:SetJustifyH("LEFT")
 texte:SetSpacing(3)
 
 local choix = {}   -- thème -> dernier concept vu
-local themeOuvert = 1
+themeOuvert = 1
 function S.PageLexique(t, c)
     local theme = S.LEXIQUE[t]
     if not theme then return end
+    local change = t ~= themeOuvert or c ~= nil   -- la molette redessine sans ramener au concept choisi
     themeOuvert = t
     c = math.max(1, math.min(c or choix[t] or 1, #theme[2]))
     choix[t] = c
+    defil:Regler(#theme[2])
+    if change then defil:Voir(c) end
+    local d = defil:Regler(#theme[2])
     for i, b in ipairs(boutons) do
-        local concept = theme[2][i]
+        local k = i + d
+        local concept = theme[2][k]
         S.Montrer(b, concept ~= nil)
         if concept then
             b.texte:SetText(concept[2])
-            b:Choisir(i == c)
-            b:SetScript("OnClick", function() S.PageLexique(t, i) end)
+            b:Choisir(k == c)
+            b:SetScript("OnClick", function() S.PageLexique(t, k) end)
         end
     end
     local concept = theme[2][c]

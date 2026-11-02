@@ -375,10 +375,13 @@ for i = 1, 6 do
 end
 
 local destinations, recues = {}, nil
-local function MajTeleportation()
+local MajTeleportation
+local defilTp = S.Liste(tp, departs, function() MajTeleportation() end)   -- lot 6c : un départ par donjon terminé
+function MajTeleportation()
     S.Montrer(videTp, #destinations == 0)
+    local d = defilTp:Regler(#destinations)
     for i, b in ipairs(departs) do
-        local e = destinations[i]
+        local e = destinations[i + d]
         S.Montrer(b, e ~= nil)
         if e then
             b.texte:SetText(e.nom .. "  ·  entrer, instance neuve")

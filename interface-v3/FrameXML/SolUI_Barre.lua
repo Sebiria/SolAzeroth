@@ -7,7 +7,7 @@ local S = SolUI
 
 local TAILLE, ECART = 26, 3
 
--- { nom, icône du client, action, touche } : les six carnets (SolUI_Carnets.lua), la carte, puis le menu du jeu
+-- { nom, icône du client, action, touche } : les carnets (SolUI_Carnets.lua), la carte, puis le menu du jeu
 -- (01/11/2026, « Accès aux fonctionnalités — proposition.md » : le Social est retiré à la demande de l'utilisateur).
 local ENTREES = {}
 for _, c in ipairs(S.CARNETS) do
@@ -18,7 +18,7 @@ table.insert(ENTREES, { "Carte", "INV_Misc_Map02", function() ToggleFrame(WorldM
 local deroulant = CreateFrame("Frame", "SolUIBarreMenu", UIParent, "UIDropDownMenuTemplate")
 local menuJeu = {}
 for _, e in ipairs(S.MENU_JEU) do table.insert(menuJeu, { text = e[1], func = e[2], notCheckable = true }) end
-table.insert(ENTREES, { "Menu : réglages et menu du jeu", "INV_Misc_Gear_01", function(self)
+table.insert(ENTREES, { "Menu du jeu", "INV_Misc_Gear_01", function(self)
     EasyMenu(menuJeu, deroulant, self, 0, 0, "MENU")
 end })
 

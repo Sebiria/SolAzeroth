@@ -14,15 +14,15 @@ local function Fenetre(nom) return function() return _G[nom] end end
 
 S.CARNETS = {
     { id = "personnage", nom = "Personnage", touche = "C", icone = "INV_Helmet_04", onglets = {
-        { nom = "Fiche", cadre = Fenetre("CharacterFrame"), ouvrir = function()
-            if not CharacterFrame:IsShown() then ToggleCharacter("PaperDollFrame") end
-        end, place = false },
+        -- Lot 6c : notre fiche, en graphite (SolUI_Fiche.lua), à la place de celle de Blizzard.
+        { nom = "Fiche", cadre = Fenetre("SolUIFiche") },
         { nom = "Âme", cadre = Fenetre("SolUIAme") },
-        { nom = "Spécialisation", cadre = Fenetre("SolAzerothKitCadre") },
     } },
     { id = "techniques", nom = "Techniques", touche = "K", icone = "Ability_Warrior_DefensiveStance", onglets = {
         { nom = "Raccourcis", cadre = Fenetre("SolUIRaccourcis"), page = function() S.PageRaccourcis(1) end },
         { nom = "Techniques équipées", cadre = Fenetre("SolUIRaccourcis"), page = function() S.PageRaccourcis(2) end },
+        -- Lot 6c : le choix de la spécialisation, en graphite (SolUI_Options.lua ; l'addon SolAzerothKit est retiré).
+        { nom = "Spécialisation", cadre = Fenetre("SolUISpecialisation") },
     } },
     { id = "camp", nom = "Camp", touche = "N", icone = "Spell_Fire_Fire", onglets = {
         { nom = "Feu, potion et arbre", cadre = Fenetre("SolUIRaccourcis"), page = function() S.PageRaccourcis(3) end },
@@ -53,6 +53,12 @@ S.CARNETS = {
     } },
     -- 01/11/2026 : le lexique, un onglet par thème (SolUI_Lexique.lua).
     { id = "lexique", nom = "Lexique", touche = "J", icone = "INV_Misc_Book_09", onglets = S.OngletsLexique() },
+    -- Lot 6c : les réglages de l'ancienne fenêtre /sol (SolUI_Options.lua), sans touche.
+    { id = "reglages", nom = "Réglages", icone = "Trade_Engineering", onglets = {
+        { nom = "Interface", cadre = Fenetre("SolUIOptions"), page = function() S.PageOptions(1) end },
+        { nom = "Plaques de nom", cadre = Fenetre("SolUIOptions"), page = function() S.PageOptions(2) end },
+        { nom = "Sauvegarde", cadre = Fenetre("SolUIOptions"), page = function() S.PageOptions(3) end },
+    } },
 }
 S.CARNET = {}
 for _, c in ipairs(S.CARNETS) do S.CARNET[c.id] = c end
@@ -85,6 +91,25 @@ local ouvert, cadreOuvert, changement = nil, nil, false
 local memoire = {}
 local suivis = {}
 
+-- Lot 6c : les onglets défilent au-delà de 7 (Aventure en a 8, le Lexique un par thème).
+local MajOnglets
+local defil = S.Liste(colonne, boutons, function() MajOnglets() end)
+function MajOnglets()
+    local c = S.CARNET[ouvert]
+    if not c then return end
+    local d = defil:Regler(#c.onglets)
+    for i, b in ipairs(boutons) do
+        local k = i + d
+        local oi = c.onglets[k]
+        S.Montrer(b, oi ~= nil)
+        if oi then
+            b.texte:SetText(oi.nom)
+            b:Choisir(k == memoire[ouvert])
+            b:SetScript("OnClick", function() S.OuvrirCarnet(c.id, k) end)
+        end
+    end
+end
+
 local function CommandeTouche(c) return "CLICK SolUICarnet" .. c.id .. ":LeftButton" end
 function S.ToucheCarnet(c)
     local t = GetBindingKey(CommandeTouche(c))
@@ -93,9 +118,7 @@ end
 
 local function Fermer()
     colonne:Hide()
-    if cadreOuvert and cadreOuvert:IsShown() then
-        if cadreOuvert == CharacterFrame then HideUIPanel(CharacterFrame) else cadreOuvert:Hide() end
-    end
+    if cadreOuvert and cadreOuvert:IsShown() then cadreOuvert:Hide() end
     ouvert, cadreOuvert = nil, nil
 end
 
@@ -134,9 +157,7 @@ function S.OuvrirCarnet(id, n)
         return
     end
     changement = true
-    if cadreOuvert and cadreOuvert ~= cadre then
-        if cadreOuvert == CharacterFrame then HideUIPanel(CharacterFrame) else cadreOuvert:Hide() end
-    end
+    if cadreOuvert and cadreOuvert ~= cadre then cadreOuvert:Hide() end
     memoire[id], ouvert, cadreOuvert = n, id, cadre
     Suivre(cadre)
     if o.place ~= false then
@@ -153,16 +174,11 @@ function S.OuvrirCarnet(id, n)
     titre:SetText(c.nom)
     local t = S.ToucheCarnet(c)
     touche:SetText(t and ("Touche " .. t) or "")
-    for i, b in ipairs(boutons) do
-        local oi = c.onglets[i]
-        S.Montrer(b, oi ~= nil)
-        if oi then
-            b.texte:SetText(oi.nom)
-            b:Choisir(i == n)
-            b:SetScript("OnClick", function() S.OuvrirCarnet(id, i) end)
-        end
-    end
-    colonne:SetHeight(64 + #c.onglets * HAUT_ONGLET + 8)
+    if colonne.carnet ~= id then defil:Remonter(); colonne.carnet = id end
+    defil:Regler(#c.onglets)
+    defil:Voir(n)
+    MajOnglets()
+    colonne:SetHeight(64 + math.min(#c.onglets, #boutons) * HAUT_ONGLET + 8 + (#c.onglets > #boutons and 14 or 0))
     Placer(cadre)
     colonne:Show()
 end
@@ -208,7 +224,7 @@ S.Ecouter("PLAYER_ENTERING_WORLD", function()
     local modifie = false
     for _, c in ipairs(S.CARNETS) do
         local commande = CommandeTouche(c)
-        if not GetBindingKey(commande) and REMPLACABLES[GetBindingAction(c.touche) or ""] then
+        if c.touche and not GetBindingKey(commande) and REMPLACABLES[GetBindingAction(c.touche) or ""] then
             SetBindingClick(c.touche, "SolUICarnet" .. c.id)
             modifie = true
         end
@@ -219,19 +235,9 @@ end)
 ------------------------------------------------------------------------
 -- Menu du jeu (barre et mini-carte) : ce qui n'est pas un carnet
 ------------------------------------------------------------------------
-local function Slash(commande)
-    for nom, fonction in pairs(SlashCmdList) do
-        for i = 1, 5 do
-            local alias = _G["SLASH_" .. nom .. i]
-            if not alias then break end
-            if alias == commande then return fonction("") end
-        end
-    end
-end
-
 -- Audit du jeu, lot 1 (02/11/2026) : plus d'entrée « Hauts faits », la fenêtre du jeu ne montre que ceux de la v2.
+-- Lot 6c : les réglages sont un carnet (plus d'entrée « Réglages Sol'Azeroth »).
 S.MENU_JEU = {
-    { "Réglages Sol'Azeroth", function() Slash("/sol") end },
     { "Menu du jeu", function()
         if GameMenuFrame:IsShown() then HideUIPanel(GameMenuFrame) else ShowUIPanel(GameMenuFrame) end
     end },
@@ -287,7 +293,8 @@ local dernierRappel = -600
 S.Ecouter("PLAYER_UPDATE_RESTING", function()
     if IsResting() and GetTime() - dernierRappel >= 600 then
         dernierRappel = GetTime()
-        S.Annonce("Zone de repos : mode de zone et passifs extérieurs modifiables ici.", "Aventure › Passifs extérieurs",
-            function() S.OuvrirCarnet("aventure", 6) end, 8)
+        -- Lot 6c : le mode se choisit dans les objectifs de la zone (Aventure › Zone), pas dans les passifs.
+        S.Annonce("Zone de repos : mode de zone (Aventure › Zone) et passifs extérieurs modifiables ici.", "Aventure › Zone",
+            function() S.OuvrirCarnet("aventure", 2) end, 8)
     end
 end)

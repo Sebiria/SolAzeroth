@@ -202,6 +202,68 @@ function S.BoutonPlat(parent, texte, largeur, hauteur, taille)
     return b
 end
 
+-- Lot 6c (02/11/2026, C10 du consensus ; choix de l'utilisateur : partout) : défilement commun des listes. Une liste
+-- garde ses lignes fixes (widgets, dans l'ordre et déjà placés) ; S.Liste y ajoute un décalage, la molette sur chaque
+-- ligne, une fine barre à droite et l'indicateur « 1–8 sur 14 » sous la dernière (cachés quand tout tient).
+-- l:Regler(total) borne et rend le décalage (à ajouter à l'index de la ligne) ; surChange() redessine la liste.
+-- l:Voir(index) fait défiler jusqu'à cette entrée ; l:Remonter() revient en haut ; l:Capacite(n) voir plus bas.
+function S.Liste(parent, widgets, surChange)
+    local l = { decalage = 0, total = 0, lignes = #widgets }
+    local premier, dernier = widgets[1], widgets[#widgets]
+    local rail = S.Texture(parent, "ARTWORK", nil, S.Couleur("bord"))
+    rail:SetWidth(3)
+    rail:SetPoint("TOPLEFT", premier, "TOPRIGHT", 5, 0)
+    rail:SetPoint("BOTTOMLEFT", dernier, "BOTTOMRIGHT", 5, 0)
+    local curseur = S.Texture(parent, "OVERLAY", nil, S.Couleur("ambre", 0.85))
+    curseur:SetWidth(3)
+    l.indicateur = S.Texte(parent, "Regular", 11, "gris")
+    l.indicateur:SetPoint("TOPRIGHT", dernier, "BOTTOMRIGHT", 0, -4)
+
+    local function Dessiner()
+        local plein = l.total > l.lignes
+        S.Montrer(rail, plein)
+        S.Montrer(curseur, plein)
+        S.Montrer(l.indicateur, plein)
+        if not plein then return end
+        l.indicateur:SetText(string.format("%d–%d sur %d", l.decalage + 1, l.decalage + l.lignes, l.total))
+        local haut = rail:GetHeight() or 0
+        if haut <= 0 then haut = (premier:GetTop() or 0) - (dernier:GetBottom() or 0) end
+        local taille = math.max(12, haut * l.lignes / l.total)
+        curseur:SetHeight(taille)
+        curseur:ClearAllPoints()
+        curseur:SetPoint("TOPLEFT", rail, "TOPLEFT", 0, -(haut - taille) * l.decalage / (l.total - l.lignes))
+    end
+
+    local function Borner(d) return math.max(0, math.min(d, math.max(0, l.total - l.lignes))) end
+    function l:Regler(total)
+        l.total = total or 0
+        l.decalage = Borner(l.decalage)
+        Dessiner()
+        return l.decalage
+    end
+    function l:Defiler(n)
+        local d = Borner(l.decalage + n)
+        if d ~= l.decalage then
+            l.decalage = d
+            if surChange then surChange() end
+        end
+    end
+    function l:Voir(index)
+        if index <= l.decalage then l.decalage = Borner(index - 1)
+        elseif index > l.decalage + l.lignes then l.decalage = Borner(index - l.lignes) end
+    end
+    function l:Remonter() l.decalage = 0 end
+    -- Moins de lignes utiles que de widgets (une ligne prise par un en-tête) ; sans nombre : toutes.
+    function l:Capacite(n) l.lignes = n or #widgets end
+
+    for _, w in ipairs(widgets) do
+        w:EnableMouseWheel(true)
+        w:SetScript("OnMouseWheel", function(_, sens) l:Defiler(-sens) end)
+    end
+    Dessiner()
+    return l
+end
+
 -- Durée restante : « 7 s », « 28 min », « 2 h ».
 function S.Duree(secondes)
     if secondes >= 3600 then return math.floor(secondes / 3600 + 0.5) .. " h" end

@@ -59,6 +59,7 @@ local FENETRES = {
     { nom = function() return "Carnet Artisanat" end, commande = "CLICK SolUICarnetartisanat:LeftButton" },
     { nom = function() return "Carnet Collection" end, commande = "CLICK SolUICarnetcollection:LeftButton" },
     { nom = function() return "Carnet Aventure" end, commande = "CLICK SolUICarnetaventure:LeftButton" },
+    { nom = function() return "Carnet Lexique" end, commande = "CLICK SolUICarnetlexique:LeftButton" },   -- lot 6c
     { nom = function() return "Carte" end, commande = "TOGGLEWORLDMAP" },
     { nom = function() return "Signaler un bug" end, commande = "CLICK SolUISignaler:LeftButton" },
 }
@@ -258,11 +259,13 @@ local function Ligne(e, y)
     l.entree = e
     table.insert(lignes, l)
 end
--- Lignes de 28 : les 13 boutons et les 8 fenêtres (avec Signaler un bug) tiennent dans la fenêtre (730 de haut, en-tête de 64).
+-- Lignes de 27 (lot 6c : 28 avant le Lexique) : les 13 boutons et les 9 fenêtres (avec Signaler un bug) tiennent dans la
+-- fenêtre (730 de haut, en-tête de 64).
+local PAS = 27
 Titre("BOUTONS DE COMBAT", -14)
-for n, e in ipairs(ENTREES) do Ligne(e, -32 - (n - 1) * 28) end
-Titre("FENÊTRES", -32 - #ENTREES * 28 - 8)
-for n, e in ipairs(FENETRES) do Ligne(e, -32 - #ENTREES * 28 - 26 - (n - 1) * 28) end
+for n, e in ipairs(ENTREES) do Ligne(e, -32 - (n - 1) * PAS) end
+Titre("FENÊTRES", -32 - #ENTREES * PAS - 8)
+for n, e in ipairs(FENETRES) do Ligne(e, -32 - #ENTREES * PAS - 26 - (n - 1) * PAS) end
 
 function Maj()
     for n, e in ipairs(ENTREES) do
@@ -357,7 +360,7 @@ local compte = S.Texte(p2, "SemiBold", 14, "ambreClair")
 compte:SetPoint("TOPRIGHT", -24, -14)
 local sansSpe = S.Texte(p2, "Regular", 15, "texte")
 sansSpe:SetPoint("CENTER", 0, 40)
-sansSpe:SetText("Choisis d'abord ta spécialisation : carnet Personnage, onglet Spécialisation.")
+sansSpe:SetText("Choisis d'abord ta spécialisation : carnet Techniques, onglet Spécialisation.")
 
 local tuiles = {}
 local MajTechniques

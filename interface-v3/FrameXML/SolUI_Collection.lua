@@ -21,7 +21,8 @@ function S.BasculerCollection()
 end
 ouvrir:SetScript("OnClick", S.BasculerCollection)
 
-local categorie, filtre, recherche, choisi, decalage = 1, 1, "", nil, 0
+local categorie, filtre, recherche, choisi = 1, 1, "", nil
+local defil   -- lot 6c : S.Liste, une entrée par rangée de la grille
 local Maj
 
 -- Collection du serveur : objet -> nombre. « LISTE;objet:nombre,… » en morceaux puis « FIN » ; « MAJ;objet;total;changement ».
@@ -137,7 +138,7 @@ champ:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
 champ:SetScript("OnTextChanged", function(self)
     recherche = (self:GetText() or ""):lower()
     S.Montrer(indice, recherche == "" and not self:HasFocus())
-    decalage = 0
+    defil:Remonter()
     Maj()
 end)
 champ:SetScript("OnEditFocusGained", function() indice:Hide() end)
@@ -148,7 +149,7 @@ for i, nom in ipairs({ "Tout", "Possédés", "Manquants" }) do
     local b = S.BoutonPlat(f.barre, nom, 86, 32)
     -- Entre la recherche et le bouton de fermeture.
     b:SetPoint("LEFT", champ, "RIGHT", 12 + (i - 1) * 90, 0)
-    b:SetScript("OnClick", function() filtre = i; decalage = 0; Maj() end)
+    b:SetScript("OnClick", function() filtre = i; defil:Remonter(); Maj() end)
     filtres[i] = b
 end
 
@@ -170,7 +171,7 @@ for i, c in ipairs(S.CATALOGUE) do
     b.texte:SetJustifyH("LEFT")
     b.compte = S.Texte(b, "Regular", 11, "gris")
     b.compte:SetPoint("RIGHT", -10, 0)
-    b:SetScript("OnClick", function() categorie = i; decalage = 0; choisi = nil; Maj() end)
+    b:SetScript("OnClick", function() categorie = i; defil:Remonter(); choisi = nil; Maj() end)
     onglets[i] = b
 end
 local separation = S.Texture(f, "ARTWORK", nil, S.Couleur("bord"))
@@ -224,6 +225,9 @@ for n = 1, COLONNES * LIGNES do
     t:SetScript("OnLeave", function() GameTooltip:Hide() end)
     tuiles[n] = t
 end
+local rangees = {}   -- la dernière tuile de chaque rangée : la barre longe la grille à droite
+for r = 1, LIGNES do rangees[r] = tuiles[r * COLONNES] end
+defil = S.Liste(grille, rangees, function() Maj() end)
 
 ------------------------------------------------------------------------
 -- Détail
@@ -284,8 +288,9 @@ function Maj()
     for i, b in ipairs(filtres) do b:Choisir(i == filtre) end
 
     local liste = Visibles()
-    local maxDecalage = math.max(0, math.ceil(#liste / COLONNES) - LIGNES)
-    decalage = math.min(decalage, maxDecalage)
+    local decalage = defil:Regler(math.ceil(#liste / COLONNES))
+    defil.indicateur:SetText(string.format("%d–%d sur %d", decalage * COLONNES + 1,
+        math.min((decalage + LIGNES) * COLONNES, #liste), #liste))
     titreGrille:SetText(S.CATALOGUE[categorie].nom:upper() .. "  ·  " .. #liste .. " objets")
     for n, t in ipairs(tuiles) do
         local o = liste[n + decalage * COLONNES]
@@ -319,10 +324,7 @@ function Maj()
     end
 end
 
-grille:SetScript("OnMouseWheel", function(_, sens)
-    decalage = math.max(0, decalage - sens)
-    Maj()
-end)
+grille:SetScript("OnMouseWheel", function(_, sens) defil:Defiler(-sens) end)
 f:SetScript("OnShow", function() Maj() end)
 f:SetScript("OnHide", function() champ:ClearFocus() end)
 S.Ecouter("BAG_UPDATE", function() Maj() end)
