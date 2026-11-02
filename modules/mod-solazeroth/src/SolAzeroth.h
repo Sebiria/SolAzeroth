@@ -46,6 +46,8 @@ namespace SolAzeroth
     bool PassifActif(Player* player, unsigned char passif);
     // v3 : un monstre d'un lieu à nettoyer (v3_zone.cpp).
     bool MonstreDeLieu(unsigned int entree);
+    // v3, lot 3b : chef renforcé du lieu tombé (v3_zone.cpp).
+    bool LieuClos(Player* player, unsigned int lieu);
     // v3 : meilleure médaille d'un défi (0 aucune, 1 bronze, 2 argent, 3 or) et carte des reliques achetée (v3_annexes.cpp).
     unsigned char MedailleDefi(Player* player, unsigned int quete);
     bool CarteReliques(Player* player);

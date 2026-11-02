@@ -339,12 +339,20 @@ end)
 -- Page 2 : techniques équipées
 ------------------------------------------------------------------------
 local p2 = pages[2]
-local EQUIPEES_MAX = 8
 local choix, choixModifie = {}, false
+-- Lot 3b (02/11/2026) : qui enseigne chaque technique, affiché tant qu'elle est verrouillée (table de v3_kit.cpp).
+local ETAPES = {
+    [100012] = "Gornek, Vallée des Épreuves",
+    [100019] = "Zureetha Fargaze, avant Yarrog",
+    [100015] = "Gar'Thok, Tranchecolline",
+    [100014] = "Gar'Thok, chef de Tranchecolline",
+    [100016] = "Maître Gadrin, Sen'jin",
+}
+local function Emplacements() return S.etat.emplacements or 3 end
 
 local aide2 = S.Texte(p2, "Regular", 13, "gris")
 aide2:SetPoint("TOPLEFT", 24, -14)
-aide2:SetText("Choisis jusqu'à 8 techniques parmi celles débloquées, puis applique, hors combat.")
+aide2:SetText("Choisis tes techniques parmi celles apprises, puis applique, hors combat. D'autres viennent au fil du récit.")
 local compte = S.Texte(p2, "SemiBold", 14, "ambreClair")
 compte:SetPoint("TOPRIGHT", -24, -14)
 local sansSpe = S.Texte(p2, "Regular", 15, "texte")
@@ -368,7 +376,7 @@ for n = 1, 16 do
         if not self.sort or self.verrouillee then return end
         local nombre = 0
         for _, oui in pairs(choix) do if oui then nombre = nombre + 1 end end
-        if not choix[self.sort] and nombre >= EQUIPEES_MAX then return end
+        if not choix[self.sort] and nombre >= Emplacements() then return end
         choix[self.sort] = not choix[self.sort]
         choixModifie = true
         MajTechniques()
@@ -419,11 +427,12 @@ function MajTechniques()
             tuile.icone:SetDesaturated(t.etat == 0)
             tuile:Choisir(choix[t.sort] == true)
             if choix[t.sort] then nombre = nombre + 1 end
-            tuile.etat:SetText(t.etat == 0 and "Verrouillée" or (choix[t.sort] and "Équipée" or "Disponible"))
+            tuile.etat:SetText(t.etat == 0 and (ETAPES[t.sort] or "Zones suivantes")
+                or (choix[t.sort] and "Équipée" or "Disponible"))
             tuile.texte:SetTextColor(S.Couleur(t.etat == 0 and "gris" or (choix[t.sort] and "ambreClair" or "texte")))
         end
     end
-    compte:SetText(nombre .. " / " .. EQUIPEES_MAX .. " équipées")
+    compte:SetText(nombre .. " / " .. Emplacements() .. " emplacements")
 end
 S.Abonner("kit", function() if f:IsShown() then MajTechniques() end end)
 

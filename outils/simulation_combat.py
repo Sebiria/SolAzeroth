@@ -10,7 +10,7 @@ Les règles reprennent celles du serveur (v3_combat.cpp, v3_kit.cpp) :
   -2 % par point de puissance manquant (au plus -75 %) ;
 - vie des monstres ×2 ; coups des monstres d'après le moteur : (dégâts de base + PA / 14 × variance) × modificateur ×
   vitesse, et ×1,5 pour le maximum (Creature::CalculateMinMaxDamage) ;
-- kit du guerrier tank : Frappe du bouclier (200 % de l'arme, 6 s, +8 % de la vie dans le Rempart), Coup de tonnerre
+- kit du guerrier tank : Frappe du bouclier (200 % de l'arme, 6 s, +5 % de la vie dans le Rempart), Coup de tonnerre
   (100 %, 8 s, le monstre frappe 20 % moins vite pendant 10 s), Riposte du rempart (consomme le Rempart, 150 % du
   montant, 10 s ; sans armure, supposé), mêlée automatique ;
 - Rempart : 40 % de chaque coup encaissé après l'armure (absorbé ou subi), plafonné à 30 % de la vie maximale.
@@ -46,7 +46,7 @@ ARMURE_MODELE = "pourcentage"
 ARMURE_K, ARMURE_C = 100.0, 3.0
 MONSTRES_VIE, MONSTRES_DEGATS, MONSTRES_DUREE = 2.0, 3.0, 1.5
 MALUS_PAR_POINT, MALUS_MAX = 2.0, 75.0
-REMPART_PART, REMPART_PLAFOND, REMPART_FRAPPE = 0.40, 0.30, 0.08
+REMPART_PART, REMPART_PLAFOND, REMPART_FRAPPE = 0.40, 0.30, 0.05   # Frappe : 8 % avant le lot 3b
 REMPART_CRI_DEFI = 0.03
 CRITIQUE_MONSTRE = 5.0
 DUREE_MAX = 180.0

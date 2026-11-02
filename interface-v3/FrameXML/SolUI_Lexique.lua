@@ -189,10 +189,11 @@ S.LEXIQUE = {
     } },
     { "Progression", {
         { "techniques", "Techniques",
-          "Ni rage ni mana : quatre techniques à recharge au départ, jusqu'à huit équipées, et le passif de ta spécialisation.",
+          "Ni rage ni mana : deux techniques à recharge au départ, d'autres apprises au fil du récit, et le passif de ta spécialisation.",
           T("Techniques")
-          .. "• Une technique de plus tous les 5 points de puissance.\n"
-          .. "• 8 équipées, changées hors combat (carnet Techniques, touche K).\n\n"
+          .. "• Les maîtres les enseignent à des étapes du récit (Gornek, Gar'Thok, Gadrin en Durotar).\n"
+          .. "• 3 emplacements au départ, 5 à la fin de Durotar, 8 plus tard ; changées hors combat (touche K).\n"
+          .. "• Un bouclier est exigé ; temps de recharge global de 0,75 s.\n\n"
           .. T("Combat")
           .. "• Pas de menace : les monstres n'ont que toi à frapper.\n"
           .. "• Guerrier tank : Rempart, une part des coups reçus devient un bouclier." },

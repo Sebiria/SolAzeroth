@@ -9,6 +9,14 @@ local S = SolUI
 local TAILLE, ECART = 46, 8
 local RIPOSTE = 100014   -- Riposte du rempart : mise en avant quand le Rempart est bien rempli
 local SEUIL_RIPOSTE = 0.5
+local HEURT = 100019     -- Heurt de bouclier : mis en avant quand la cible incante un sort qu'on peut interrompre (lot 3b)
+
+local function CibleInterruptible()
+    if not UnitCanAttack("player", "target") then return false end
+    local nom, _, _, _, _, _, _, _, protege = UnitCastingInfo("target")
+    if not nom then nom, _, _, _, _, _, _, protege = UnitChannelInfo("target") end
+    return nom ~= nil and not protege
+end
 local PASSIF = 100009
 
 local groupe = CreateFrame("Frame", "SolUITechniques", S.racine)
@@ -174,8 +182,9 @@ local function Etat(b)
     S.Montrer(b.point, actif)
     S.Montrer(b.anneauActif, actif)
 
-    local enAvant = (sort == RIPOSTE or nom == GetSpellInfo(RIPOSTE)) and not enRecharge
-        and S.etat.rempart and S.etat.plafond > 0 and S.etat.rempart >= SEUIL_RIPOSTE * S.etat.plafond
+    local enAvant = not enRecharge and (((sort == RIPOSTE or nom == GetSpellInfo(RIPOSTE))
+        and S.etat.rempart and S.etat.plafond > 0 and S.etat.rempart >= SEUIL_RIPOSTE * S.etat.plafond)
+        or ((sort == HEURT or nom == GetSpellInfo(HEURT)) and CibleInterruptible()))
     if enAvant then
         b.halo:Show()
         b.halo:SetAlpha(0.45 + 0.35 * math.sin(GetTime() * math.pi / 1.2))

@@ -1,10 +1,11 @@
 // v3, F3 (31/10/2026) : kit du guerrier tank (document v3, partie 3 et F3).
 // - La spécialisation se choisit à l'entrée en jeu (.kit spe tank, depuis la page Techniques de /sol). Pour l'instant,
 //   seul le guerrier tank existe. Elle donne d'emblée le passif Rempart et les 4 premières techniques.
-// - Tous les 5 points de puissance, une technique de plus se débloque, dans l'ordre de ORDRE (proposition de Claude,
-//   à corriger) : les 16 sont ouvertes à 60. 8 au plus sont équipées ; le choix se fait hors combat (.kit equiper).
-//   Les techniques équipées sont apprises et posées sur la barre, les autres oubliées. Les anciens sorts du guerrier
-//   (postures, Frappe héroïque…) sont retirés.
+// - Lot 3b (02/11/2026, table validée par l'utilisateur) : les techniques s'ouvrent à des étapes du récit (quête rendue,
+//   chef renforcé tombé), et non plus tous les 5 points de puissance. Durotar en ouvre 7 sur 16 ; les autres attendent
+//   les zones suivantes. Les emplacements aussi s'ouvrent peu à peu : 3 au départ, 5 à la fin de Durotar, 8 plus tard.
+//   Le choix se fait hors combat (.kit equiper). Les techniques équipées sont apprises et posées sur la barre, les
+//   autres oubliées. Les anciens sorts du guerrier (postures, Frappe héroïque…) sont retirés.
 // - Rempart : chaque coup encaissé, après l'armure, verse SolAzeroth.V3.Rempart.Part % de ses dégâts dans un bouclier
 //   (aura 100010, absorption), plafonné à SolAzeroth.V3.Rempart.Plafond % de la vie maximale. Hors combat, il perd
 //   SolAzeroth.V3.Rempart.Fuite % de la vie maximale toutes les 2 secondes. Riposte du rempart et Second souffle le
@@ -44,35 +45,39 @@ namespace
     uint32 const EPEE_DE_DEPART = 25;          // Épée courte usée
     uint32 const BOUCLIER_DE_DEPART = 2362;    // Vieux bouclier en bois
     uint32 const REMPART = 100010;
-    size_t const DE_DEPART = 4;
+    size_t const EMPLACEMENTS_DE_DEPART = 3;
     size_t const EQUIPEES_MAX = 8;
-    float const PUISSANCE_PAR_TECHNIQUE = 5.0f;
+    uint32 const PLUS_TARD = 0xFFFFFFFF;       // étape d'une zone qui n'existe pas encore
 
     struct Technique
     {
         uint32 sort;
         char const* nom;
+        uint32 quete;          // quête rendue qui l'ouvre (0 : aucune)
+        uint32 lieu;           // lieu dont le chef renforcé l'ouvre (0 : aucun) ; ni l'un ni l'autre : dès le départ
+        char const* maitre;    // qui l'enseigne, pour l'annonce
+        bool emplacement;      // ouvre aussi un emplacement
     };
 
-    // Ordre de déblocage : les 4 premières dès le départ, puis une tous les 5 points de puissance (5, 10… 60).
+    // Ordre d'affichage, celui du récit.
     Technique const ORDRE[] =
     {
-        { 100011, "Frappe du bouclier" },
-        { 100012, "Coup de tonnerre" },
-        { 100013, "Charge" },
-        { 100014, "Riposte du rempart" },
-        { 100015, "Cri de défi" },          // 5
-        { 100016, "Second souffle" },       // 10
-        { 100017, "Ravage" },               // 15
-        { 100018, "Mur protecteur" },       // 20
-        { 100019, "Heurt de bouclier" },    // 25
-        { 100020, "Fracasser armure" },     // 30
-        { 100021, "Désarmement" },          // 35
-        { 100022, "Onde de choc" },         // 40
-        { 100023, "Bond héroïque" },        // 45
-        { 100024, "Renvoi de sort" },       // 50
-        { 100025, "Vengeance" },            // 55
-        { 100026, "Dernier rempart" },      // 60
+        { 100011, "Frappe du bouclier", 0, 0, nullptr, false },
+        { 100013, "Charge", 0, 0, nullptr, false },
+        { 100012, "Coup de tonnerre", 910002, 0, "Gornek", false },              // Les crocs de la Vallée
+        { 100019, "Heurt de bouclier", 910005, 0, "Zureetha Fargaze", true },    // Les vils quasits, avant Yarrog
+        { 100015, "Cri de défi", 910008, 0, "Gar'Thok", false },                 // Un rapport à Orgnil (Tranchecolline)
+        { 100014, "Riposte du rempart", 0, 2, "Gar'Thok", true },               // chef renforcé de Tranchecolline
+        { 100016, "Second souffle", 910019, 0, "Maître Gadrin", false },         // Le crâne de Minshina (Sen'jin)
+        { 100020, "Fracasser armure", PLUS_TARD, 0, nullptr, true },             // zone 2
+        { 100018, "Mur protecteur", PLUS_TARD, 0, nullptr, false },              // zone 2
+        { 100021, "Désarmement", PLUS_TARD, 0, nullptr, false },                 // zone 3
+        { 100017, "Ravage", PLUS_TARD, 0, nullptr, false },                      // zone 3
+        { 100022, "Onde de choc", PLUS_TARD, 0, nullptr, true },                 // zone 4
+        { 100024, "Renvoi de sort", PLUS_TARD, 0, nullptr, false },              // zone 5
+        { 100023, "Bond héroïque", PLUS_TARD, 0, nullptr, false },               // zone 5
+        { 100025, "Vengeance", PLUS_TARD, 0, nullptr, true },                    // zone 6
+        { 100026, "Dernier rempart", PLUS_TARD, 0, nullptr, false },             // zone 7
     };
     size_t const NB_TECHNIQUES = std::size(ORDRE);
 
@@ -81,7 +86,7 @@ namespace
         float part = 40.0f;
         float plafond = 30.0f;
         float fuite = 1.0f;
-        float frappe = 8.0f;
+        float frappe = 5.0f;
         float criDefi = 3.0f;
     } reglages;
 
@@ -89,7 +94,8 @@ namespace
     {
         uint8 spe = SPE_AUCUNE;
         std::vector<uint32> equipees;
-        size_t debloquees = 0;              // 0 : pas encore appliqué depuis la connexion
+        uint32 debloquees = 0;              // un bit par technique de ORDRE
+        bool applique = false;              // pas encore appliqué depuis la connexion
         uint32 attente = 0;
         uint32 attenteRempart = 0;
         std::string rempartEnvoye;
@@ -116,17 +122,40 @@ namespace
         return "?";
     }
 
-    size_t Debloquees(Player* player)
+    bool Ouverte(Player* player, Technique const& t)
     {
-        float puissance = SolAzeroth::PuissanceJoueur(player);
-        return std::min(NB_TECHNIQUES, DE_DEPART + size_t(std::max(0.0f, puissance) / PUISSANCE_PAR_TECHNIQUE));
+        if (t.quete == PLUS_TARD)
+            return false;
+        if (t.quete)
+            return player->GetQuestRewardStatus(t.quete);
+        if (t.lieu)
+            return SolAzeroth::LieuClos(player, t.lieu);
+        return true;
     }
 
-    bool EstDebloquee(uint32 sort, size_t debloquees)
+    uint32 Debloquees(Player* player)
     {
-        for (size_t i = 0; i < debloquees; ++i)
+        uint32 masque = 0;
+        for (size_t i = 0; i < NB_TECHNIQUES; ++i)
+            if (Ouverte(player, ORDRE[i]))
+                masque |= 1u << i;
+        return masque;
+    }
+
+    size_t Emplacements(uint32 debloquees)
+    {
+        size_t emplacements = EMPLACEMENTS_DE_DEPART;
+        for (size_t i = 0; i < NB_TECHNIQUES; ++i)
+            if (ORDRE[i].emplacement && (debloquees & (1u << i)))
+                ++emplacements;
+        return std::min(emplacements, EQUIPEES_MAX);
+    }
+
+    bool EstDebloquee(uint32 sort, uint32 debloquees)
+    {
+        for (size_t i = 0; i < NB_TECHNIQUES; ++i)
             if (ORDRE[i].sort == sort)
-                return true;
+                return debloquees & (1u << i);
         return false;
     }
 
@@ -202,13 +231,14 @@ namespace
     void Envoyer(Player* player)
     {
         Kit* kit = KitDe(player);
-        size_t debloquees = Debloquees(player);
+        uint32 debloquees = Debloquees(player);
         std::string message = Acore::StringFormat("ETAT;{};{:.0f};{};", kit->spe, SolAzeroth::PuissanceJoueur(player),
-            debloquees < NB_TECHNIQUES ? uint32(PUISSANCE_PAR_TECHNIQUE * (debloquees - DE_DEPART + 1)) : 0);
+            Emplacements(debloquees));
         for (size_t i = 0; i < NB_TECHNIQUES; ++i)
         {
             bool equipee = std::find(kit->equipees.begin(), kit->equipees.end(), ORDRE[i].sort) != kit->equipees.end();
-            message += Acore::StringFormat("{}{}:{}", i ? "," : "", ORDRE[i].sort, i >= debloquees ? 0 : (equipee ? 2 : 1));
+            message += Acore::StringFormat("{}{}:{}", i ? "," : "", ORDRE[i].sort,
+                !(debloquees & (1u << i)) ? 0 : (equipee ? 2 : 1));
         }
         SolAzeroth::EnvoyerAddon(player, PREFIXE, message);
     }
@@ -250,21 +280,26 @@ namespace
         for (uint32 sort : anciens)
             player->removeSpell(sort, SPEC_MASK_ALL, false);
 
-        size_t debloquees = kit->spe == SPE_GUERRIER_TANK ? Debloquees(player) : 0;
-        if (kit->debloquees && debloquees > kit->debloquees)
-            for (size_t i = kit->debloquees; i < debloquees; ++i)
-                ChatHandler(player->GetSession()).PSendSysMessage("|cff40c0ffNouvelle technique débloquée : {}.|r "
-                    "Équipe-la : carnet Techniques (touche K), onglet Techniques équipées.", ORDRE[i].nom);
-        kit->debloquees = std::max<size_t>(debloquees, 1);
+        uint32 debloquees = kit->spe == SPE_GUERRIER_TANK ? Debloquees(player) : 0;
+        size_t emplacements = Emplacements(debloquees);
+        if (kit->applique)
+            for (size_t i = 0; i < NB_TECHNIQUES; ++i)
+                if ((debloquees & (1u << i)) && !(kit->debloquees & (1u << i)))
+                    ChatHandler(player->GetSession()).PSendSysMessage("|cff40c0ff{} t'enseigne une nouvelle technique : {}.{}|r "
+                        "Équipe-la : carnet Techniques (touche K), onglet Techniques équipées.",
+                        ORDRE[i].maitre ? ORDRE[i].maitre : "On", ORDRE[i].nom,
+                        ORDRE[i].emplacement ? Acore::StringFormat(" Un emplacement de plus ({}).", emplacements) : "");
+        kit->debloquees = debloquees;
+        kit->applique = true;
 
-        // Techniques équipées : seulement celles qui sont débloquées, complétées dans l'ordre jusqu'à 8.
+        // Techniques équipées : seulement celles qui sont débloquées, complétées dans l'ordre jusqu'aux emplacements.
         std::vector<uint32> equipees;
         for (uint32 sort : kit->equipees)
             if (EstDebloquee(sort, debloquees) && std::find(equipees.begin(), equipees.end(), sort) == equipees.end()
-                && equipees.size() < EQUIPEES_MAX)
+                && equipees.size() < emplacements)
                 equipees.push_back(sort);
-        for (size_t i = 0; i < debloquees && equipees.size() < EQUIPEES_MAX; ++i)
-            if (std::find(equipees.begin(), equipees.end(), ORDRE[i].sort) == equipees.end())
+        for (size_t i = 0; i < NB_TECHNIQUES && equipees.size() < emplacements; ++i)
+            if ((debloquees & (1u << i)) && std::find(equipees.begin(), equipees.end(), ORDRE[i].sort) == equipees.end())
                 equipees.push_back(ORDRE[i].sort);
         if (equipees != kit->equipees)
         {
@@ -567,7 +602,7 @@ public:
         kit->rempartEnvoye.clear();
         if (player->getClass() != CLASS_WARRIOR)
             return;
-        if (!kit->debloquees || (kit->spe != SPE_AUCUNE && Debloquees(player) != kit->debloquees))
+        if (!kit->applique || (kit->spe != SPE_AUCUNE && Debloquees(player) != kit->debloquees))
             Appliquer(player);
         if (kit->spe == SPE_GUERRIER_TANK && !player->IsInCombat() && player->IsAlive())
             Fixer(player, Montant(player) - std::max(1, int32(player->GetMaxHealth() * reglages.fuite / 100.0f)));
@@ -649,6 +684,7 @@ public:
         }
         kit->equipees.clear();
         kit->debloquees = 0;
+        kit->applique = false;
         Sauver(player);
         // La première barre (boutons 1 à 12) ne garde que les techniques : Attaque et sorts de départ en sont retirés.
         for (uint8 bouton = 0; bouton < 12; ++bouton)
@@ -658,7 +694,8 @@ public:
         return true;
     }
 
-    // .kit equiper <sort> … : jusqu'à 8 techniques débloquées, hors combat. Les places libres se remplissent dans l'ordre.
+    // .kit equiper <sort> … : autant de techniques débloquées que d'emplacements, hors combat. Les places libres se
+    // remplissent dans l'ordre.
     static bool HandleEquiper(ChatHandler* handler, Tail liste)
     {
         Player* player = handler->GetPlayer();
@@ -673,7 +710,8 @@ public:
             handler->SendErrorMessage("Les techniques se changent hors combat.");
             return false;
         }
-        size_t debloquees = Debloquees(player);
+        uint32 debloquees = Debloquees(player);
+        size_t emplacements = Emplacements(debloquees);
         std::vector<uint32> equipees;
         std::istringstream flux{ std::string(liste) };
         for (uint32 sort; flux >> sort;)
@@ -686,9 +724,9 @@ public:
             if (std::find(equipees.begin(), equipees.end(), sort) == equipees.end())
                 equipees.push_back(sort);
         }
-        if (equipees.size() > EQUIPEES_MAX)
+        if (equipees.size() > emplacements)
         {
-            handler->SendErrorMessage("8 techniques au plus.");
+            handler->SendErrorMessage("{} techniques au plus pour l'instant : d'autres emplacements s'ouvriront.", emplacements);
             return false;
         }
         kit->equipees = equipees;

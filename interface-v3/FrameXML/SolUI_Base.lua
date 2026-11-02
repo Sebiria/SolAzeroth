@@ -281,6 +281,7 @@ S.Message("SOLKIT", function(champs)
     if champs[1] == "ETAT" then
         S.etat.spe = tonumber(champs[2])
         if S.etat.spe ~= 1 then S.etat.rempart = nil end
+        S.etat.emplacements = tonumber(champs[4]) or 3   -- lot 3b : 3 au départ, 8 au plus
         -- « sort:état,… » dans l'ordre de déblocage ; état 0 verrouillée, 1 débloquée, 2 équipée.
         S.etat.techniques = {}
         for sort, etat in (champs[5] or ""):gmatch("(%d+):(%d)") do

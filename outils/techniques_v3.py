@@ -1,7 +1,8 @@
 """Sol'Azeroth v3, F3 (31/10/2026) : kit du guerrier tank (document v3, partie 3).
 
 Chaque technique est la copie d'un sort de Blizzard (visuel, ciblage), retouchée : aucun coût, aucune posture, aucune
-arme ni bouclier requis, recharge propre, sans temps de recharge global, valeurs fixes. Les dégâts sont des
+arme requise, recharge propre, valeurs fixes. Lot 3b (02/11/2026) : les 16 techniques demandent un bouclier et ont un
+temps de recharge global de 0,75 s (choix de l'utilisateur, qui remplace la demande du 31/10 : aucun). Les dégâts sont des
 pourcentages des dégâts de l'arme, pour suivre l'équipement. Ce qui ne s'écrit pas dans Spell.dbc (Rempart, dégâts
 selon le Rempart, bonus de Ravage) est fait par le module (v3_kit.cpp, SpellScripts nommés ci-dessous).
 
@@ -26,6 +27,9 @@ SOI, CIBLE, AUTOUR_DE_SOI, ZONE_SOURCE, ZONE_DEST, DEST_CIBLE, DEST_POINT, CONE 
 D1, D2, D3, D5, D6, D8, D10, D15, D30, INFINIE = 36, 39, 27, 28, 32, 31, 1, 8, 9, 21
 R5, R8, R10, R15 = 8, 14, 13, 18
 PORTEE_25 = 34                      # SpellRange.dbc : 0 à 25 m
+TECHNIQUES = (100011, 100026)       # les 16 techniques (hors passif, Rempart et sorts déclenchés)
+BOUCLIER = (4, 1 << 6, 0)           # ITEM_CLASS_ARMOR, ITEM_SUBCLASS_ARMOR_SHIELD
+RECHARGE_GLOBALE = 133              # catégorie du temps de recharge global
 
 FRAPPE_DU_BOUCLIER, RIPOSTE, SECOND_SOUFFLE, RAVAGE, VENGEANCE, DERNIER_REMPART, REMPART, CRI_DE_DEFI = (
     100011, 100014, 100016, 100017, 100025, 100026, 100010, 100015)
@@ -78,7 +82,10 @@ def technique(d, modele, ident, nom, description, icone, recharge, infobulle="",
     e[68], e[69], e[70] = 0xFFFFFFFF, 0, 0   # aucune arme ni bouclier requis
     e[122:131] = [0] * 9
     e[133], e[134] = icone, 0
-    e[204], e[205], e[206] = 0, 0, 0          # aucun temps de recharge global (demande de l'utilisateur, 31/10/2026)
+    e[204], e[205], e[206] = 0, 0, 0
+    if TECHNIQUES[0] <= ident <= TECHNIQUES[1]:  # lot 3b : bouclier exigé, temps de recharge global de 0,75 s
+        e[68], e[69], e[70] = BOUCLIER
+        e[205], e[206] = RECHARGE_GLOBALE, 750
     e[208:212] = [0] * 4            # hors de la famille du guerrier : ni talent ni script de Blizzard ne s'y accroche
     e[213] = 2                      # dégâts de mêlée
     e[226] = 0
@@ -112,7 +119,7 @@ def lignes(d, icones):
 
     # Les 8 techniques de départ (partie 3.2)
     e = technique(d, 23922, FRAPPE_DU_BOUCLIER, "Frappe du bouclier",
-                  "Frappe la cible : 200 % des dégâts de l'arme. Verse 8 % de la vie maximale dans le Rempart.",
+                  "Frappe la cible : 200 % des dégâts de l'arme. Verse 5 % de la vie maximale dans le Rempart.",
                   i["ability_warrior_shieldcharge"], 6000)
     effet(e, 0, ARME_POURCENT, 200, CIBLE)
     t.append(e)

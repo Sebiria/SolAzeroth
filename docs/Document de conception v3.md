@@ -815,6 +815,14 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - Reste de C5 pour plus tard : niveau 80 caché partout, fiche v3, puissance dans les infobulles d'objet.
   - Lot 3b proposé (« Audit du jeu\lot_3b_deblocages_proposition.md ») : techniques ouvertes par étapes du récit et emplacements ouverts peu à peu (7 techniques pour 5 emplacements en Durotar), à valider.
   - Idée de l'utilisateur, à prévoir avec le lot 4 : bonus de panoplie par paliers de pièces portées, comme sur retail, au moins pour les pièces de donjon.
+- **Audit du jeu, lot 3b : techniques ouvertes par le récit** (02/11/2026, C2 du consensus ; table validée par l'utilisateur, « Audit du jeu\lot_3b_deblocages_proposition.md ») : construit, pas encore vérifié en jeu.
+  - Les techniques ne s'ouvrent plus tous les 5 points de puissance mais à des étapes du récit (`v3_kit.cpp`) : Frappe du bouclier et Charge au départ ; Coup de tonnerre (Gornek, « Les crocs de la Vallée ») ; Heurt de bouclier (Zureetha Fargaze, « Les vils quasits », avant Yarrog : c'est elle qui rend la quête, pas Gornek) ; Cri de défi (Gar'Thok, « Un rapport à Orgnil ») ; Riposte du rempart (chef renforcé de Tranchecolline) ; Second souffle (Maître Gadrin, « Le crâne de Minshina »). Les 9 autres attendent les zones 2 à 7.
+  - Emplacements : 3 au départ, 4 avec le Heurt de bouclier, 5 avec la Riposte ; 6, 7 et 8 plus tard. En Durotar, 7 techniques pour 5 emplacements. La table vaut pour tous les personnages, anciens compris.
+  - Sorts (`techniques_v3.py`, migration 061) : bouclier exigé pour les 16 techniques, temps de recharge global de 0,75 s (choix de l'utilisateur ; le moteur ne le ramène pas à 1 s).
+  - Rempart : la Frappe du bouclier y verse 5 % de la vie maximale au lieu de 8 %.
+  - Interface : la fenêtre des techniques montre qui enseigne chaque technique verrouillée et le nombre d'emplacements ; le Heurt de bouclier s'illumine quand la cible incante un sort qu'on peut interrompre.
+  - Dégâts d'arme normalisés : pas faits. Avec le bouclier exigé, les armes à deux mains (la Claymore en cuivre) ne portent plus les techniques.
+  - Simulation (combats réels, Frappe à 5 %) : monstre seul 31 % de vie perdue en médiane (cible 15 à 30), vallée 17 %, groupes 74 % sans Cri de défi et 70 % avec. Les élites (3 combats) et les groupes restent trop durs : c'est le lot 3c.
 
 ## 5. Questions pour les prochaines séries
 

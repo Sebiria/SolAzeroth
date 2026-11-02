@@ -273,6 +273,13 @@ void SolAzeroth::ObjectifsAcquis(Player* player, std::function<void(unsigned int
                 f(zone, part.genre, part.cle);
 }
 
+// v3, lot 3b (02/11/2026) : chef renforcé du lieu tombé (le lieu est clos). Le kit en dépend (v3_kit.cpp).
+bool SolAzeroth::LieuClos(Player* player, unsigned int lieu)
+{
+    auto c = chefs.find(lieu);
+    return c != chefs.end() && ProgresDe(player)->tues[Cle(lieu, c->second.renforce)] != 0;
+}
+
 bool SolAzeroth::MonstreDeLieu(unsigned int entree)
 {
     return lieuxDuMonstre.count(entree) > 0;
