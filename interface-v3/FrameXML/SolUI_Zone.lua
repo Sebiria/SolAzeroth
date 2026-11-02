@@ -177,6 +177,17 @@ local ETATS = { [0] = "à prendre", "en cours", "à rendre", "rendue" }
 local MEDAILLES = { "bronze", "argent", "or" }
 local FAMILLES = { "Primes", "Contrats", "Défis" }
 
+-- Lot 4a (02/11/2026) : boucle de la semaine (v3_semaine.cpp), « SEMAINE;affixe;objectif;progrès;but;payé ».
+local SEMAINE
+local OBJECTIFS_SEMAINE = { "Termine un donjon (son dernier boss)", "Termine des défis plein tarif",
+    "Abats des élites ou des rares de ta puissance" }
+S.Message("SOLSEMAINE", function(champs)
+    if champs[1] ~= "SEMAINE" then return end
+    SEMAINE = { affixe = tonumber(champs[2]) or 0, objectif = tonumber(champs[3]) or 0, progres = tonumber(champs[4]) or 0,
+        but = tonumber(champs[5]) or 0, paye = champs[6] == "1" }
+    MajObjectifs()
+end)
+
 function MajObjectifs()
     if not objectifs:IsShown() then return end
     local n, y = 0, 0
@@ -202,6 +213,19 @@ function MajObjectifs()
         else
             l.note:Hide()
         end
+    end
+    if SEMAINE then
+        local affixe = ""
+        for i = 1, 4 do
+            if bit.band(SEMAINE.affixe, bit.lshift(1, i - 1)) ~= 0 then affixe = SolUI.TECHNIQUES_DONJON[i] or "" end
+        end
+        Ecrire("Cette semaine", "remise à zéro le lundi", nil, "ambreClair", true)
+        Ecrire(OBJECTIFS_SEMAINE[SEMAINE.objectif] or "Objectif de la semaine",
+            SEMAINE.paye and "rempli" or string.format("%d / %d", SEMAINE.progres, SEMAINE.but),
+            "Au compte : 1 Braise du Gouffre, 1 pierre taillée et 60 points de rang d'aventurier.",
+            SEMAINE.paye and "vertClair" or "texte")
+        Ecrire("Affixe des donjons", nil, affixe .. " — même en difficulté 1.", "texte")
+        y = y + 10
     end
     if not progres then
         Ecrire("Cette zone n'a pas d'objectifs.", nil, nil, "gris")

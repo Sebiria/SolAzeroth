@@ -45,6 +45,8 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_v3_niveau();
         AddSC_solazeroth_v3_combat();
         AddSC_solazeroth_v3_kit();
+        AddSC_solazeroth_v3_fournisseur();
+        AddSC_solazeroth_v3_semaine();
         AddSC_solazeroth_v3_journal();
         AddSC_solazeroth_v3_mort();
         AddSC_solazeroth_v3_bivouac();

@@ -65,6 +65,25 @@ end)
 -- « FORGE;forge 0|1;feu 0|1 », « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or;éclats et or jusqu'au rang 4;
 -- éclats et or jusqu'au rang 5 »,
 -- « PIECE;sac;case;entrée;InventoryType;enchantement;table de désenchantement », « FIN ».
+-- Lot 4a (02/11/2026) : prix de Mogra, fournisseuse de matériaux de Razor Hill (v3_fournisseur.cpp) :
+-- « PRIX;objet:prix:reste aujourd'hui,… ». Affichés dans les listes de courses.
+S.FOURNISSEUR = {}
+S.Message("SOLFOURN", function(champs)
+    if champs[1] ~= "PRIX" then return end
+    wipe(S.FOURNISSEUR)
+    for objet, prix, reste in (champs[2] or ""):gmatch("(%d+):(%d+):(%d+)") do
+        S.FOURNISSEUR[tonumber(objet)] = { prix = tonumber(prix), reste = tonumber(reste) }
+    end
+end)
+
+-- « (Mogra : 8 pa) » pour un matériau qu'elle vend, s'il en manque ; vide sinon.
+local function ChezMogra(objet, manque)
+    local f = S.FOURNISSEUR[objet]
+    if not f or manque <= 0 then return "" end
+    return "  |cffb4b8bf(Mogra : " .. S.Argent(f.prix) .. ")|r"   -- l'unité ; Mogra est à Razor Hill
+end
+S.ChezMogra = ChezMogra
+
 S.Message("SOLEQUIP", function(champs)
     if champs[1] == "FABRIQUE" then
         local id = tonumber(champs[2])
@@ -342,7 +361,8 @@ local function MajFabrication()
         if comp then
             local a = S.NombreCollection(comp[1])
             tout = tout and a >= comp[2]
-            ligne:SetText(S.NomCollection(comp[1]) .. "   " .. hex(a >= comp[2]) .. a .. " / " .. comp[2] .. "|r")
+            ligne:SetText(S.NomCollection(comp[1]) .. "   " .. hex(a >= comp[2]) .. a .. " / " .. comp[2] .. "|r"
+                .. ChezMogra(comp[1], comp[2] - a))
         end
     end
     local okOr = GetMoney() >= r[5]
@@ -486,7 +506,7 @@ local function Courses(p, cible)
     if minerai > 0 then
         local possede = S.NombreCollection(S.JOAILLERIE.minerai)
         table.insert(lignes, "   à prospecter : environ " .. minerai .. " " .. S.NomCollection(S.JOAILLERIE.minerai)
-            .. " (tu en as " .. possede .. ")")
+            .. " (tu en as " .. possede .. ")" .. ChezMogra(S.JOAILLERIE.minerai, minerai - possede))
     end
     return lignes
 end

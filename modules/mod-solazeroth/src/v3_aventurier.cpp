@@ -40,8 +40,8 @@ namespace
 {
     // Genres d'objectif : 1 à 5 comme solazeroth_v3_zone_parts, puis les nôtres.
     uint8 const QUETE = 1, EXPLORATION = 2, LIEU = 3, ANNEXE = 4, RELIQUE = 5, MEDAILLE_OR = 6, DONJON = 7,
-                ZONE_60 = 8, ZONE_100 = 9, OFFERTE = 10, DONJON_DIFFICULTE = 11;
-    uint32 const POINTS[] = { 0, 10, 2, 20, 25, 10, 10, 150, 50, 300, 0, 100 };
+                ZONE_60 = 8, ZONE_100 = 9, OFFERTE = 10, DONJON_DIFFICULTE = 11, SEMAINE = 12;
+    uint32 const POINTS[] = { 0, 10, 2, 20, 25, 10, 10, 150, 50, 300, 0, 100, 60 };
 
     // Récompenses (montures_v3.py).
     enum Recompense : uint8 { RIEN, TITRE, FOYER, MASCOTTE, MODE, MONTE, VITESSE_OUVERTE, DIFFICULTE_DONJON };
@@ -249,6 +249,13 @@ namespace
         }
         Gagner(player, gain, avant);
     }
+}
+
+// Lot 4a : objectif de la semaine rempli (v3_semaine.cpp), une fois par compte et par semaine.
+void SolAzeroth::PointsSemaine(Player* player, unsigned int semaine)
+{
+    uint8 avant = PalierDe(player);
+    Gagner(player, Compter(player, SEMAINE, semaine, 0), avant);
 }
 
 unsigned char SolAzeroth::ModesOuverts(Player* player)

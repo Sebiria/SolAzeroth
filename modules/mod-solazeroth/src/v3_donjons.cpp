@@ -131,13 +131,18 @@ namespace
         return rang;
     }
 
+    // Lot 4a : l'affixe de la semaine (v3_semaine.cpp) est toujours là, même en difficulté 1 ; il compte parmi les
+    // techniques de la difficulté, les autres sont tirées au sort.
     uint8 Tirer(uint8 difficulte)
     {
-        std::vector<uint8> toutes(std::begin(TOUTES_TECHNIQUES), std::end(TOUTES_TECHNIQUES));
-        Acore::Containers::RandomShuffle(toutes);
-        uint8 masque = 0;
-        for (uint8 i = 0; i < TECHNIQUES_PAR_DIFFICULTE[difficulte]; ++i)
-            masque |= toutes[i];
+        uint8 masque = SolAzeroth::AffixeSemaine();
+        std::vector<uint8> autres;
+        for (uint8 t : TOUTES_TECHNIQUES)
+            if (t != masque)
+                autres.push_back(t);
+        Acore::Containers::RandomShuffle(autres);
+        for (uint8 i = 1; i < TECHNIQUES_PAR_DIFFICULTE[difficulte] && i <= autres.size(); ++i)
+            masque |= autres[i - 1];
         return masque;
     }
 
@@ -285,7 +290,10 @@ public:
         if (boss)
             ComposantDeDonjon(player, map, creature->GetEntry(), difficulte);
         if (final && map->IsNonRaidDungeon())
+        {
             Termines(player->GetSession()->GetAccountId()).insert(map->GetId());
+            SolAzeroth::ProgresSemaine(player, SolAzeroth::SEMAINE_DONJON);
+        }
         if (!final || difficulte < 2)
             return;
         SolAzeroth::DonnerMarques(player, 2 * (difficulte - 1), Acore::StringFormat("difficulté {}", uint32(difficulte)));

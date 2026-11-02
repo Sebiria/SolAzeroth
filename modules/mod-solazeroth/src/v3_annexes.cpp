@@ -192,6 +192,7 @@ namespace
             j->payes[quete] = Aujourdhui();
             CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_annexes_jour (guid, quete, jour) VALUES ({}, {}, {})",
                 player->GetGUID().GetCounter(), quete, Aujourdhui());
+            SolAzeroth::ProgresSemaine(player, SolAzeroth::SEMAINE_DEFIS);
         }
         float facteur = medaille == 3 ? 2.0f : medaille == 2 ? 1.5f : 1.0f;
         std::string texte;

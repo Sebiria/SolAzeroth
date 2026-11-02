@@ -233,8 +233,9 @@ namespace
         uint8 mode = AUCUN;
         if (ConcerneDonjon(creature))
         {
+            // Lot 4a : en difficulté 1, l'affixe de la semaine seulement (v3_semaine.cpp), sans changer la puissance.
             uint8 difficulte = SolAzeroth::DifficulteDonjon(creature->GetMap());
-            if (difficulte >= 2)
+            if (difficulte >= 2 || (difficulte == 1 && SolAzeroth::TechniquesDonjon(creature->GetMap())))
                 mode = DONJON + difficulte;
         }
         else if (Concerne(creature) && creature->GetZoneId() == player->GetZoneId())
@@ -249,7 +250,8 @@ namespace
         uint32 rang = creature->GetCreatureTemplate()->rank;
         if (mode == CAUCHEMAR && (rang == CREATURE_ELITE_RARE || rang == CREATURE_ELITE_RAREELITE))
             facteurVie *= VIE_RARE_CAUCHEMAR;
-        ChangerPuissance(creature, ancienne, std::max(ancienne, visee), facteurVie);
+        if (mode != DONJON + 1)
+            ChangerPuissance(creature, ancienne, std::max(ancienne, visee), facteurVie);
 
         if (mode > DONJON)
             etat->techniques = SolAzeroth::TechniquesDonjon(creature->GetMap());
