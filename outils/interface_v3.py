@@ -7,6 +7,10 @@ Usage : py -3.11 outils\\interface_v3.py   (Pillow et fontTools ; le Pillow de 3
 - Textures (TGA 32 bits, tracées ici) -> Interface\\SolAzeroth\\Textures\\*.tga.
 - Code : interface-v3\\FrameXML\\*.lua, copié dans Interface\\FrameXML et ajouté au FrameXML.toc du client
   (repris de ses archives, avant « ## add new modules above here »).
+- Audit du jeu, lot 6a (02/11/2026, C9 ; choix de l'utilisateur : « grisés bientôt ») : création limitée à l'orc et au
+  troll guerriers. Le CharacterCreate.lua du client (GlueXML) est repris de ses archives et modifié ici (creation()) :
+  les autres races et classes restent visibles, grisées, avec « pas encore prêt » au survol ; le serveur les refuse
+  aussi (scripts\configurer.ps1, CharacterCreating.Disabled.RaceMask et ClassMask).
 """
 import math
 import os
@@ -28,7 +32,7 @@ CODE = ["SolUI_Base.lua", "SolUI_Cacher.lua", "SolUI_Perso.lua", "SolUI_Techniqu
         "SolUI_Zone.lua", "SolUI_Cartes.lua", "SolUI_Puissances.lua", "SolUI_Quetes.lua", "SolUI_Dialogue.lua",
         "SolUI_Discussion.lua", "SolUI_Camp.lua", "SolUI_Bivouac.lua", "SolUI_Raccourcis.lua",
         "SolUI_Catalogue.lua", "SolUI_Annexes.lua", "SolUI_Joaillerie.lua", "SolUI_Collection.lua", "SolUI_Inventaire.lua", "SolUI_Recettes.lua", "SolUI_RecettesGouffre.lua", "SolUI_RecettesSurplus.lua", "SolUI_Cuisine.lua",
-        "SolUI_Enchantements.lua", "SolUI_Equipement.lua", "SolUI_AventurierDonnees.lua", "SolUI_Aventurier.lua", "SolUI_PassifsDonnees.lua", "SolUI_Passifs.lua", "SolUI_Lexique.lua", "SolUI_Carnets.lua", "SolUI_Barre.lua", "SolUI_Soldes.lua", "SolUI_Signalement.lua",
+        "SolUI_Enchantements.lua", "SolUI_Equipement.lua", "SolUI_AventurierDonnees.lua", "SolUI_Aventurier.lua", "SolUI_PassifsDonnees.lua", "SolUI_Passifs.lua", "SolUI_Lexique.lua", "SolUI_Paroles.lua", "SolUI_Carnets.lua", "SolUI_Barre.lua", "SolUI_Soldes.lua", "SolUI_Signalement.lua",
         "SolUI_Reglages.lua"]
 GENERES = {"SolUI_Cartes.lua"}   # écrits par ce script, pas copiés de interface-v3\FrameXML
 
@@ -198,23 +202,102 @@ import os, sys
 sys.path.insert(0, sys.argv[1])
 import mpq
 for archive in ["patch-frFR-3.MPQ", "patch-frFR-2.MPQ", "patch-frFR.MPQ", "locale-frFR.MPQ"]:
-    contenu = mpq.lire(os.path.join(sys.argv[2], archive), "Interface\\FrameXML\\FrameXML.toc")
+    contenu = mpq.lire(os.path.join(sys.argv[2], archive), sys.argv[3])
     if contenu:
         sys.stdout.buffer.write(contenu)
         break
 """
 
 
-def toc_du_client():
-    """FrameXML.toc du client, du patch de langue le plus récent au plus ancien.
+def du_client(nom):
+    """Un fichier de l'interface du client, du patch de langue le plus récent au plus ancien.
 
     La lecture des MPQ (mpyq) n'est installée que pour Python 3.14 : on passe par lui."""
     data = os.path.join(dossier_client(), "Data", "frFR")
     outils = os.path.dirname(os.path.abspath(__file__))
-    contenu = subprocess.run(["py", "-3.14", "-c", LIRE_TOC, outils, data], capture_output=True, check=True).stdout
+    contenu = subprocess.run(["py", "-3.14", "-c", LIRE_TOC, outils, data, nom], capture_output=True, check=True).stdout
     if not contenu:
-        raise RuntimeError("FrameXML.toc introuvable dans les archives du client")
+        raise RuntimeError(nom + " introuvable dans les archives du client")
     return contenu.decode("utf-8")
+
+
+def toc_du_client():
+    return du_client("Interface\\FrameXML\\FrameXML.toc")
+
+
+# Lot 6a : ce qui est prêt à la création (noms de fichier de GetAvailableRaces et GetAvailableClasses).
+RACES_PRETES, CLASSES_PRETES = ("ORC", "TROLL"), ("WARRIOR",)
+PAS_PRET = "|cffff9080Pas encore prêt : seuls l'orc et le troll guerriers ont leur zone de départ.|r"
+CREATION = [
+    # Les races et classes qui ne sont pas prêtes : grisées, avec le message au survol.
+    ("""		if ( select(i+2, ...) == 1 ) then
+			button.enable = true;
+			SetButtonDesaturated(button);""",
+     """		if ( select(i+2, ...) == 1 and SOL_PRETES[strupper(select(i+1, ...))] ) then
+			button.enable = true;
+			SetButtonDesaturated(button);"""),
+    ("""			button.tooltip = _G[strupper(select(i+1, ...).."_".."DISABLED")];
+		end
+		index = index + 1;
+	end
+	for i=CharacterCreate.numRaces + 1, MAX_RACES, 1 do""",
+     """			button.tooltip = select(i+2, ...) == 1 and (select(i, ...).."|n"..SOL_PAS_PRET)
+				or _G[strupper(select(i+1, ...).."_".."DISABLED")];
+		end
+		index = index + 1;
+	end
+	for i=CharacterCreate.numRaces + 1, MAX_RACES, 1 do"""),
+    ("""		if ( (select(i+2, ...) == 1) and (IsRaceClassValid(CharacterCreate.selectedRace, index)) ) then""",
+     """		if ( (select(i+2, ...) == 1) and (IsRaceClassValid(CharacterCreate.selectedRace, index))
+			and SOL_PRETES[strupper(select(i+1, ...))] ) then"""),
+    ("""			button.tooltip = _G[strupper(select(i+1, ...).."_".."DISABLED")];
+			_G["CharacterCreateClassButton"..index.."DisableTexture"]:Show();""",
+     """			button.tooltip = (select(i+2, ...) == 1 and IsRaceClassValid(CharacterCreate.selectedRace, index))
+				and (select(i, ...).."|n"..SOL_PAS_PRET) or _G[strupper(select(i+1, ...).."_".."DISABLED")];
+			_G["CharacterCreateClassButton"..index.."DisableTexture"]:Show();"""),
+    # À l'ouverture (le jeu tire une combinaison au hasard) : un orc guerrier si le tirage n'est pas prêt.
+    ("""		ResetCharCustomize();
+		CharacterCreateNameEdit:SetText("");""",
+     """		ResetCharCustomize();
+		SolChoixPret();
+		CharacterCreateNameEdit:SetText("");"""),
+]
+
+
+def creation():
+    """CharacterCreate.lua du client, limité à ce qui est prêt."""
+    texte = du_client("Interface\\GlueXML\\CharacterCreate.lua").replace("\r\n", "\n")
+    for avant, apres in CREATION:
+        assert texte.count(avant) == 1, avant
+        texte = texte.replace(avant, apres)
+    prets = ", ".join("%s = true" % n for n in RACES_PRETES + CLASSES_PRETES)
+    texte += "\n".join([
+        "",
+        "-- Sol'Azeroth, lot 6a : ajouté par outils\\interface_v3.py (creation()).",
+        "SOL_PRETES = { %s };" % prets,
+        "SOL_PAS_PRET = \"%s\";" % PAS_PRET,
+        "local function SolIndex(prets, ...)",
+        "\tfor i = 1, select(\"#\", ...), 3 do",
+        "\t\tif ( select(i+2, ...) == 1 and prets[strupper(select(i+1, ...))] ) then return (i + 2) / 3; end",
+        "\tend",
+        "end",
+        "function SolChoixPret()",
+        "\tlocal _, race = GetNameForRace();",
+        "\tif ( not race or not SOL_PRETES[strupper(race)] ) then",
+        "\t\tlocal index = SolIndex({ ORC = true }, GetAvailableRaces());",
+        "\t\tif ( index ) then SetSelectedRace(index); end",
+        "\tend",
+        "\tlocal _, classe = GetSelectedClass();",
+        "\tif ( not classe or not SOL_PRETES[strupper(classe)] ) then",
+        "\t\tlocal index = SolIndex({ WARRIOR = true }, GetAvailableClasses());",
+        "\t\tif ( index ) then SetSelectedClass(index); end",
+        "\tend",
+        "end",
+        ""])
+    dossier = os.path.join(FICHIERS, "Interface", "GlueXML")
+    os.makedirs(dossier, exist_ok=True)
+    with open(os.path.join(dossier, "CharacterCreate.lua"), "w", encoding="utf-8", newline="\r\n") as f:
+        f.write(texte)
 
 
 def cartes():
@@ -253,4 +336,5 @@ if __name__ == "__main__":
     polices()
     textures()
     code()
+    creation()
     print("Interface v3 préparée dans", FICHIERS)

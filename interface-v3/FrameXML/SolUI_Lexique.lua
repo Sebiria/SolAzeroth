@@ -6,6 +6,8 @@
 -- - Explications : au premier passage d'un moment clé (premier éclat, première prime prise, première mort…), une
 --   petite fenêtre résume le concept et mène à sa page. Hors combat seulement, une à la fois, une seule fois par
 --   compte (S.VUS, gardé avec la disposition par l'addon SolAzeroth : SolUI_Reglages.lua).
+-- - Lot 6a (02/11/2026, C9) : pages Règles du combat, Rempart, Cuisine, Pierre de foyer, Montures et Mots du jeu ;
+--   les leçons des PNJ (SolUI_Paroles.lua) remplacent les explications des moments qu'elles couvrent ; vie à 80 %.
 
 local S = SolUI
 
@@ -31,7 +33,8 @@ S.LEXIQUE = {
           .. "• Primes, contrats et défis : 5 à 30 (médaille d'argent ×1,5, d'or ×2).\n"
           .. "• Chaque relique : 5.\n"
           .. "• Épreuve du jour : 1 par vague tenue, une fois par jour.\n"
-          .. "• Dernier boss d'un donjon : 2 par difficulté au-dessus de 1.\n\n"
+          .. "• Dernier boss d'un donjon : 2 par difficulté au-dessus de 1.\n"
+          .. "• Paliers 12, 20, 30 et 38 du rang d'aventurier : 50 à 200.\n\n"
           .. T("Dépenser")
           .. "• Améliorations du feu et de la potion (Camp).\n"
           .. "• Carte des reliques : 30 Marques et 2 po.\n"
@@ -61,7 +64,7 @@ S.LEXIQUE = {
           "Ton équipement se fabrique avec ce que tu récoltes : carnet Artisanat (touche P).",
           T("Fabriquer")
           .. "• Composants pris dans la Collection puis dans le sac, plus un peu d'or.\n"
-          .. "• Puissance requise : celle de la pièce moins 4.\n"
+          .. "• Puissance requise : celle de la pièce moins 2.\n"
           .. "• Maille, boucliers et armes : près d'une enclume ou d'une forge.\n"
           .. "• 10 s immobile : bouger annule.\n\n"
           .. T("Paliers")
@@ -156,6 +159,36 @@ S.LEXIQUE = {
           .. "• Cauchemar : ×1,5, deux techniques, éclats ×3, des événements.\n"
           .. "• Ils s'ouvrent avec le rang d'aventurier (paliers 5 et 9)." },
     } },
+    { "Combat", {
+        { "regles", "Règles du combat",
+          "Tout coup porte : ni raté, ni esquive, ni parade. L'armure et la puissance font la différence.",
+          T("Les coups")
+          .. "• Ni raté, ni esquive, ni parade, dans les deux sens.\n"
+          .. "• L'armure retire un montant fixe à chaque coup : les petits coups passent mal.\n\n"
+          .. T("La puissance")
+          .. "• Face à plus puissant : −2 % de dégâts par point manquant, jusqu'à −75 %.\n"
+          .. "• La puissance de chaque monstre se lit au survol de la cible.\n\n"
+          .. T("Les monstres")
+          .. "• Pas de menace : ils n'ont que toi à frapper.\n"
+          .. "• Rares et chefs sont plus durs ; certains lieux ont un chef renforcé, qui paraît quand sa troupe est tombée." },
+        { "rempart", "Rempart",
+          "Le passif du guerrier tank : une part de chaque coup encaissé devient un bouclier.",
+          T("Remplir")
+          .. "• Chaque coup encaissé, après l'armure, verse 40 % de ses dégâts dans le Rempart.\n"
+          .. "• Plafond : 30 % de la vie maximale. Il se vide doucement hors combat.\n\n"
+          .. T("Dépenser")
+          .. "• Il absorbe les coups suivants.\n"
+          .. "• Riposte du rempart et Second souffle le consomment." },
+        { "techniques", "Techniques",
+          "Ni rage ni mana : deux techniques à recharge au départ, d'autres apprises au fil du récit, et le passif de ta spécialisation.",
+          T("Techniques")
+          .. "• Les maîtres les enseignent à des étapes du récit (Gornek, Gar'Thok, Gadrin en Durotar).\n"
+          .. "• 3 emplacements au départ, 5 à la fin de Durotar, 8 plus tard ; changées hors combat (touche K).\n"
+          .. "• Un bouclier est exigé ; temps de recharge global de 0,75 s.\n\n"
+          .. T("Combat")
+          .. "• Pas de menace : les monstres n'ont que toi à frapper.\n"
+          .. "• Guerrier tank : Rempart, une part des coups reçus devient un bouclier." },
+    } },
     { "Survie", {
         { "regeneration", "Vie et régénération",
           "Ni nourriture, ni bandages : la vie remonte hors combat, au feu de camp et par ta potion.",
@@ -179,6 +212,21 @@ S.LEXIQUE = {
           .. "• Recharge 30 s. Les charges reviennent au Repos, ou en auberge et en ville.\n\n"
           .. T("Améliorer")
           .. "• Carnet Camp : 2 charges à 35 %, puis un soin sur la durée." },
+        { "cuisine", "Cuisine",
+          "Près d'un feu, ton Feu de camp compris, les ingrédients de la zone deviennent des repas de 30 minutes.",
+          T("Cuisiner")
+          .. "• Artisanat › Fabrication, catégorie Cuisine, près d'un feu ; 5 s.\n"
+          .. "• Un ingrédient des bêtes de la zone, une herbe et un assaisonnement de marchand.\n\n"
+          .. T("Le repas")
+          .. "• 30 min : ta caractéristique principale, et le bonus propre du plat (vie, armure, critique, dégâts, hâte).\n"
+          .. "• Un seul repas à la fois ; il s'ajoute au Repos et aux consommables." },
+        { "foyer", "Pierre de foyer",
+          "Elle ramène à ton auberge, et c'est là que tu reviens après la mort.",
+          T("Usage")
+          .. "• Bouton à droite des techniques. Recharge de 30 min au départ.\n"
+          .. "• Le rang d'aventurier la ramène à 25, 20, 15 puis 10 min ; un passif extérieur retire encore 5 min.\n\n"
+          .. T("Après la mort")
+          .. "• Libérer l'esprit ramène à la pierre de foyer, vie pleine." },
         { "mort", "Mort et âme",
           "La mort ne coûte ni objet ni usure, mais de l'âme. Une âme à zéro met fin au personnage.",
           T("Mourir")
@@ -188,29 +236,30 @@ S.LEXIQUE = {
           .. "• En auberge ou en ville, 4 éclats par point (Personnage › Âme)." },
     } },
     { "Progression", {
-        { "techniques", "Techniques",
-          "Ni rage ni mana : deux techniques à recharge au départ, d'autres apprises au fil du récit, et le passif de ta spécialisation.",
-          T("Techniques")
-          .. "• Les maîtres les enseignent à des étapes du récit (Gornek, Gar'Thok, Gadrin en Durotar).\n"
-          .. "• 3 emplacements au départ, 5 à la fin de Durotar, 8 plus tard ; changées hors combat (touche K).\n"
-          .. "• Un bouclier est exigé ; temps de recharge global de 0,75 s.\n\n"
-          .. T("Combat")
-          .. "• Pas de menace : les monstres n'ont que toi à frapper.\n"
-          .. "• Guerrier tank : Rempart, une part des coups reçus devient un bouclier." },
         { "aventurier", "Rang d'aventurier",
           "Le rang du compte : tout ce que tu accomplis le nourrit, une fois par compte.",
           T("Points")
-          .. "• Quête d'histoire 10, lieu 20, annexe 25, relique 10, zone à 60 % 50, à 100 % 300, donjon 150.\n\n"
+          .. "• Quête d'histoire 10, lieu 20, annexe 25, relique 10, zone à 60 % 50, à 100 % 300, donjon 150.\n"
+          .. "• Zone maîtrisée (150 monstres) en difficile 150, en cauchemar 300 ; objectifs d'artisan 15.\n"
+          .. "• Le détail : Aventure › Registre.\n\n"
           .. T("Paliers")
-          .. "• Titres, pierre de foyer plus rapide, montures (palier 10), modes de zone (5 et 9), difficultés de donjon, emplacements de passifs extérieurs.\n"
+          .. "• Titres, pierre de foyer plus rapide, montures (palier 10), modes de zone (5 et 9), Marques, emplacements de passifs extérieurs.\n"
           .. "• Il ne donne pas de puissance." },
+        { "montures", "Montures",
+          "On ne monte pas tout de suite : la monte s'ouvre au palier 10 du rang d'aventurier, vers la fin de Durotar.",
+          T("La monte")
+          .. "• Palier 10 (1 950 points) : la monte et une monture à 60 % offerte.\n"
+          .. "• Chaque vitesse, de 65 à 150 %, s'ouvre avec un palier.\n\n"
+          .. T("La boutique")
+          .. "• Aventure › Montures, en Marques du voyageur ; les montures sont au compte.\n"
+          .. "• Les montures volantes ne se lancent pas." },
         { "donjons", "Donjons",
           "La difficulté du donjon (1 à 5) se choisit avant le premier combat, puis se verrouille.",
           T("Difficulté")
           .. "• Plus haute : des techniques de monstre et plus de butin.\n"
           .. "• Dernier boss : des Marques, et dès la difficulté 3 une chance de pierre taillée.\n"
           .. "• Les boss donnent la Braise du Gouffre, pour les pièces bleues.\n"
-          .. "• Les difficultés s'ouvrent avec le rang d'aventurier." },
+          .. "• Terminer le donjon (son dernier boss) dans une difficulté ouvre la suivante, pour le compte." },
         { "passifs", "Réputation et passifs",
           "Chaque donjon nourrit une réputation commune ; elle ouvre des passifs à choisir avant d'entrer.",
           T("Donjons")
@@ -218,6 +267,19 @@ S.LEXIQUE = {
           .. "• 6 emplacements de passifs de donjon.\n\n"
           .. T("Monde extérieur")
           .. "• Emplacements achetés en Marques, passifs changés en auberge ou en ville." },
+        { "mots", "Mots du jeu",
+          "Quelques mots qui se ressemblent mais ne disent pas la même chose.",
+          T("Puissance")
+          .. "• Ta puissance : ta force, la moyenne de ton équipement. La « puissance d'attaque » d'un objet n'est qu'une caractéristique.\n\n"
+          .. T("Rang et palier")
+          .. "• Rang : celui d'une pièce (1 à 5), de la réputation des donjons, de la potion, du feu.\n"
+          .. "• Palier : une étape du rang d'aventurier, ou d'un contrat.\n\n"
+          .. T("Défi et épreuve")
+          .. "• Défi : une quête annexe contre la montre ou sans potion, avec médaille.\n"
+          .. "• Épreuve : les vagues de Zun'jala, et l'épreuve du jour.\n\n"
+          .. T("Éclats et Repos")
+          .. "• Éclats cadavériques : ta monnaie de progression ; les éclats d'enchantement sont des composants.\n"
+          .. "• Repos au coin du feu : un bonus de vie, pas d'expérience." },
     } },
 }
 
@@ -371,7 +433,7 @@ S.Message("SOLEQUIP", function(champs)
     if champs[1] == "FORGE" and champs[2] == "1" then S.Expliquer("fabrication"); S.Expliquer("rangs") end
 end)
 S.Ecouter("UNIT_HEALTH", function(_, unite)
-    if unite == "player" and UnitHealth("player") > 0 and UnitHealth("player") < UnitHealthMax("player") * 0.5 then
+    if unite == "player" and UnitHealth("player") > 0 and UnitHealth("player") < UnitHealthMax("player") * 0.8 then   -- lot 6a : plus tôt (était 50 %)
         S.Expliquer("regeneration"); S.Expliquer("camp"); S.Expliquer("potion")
     end
 end)

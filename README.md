@@ -24,9 +24,19 @@ No bots, no group finder, no auction house. Since version 3, Sol'Azeroth is less
 **Durotar (power 1 to 11)**
 - A rewritten story of 30 quests, from the Valley of Trials to Razor Hill, Sen'jin, the Echo Isles and the Burning Blade, down into Ragefire Chasm.
 - Side activities worth half the zone: places to clear (with reinforced chiefs), bounties, daily contracts, timed challenges with bronze, silver and gold medals, a wave trial with a record, and 16 hidden relics (a map that reveals them can be bought).
-- **Ragefire Chasm**, open at 60 %: difficulties 1 to 5, a dungeon component (Ember of the Chasm) and 31 blue pieces to craft with it.
+- **Ragefire Chasm**, open at 60 %: difficulties 1 to 5, each unlocked by clearing the previous one, a dungeon component (Ember of the Chasm) and 31 blue pieces to craft with it.
 
 **Warrior tank**, the first specialization with a full kit: the **Bulwark** passive (part of every hit taken becomes a shield that techniques can spend) and its techniques.
+
+## First steps
+
+- **Create an orc or troll warrior**: the only kit and zone ready so far (the other choices are greyed out).
+- **No levels**: your strength is your **power**, the average item level of what you wear. Every monster has its own; against a stronger one, your hits land for less.
+- **Listen to the valley's NPCs**: at the first key moments (first fight, first harvest, first fire, first death…), they explain the rule in a dialogue window with "Next" and "Close" buttons.
+- **Harvest and craft**: herbs, ore and leather are gathered without professions and go into the Collection (B key); gear is crafted in the Crafting notebook (P key).
+- **Survive without food**: health comes back out of combat, at the camp fire (sit for a minute: the fireside rest buff and your potion charges) and through your single potion, in combat.
+- **No mount right away**: riding unlocks at tier 10 of the adventurer rank, near the end of Durotar.
+- **The Lexicon (J key)** has one page per rule; the "!" key reports a bug.
 
 ## Systems
 
@@ -36,7 +46,7 @@ No bots, no group finder, no auction house. Since version 3, Sol'Azeroth is less
 | Collection | An unlimited, exhaustive inventory of every collectible (materials, components, relics), beside a 50-slot bag |
 | Camp | Camp fire (rest buff, regeneration) and potion, both upgraded with shopping lists |
 | Death and soul | Death sends you back to your hearthstone without loss, but costs soul points; a soul at zero ends the character |
-| Adventurer rank | Account rank fed by everything you do: titles, faster hearthstone, mounts (from 60 % to 150 % speed), zone modes, dungeon difficulties |
+| Adventurer rank | Account rank fed by everything you do: titles, faster hearthstone, mounts (from 60 % to 150 % speed), zone modes, Voyager's Marks |
 | Dungeon reputation | Account reputation across all instances, unlocking passives to choose before each dungeon; outdoor passives too |
 | Currency | Three, each with its role: Traveler's Marks (bounties, challenges, camp, mounts), gold (crafting, item ranks, repairs) and corpse shards (item ranks, soul) |
 

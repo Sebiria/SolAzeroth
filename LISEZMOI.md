@@ -20,11 +20,21 @@ Pas de bots, pas de recherche de groupe, pas d'hôtel des ventes. Depuis la vers
 ## Ce qui se joue aujourd'hui
 
 **Durotar (puissance 1 à 11)**
-- Une histoire réécrite de 30 quêtes, de la Vallée des Épreuves à Razor Hill, Sen'jin, les Îles de l'Écho et la Lame ardente, jusque dans le Gouffre de Ragefeu.
-- Des activités annexes qui valent la moitié de la zone : lieux à nettoyer (avec chefs renforcés), primes, contrats journaliers, épreuves contre la montre avec médailles de bronze, d'argent et d'or, une épreuve de vagues avec record, et 16 reliques cachées (une carte qui les dévoile s'achète).
-- **Le Gouffre de Ragefeu**, ouvert à 60 % : difficultés 1 à 5, un composant de donjon (la Braise du Gouffre) et 31 pièces bleues à fabriquer avec.
+- Une histoire réécrite de 30 quêtes, de la Vallée des épreuves à Tranchecolline, Sen'jin, les Îles de l'Écho et la Lame ardente, jusque dans le Gouffre de Ragefeu.
+- Des activités annexes qui valent la moitié de la zone : lieux à nettoyer (avec chefs renforcés), primes, contrats journaliers, défis contre la montre avec médailles de bronze, d'argent et d'or, une épreuve de vagues avec record, et 16 reliques cachées (une carte qui les dévoile s'achète).
+- **Le Gouffre de Ragefeu**, ouvert à 60 % : difficultés 1 à 5, chacune ouverte en réussissant la précédente, un composant de donjon (la Braise du Gouffre) et 31 pièces bleues à fabriquer avec.
 
 **Guerrier tank**, première spécialisation au kit complet : le passif **Rempart** (une part de chaque coup reçu devient un bouclier que les techniques peuvent dépenser) et ses techniques.
+
+## Premiers pas
+
+- **Créer un orc ou un troll guerrier** : c'est le seul kit et la seule zone prêts (les autres choix sont grisés).
+- **Pas de niveau** : ta force est ta **puissance**, la moyenne des niveaux d'objet de ce que tu portes. Chaque monstre a la sienne ; face à plus puissant, tes coups portent moins.
+- **Écoute les PNJ de la vallée** : aux premiers moments clés (premier combat, première récolte, premier feu, première mort…), ils expliquent la règle dans une fenêtre de répliques, avec « Suivant » et « Fermer ».
+- **Récolte et fabrique** : plantes, filons et cuir se récoltent sans métier et vont dans la Collection (touche B) ; l'équipement se fabrique dans le carnet Artisanat (touche P).
+- **Survis sans nourriture** : la vie remonte hors combat, au feu de camp (assis une minute : le Repos au coin du feu et les charges de potion) et par ta potion unique, en combat.
+- **Pas de monture tout de suite** : la monte s'ouvre au palier 10 du rang d'aventurier, vers la fin de Durotar.
+- **Le Lexique (touche J)** garde une page par règle ; la touche « ! » signale un bug.
 
 ## Systèmes
 
@@ -34,7 +44,7 @@ Pas de bots, pas de recherche de groupe, pas d'hôtel des ventes. Depuis la vers
 | Collection | Un inventaire exhaustif et sans limite de tous les objets à collectionner (matériaux, composants, reliques), à côté d'un sac de 50 places |
 | Camp | Feu de camp (Repos, régénération) et potion, améliorés par des listes de courses |
 | Mort et âme | La mort ramène à la pierre de foyer sans perte, mais coûte de l'âme ; une âme à zéro met fin au personnage |
-| Rang d'aventurier | Rang de compte nourri par tout ce qu'on accomplit : titres, pierre de foyer plus rapide, montures (de 60 % à 150 %), modes de zone, difficultés de donjon |
+| Rang d'aventurier | Rang de compte nourri par tout ce qu'on accomplit : titres, pierre de foyer plus rapide, montures (de 60 % à 150 %), modes de zone, Marques du voyageur |
 | Réputation des donjons | Réputation de compte commune à toutes les instances, qui ouvre des passifs à choisir avant chaque donjon ; des passifs du monde extérieur aussi |
 | Monnaies | Trois, chacune son rôle : les Marques du voyageur (primes, défis, camp, montures), l'or (fabrication, rangs d'objet, réparations) et les éclats cadavériques (rangs d'objet, âme) |
 
