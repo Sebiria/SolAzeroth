@@ -272,7 +272,7 @@ namespace
     uint32 const PANOPLIE_2 = 101600, PANOPLIE_4 = 101601, PANOPLIE_6 = 101602;
     uint32 const SORTS_VARIANTES[] = { 0, 101603, 101604, 101605 };   // Critique, Hâte, Vol de vie
     uint8 const VARIANTES = 3;
-    uint32 const GOUFFRE_PREMIERE = 910241, GOUFFRE_DERNIERE = 910272;   // 910272 : Crâne du Gouffre (orbes_v3.py)
+    uint32 const GOUFFRE_PREMIERE = 910241, GOUFFRE_DERNIERE = 910272;   // 910272 : Orbe ardent du Gouffre (orbes_v3.py)
     float const VOL_PAR_PIECE = 0.005f, VOL_PANOPLIE = 0.03f;
     uint32 const RECOMPTE = 1000;
     std::unordered_map<uint32, uint8> variantes;   // objet (guid) -> variante

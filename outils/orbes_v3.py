@@ -1,11 +1,14 @@
 """v3, lot D5 (02/11/2026, choix de l'utilisateur) : orbes à fabriquer, pour la main gauche du démoniste.
 
 La forge fabrique deux boucliers (Rondache et Bouclier en cuivre) et le Gouffre le Rempart du Gouffre ; aucun métier
-ne faisait d'objet de main gauche pour un lanceur de sorts. Trois orbes en couture, aux mêmes puissances :
-- Orbe de lin grossier (rudimentaire, puissance 3, comme la Rondache) ;
-- Orbe en lin (puissance 9, comme le Bouclier en cuivre), vendu aussi par Cutac à Razor Hill ;
-- Crâne du Gouffre (bleu, puissance 14, comme le Rempart du Gouffre) ; il compte dans la panoplie du Gouffre
-  (v3_equipement.cpp, GOUFFRE_DERNIERE).
+ne faisait d'objet de main gauche pour un lanceur de sorts. Trois orbes en joaillerie (idée de l'utilisateur : un orbe
+est une pierre taillée), aux mêmes puissances, rangés avec les boucliers (« Armes et boucliers »), sans forge :
+- Orbe de malachite brute (rudimentaire, puissance 3, comme la Rondache) : 1 Malachite brute, 2 Minerais de cuivre ;
+- Orbe de malachite (puissance 9, comme le Bouclier en cuivre) : 1 Malachite taillée, 4 Minerais de cuivre ; vendu aussi
+  par Cutac à Razor Hill ;
+- Orbe ardent du Gouffre (bleu, puissance 14, comme le Rempart du Gouffre) : Braise, Œil de tigre taillé, 40 Éclats
+  cadavériques, 4 Minerais de cuivre ; il compte dans la panoplie du Gouffre (v3_equipement.cpp, GOUFFRE_DERNIERE).
+Coûts proches des boucliers : une pierre taillée demande environ 10 minerais (prospection, joaillerie_v3.py).
 Même barème que les autres pièces (equipement_v3.caracteristiques, poids du bouclier), sans armure, comme les orbes
 de tissu_v3.py ; mêmes rangs 1 à 5.
 
@@ -21,25 +24,29 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from quetes_durotar import s
 import equipement_v3 as e3
 import equipement_gouffre_v3 as gouffre
+import joaillerie_v3 as joaillerie
 
 MIGRATION = r"C:\SolAzeroth\sql\migrations\125_v3_orbes"
 LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_RecettesOrbes.lua"
 CUTAC = 3166                          # Razor Hill, cuir et tissu (equipement_v3.MARCHANDS)
-ORBE_PERLEE, CRANE = 15969, 4984      # Orbe perlé, Crâne du destin imminent : apparence et type
+ORBE_PERLEE, ORBE_ARCANIQUE = 15969, 7507   # apparence et type
 
 # (entrée, nom, objet d'origine, puissance, catégorie de la fenêtre Équipement, qualité)
 ORBES = [
-    (910237, "Orbe de lin grossier", ORBE_PERLEE, 3, "Rudimentaire", 2),
-    (910236, "Orbe en lin", ORBE_PERLEE, 9, "Tissu", 2),
-    (910272, "Crâne du Gouffre", CRANE, gouffre.PUISSANCE, "Gouffre : tissu", 3),
+    (910237, "Orbe de malachite brute", ORBE_PERLEE, 3, "Rudimentaire", 2),
+    (910236, "Orbe de malachite", ORBE_PERLEE, 9, "Joaillerie", 2),
+    (910272, "Orbe ardent du Gouffre", ORBE_ARCANIQUE, gouffre.PUISSANCE, "Gouffre : joaillerie", 3),
 ]
-COMPOSANTS = {910237: {e3.LIN: 4}, 910236: {e3.LIN: 10}}
+COMPOSANTS = {
+    910237: [(joaillerie.MALACHITE, 1), (e3.CUIVRE, 2)],
+    910236: [(gouffre.MALACHITE_TAILLEE, 1), (e3.CUIVRE, 4)],
+    910272: [(gouffre.BRAISE, 1), (gouffre.OEIL_TIGRE_TAILLE, 1), (gouffre.ECLAT, 40), (e3.CUIVRE, 4)],
+}
+GENRE = "Armes et boucliers"
 
 
 def composants(e, source):
-    if e in COMPOSANTS:
-        return list(COMPOSANTS[e].items())
-    return gouffre.composants(source, e3.LIN, 14)
+    return COMPOSANTS[e]
 
 
 def requise(e, p):
@@ -93,7 +100,7 @@ def main():
     w("INSERT INTO solazeroth_v3_rangs VALUES %s;" % ", ".join(
         "(%d, %d, %d)" % (e3.entree_rang(e, r) if r else e, e, r) for e in entrees for r in range(e3.RANGS + 1)))
     w("")
-    w("-- Recettes : couture, sans forge.")
+    w("-- Recettes : joaillerie, sans forge.")
     w("DELETE FROM solazeroth_v3_recettes WHERE objet IN (%s);" % liste)
     w("DELETE FROM solazeroth_v3_recettes_composants WHERE objet IN (%s);" % liste)
     w("INSERT INTO solazeroth_v3_recettes VALUES %s;" % ", ".join(
@@ -114,12 +121,13 @@ def main():
             f.write("\n".join(lignes))
 
     l = ["-- Généré par outils\\orbes_v3.py : ne pas modifier à la main.",
-         "-- Lot D5 : orbes à fabriquer, rangés avec le tissu de leur niveau (même format que SolUI_Recettes.lua)."]
+         "-- Lot D5 : orbes de joaillerie, rangés avec les boucliers de leur niveau (même format que SolUI_Recettes.lua)."]
     for e, nom, src, p, categorie, _ in ORBES:
         drapeau = ", gouffre = true" if categorie.startswith("Gouffre") else ""
         l.append("table.insert(SolUI.RECETTES, { nom = %s, forge = false%s, recettes = {" % (e3.lua_texte(categorie), drapeau))
-        l.append("    { %d, %s, %d, %d, %d, { %s }, \"Tissu\" }," % (e, e3.lua_texte(nom), p, requise(e, p),
-                 prix_recette(e, p, sources[src]), ", ".join("{ %d, %d }" % cn for cn in composants(e, sources[src]))))
+        l.append("    { %d, %s, %d, %d, %d, { %s }, %s }," % (e, e3.lua_texte(nom), p, requise(e, p),
+                 prix_recette(e, p, sources[src]), ", ".join("{ %d, %d }" % cn for cn in composants(e, sources[src])),
+                 e3.lua_texte(GENRE)))
         l.append("} })")
     with open(LUA, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(l) + "\n")
