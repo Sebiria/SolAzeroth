@@ -50,7 +50,8 @@ Les chemins sont relatifs au dépôt (`outils/`, `modules/mod-solazeroth/src/`, 
   - l'échange se fait sans message au joueur.
 - [ ] Récompenses de quête : la fenêtre et le journal montrent la version de la classe (`SolUI_Versions.lua`, `S.VersionObjet`).
 - [ ] Pièces fabriquées (métiers) : une version existe pour l'armure de la classe, ou bien la règle de remplacement est écrite.
-- [ ] Compétences d'armes : la classe sait manier les armes qu'elle reçoit.
+- [ ] Main gauche : chaque palier de fabrication a un objet pour la classe (bouclier pour le guerrier, orbe pour le démoniste, `orbes_v3.py`). Vérifier aussi les plages d'entrées codées en dur (panoplie du Gouffre, `GOUFFRE_DERNIERE`).
+- [ ] Compétences d'armes : la classe sait manier les armes qu'elle reçoit (récompenses de quête, Gouffre). Le démoniste apprend dagues, épées, masses et haches à une main, et bâtons (`SPECIALISATIONS`, `v3_kit.cpp`).
 - [ ] Rares secrets et leurs objets : bijou et bague portables par toutes les classes.
 
 ## 5. Améliorations à farmer

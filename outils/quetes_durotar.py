@@ -375,15 +375,17 @@ def item_dbc():
             table.enregistrements.append(ligne)
     # Annexes (migration 084) : Insigne, objets de quête, reliques (classe, sous-classe et emplacement changés), pièces ;
     # pierres taillées de la joaillerie (migration 085) ; Braise et pièces bleues du Gouffre (migration 101) ;
-    # bijou et bague des rares secrets (migration 121) ; versions en tissu pour le démoniste (lot D3, migration 124).
+    # bijou et bague des rares secrets (migration 121) ; versions en tissu pour le démoniste (lot D3, migration 124) ;
+    # orbes à fabriquer (migration 125).
     import annexes_durotar
     import equipement_gouffre_v3
     import joaillerie_v3
+    import orbes_v3
     import rares_secrets_v3
     import tissu_v3
     existants = {e[0] for e in table.enregistrements}
     for e, source, genre in annexes_durotar.lignes_dbc() + joaillerie_v3.lignes_dbc() +             equipement_gouffre_v3.lignes_dbc() + \
-            rares_secrets_v3.lignes_dbc() + tissu_v3.lignes_dbc():
+            rares_secrets_v3.lignes_dbc() + tissu_v3.lignes_dbc() + orbes_v3.lignes_dbc():
         if e not in existants:
             ligne = list(table.chercher(source))
             ligne[0] = e

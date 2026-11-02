@@ -81,7 +81,7 @@ CATEGORIES = ["Rudimentaire", "Maille", "Armes", "Cuir", "Tissu"]
 
 # Poids de l'emplacement (InventoryType) dans le barème.
 POIDS = {5: 1.0, 20: 1.0, 7: 1.0, 17: 1.0, 8: 0.75, 10: 0.75, 6: 0.75, 1: 0.75, 3: 0.75,
-         9: 0.56, 16: 0.56, 14: 0.56, 13: 0.56, 21: 0.56, 22: 0.56}
+         9: 0.56, 16: 0.56, 14: 0.56, 13: 0.56, 21: 0.56, 22: 0.56, 23: 0.56}   # 23 : orbe (orbes_v3.py)
 # Armure (lot 3a) : points par point de (ARMURE_C + puissance) pour 8 pièces (tête, épaules, torse, taille, jambes,
 # pieds, poignets, mains), réparties selon le poids de l'emplacement en seizièmes ; bouclier et cape à part.
 ARMURE_C = 3.0
@@ -123,6 +123,8 @@ def baremes():
 
 def armure(sous_classe, emplacement, puissance):
     """Armure d'une pièce de cette puissance (rang 0)."""
+    if emplacement == 23:
+        return 0                      # orbe tenu en main gauche : pas d'armure (comme les versions de tissu_v3.py)
     if emplacement == 14:
         unites = ARMURE_BOUCLIER
     elif emplacement == 16:

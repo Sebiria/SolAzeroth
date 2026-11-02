@@ -197,7 +197,7 @@ etatForge:SetPoint("TOPRIGHT", -56, -22)
 -- de départ), Inhabituel (les vertes), Gouffre (les bleues), puis Cuisine ; dans chacune, sous-catégories tissu, cuir,
 -- maille, plaque, armes et boucliers (genre de la recette, 7e champ), les vides cachées. Seul le niveau choisi s'ouvre.
 local p1 = pages[1]
-local LIGNES_RECETTES = 9   -- 9 pièces de tissu au Gouffre
+local LIGNES_RECETTES = 9   -- lignes visibles ; la liste défile au-delà (10 recettes de tissu au Gouffre)
 local GENRES = { "Tissu", "Cuir", "Maille", "Plaque", "Armes et boucliers" }
 local niveaux, categorieDe = {}, {}   -- { nom, sous = { { nom, recettes } } } ; recette -> sa catégorie de S.RECETTES
 do
