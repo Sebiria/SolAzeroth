@@ -499,6 +499,16 @@ namespace
             player->SendNewItem(item, 1, false, true);
             if (rangs.count(objet))
                 FixerVariante(item->GetGUID().GetCounter(), variante);
+            // Lot 5 : objectifs d'artisan.
+            uint32 base = rangs.count(objet) ? rangs.at(objet).base : 0;
+            if (recette.feu)
+                SolAzeroth::ObjectifArtisan(player, objet);
+            else if (base >= GOUFFRE_PREMIERE && base <= GOUFFRE_DERNIERE)
+                SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_BLEUE);
+            else if (base && item->GetTemplate()->ItemLevel >= 7)
+                SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_VERTE);
+            else if (!base)
+                SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_CONSOMMABLE);
         }
         Envoyer(player);
     }
@@ -737,6 +747,7 @@ public:
         }
         Prendre(player, brute, nombre);
         SolAzeroth::AjouterACollection(player, pierre, 1);
+        SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_PIERRE_TAILLEE);
         handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Taille :|r {}.", Nom(pierre)));
         Envoyer(player);
         return true;
@@ -792,6 +803,8 @@ public:
         for (auto const& [pierre, nombre] : pierres)
             Prendre(player, pierre, nombre);
         player->ModifyMoney(-int32(prix));
+        if (actuel.rang + 1 == 3 || actuel.rang + 1 == RANG_MAX)
+            SolAzeroth::ObjectifArtisan(player, actuel.rang + 1 == 3 ? SolAzeroth::ARTISAN_RANG_3 : SolAzeroth::ARTISAN_RANG_5);
         if (Remplacer(player, bag, slot, item, suivant))
             ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat("|cff8cc4a6Amélioration :|r {} passe au rang {}.",
                 Nom(actuel.base), actuel.rang + 1));
@@ -821,6 +834,7 @@ public:
             return false;
         }
         player->ModifyMoney(-int32(it->second.plan));
+        SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_PLAN);
         plans->objets.insert(objet);
         CharacterDatabase.Execute("INSERT IGNORE INTO solazeroth_v3_plans (guid, objet) VALUES ({}, {})",
             player->GetGUID().GetCounter(), objet);
@@ -879,6 +893,7 @@ public:
             return false;
         }
         Prendre(player, BRAISE, 1);
+        SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_TRANSFERT);
         Remplacer(player, bagC, slotC, cible, versionCible);
         Remplacer(player, bagS, slotS, source, versionSource);
         handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Transfert :|r {} passe au rang {} ; {} revient au rang 0.",
@@ -969,6 +984,7 @@ public:
             Prendre(player, composant, nombre);
         player->ModifyMoney(-int32(enchantement.prix));
         Enchanter(player, item, enchantement.enchantement);
+        SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_ENCHANTEMENT);
         handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Enchantement :|r {} est enchanté.", Nom(item->GetEntry())));
         Envoyer(player);
         return true;

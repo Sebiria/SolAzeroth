@@ -21,10 +21,16 @@ namespace SolAzeroth
     void ObjectifsAcquis(Player* player, std::function<void(unsigned int, unsigned char, unsigned int)> const& f);
     std::vector<unsigned int> ZonesAvecParts();
     // v3 : rang d'aventurier du compte (v3_aventurier.cpp) : modes de zone ouverts (0 aucun, 1 difficile, 2 cauchemar),
-    // palier atteint et difficulté de donjon la plus haute ouverte (1 à 5).
+    // palier atteint et difficulté la plus haute ouverte dans un donjon (1 à 5 ; lot 5 : la suivante de la plus haute
+    // réussie dans ce donjon).
     unsigned char ModesOuverts(Player* player);
     unsigned char PalierAventurier(Player* player);
-    unsigned char DifficultesOuvertes(Player* player);
+    unsigned char DifficultesOuvertes(Player* player, unsigned int carte);
+    // Lot 5 : objectifs d'artisan, une fois par compte (v3_aventurier.cpp ; les plats : la clé est l'entrée du plat).
+    enum ObjectifArtisanCle : unsigned int { ARTISAN_VERTE = 1, ARTISAN_BLEUE, ARTISAN_RANG_3, ARTISAN_RANG_5,
+        ARTISAN_TRANSFERT, ARTISAN_PLAN, ARTISAN_ENCHANTEMENT, ARTISAN_PIERRE_TAILLEE, ARTISAN_CONSOMMABLE };
+    unsigned int const ARTISAN_NOMBRE = 9 + 5;   // et les 5 plats de Durotar
+    void ObjectifArtisan(Player* player, unsigned int cle);
     // v3 : difficulté du donjon de cette carte (1 à 5 ; 0 hors donjon), techniques de ses monstres (masque) et verrou
     // (premier combat livré), et rang de réputation des donjons du compte (1 à 10) (v3_donjons.cpp).
     unsigned char DifficulteDonjon(Map* map);
@@ -93,6 +99,8 @@ namespace SolAzeroth
     // Lot 3a (02/11/2026) : techniques d'un monstre de mode (masque : 1 Enragé, 2 Renforçant, 4 Volcanique, 8 Explosif)
     // et leur force (1 ; 1,5 en cauchemar), pour l'interface (v3_modes.cpp).
     unsigned char TechniquesMonstre(Creature* creature);
+    // Lot 5 : mode de zone d'un monstre du monde extérieur (2 difficile, 3 cauchemar ; 0 sinon) (v3_modes.cpp).
+    unsigned char ModeMonstre(Creature* creature);
     float ForceTechniques(Creature* creature);
 
     // Ajoute une ligne au journal de donjon de cette carte, s'il y en a un (journal.cpp)

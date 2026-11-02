@@ -17,6 +17,16 @@
 //   les montures achetées sont au compte et apprises à chaque connexion.
 // - Interface (SolUI_Aventurier.lua, préfixe SOLAVENT) : « RANG;points;palier », puis « POSSEDE;sort,sort,… » (par
 //   morceaux, à ajouter), puis « FIN » ; « PALIER;palier » quand un palier est atteint.
+// - Audit du jeu, lot 5 (02/11/2026, C7 du consensus ; D1 tranché par l'utilisateur : « en réussissant la précédente ») :
+//   - difficultés de donjon : terminer un donjon (son dernier boss) en difficulté N ouvre la N + 1 de ce donjon, pour le
+//     compte ; le rang ne les ouvre plus, ses paliers 12, 20, 30 et 38 donnent des Marques du voyageur (migration 118) ;
+//   - nouvelles sources, une fois par compte : maîtrise d'une zone en difficile (150) et en cauchemar (300), soit
+//     MAITRISE_TUES monstres de la zone tués dans ce mode (solazeroth_v3_maitrise) ; objectifs d'artisan (15 chacun,
+//     SolAzeroth::ObjectifArtisan, appelé par v3_equipement.cpp) ;
+//   - garde-fou : la première monture au palier 10, à 1 950 points (outils\test_paliers_v3.py vérifie que Durotar à
+//     100 % et le Gouffre l'atteignent) ;
+//   - registre (fenêtre du rang, page Registre) : « SOURCES;genre:points:faits:total,… », « DONJONS;carte:difficulté
+//     réussie,… », « MAITRISE;zone:mode:tués:seuil,… », envoyés avant « FIN ».
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -30,6 +40,7 @@
 #include "StringFormat.h"
 #include "WorldSession.h"
 #include <cmath>
+#include <map>
 #include <set>
 #include <unordered_map>
 #include <vector>
@@ -40,11 +51,15 @@ namespace
 {
     // Genres d'objectif : 1 à 5 comme solazeroth_v3_zone_parts, puis les nôtres.
     uint8 const QUETE = 1, EXPLORATION = 2, LIEU = 3, ANNEXE = 4, RELIQUE = 5, MEDAILLE_OR = 6, DONJON = 7,
-                ZONE_60 = 8, ZONE_100 = 9, OFFERTE = 10, DONJON_DIFFICULTE = 11, SEMAINE = 12;
-    uint32 const POINTS[] = { 0, 10, 2, 20, 25, 10, 10, 150, 50, 300, 0, 100, 60 };
+                ZONE_60 = 8, ZONE_100 = 9, OFFERTE = 10, DONJON_DIFFICULTE = 11, SEMAINE = 12,
+                MAITRISE_DIFFICILE = 13, MAITRISE_CAUCHEMAR = 14, ARTISAN = 15;
+    uint32 const POINTS[] = { 0, 10, 2, 20, 25, 10, 10, 150, 50, 300, 0, 100, 60, 150, 300, 15 };
+    uint8 const GENRES = 16;
+    uint32 const MAITRISE_TUES = 150;
+    uint8 const DIFFICULTE_MAX = 5;
 
     // Récompenses (montures_v3.py).
-    enum Recompense : uint8 { RIEN, TITRE, FOYER, MASCOTTE, MODE, MONTE, VITESSE_OUVERTE, DIFFICULTE_DONJON };
+    enum Recompense : uint8 { RIEN, TITRE, FOYER, MASCOTTE, MODE, MONTE, VITESSE_OUVERTE, MARQUES };
     uint32 const TITRE_FINAL = 85;                       // « %s le suprême », avec le dernier palier
     uint32 const APPRENTI_CAVALIER = 33388;
     uint32 const OFFERTE_HORDE = 580, OFFERTE_ALLIANCE = 458;
@@ -66,8 +81,11 @@ namespace
         uint32 points = 0;
         std::set<uint64> faits;
         std::set<uint32> montures;
+        uint32 parGenre[GENRES][2] = {};                 // lot 5 : points et objectifs faits, par genre
+        std::unordered_map<uint64, uint32> tues;         // lot 5 : (zone << 8 | mode) -> monstres tués dans ce mode
     };
     std::unordered_map<uint32, Compte> comptes;
+    uint32 totaux[GENRES] = {};                          // objectifs existants, par genre (registre)
 
     struct Minuterie : DataMap::Base
     {
@@ -90,7 +108,18 @@ namespace
                 Field* f = r->Fetch();
                 c.faits.insert(Cle(f[0].Get<uint8>(), f[1].Get<uint32>()));
                 c.points += f[2].Get<uint32>();
+                if (uint8 g = f[0].Get<uint8>(); g < GENRES)
+                {
+                    c.parGenre[g][0] += f[2].Get<uint32>();
+                    ++c.parGenre[g][1];
+                }
             } while (r->NextRow());
+        }
+        if (QueryResult r = CharacterDatabase.Query("SELECT zone, mode, tues FROM solazeroth_v3_maitrise WHERE compte = {}", compte))
+        {
+            do
+                c.tues[(uint64((*r)[0].Get<uint32>()) << 8) | (*r)[1].Get<uint8>()] = (*r)[2].Get<uint32>();
+            while (r->NextRow());
         }
         if (QueryResult r = CharacterDatabase.Query("SELECT sort FROM solazeroth_v3_montures_compte WHERE compte = {}", compte))
         {
@@ -138,8 +167,31 @@ namespace
         return m;
     }
 
+    // Lot 5 : objectifs existants par genre, pour le registre (au premier envoi : les zones sont chargées).
+    void CalculerTotaux()
+    {
+        std::fill(std::begin(totaux), std::end(totaux), 0);
+        if (QueryResult r = WorldDatabase.Query("SELECT genre, COUNT(*) FROM solazeroth_v3_zone_parts GROUP BY genre"))
+        {
+            do
+                if (uint8 g = (*r)[0].Get<uint8>(); g < GENRES)
+                    totaux[g] = uint32((*r)[1].Get<uint64>());
+            while (r->NextRow());
+        }
+        if (QueryResult r = WorldDatabase.Query("SELECT COUNT(*) FROM solazeroth_v3_annexes a JOIN solazeroth_v3_zone_parts p "
+            "ON p.genre = 4 AND p.cle = a.quete WHERE a.`or` > 0"))
+            totaux[MEDAILLE_OR] = uint32((*r)[0].Get<uint64>());
+        totaux[ZONE_60] = totaux[ZONE_100] = uint32(SolAzeroth::ZonesAvecParts().size());
+        totaux[MAITRISE_DIFFICILE] = totaux[MAITRISE_CAUCHEMAR] = totaux[ZONE_60];
+        totaux[DONJON] = 1;                                   // le Gouffre de Ragefeu
+        totaux[DONJON_DIFFICULTE] = DIFFICULTE_MAX - 1;
+        totaux[ARTISAN] = SolAzeroth::ARTISAN_NOMBRE;
+    }
+
     void Envoyer(Player* player)
     {
+        if (!totaux[DONJON])
+            CalculerTotaux();
         Compte& c = CompteDe(player);
         SolAzeroth::EnvoyerAddon(player, "SOLAVENT", Acore::StringFormat("RANG;{};{}", c.points, uint32(PalierDe(c.points))));
         std::string morceau;
@@ -154,6 +206,36 @@ namespace
         }
         if (!morceau.empty())
             SolAzeroth::EnvoyerAddon(player, "SOLAVENT", "POSSEDE;" + morceau);
+        // Lot 5 : registre.
+        std::string sources = "SOURCES;";
+        for (uint8 g = 1; g < GENRES; ++g)
+            if (g != OFFERTE)
+                sources += Acore::StringFormat("{}{}:{}:{}:{}", g == 1 ? "" : ",", g, c.parGenre[g][0], c.parGenre[g][1],
+                    totaux[g]);
+        SolAzeroth::EnvoyerAddon(player, "SOLAVENT", sources);
+        std::map<uint32, uint8> donjons;
+        for (uint64 cle : c.faits)
+        {
+            uint8 genre = uint8(cle >> 32);
+            uint32 valeur = uint32(cle);
+            if (genre == DONJON)
+                donjons[valeur] = std::max<uint8>(donjons[valeur], 1);
+            else if (genre == DONJON_DIFFICULTE)
+                donjons[valeur / 10] = std::max<uint8>(donjons[valeur / 10], uint8(valeur % 10));
+        }
+        std::string texte = "DONJONS;";
+        for (auto const& [carte, d] : donjons)
+            texte += Acore::StringFormat("{}{}:{}", texte.size() > 8 ? "," : "", carte, uint32(d));
+        SolAzeroth::EnvoyerAddon(player, "SOLAVENT", texte);
+        texte = "MAITRISE;";
+        for (uint32 zone : SolAzeroth::ZonesAvecParts())
+            for (uint8 mode = 2; mode <= 3; ++mode)
+            {
+                auto it = c.tues.find((uint64(zone) << 8) | mode);
+                texte += Acore::StringFormat("{}{}:{}:{}:{}", texte.size() > 9 ? "," : "", zone, uint32(mode),
+                    it == c.tues.end() ? 0 : it->second, MAITRISE_TUES);
+            }
+        SolAzeroth::EnvoyerAddon(player, "SOLAVENT", texte);
         SolAzeroth::EnvoyerAddon(player, "SOLAVENT", "FIN");
     }
 
@@ -205,6 +287,8 @@ namespace
             return 0;
         uint32 points = uint32(std::lround(POINTS[genre] * (1.0f + puissance / 100.0f)));
         c.points += points;
+        c.parGenre[genre][0] += points;
+        ++c.parGenre[genre][1];
         CharacterDatabase.Execute("INSERT IGNORE INTO solazeroth_v3_aventurier (compte, genre, cle, points) VALUES ({}, {}, {}, {})",
             player->GetSession()->GetAccountId(), genre, cle, points);
         return points;
@@ -220,6 +304,8 @@ namespace
         for (uint8 n = avant + 1; n <= apres; ++n)
         {
             ChatHandler(player->GetSession()).PSendSysMessage("|cffffd100Rang d'aventurier : palier {} atteint !|r", n);
+            if (n <= paliers.size() && paliers[n - 1].genre == MARQUES)
+                SolAzeroth::DonnerMarques(player, paliers[n - 1].valeur, Acore::StringFormat("palier {} du rang d'aventurier", n));
             SolAzeroth::EnvoyerAddon(player, "SOLAVENT", Acore::StringFormat("PALIER;{}", n));
         }
         if (apres > avant)
@@ -268,9 +354,21 @@ unsigned char SolAzeroth::PalierAventurier(Player* player)
     return PalierDe(player);
 }
 
-unsigned char SolAzeroth::DifficultesOuvertes(Player* player)
+// Lot 5 (D1) : la difficulté qui suit la plus haute réussie dans ce donjon.
+unsigned char SolAzeroth::DifficultesOuvertes(Player* player, unsigned int carte)
 {
-    return uint8(std::max<uint32>(1, Meilleure(PalierDe(player), DIFFICULTE_DONJON)));
+    Compte& c = CompteDe(player);
+    uint8 ouvertes = c.faits.count(Cle(DONJON, carte)) ? 2 : 1;
+    for (uint8 d = 2; d < DIFFICULTE_MAX; ++d)
+        if (c.faits.count(Cle(DONJON_DIFFICULTE, carte * 10 + d)))
+            ouvertes = d + 1;
+    return ouvertes;
+}
+
+void SolAzeroth::ObjectifArtisan(Player* player, unsigned int cle)
+{
+    uint8 avant = PalierDe(player);
+    Gagner(player, Compter(player, ARTISAN, cle, 0), avant);
 }
 
 class solazeroth_v3_aventurier_joueur : public PlayerScript
@@ -306,14 +404,46 @@ public:
     // Donjon terminé : son dernier boss tué, et chaque difficulté au-dessus de 1 jusqu'à celle du donjon.
     void OnPlayerCreatureKill(Player* player, Creature* creature) override
     {
+        Maitrise(player, creature);
         if (!player->GetMap()->IsDungeon() || !SolAzeroth::EstBossFinal(creature->GetEntry()))
             return;
         uint8 avant = PalierDe(player);
         uint8 puissance = SolAzeroth::PuissanceCreature(creature);
+        uint8 ouvertes = SolAzeroth::DifficultesOuvertes(player, player->GetMapId());
         uint32 gain = Compter(player, DONJON, player->GetMapId(), puissance);
         for (uint8 d = 2; d <= SolAzeroth::DifficulteDonjon(player->GetMap()); ++d)
             gain += Compter(player, DONJON_DIFFICULTE, player->GetMapId() * 10 + d, puissance);
         Gagner(player, gain, avant);
+        if (uint8 apres = SolAzeroth::DifficultesOuvertes(player, player->GetMapId()); apres > ouvertes)
+        {
+            ChatHandler(player->GetSession()).PSendSysMessage("|cffffd100Difficulté {} de ce donjon ouverte pour le compte.|r",
+                uint32(apres));
+            SolAzeroth::EnvoyerAddon(player, "SOLZONE", Acore::StringFormat("ALERTE;Difficulté {} du donjon ouverte", uint32(apres)));
+        }
+    }
+
+    // Lot 5 : maîtrise de la zone, MAITRISE_TUES monstres tués en mode difficile ou cauchemar.
+    void Maitrise(Player* player, Creature* creature)
+    {
+        uint8 mode = SolAzeroth::ModeMonstre(creature);
+        uint32 zone = creature->GetZoneId();
+        if (mode < 2 || player->GetMap()->Instanceable())
+            return;
+        Compte& c = CompteDe(player);
+        uint32& tues = c.tues[(uint64(zone) << 8) | mode];
+        if (tues >= MAITRISE_TUES)
+            return;
+        ++tues;
+        CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_maitrise (compte, zone, mode, tues) VALUES ({}, {}, {}, {})",
+            player->GetSession()->GetAccountId(), zone, mode, tues);
+        if (tues == MAITRISE_TUES)
+        {
+            uint8 avant = PalierDe(player);
+            Gagner(player, Compter(player, mode == 2 ? MAITRISE_DIFFICILE : MAITRISE_CAUCHEMAR, zone,
+                SolAzeroth::PuissanceHauteZone(zone)), avant);
+            ChatHandler(player->GetSession()).PSendSysMessage("|cffffd100Zone maîtrisée en mode {}.|r",
+                mode == 2 ? "difficile" : "cauchemar");
+        }
     }
 
     // La recharge de la pierre de foyer est posée juste après le lancement ; on la réduit selon le palier.

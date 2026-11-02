@@ -1,7 +1,7 @@
 // v3 (01/11/2026, proposition validée par l'utilisateur : « Réputation des donjons — proposition.md ») : difficultés
 // de donjon et réputation des donjons. Chiffres : outils\passifs_v3.py et outils\simulation_donjons.py.
 // - Difficulté 1 à 5 de chaque donjon (pas des raids), choisie à l'entrée (.donjon <1-5>, fenêtre d'entrée de
-//   SolUI_Passifs.lua) parmi celles qu'ouvre le rang d'aventurier (paliers 12, 20, 30, 38). Elle reste modifiable
+//   SolUI_Passifs.lua) parmi celles qu'a ouvertes le compte (lot 5 : chacune en terminant ce donjon dans la précédente). Elle reste modifiable
 //   jusqu'au premier combat, puis elle est verrouillée jusqu'à la remise à zéro du donjon (solazeroth_v3_donjons).
 //   Une instance neuve prend la dernière difficulté choisie par le compte, si elle est encore ouverte.
 // - Les monstres (v3_modes.cpp) : en difficulté 2 et plus, puissance de base du joueur + écart, vie et dégâts × facteur,
@@ -163,7 +163,7 @@ namespace
             return &it->second;
         Instance& e = instances[map->GetInstanceId()];
         uint32 compte = player->GetSession()->GetAccountId();
-        e.difficulte = std::min(dernieres.count(compte) ? dernieres[compte] : uint8(1), SolAzeroth::DifficultesOuvertes(player));
+        e.difficulte = std::min(dernieres.count(compte) ? dernieres[compte] : uint8(1), SolAzeroth::DifficultesOuvertes(player, map->GetId()));
         e.techniques = Tirer(e.difficulte);
         Sauver(map->GetInstanceId(), e);
         return &e;
@@ -174,7 +174,7 @@ namespace
         Suivi* s = player->CustomData.GetDefault<Suivi>("solazeroth_v3_donjons");
         Instance* e = InstanceDe(player);
         std::string message = e ? Acore::StringFormat("DONJON;{};{};{};{}", e->difficulte,
-            uint32(SolAzeroth::DifficultesOuvertes(player)), e->verrouille ? 1 : 0, e->techniques) : std::string("AUCUN");
+            uint32(SolAzeroth::DifficultesOuvertes(player, player->GetMapId())), e->verrouille ? 1 : 0, e->techniques) : std::string("AUCUN");
         if (!force && message == s->envoye)
             return;
         s->envoye = message;
@@ -468,7 +468,7 @@ public:
         if (!difficulte)
         {
             handler->PSendSysMessage("Difficulté du donjon : {}{} (ouvertes : 1 à {}).", uint32(e->difficulte),
-                e->verrouille ? ", verrouillée" : "", uint32(SolAzeroth::DifficultesOuvertes(player)));
+                e->verrouille ? ", verrouillée" : "", uint32(SolAzeroth::DifficultesOuvertes(player, player->GetMapId())));
             Envoyer(player, true);
             return true;
         }
@@ -477,7 +477,7 @@ public:
             handler->SendErrorMessage("Difficultés : 1 à 5.");
             return false;
         }
-        if (*difficulte > SolAzeroth::DifficultesOuvertes(player))
+        if (*difficulte > SolAzeroth::DifficultesOuvertes(player, player->GetMapId()))
         {
             handler->SendErrorMessage("Cette difficulté n'est pas encore ouverte par le rang d'aventurier.");
             return false;

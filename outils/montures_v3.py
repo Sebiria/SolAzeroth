@@ -22,7 +22,8 @@ LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_AventurierDonnees.lua"
 VITESSE = 81                                  # EffectBasePoints du 2e effet (valeur = points + 1)
 
 # Récompenses : (genre, valeur, texte). Genres lus par v3_aventurier.cpp.
-RIEN, TITRE, FOYER, MASCOTTE, MODE, MONTE, VITESSE_OUVERTE, DONJON = range(8)
+RIEN, TITRE, FOYER, MASCOTTE, MODE, MONTE, VITESSE_OUVERTE, MARQUES = range(8)
+# Lot 5 : les difficultés des donjons s'ouvrent en réussissant la précédente ; leurs paliers donnent des Marques.
 # Titres pris dans CharTitles.dbc (il n'y a ni « l'Aventurier » ni « le Légendaire » dans le jeu).
 PALIERS = [
     (0, RIEN, 0, ""),
@@ -34,9 +35,9 @@ PALIERS = [
     (1000, FOYER, 20, "Pierre de foyer : 20 min"),
     (1300, MASCOTTE, 10683, "Mascotte : Ara aile verte"),
     (1600, MODE, 2, "Mode cauchemar des zones"),
-    (2000, MONTE, 70, "Monte, une monture à 60 % offerte, boutique des montures (60 à 70 %)"),
+    (1950, MONTE, 70, "Monte, une monture à 60 % offerte, boutique des montures (60 à 70 %)"),
     (2250, VITESSE_OUVERTE, 75, "Montures à 75 %"),
-    (2650, DONJON, 2, "Difficulté 2 des donjons"),
+    (2650, MARQUES, 50, "50 Marques du voyageur"),
     (3050, VITESSE_OUVERTE, 80, "Montures à 80 %"),
     (3450, FOYER, 15, "Pierre de foyer : 15 min"),
     (3900, VITESSE_OUVERTE, 85, "Montures à 85 %"),
@@ -44,7 +45,7 @@ PALIERS = [
     (4800, VITESSE_OUVERTE, 90, "Montures à 90 %"),
     (5300, MASCOTTE, 15999, "Mascotte : Jeune worg"),
     (5800, VITESSE_OUVERTE, 95, "Montures à 95 %"),
-    (6350, DONJON, 3, "Difficulté 3 des donjons"),
+    (6350, MARQUES, 100, "100 Marques du voyageur"),
     (6850, VITESSE_OUVERTE, 100, "Montures à 100 %"),
     (7450, TITRE, 78, "Titre « l'explorateur »"),
     (8000, VITESSE_OUVERTE, 105, "Montures à 105 %"),
@@ -54,7 +55,7 @@ PALIERS = [
     (10450, VITESSE_OUVERTE, 115, "Montures à 115 %"),
     (11100, TITRE, 172, "Titre « l'assidu »"),
     (11750, VITESSE_OUVERTE, 120, "Montures à 120 %"),
-    (12450, DONJON, 4, "Difficulté 4 des donjons"),
+    (12450, MARQUES, 150, "150 Marques du voyageur"),
     (13150, VITESSE_OUVERTE, 125, "Montures à 125 %"),
     (13850, MASCOTTE, 36031, "Mascotte : Jeune faucon-dragon bleu"),
     (14550, VITESSE_OUVERTE, 130, "Montures à 130 %"),
@@ -62,7 +63,7 @@ PALIERS = [
     (16050, VITESSE_OUVERTE, 135, "Montures à 135 %"),
     (16800, MASCOTTE, 46599, "Mascotte : Jeune phénix"),
     (17600, VITESSE_OUVERTE, 140, "Montures à 140 %"),
-    (18400, DONJON, 5, "Difficulté 5 des donjons"),
+    (18400, MARQUES, 200, "200 Marques du voyageur"),
     (19200, VITESSE_OUVERTE, 145, "Montures à 145 %"),
     (20000, VITESSE_OUVERTE, 150, "Montures à 150 %, titre « le suprême »"),
 ]

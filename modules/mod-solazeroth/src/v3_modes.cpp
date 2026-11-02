@@ -376,6 +376,12 @@ bool SolAzeroth::RareDeCauchemar(Creature* creature)
     return etat && etat->rare;
 }
 
+unsigned char SolAzeroth::ModeMonstre(Creature* creature)
+{
+    EtatMonstre const* etat = creature ? creature->CustomData.Get<EtatMonstre>("solazeroth_v3_mode") : nullptr;
+    return etat && (etat->mode == DIFFICILE || etat->mode == CAUCHEMAR) ? etat->mode : 0;
+}
+
 unsigned char SolAzeroth::TechniquesMonstre(Creature* creature)
 {
     EtatMonstre const* etat = creature ? creature->CustomData.Get<EtatMonstre>("solazeroth_v3_mode") : nullptr;

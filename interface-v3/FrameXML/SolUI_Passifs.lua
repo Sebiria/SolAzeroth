@@ -6,7 +6,7 @@
 --   (combat, survie, récolte et voyage), sans prérequis. Clic sur un emplacement : il est choisi (clic droit : vidé) ;
 --   clic sur un passif : il va dans l'emplacement choisi, ou en sort s'il y est déjà.
 -- - Fenêtre d'entrée de donjon : au premier pas dans un donjon, tant que le premier combat n'est pas livré, choix de
---   la difficulté (1 à 5, celles qu'ouvre le rang d'aventurier) et techniques des monstres tirées pour le donjon.
+--   la difficulté (1 à 5 ; lot 5 : chacune s'ouvre en réussissant la précédente dans ce donjon) et techniques des monstres tirées pour le donjon.
 -- - Fenêtre de téléportation (carnet Aventure, onglet Téléportation) : les donjons terminés, à rejoindre remis à zéro.
 
 local S = SolUI
@@ -296,7 +296,7 @@ for n = 1, 5 do
                 .. " % de chances d'une pierre taillée") or "") .. ".", 0.62, 0.85, 0.62, true)
         end
         if n > donjon.ouvertes then
-            GameTooltip:AddLine("S'ouvre au palier " .. r[5] .. " du rang d'aventurier.", 0.94, 0.57, 0.54, true)
+            GameTooltip:AddLine("S'ouvre en terminant ce donjon en difficulté " .. (n - 1) .. ".", 0.94, 0.57, 0.54, true)
         end
         GameTooltip:Show()
     end)
@@ -311,7 +311,7 @@ techniques:SetJustifyH("LEFT")
 
 local versPassifs = S.BoutonPlat(d, "Passifs de donjon", 200, 32, 12)
 versPassifs:SetPoint("BOTTOMLEFT", d, "BOTTOMLEFT", 28, 24)
-versPassifs:SetScript("OnClick", function() S.OuvrirCarnet("aventure", 6) end)
+versPassifs:SetScript("OnClick", function() S.OuvrirCarnet("aventure", 7) end)
 local fermer = S.BoutonPlat(d, "Entrer", 140, 32, 12)
 fermer:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -28, 24)
 fermer:SetScript("OnClick", function() d:Hide() end)

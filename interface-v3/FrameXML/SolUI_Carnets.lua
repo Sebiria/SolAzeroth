@@ -44,6 +44,8 @@ S.CARNETS = {
         { nom = "Zone", cadre = Fenetre("SolUIObjectifs") },
         { nom = "Rang d'aventurier", cadre = Fenetre("SolUIAventurier"), page = function() S.PageAventurier(1) end },
         { nom = "Montures", cadre = Fenetre("SolUIAventurier"), page = function() S.PageAventurier(2) end },
+        -- Lot 5 : registre de complétion (SolUI_Aventurier.lua).
+        { nom = "Registre", cadre = Fenetre("SolUIAventurier"), page = function() S.PageAventurier(3) end },
         { nom = "Passifs extérieurs", cadre = Fenetre("SolUIPassifs"), page = function() S.PagePassifs(2) end },
         { nom = "Donjons", cadre = Fenetre("SolUIPassifs"), page = function() S.PagePassifs(1) end },
         -- 02/11/2026 : retour dans un donjon terminé, remis à zéro (SolUI_Passifs.lua).
@@ -192,7 +194,7 @@ S.BasculerRaccourcis = function() S.BasculerCarnet("techniques") end
 S.BasculerObjectifs = function() S.BasculerCarnet("aventure", 2) end
 S.BasculerJournal = function() S.BasculerCarnet("aventure", 1) end
 S.BasculerAventurier = function() S.BasculerCarnet("aventure", 3) end
-S.BasculerPassifs = function(genre) S.OuvrirCarnet("aventure", genre == "exterieur" and 5 or 6) end
+S.BasculerPassifs = function(genre) S.OuvrirCarnet("aventure", genre == "exterieur" and 6 or 7) end
 for nom, id in pairs({ SolUIOuvrirEquipement = "artisanat", SolUIOuvrirCollection = "collection",
     SolUIOuvrirRaccourcis = "techniques" }) do
     if _G[nom] then _G[nom]:SetScript("OnClick", function() S.BasculerCarnet(id) end) end
@@ -286,6 +288,6 @@ S.Ecouter("PLAYER_UPDATE_RESTING", function()
     if IsResting() and GetTime() - dernierRappel >= 600 then
         dernierRappel = GetTime()
         S.Annonce("Zone de repos : mode de zone et passifs extérieurs modifiables ici.", "Aventure › Passifs extérieurs",
-            function() S.OuvrirCarnet("aventure", 5) end, 8)
+            function() S.OuvrirCarnet("aventure", 6) end, 8)
     end
 end)

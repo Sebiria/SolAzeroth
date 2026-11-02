@@ -2,6 +2,9 @@
 -- (v3_aventurier.cpp, préfixe SOLAVENT ; paliers et montures : SolUI_AventurierDonnees.lua, généré par
 -- outils\montures_v3.py). Deux pages : les 40 paliers et leurs récompenses ; la boutique, ouverte au palier 10, où
 -- chaque vitesse s'ouvre avec son palier et s'achète en Marques du voyageur.
+-- Audit du jeu, lot 5 (02/11/2026) : compteur et filtre des montures ; troisième page, le registre : points et
+-- objectifs par source (« SOURCES »), difficulté réussie par donjon (« DONJONS »), maîtrise des modes de zone
+-- (« MAITRISE »).
 
 local S = SolUI
 
@@ -13,8 +16,17 @@ function S.BasculerAventurier()
     if f:IsShown() then f:Hide() else f:Show() end
 end
 
-local etat = { points = 0, palier = 0, possede = {} }
+local etat = { points = 0, palier = 0, possede = {}, sources = {}, donjons = {}, maitrise = {} }
 local page, decalage = 1, 0
+local filtre = 1
+local FILTRES = { "Toutes", "Ouvertes", "Possédées", "À acheter" }
+-- Sources de points (genres de v3_aventurier.cpp).
+local SOURCES = { [1] = "Quêtes d'histoire", [2] = "Sous-zones explorées", [3] = "Lieux nettoyés", [4] = "Quêtes annexes",
+    [5] = "Reliques", [6] = "Médailles d'or", [7] = "Donjons terminés", [8] = "Zones à 60 %", [9] = "Zones à 100 %",
+    [11] = "Difficultés de donjon réussies", [12] = "Objectifs de la semaine", [13] = "Zones maîtrisées en difficile",
+    [14] = "Zones maîtrisées en cauchemar", [15] = "Objectifs d'artisan" }
+local NOMS_DONJONS = { [389] = "Gouffre de Ragefeu" }
+local NOMS_ZONES = { [14] = "Durotar" }
 local Maj
 
 local resume = S.Texte(f, "SemiBold", 14, "clair")
@@ -60,6 +72,21 @@ for i = 1, LIGNES do
     lignes[i] = l
 end
 
+-- Lot 5 : en-tête de la boutique, à la place de la première ligne : compteur et filtre.
+local entete = CreateFrame("Frame", nil, f)
+entete:SetSize(764, HAUTEUR - 4)
+entete:SetPoint("TOPLEFT", lignes[1], "TOPLEFT")
+local compteur = S.Texte(entete, "SemiBold", 13, "texte")
+compteur:SetPoint("LEFT", 2, 0)
+local boutonsFiltre = {}
+for n, nom in ipairs(FILTRES) do
+    local b = S.BoutonPlat(entete, nom, 104, 26, 11)
+    b:SetPoint("RIGHT", entete, "RIGHT", -(#FILTRES - n) * 110, 0)
+    b:SetScript("OnClick", function() filtre, decalage = n, 0; Maj() end)
+    boutonsFiltre[n] = b
+end
+entete:Hide()
+
 local function MajPaliers()
     local total = #S.PALIERS
     decalage = math.min(decalage, math.max(0, total - LIGNES))
@@ -80,16 +107,30 @@ local function MajPaliers()
 end
 
 local function MajMontures()
-    local total = #S.MONTURES
-    decalage = math.min(decalage, math.max(0, total - LIGNES))
+    local function Ouverte(m) return etat.palier >= (S.VITESSES_PALIER[m[3]] or 99) end
+    local liste, possedees = {}, 0
+    for _, m in ipairs(S.MONTURES) do
+        local possede = etat.possede[m[1]]
+        if possede then possedees = possedees + 1 end
+        if filtre == 1 or filtre == 2 and Ouverte(m) or filtre == 3 and possede or filtre == 4 and Ouverte(m) and not possede then
+            table.insert(liste, m)
+        end
+    end
+    compteur:SetText(possedees .. " / " .. #S.MONTURES .. " montures possédées")
+    for n, b in ipairs(boutonsFiltre) do b:Choisir(n == filtre) end
+    entete:Show()
+    S.Montrer(lignes[1], false)
+    local total = #liste
+    decalage = math.min(decalage, math.max(0, total - (LIGNES - 1)))
     local avoir = GetItemCount(MARQUE, true)
-    for i, l in ipairs(lignes) do
-        local m = S.MONTURES[decalage + i]
+    for i = 2, LIGNES do
+        local l = lignes[i]
+        local m = liste[decalage + i - 1]
         S.Montrer(l, m ~= nil)
         if m then
             local sort, nom, vitesse, prix = m[1], m[2], m[3], m[4]
             local _, _, icone = GetSpellInfo(sort)
-            local ouvert = etat.palier >= (S.VITESSES_PALIER[vitesse] or 99)
+            local ouvert = Ouverte(m)
             local possede = etat.possede[sort]
             l.icone:SetTexture(icone or "Interface\\Icons\\INV_Misc_QuestionMark")
             l.icone:SetDesaturated(not ouvert and not possede)
@@ -109,6 +150,44 @@ local function MajMontures()
     end
 end
 
+-- Lot 5 : le registre, une ligne par source, par donjon et par mode de zone.
+local function MajRegistre()
+    local entrees = {}
+    for g = 1, 15 do
+        local s = etat.sources[g]
+        if s and SOURCES[g] then
+            local fini = s.total > 0 and s.faits >= s.total
+            table.insert(entrees, { "INV_Misc_Note_01", SOURCES[g], (s.total > 0 and (s.faits .. " / " .. s.total)
+                or (s.faits .. " faits")) .. "  ·  " .. S.Nombre(s.points) .. " points", fini and "vertClair" or "texte" })
+        end
+    end
+    for carte, nom in pairs(NOMS_DONJONS) do
+        local d = etat.donjons[carte] or 0
+        table.insert(entrees, { "INV_Misc_Key_03", nom, d == 0 and "Pas encore terminé : difficulté 1"
+            or ("Difficulté " .. d .. " réussie" .. (d < 5 and (", " .. (d + 1) .. " ouverte") or ", toutes réussies")),
+            d >= 5 and "vertClair" or "texte" })
+    end
+    for _, m in ipairs(etat.maitrise) do
+        local fini = m.tues >= m.seuil
+        table.insert(entrees, { "Ability_Warrior_Rampage", (NOMS_ZONES[m.zone] or ("Zone " .. m.zone)) .. " en "
+            .. (m.mode == 2 and "difficile" or "cauchemar"), fini and "Maîtrisée" or (m.tues .. " / " .. m.seuil
+            .. " monstres tués"), fini and "vertClair" or "texte" })
+    end
+    decalage = math.min(decalage, math.max(0, #entrees - LIGNES))
+    for i, l in ipairs(lignes) do
+        local e = entrees[decalage + i]
+        S.Montrer(l, e ~= nil)
+        if e then
+            l.icone:SetTexture("Interface\\Icons\\" .. e[1])
+            l.icone:SetDesaturated(false)
+            l.nom:SetText(e[2])
+            l.nom:SetTextColor(S.Couleur(e[4]))
+            l.detail:SetText(e[3])
+            S.Montrer(l.bouton, false)
+        end
+    end
+end
+
 function Maj()
     local p = S.PALIERS[etat.palier + 1]
     resume:SetText("Palier " .. etat.palier .. " / " .. #S.PALIERS .. "   ·   " .. S.Nombre(etat.points) .. " points")
@@ -122,12 +201,13 @@ function Maj()
     end
     marques:SetText(GetItemCount(MARQUE, true) .. " Marques du voyageur")
     for n, b in ipairs(onglets) do b:Choisir(n == page) end
+    entete:Hide()
     if page == 2 and etat.palier < (S.VITESSES_PALIER[60] or 10) then
         for _, l in ipairs(lignes) do S.Montrer(l, false) end
         suivant:SetText("La boutique des montures s'ouvre au palier " .. S.VITESSES_PALIER[60] .. ".")
         return
     end
-    if page == 1 then MajPaliers() else MajMontures() end
+    if page == 1 then MajPaliers() elseif page == 2 then MajMontures() else MajRegistre() end
 end
 
 f:SetScript("OnShow", function() Maj() end)
@@ -138,12 +218,23 @@ function S.PageAventurier(n)
 end
 S.Ecouter("BAG_UPDATE", function() if f:IsShown() then Maj() end end)
 
-local recu = { points = 0, palier = 0, possede = {} }
+local recu = etat
 S.Message("SOLAVENT", function(champs)
     if champs[1] == "RANG" then
-        recu = { points = tonumber(champs[2]) or 0, palier = tonumber(champs[3]) or 0, possede = {} }
+        recu = { points = tonumber(champs[2]) or 0, palier = tonumber(champs[3]) or 0, possede = {}, sources = {},
+            donjons = {}, maitrise = {} }
     elseif champs[1] == "POSSEDE" then
         for sort in string.gmatch(champs[2] or "", "%d+") do recu.possede[tonumber(sort)] = true end
+    elseif champs[1] == "SOURCES" then
+        for g, p, n, t in string.gmatch(champs[2] or "", "(%d+):(%d+):(%d+):(%d+)") do
+            recu.sources[tonumber(g)] = { points = tonumber(p), faits = tonumber(n), total = tonumber(t) }
+        end
+    elseif champs[1] == "DONJONS" then
+        for c, d in string.gmatch(champs[2] or "", "(%d+):(%d+)") do recu.donjons[tonumber(c)] = tonumber(d) end
+    elseif champs[1] == "MAITRISE" then
+        for z, m, t, s in string.gmatch(champs[2] or "", "(%d+):(%d+):(%d+):(%d+)") do
+            table.insert(recu.maitrise, { zone = tonumber(z), mode = tonumber(m), tues = tonumber(t), seuil = tonumber(s) })
+        end
     elseif champs[1] == "FIN" then
         etat = recu
         if f:IsShown() then Maj() end
