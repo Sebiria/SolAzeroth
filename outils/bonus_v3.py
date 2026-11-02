@@ -7,6 +7,10 @@ emplacement et débouchés du surplus. Chiffres : outils\\simulation_lot4c.py.
 - Surplus : Pierre à aiguiser brute (2 Pierres brutes) + 3 % de dégâts physiques, Renfort d'armure léger (2 Cuirs
   légers, 2 Lanières) + 8 % d'armure, pendant 1 h ; fabriqués dans la fenêtre Équipement (catégorie Consommables). On
   ne les achète plus chez les marchands.
+- Lot D5 (02/11/2026) : Huile de sorcier mineure (2 Feuillargents) + 3 % de dégâts magiques pendant 1 h, le pendant de la
+  Pierre à aiguiser pour un lanceur de sorts, et le Thon arc-en-ciel donne la vitesse d'incantation à l'Intelligence
+  (cuisine_v3.py). La migration 117 n'est pas rejouée (son annulation efface les variantes des pièces) : la migration
+  126 réécrit les sorts des bonus et des plats, et ajoute l'huile.
 
 Appelé par auras_nommees.py (Spell.dbc du client) ; écrit la migration 117 et SolUI_RecettesSurplus.lua. Les effets
 propres des plats sont dans cuisine_v3.py (BONUS) ; la migration 117 réécrit leurs auras.
@@ -14,17 +18,19 @@ propres des plats sont dans cuisine_v3.py (BONUS) ; la migration 117 réécrit l
 from techniques_v3 import AURA, AURA_FACTICE, ARMURE_POURCENT, DEGATS_INFLIGES, DEGATS_SUBIS, INFINIE, SOI, effet, technique
 
 MIGRATION = r"C:\SolAzeroth\sql\migrations\117_v3_bonus"
+MIGRATION_D5 = r"C:\SolAzeroth\sql\migrations\126_v3_huile"
 LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_RecettesSurplus.lua"
-PANOPLIE_2, PANOPLIE_4, PANOPLIE_6, CRITIQUE, HATE, VOL, PIERRE, RENFORT = range(101600, 101608)
+PANOPLIE_2, PANOPLIE_4, PANOPLIE_6, CRITIQUE, HATE, VOL, PIERRE, RENFORT, HUILE = range(101600, 101609)
 CRIT_POURCENT, HATE_MELEE_DISTANCE, VITESSE_INCANTATION = 290, 192, 65
 D1H = 42
-TOUTES, PHYSIQUE, ARMURE = 127, 1, 1
+TOUTES, PHYSIQUE, MAGIQUES, ARMURE = 127, 1, 126, 1
 SANS_ANNULATION, PASSIF, APRES_LA_MORT = 0x80000000, 0x40, 0x00100000
-BIEN_NOURRI, SORT_PIERRE, SORT_RENFORT = 19705, 2828, 2831
+BIEN_NOURRI, SORT_PIERRE, SORT_RENFORT, SORT_HUILE = 19705, 2828, 2831, 25117
 PIECES_MAX = 8
 # Consommables : (objet, nom, sort, prix en cuivre, composants)
 CONSOMMABLES = [(2862, "Pierre à aiguiser brute", PIERRE, 5, [(2835, 2)]),
-                (2304, "Renfort d'armure léger", RENFORT, 10, [(2318, 2), (2934, 2)])]
+                (2304, "Renfort d'armure léger", RENFORT, 10, [(2318, 2), (2934, 2)]),
+                (20744, "Huile de sorcier mineure", HUILE, 5, [(765, 2)])]   # lot D5 : 2 Feuillargents
 
 
 def permanente(d, ident, nom, texte, icone, cumuls=0):
@@ -63,7 +69,9 @@ def lignes(d):
     for ident, nom, texte, modele, aura, misc, valeur in (
             (PIERRE, "Pierre à aiguiser", "Dégâts physiques infligés augmentés de 3 %.", SORT_PIERRE, DEGATS_INFLIGES,
              PHYSIQUE, 3),
-            (RENFORT, "Renfort d'armure", "Armure augmentée de 8 %.", SORT_RENFORT, ARMURE_POURCENT, ARMURE, 8)):
+            (RENFORT, "Renfort d'armure", "Armure augmentée de 8 %.", SORT_RENFORT, ARMURE_POURCENT, ARMURE, 8),
+            (HUILE, "Huile de sorcier", "Dégâts magiques infligés augmentés de 3 %.", SORT_HUILE, DEGATS_INFLIGES,
+             MAGIQUES, 3)):
         e = technique(d, BIEN_NOURRI, ident, nom, texte + " Pendant 1 h.", d.chercher(modele)[133], 0, texte, duree=D1H)
         e[213] = 0
         effet(e, 0, AURA, valeur, SOI, aura=aura, misc=misc)
@@ -72,26 +80,42 @@ def lignes(d):
 
 
 def ecrire(sorts_sql, plats_sql, plats_ids):
-    ids = ", ".join(str(i) for i in range(PANOPLIE_2, RENFORT + 1))
+    ids = ", ".join(str(i) for i in range(PANOPLIE_2, HUILE + 1))
     up = ["-- Audit du jeu, lot 4c (02/11/2026) : panoplie du Gouffre, variantes, consommables du surplus et effets propres",
           "-- des plats. Généré par outils\\auras_nommees.py (bonus_v3.py, cuisine_v3.py) : ne pas modifier à la main.",
           "USE acore_world;",
           "DELETE FROM spell_dbc WHERE ID IN (%s);" % ids,
           "DELETE FROM spell_dbc WHERE ID IN (%s);" % ", ".join(str(i) for i in plats_ids)]
     up += sorts_sql + plats_sql
+    # Lot D5 : la migration 126 réécrit les mêmes sorts (huile, Thon) et ajoute l'huile, sans rejouer celle-ci.
+    d5 = ["-- Lot D5 (02/11/2026) : Huile de sorcier mineure et vitesse d'incantation du Thon arc-en-ciel. Généré par",
+          "-- outils\\auras_nommees.py (bonus_v3.py, cuisine_v3.py) : ne pas modifier à la main.",
+          "USE acore_world;", up[3], up[4]] + sorts_sql + plats_sql
     down = ["USE acore_world;", up[3]]
     for objet, nom, sort, prix, composants in CONSOMMABLES:
-        up += ["UPDATE item_template SET spellid_1 = %d, spelltrigger_1 = 0, spellcharges_1 = -1, spellcooldown_1 = -1, "
-               "spellcategory_1 = 0, spellcategorycooldown_1 = -1, RequiredLevel = 0, RequiredSkill = 0, "
-               "RequiredSkillRank = 0 WHERE entry = %d;" % (sort, objet),
-               "DELETE FROM npc_vendor WHERE item = %d;" % objet,
-               "DELETE FROM solazeroth_v3_recettes WHERE objet = %d;" % objet,
-               "DELETE FROM solazeroth_v3_recettes_composants WHERE objet = %d;" % objet,
-               "INSERT INTO solazeroth_v3_recettes (objet, forge, puissance, prix) VALUES (%d, 0, 0, %d);" % (objet, prix)]
-        up += ["INSERT INTO solazeroth_v3_recettes_composants (objet, composant, nombre) VALUES (%d, %d, %d);"
-               % (objet, c, n) for c, n in composants]
+        bloc = ["UPDATE item_template SET spellid_1 = %d, spelltrigger_1 = 0, spellcharges_1 = -1, spellcooldown_1 = -1, "
+                "spellcategory_1 = 0, spellcategorycooldown_1 = -1, RequiredLevel = 0, RequiredSkill = 0, "
+                "RequiredSkillRank = 0 WHERE entry = %d;" % (sort, objet),
+                "DELETE FROM npc_vendor WHERE item = %d;" % objet,
+                "DELETE FROM solazeroth_v3_recettes WHERE objet = %d;" % objet,
+                "DELETE FROM solazeroth_v3_recettes_composants WHERE objet = %d;" % objet,
+                "INSERT INTO solazeroth_v3_recettes (objet, forge, puissance, prix) VALUES (%d, 0, 0, %d);" % (objet, prix)]
+        bloc += ["INSERT INTO solazeroth_v3_recettes_composants (objet, composant, nombre) VALUES (%d, %d, %d);"
+                 % (objet, c, n) for c, n in composants]
+        up += bloc
+        if sort == HUILE:
+            d5 += bloc
         down += ["DELETE FROM solazeroth_v3_recettes WHERE objet = %d;" % objet,
                  "DELETE FROM solazeroth_v3_recettes_composants WHERE objet = %d;" % objet]
+    d5_down = ["-- Retire la recette de l'Huile de sorcier mineure et rend son sort à l'huile (le Thon garde la vitesse",
+               "-- d'incantation : rejouer la migration 117 pour l'ôter).", "USE acore_world;",
+               "DELETE FROM solazeroth_v3_recettes WHERE objet = 20744;",
+               "DELETE FROM solazeroth_v3_recettes_composants WHERE objet = 20744;",
+               "UPDATE item_template SET spellid_1 = %d WHERE entry = 20744;" % SORT_HUILE,
+               "DELETE FROM spell_dbc WHERE ID = %d;" % HUILE, ""]
+    for suffixe, contenu in ((".up.sql", d5 + [""]), (".down.sql", d5_down)):
+        with open(MIGRATION_D5 + suffixe, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(contenu))
     up += ["USE acore_characters;",
            "CREATE TABLE IF NOT EXISTS solazeroth_v3_variantes (item INT UNSIGNED NOT NULL PRIMARY KEY, variante TINYINT "
            "UNSIGNED NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;", ""]

@@ -764,7 +764,7 @@ end
 
 local p4 = PageDePieces(pages[4], "Un enchantement par pièce : le nouveau remplace l'ancien, et il reste quand la pièce "
     .. "change de rang. Composants de la Collection (entre parenthèses, ce que tu as) et or.",
-    "Aucune pièce à enchanter : plastron, brassards, cape, bouclier ou arme.", 1)
+    "Aucune pièce à enchanter : plastron, brassards, cape, bouclier, orbe ou arme.", 1)
 -- Une ligne par pièce, et au bout une liste déroulante de ses enchantements, avec leur coût (signalement du
 -- 01/11/2026) ; en choisir un l'applique. Grisés : celui en place, et ceux dont il manque des composants ou de l'or.
 local deroulantEnchantements = CreateFrame("Frame", "SolUIEnchantementsMenu", UIParent, "UIDropDownMenuTemplate")

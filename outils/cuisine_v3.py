@@ -45,7 +45,7 @@ ASSAISONNEMENTS = [2678, 159, 1179, 30817, 4289]
 SCRIPT = "spell_solazeroth_v3_plat"
 # Lot 4c : bonus propre de chaque plat, (aura, misc, valeur, texte). Rareté de l'ingrédient de Blizzard à Durotar (chance
 # × monstres) : sanglier 24 300, dard de scorpide 13 300, crocilisque 1 080, maquereau 590, thon 185.
-CRIT_POURCENT, HATE_MELEE_DISTANCE = 290, 192
+CRIT_POURCENT, HATE_MELEE_DISTANCE, VITESSE_INCANTATION = 290, 192, 65
 BONUS = {
     2681: (VIE_POURCENT, 0, 3, "vie maximale augmentée de 3 %"),            # Viande de sanglier rôtie
     5473: (ARMURE_POURCENT, 1, 8, "armure augmentée de 8 %"),              # Surprise du scorpide
@@ -53,6 +53,9 @@ BONUS = {
     787: (DEGATS_INFLIGES, 127, 3, "dégâts infligés augmentés de 3 %"),    # Maquereau ombré
     5095: (HATE_MELEE_DISTANCE, 0, 12, "vitesse d'attaque augmentée de 12 %"),   # Thon arc-en-ciel
 }
+# Lot D5 (02/11/2026) : pour une spécialisation à Intelligence, la hâte de mêlée devient vitesse d'incantation.
+POUR_LES_SORTS = {HATE_MELEE_DISTANCE: (VITESSE_INCANTATION, "vitesse d'incantation augmentée de 12 %")}
+INTELLIGENCE = 3
 
 
 def puissance_moyenne(zone):
@@ -125,21 +128,27 @@ def lignes(d, liste):
     t = []
     for p in liste:
         bonus = BONUS.get(p["objet"])
+        texte = bonus[3] if bonus else ""
+        if bonus and bonus[0] in POUR_LES_SORTS:
+            texte += " (d'incantation pour l'Intelligence)"
         e = technique(d, BIEN_NOURRI, p["sort"], p["nom"],
                       "Augmente de %d la Force, l'Agilité ou l'Intelligence, selon ta spécialisation%s, pendant 30 min "
-                      "(repas de %s). Un seul repas à la fois." % (p["puissance"], " ; " + bonus[3] if bonus else "",
+                      "(repas de %s). Un seul repas à la fois." % (p["puissance"], " ; " + texte if bonus else "",
                                                                    p["nom_zone"]), icone, 0)
         e[213] = 0
         effet(e, 0, FACTICE, 0, SOI)
         t.append(e)
         for buff, (misc, carac) in zip(p["buffs"], CARACTERISTIQUES):
+            aura, texte = (bonus[0], bonus[3]) if bonus else (None, "")
+            if bonus and misc == INTELLIGENCE and aura in POUR_LES_SORTS:
+                aura, texte = POUR_LES_SORTS[aura]
             e = technique(d, BIEN_NOURRI, buff, "Bien nourri", "", icone, 0,
-                          "%s augmentée de %d%s." % (carac, p["puissance"], " ; " + bonus[3] if bonus else ""),
+                          "%s augmentée de %d%s." % (carac, p["puissance"], " ; " + texte if bonus else ""),
                           duree=D30MIN)
             e[213] = 0
             effet(e, 0, AURA, p["puissance"], SOI, aura=CARACTERISTIQUE, misc=misc)
             if bonus:
-                effet(e, 1, AURA, bonus[2], SOI, aura=bonus[0], misc=bonus[1])
+                effet(e, 1, AURA, bonus[2], SOI, aura=aura, misc=bonus[1])
             t.append(e)
     return t
 

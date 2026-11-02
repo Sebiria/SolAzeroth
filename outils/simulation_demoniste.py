@@ -19,12 +19,15 @@ Règles reprises du serveur (v3_demoniste.cpp, demoniste_v3.py, v3_combat.cpp) e
 - Peur (6 s) : brisée quand le monstre a perdu SEUIL_PEUR de sa vie maximale depuis qu'il fuit (v3_demoniste.cpp ;
   le moteur prenait 1/4,75 de la vie d'un guerrier du niveau du lanceur, 80 : jamais atteint) ; le monstre revient en
   RETOUR_PEUR × le temps de fuite (il fuit en zigzag, pas en ligne droite : supposé).
-- potion (lot D5) : comme simulation_combat.py, bue sous SEUIL_POTION de la vie, rang 2 avec son soin sur la durée.
+- potion (lot D5) : comme simulation_combat.py, bue sous SEUIL_POTION de la vie, rang 2 avec son soin sur la durée ;
+- passifs (lot D5, mêmes clés que simulation_donjons.PASSIFS) : dégâts infligés et subis, vol de vie, Second souffle,
+  Bourreau, Premier sang, recharges, Contre-attaque (un Trait de l'ombre instantané), Épines.
 Le cas « je recule en posant Corruption et Agonie » n'est pas simulé : il est lent, et la référence est le combat où
 l'on s'arrête pour incanter.
 
 py simulation_demoniste.py      (rapport : démoniste et guerrier côte à côte, seul puis en groupe)
 py simulation_demoniste.py --gouffre   (lot D5 : Gouffre de Ragefeu par difficulté, puis rares secrets en bleu)
+py simulation_demoniste.py --passifs   (lot D5 : gain de chaque passif, démoniste et guerrier)
 """
 import os
 import random
@@ -123,7 +126,7 @@ def vitesse(entree):
     return float(sim.sql("SELECT speed_run FROM acore_world.creature_template WHERE entry = %d" % entree)[0][0]) * VITESSE_COURSE
 
 
-def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None, potion=None):
+def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None, potion=None, passifs=None):
     """Un combat contre des monstres arrivés ensemble ; renvoie (victoire, durée, vie restante, infligés, subis).
     recharges : temps restant de chaque recharge au début du combat, mis à jour pour le combat suivant."""
     p = p or parts()
@@ -149,6 +152,9 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None,
     incantation = None                        # (sort, cible, fin, retards)
     inflige = subi = 0
     charges, potion_prete, soins, soin = (potion[0] if potion else 0), 0.0, 0, None
+    q = passifs or {}
+    souffle_pris = False
+    attente = {s: r * q.get("recharge", 1.0) for s, r in RECHARGES.items()}
 
     def boire():
         nonlocal vie, charges, potion_prete, soins, soin
@@ -166,12 +172,18 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None,
         nonlocal inflige
         if vies[i] <= 0:
             return 0
-        dg = j.pa * part * (1 - malus[i])
+        dg = j.pa * part * (1 - malus[i]) * q.get("inflige", 1.0)
+        if "bourreau" in q and vies[i] < q["bourreau"][0] * monstres[i].vie:
+            dg *= 1 + q["bourreau"][1]
+        if "premier" in q and vies[i] > q["premier"][0] * monstres[i].vie:
+            dg *= 1 + q["premier"][1]
         if direct and alea.random() * 100 < CRITIQUE_SORTS:
             dg *= 1.5
         dg = max(1, round(dg))
         vies[i] -= dg
         inflige += dg
+        if "vol" in q:
+            soigner(round(dg * q["vol"]))
         if peur_jusqua[i] > t:
             peur_degats[i] += dg
             if peur_degats[i] >= SEUIL_PEUR * monstres[i].vie:
@@ -230,11 +242,21 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None,
             dg = sim.apres_armure(brut, j.armure, m.puissance)
             if alea.random() * 100 < m.critique:
                 dg *= 2
+            dg = round(dg * q.get("subis", 1.0))
             vie -= dg
             subi += dg
             if vie <= 0:
                 return terminer(False, t, 0, inflige, subi)
+            if "souffle" in q and not souffle_pris and vie < q["souffle"][0] * j.vie:
+                souffle_pris = True
+                soigner(round(j.vie * q["souffle"][1]))
             boire()
+            if "epines" in q and vies[i] > 0:
+                renvoi = max(1, round(dg * q["epines"]))
+                vies[i] -= renvoi
+                inflige += renvoi
+            if "contre" in q and alea.random() < q["contre"]:
+                frapper(i, p["trait"], True)
             # Le coup retarde l'incantation ou écourte la canalisation.
             if incantation and incantation[3] < RETARDS_MAX:
                 s, ci, fin, r = incantation
@@ -317,15 +339,15 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None,
             marcheur_jusqua, vie_marcheur = t + DUREES["marcheur"], round(j.vie * PART_MARCHEUR)
             for i in contact:
                 coup_m[i] = max(coup_m[i], t + 0.5)
-            pret["marcheur"] = t + RECHARGES["marcheur"] + alea.uniform(0, 2 * reaction)
+            pret["marcheur"] = t + attente["marcheur"] + alea.uniform(0, 2 * reaction)
             libre = t + GCD
         elif action == "diablotin":
             diablotin_jusqua, feu = t + DUREES["diablotin"], t + 1.0
-            pret["diablotin"] = t + RECHARGES["diablotin"] + alea.uniform(0, 2 * reaction)
+            pret["diablotin"] = t + attente["diablotin"] + alea.uniform(0, 2 * reaction)
             libre = t + GCD
         elif isinstance(action, tuple) and action[0] == "peur":
             incantation = ("peur", action[1], t + INCANTATION, 0)
-            pret["peur"] = t + RECHARGES["peur"] + alea.uniform(0, 2 * reaction)
+            pret["peur"] = t + attente["peur"] + alea.uniform(0, 2 * reaction)
             libre = DUREE_MAX + 1
         elif isinstance(action, tuple):
             s, i = action
@@ -336,7 +358,7 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None,
             libre = t + GCD
         elif action == "drain":
             drain = (c, 5, t + 1.0, 1.0, 0)
-            pret["drain"] = t + RECHARGES["drain"] + alea.uniform(0, 2 * reaction)
+            pret["drain"] = t + attente["drain"] + alea.uniform(0, 2 * reaction)
             libre = DUREE_MAX + 1
         else:
             if action == "trait" and transe:
@@ -464,5 +486,46 @@ def gouffre():
                  sim.simuler(g, m, n, potion=donjons.POTION_F7)["victoire"], lot4c.essai(g, m, b)))
 
 
+def passifs():
+    """Lot D5 : gain de chaque passif de donjon, en points de victoires, contre un fouette-queue réglé pour que chaque
+    classe gagne environ une fois sur deux (simulation_donjons.passifs), sur la panoplie de fin de Durotar avec le
+    Repos et la potion F7."""
+    import math
+    import simulation_camp as camp
+    import simulation_donjons as donjons
+    import simulation_modes as modes
+    fiches = (sim.au_present(c) for chemin in list(reversed(te.journaux())) + [te.REFERENCE]
+              for c in reversed(sim.lire_journal(chemin)) if c["joueur"])
+    guerrier = next(fiches)
+    guid = int(sim.sql("SELECT guid FROM acore_characters.characters WHERE name = '%s'" % guerrier.nom)[0][0])
+    objets = te.PANOPLIES["fin de Durotar (quêtes)"]
+    g = camp.repos(sim.equiper(guerrier, objets, guid), 5)
+    dm = renforce(demoniste(objets, guid, repas=5))
+    n = donjons.N
+
+    def regle(taux):
+        bas, haut = 0.2, 6.0
+        for _ in range(16):
+            k = (bas + haut) / 2
+            t = taux(k, None)
+            if 45 <= t <= 55:
+                break
+            bas, haut = (k, haut) if t > 55 else (bas, k)
+        return k, t
+
+    def monstre_k(k):
+        m = modes.renforcer(sim.monstre_depuis_base(3122, math.floor(g.puissance)), k, 1.0)
+        m.course = vitesse(3122)
+        return m
+    td = lambda k, q: simuler(dm, [monstre_k(k)], n, potion=donjons.POTION_F7, passifs=q)["victoire"]
+    tg = lambda k, q: sim.simuler(g, monstre_k(k), n, potion=donjons.POTION_F7, passifs=q)["victoire"]
+    kd, t0d = regle(td)
+    kg, t0g = regle(tg)
+    print("Passifs : gain en points de victoires contre un fouette-queue réglé à %.0f %% (démoniste, × %.2f) et %.0f %% "
+          "(guerrier, × %.2f)" % (t0d, kd, t0g, kg))
+    for nom, q in donjons.PASSIFS.items():
+        print("   %-46s démoniste %+4.0f | guerrier %+4.0f" % (nom, td(kd, q) - t0d, tg(kg, q) - t0g))
+
+
 if __name__ == "__main__":
-    gouffre() if "--gouffre" in sys.argv else rapport()
+    passifs() if "--passifs" in sys.argv else gouffre() if "--gouffre" in sys.argv else rapport()

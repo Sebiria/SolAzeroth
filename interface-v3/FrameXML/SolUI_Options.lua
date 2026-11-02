@@ -146,7 +146,7 @@ local function MajSpe()
 end
 spe:SetScript("OnShow", function() MajSpe(); SendChatMessage(".kit", "SAY") end)
 
--- Un guerrier sans spécialisation : la page s'ouvre d'elle-même à la première réponse du serveur, et revient après la
+-- Une classe jouable sans spécialisation : la page s'ouvre d'elle-même à la première réponse du serveur, et revient après la
 -- cinématique d'introduction (Échap, qui la passe, fermait aussi la page).
 local vueSansSpe = false
 local function SansSpe() return S.etat.spe == 0 and SPES[select(2, UnitClass("player"))] ~= nil end

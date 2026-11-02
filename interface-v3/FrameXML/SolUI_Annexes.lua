@@ -33,7 +33,7 @@ SolUI.ANNEXES = {
     [910229] = { cle = "A29", famille = "Défis", titre = "L'orage sans abri", puissance = 10, resume = "Tue Féplouf Sombrorage sans potion, sous l'orage : quitte les zones marquées.", part = 50, bleue = true },
     [910230] = { cle = "A30", famille = "Défis", titre = "Le Rocher du crâne en douze minutes", puissance = 11, resume = "Contre la montre : 32 sectateurs puis Gazz'uz renforcé. Bronze 12 min, argent 10 min, or 8 min.", part = 100, chrono = { 720, 600, 480 }, bleue = true },
 }
-SolUI.FAMILLES_RELIQUES = { { nom = "Lame ardente", bonus = "un bouclier (Rempart de cendre)" }, { nom = "Kul Tiras", bonus = "3 po et 2 Œil ténébreux" }, { nom = "Sombrelances", bonus = "des bottes (Sandales de Sen'jin)" } }
+SolUI.FAMILLES_RELIQUES = { { nom = "Lame ardente", bonus = "un bouclier ou un orbe (Rempart ou Orbe de cendre)" }, { nom = "Kul Tiras", bonus = "3 po et 2 Œil ténébreux" }, { nom = "Sombrelances", bonus = "des bottes (Sandales de Sen'jin)" } }
 SolUI.RELIQUES = {
     { objet = 910150, cle = "A31", nom = "Dague rituelle ébréchée", famille = 1, indice = "Là où Yarrog parlait à ses chiens, la roche garde une lame.", x = -58, y = -4221, puissance = 3 },
     { objet = 910151, cle = "A32", nom = "Lettre de recrutement de la Lame", famille = 1, indice = "Le grand scorpide ne gardait pas que sa colline.", x = -547, y = -4104, puissance = 3 },

@@ -70,7 +70,7 @@ A = [
          resume="Tue le Commandant de la garde Zalaphil, au Donjon de Tiragarde.",
          intro="AVIS DE RECHERCHE. Le Commandant de la garde Zalaphil tient le Donjon de Tiragarde. Il lève son rempart "
                "toutes les trente secondes et appelle ses marins quand il faiblit. Frappez fort entre deux remparts.",
-         prog="La prime attend toujours son chasseur.", fin="Zalaphil est tombé. Le bouclier de la garde est à toi."),
+         prog="La prime attend toujours son chasseur.", fin="Zalaphil est tombé. L'équipement de la garde est à toi."),
     dict(q=910213, cle="A13", famille="Primes", titre="Dent-de-l'Écho", de=SENJIN, a=SENJIN, p=11, part=125,
          tuer=[(DENT, 1, (-1385, -5780), None)], argent=15000, insignes=25, eclats=19, equip=910123,
          resume="Tue Dent-de-l'Écho, en eau profonde au sud des Îles de l'Écho.",
@@ -266,7 +266,7 @@ RELIQUES = [
     ("A45", "Collier de perles de la grève", 2, 5382, (-529, -5216), "Au bout de la grève, là où le renégat compte ses prises.", 9, MAGE_ROYAL),
     ("A46", "Fétiche de jade", 2, 5104, (-1385, -5780), "Le requin de l'Écho a avalé plus d'une offrande.", 11, MAGE_ROYAL),
 ]
-BONUS_FAMILLE = {0: "un bouclier (Rempart de cendre)", 1: "3 po et 2 Œil ténébreux", 2: "des bottes (Sandales de Sen'jin)"}
+BONUS_FAMILLE = {0: "un bouclier ou un orbe (Rempart ou Orbe de cendre)", 1: "3 po et 2 Œil ténébreux", 2: "des bottes (Sandales de Sen'jin)"}
 
 # Techniques (lignes SmartAI 50 et suivantes) : (créature, événement, paramètres d'événement, drapeaux, action,
 # paramètres d'action, cible, décalage (x, y), commentaire). Événements : 0 en combat (délai min/max, répétition

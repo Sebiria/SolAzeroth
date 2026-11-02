@@ -32,7 +32,7 @@ UPDATE item_template_locale SET Description = 'Relique (Sombrelances), annexe A4
 UPDATE item_template SET description = 'Relique (Sombrelances), annexe A46 de Durotar.' WHERE entry = 910165;
 UPDATE item_template_locale SET Description = 'Relique (Sombrelances), annexe A46 de Durotar.' WHERE ID = 910165 AND locale = 'frFR';
 UPDATE quest_offer_reward SET RewardText = 'Elle est morte. La Vallée dormira mieux. Prends ceci, taillé dans sa chitine. 15 Marques du voyageur. Rangé dans ta Collection : 6 éclats cadavériques.' WHERE ID = 910211;
-UPDATE quest_offer_reward SET RewardText = 'Zalaphil est tombé. Le bouclier de la garde est à toi. 25 Marques du voyageur. Rangé dans ta Collection : 15 éclats cadavériques.' WHERE ID = 910212;
+UPDATE quest_offer_reward SET RewardText = 'Zalaphil est tombé. L''équipement de la garde est à toi. 25 Marques du voyageur. Rangé dans ta Collection : 15 éclats cadavériques.' WHERE ID = 910212;
 UPDATE quest_offer_reward SET RewardText = 'Dent-de-l''Écho ne mangera plus personne. Une ceinture dans sa peau, pour toi. 25 Marques du voyageur. Rangé dans ta Collection : 19 éclats cadavériques.' WHERE ID = 910213;
 UPDATE quest_offer_reward SET RewardText = 'Le renégat ne volera plus personne. Voici la prime. 20 Marques du voyageur. Rangé dans ta Collection : 12 éclats cadavériques, des composants.' WHERE ID = 910214;
 UPDATE quest_offer_reward SET RewardText = 'Mouchette est morte. Les Tranchecrins sont sans chef. 20 Marques du voyageur. Rangé dans ta Collection : 15 éclats cadavériques, des composants.' WHERE ID = 910215;

@@ -64,6 +64,7 @@ Les chemins sont relatifs au dépôt (`outils/`, `modules/mod-solazeroth/src/`, 
 - [ ] Rangs d'objet, panoplies et bonus de panoplie : valables pour les versions de la classe.
 - [ ] Repas et repos du feu pour la caractéristique principale (`SolUI_Camp`, cuisine).
 - [ ] Potions : rien de propre à la classe.
+- [ ] Consommables et plats : aucun bonus réservé à la mêlée. La Pierre à aiguiser (dégâts physiques) a son pendant pour les sorts (Huile de sorcier), et la hâte de mêlée du Thon devient vitesse d'incantation pour l'Intelligence (`bonus_v3.py`, `cuisine_v3.py`).
 
 ## 6. Passifs et mécanismes partagés
 
@@ -98,6 +99,8 @@ Simulateur de la classe sur le modèle de `simulation_demoniste.py`. Il reprend 
 - [ ] HUD : rien de vide ni d'inutile pour la classe (Rempart, ressources).
 - [ ] Infobulles des sorts : chiffres exacts après calibrage.
 - [ ] Textes des passifs : ils disent ce que fait le passif pour la classe.
+- [ ] Répliques des PNJ (`SolUI_Paroles.lua`) : une version par classe là où elles parlent du kit (`{ WARRIOR = …, WARLOCK = … }`). Les textes de quête ne nomment pas un objet que la classe reçoit autrement (bouclier/orbe).
+- [ ] Un guide d'essai en jeu pour l'utilisateur, sur le modèle de `Guide d'essai — démoniste.md`.
 
 ## 9. Journal de combat et outils
 
