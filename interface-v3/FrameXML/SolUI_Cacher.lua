@@ -62,3 +62,16 @@ FriendsFrame:HookScript("OnShow", function(self) HideUIPanel(self) end)
 -- Messages d'erreur rouges au centre de l'écran (« pas encore disponible », « hors de portée »…) : coupés à la
 -- demande de l'utilisateur. Les messages jaunes (quêtes, captures d'écran) restent.
 UIErrorsFrame:UnregisterEvent("UI_ERROR_MESSAGE")
+-- Audit du jeu, lot 3a (02/11/2026, C5 du consensus) : une liste blanche revient, celle des erreurs qui disent quoi
+-- faire (se tourner, s'approcher, voir la cible, vider ses sacs).
+local ERREURS_UTILES = {}
+for _, nom in ipairs({ "ERR_BADATTACKFACING", "ERR_BADATTACKPOS", "SPELL_FAILED_UNIT_NOT_INFRONT",
+        "SPELL_FAILED_OUT_OF_RANGE", "ERR_OUT_OF_RANGE", "SPELL_FAILED_LINE_OF_SIGHT", "SPELL_FAILED_NOT_BEHIND",
+        "ERR_INV_FULL", "ERR_BAG_FULL", "ERR_LOOT_CANT_LOOT_THAT_NOW" }) do
+    if _G[nom] then ERREURS_UTILES[_G[nom]] = true end
+end
+local ecouteErreurs = CreateFrame("Frame")
+ecouteErreurs:RegisterEvent("UI_ERROR_MESSAGE")
+ecouteErreurs:SetScript("OnEvent", function(_, _, message)
+    if message and ERREURS_UTILES[message] then UIErrorsFrame:AddMessage(message, 1, 0.1, 0.1, 1) end
+end)

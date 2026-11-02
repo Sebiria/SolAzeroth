@@ -804,6 +804,17 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - Carnet Aventure, onglet Téléportation : la liste des donjons dont le dernier boss est tombé au moins une fois (au compte). Un clic remet le donjon à zéro (instance neuve, difficulté à choisir à l'entrée) et y envoie le joueur, à l'arrivée de sa porte d'origine. Hors combat, hors d'une instance, vivant, pas en vol.
   - Les conditions d'entrée restent : le Gouffre de Ragefeu demande toujours D26 et 60 % de Durotar au personnage. La sortie du donjon ramène à sa sortie habituelle (Ruga pour le Gouffre).
   - `.reinitialiser` reste pour les raids. Serveur : `v3_donjons.cpp` (`.teleportdonjon`, préfixe SOLTELEPORT) ; client : `SolUI_Passifs.lua`, `SolUI_Carnets.lua` (7 onglets possibles par carnet).
+- **Audit du jeu, lot 3a : armure en pourcentage, menace et mort lisibles** (02/11/2026, « Audit du jeu\10_consensus.md », C1 et C5 ; choix de l'utilisateur : les recommandations du consensus, lot 3 en trois temps) : construit, pas encore vérifié en jeu.
+  - Armure : réduction = armure / (armure + 100 × (3 + puissance de l'attaquant)), sans plancher (`v3_combat.cpp`, SolAzeroth.V3.ArmureK et ArmureC). Avant : armure / 20 retirés de chaque coup, au moins 25 % passaient ; dès 600 d'armure, tous les coups tombaient au plancher.
+  - Barème des pièces (`equipement_v3.py`, migration 110 par `armure_v3.py`, 468 pièces, rangs compris) : poids de la pièce × (3 + puissance). Une panoplie à jour retire, contre un monstre de sa puissance, 45 % (maille et bouclier), 40 % (maille), 25 % (cuir), 12 % (tissu), dans toutes les zones ; moins contre un plus fort. Avant : environ 850 pour une maille, de la puissance 2 à 30.
+  - Dégâts des monstres en mêlée ×3 au lieu de ×4. Simulation des combats réels des journaux (`simulation_armure.py`) : monstre seul 26 % de vie perdue en médiane (cible 15 à 30), vallée 14 %, groupes 61 %. La difficulté monte maintenant au fil de Durotar (9 %, 24 %, puis 41 % contre un monstre de sa puissance) ; avant, la courbe était inversée. Le réglage fin par monstre reste au lot 3c.
+  - Outils : chaque journal est relu avec la règle écrite dans son en-tête (`regles_journal`), et les anciennes fiches sont ramenées au nouveau barème (`au_present`).
+  - Cible (`SolUI_Cible.lua`) : techniques du monstre (Enragé, Renforçant, Volcanique, Explosif), avec l'Enragé en rouge quand il joue ; buffs ennemis bordés d'ambre ; incantation en secondes. Le serveur envoie les techniques de la cible (SOLPUISSANCE, champs 5 et 6).
+  - Joueur (`SolUI_Perso.lua`) : bords de l'écran rouges sous 35 % de vie, trait de recharge globale, récapitulatif de la mort (derniers coups, total des 10 s, plus gros coup). Erreurs rouges : liste blanche (se tourner, portée, ligne de vue, sacs pleins).
+  - Mort suspecte (`v3_ame.cpp`) : un coup d'au moins 75 % de la vie, porté par un monstre qui n'est pas un boss et pas plus fort de 2 points, ne coûte pas d'âme. Un signalement part tout seul.
+  - Reste de C5 pour plus tard : niveau 80 caché partout, fiche v3, puissance dans les infobulles d'objet.
+  - Lot 3b proposé (« Audit du jeu\lot_3b_deblocages_proposition.md ») : techniques ouvertes par étapes du récit et emplacements ouverts peu à peu (7 techniques pour 5 emplacements en Durotar), à valider.
+  - Idée de l'utilisateur, à prévoir avec le lot 4 : bonus de panoplie par paliers de pièces portées, comme sur retail, au moins pour les pièces de donjon.
 
 ## 5. Questions pour les prochaines séries
 

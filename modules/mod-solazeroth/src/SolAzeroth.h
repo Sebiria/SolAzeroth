@@ -78,6 +78,10 @@ namespace SolAzeroth
     void FixerPuissanceCreature(Creature* creature, unsigned char puissance);
     float FacteurEclatsMode(Creature* creature);
     bool RareDeCauchemar(Creature* creature);
+    // Lot 3a (02/11/2026) : techniques d'un monstre de mode (masque : 1 Enragé, 2 Renforçant, 4 Volcanique, 8 Explosif)
+    // et leur force (1 ; 1,5 en cauchemar), pour l'interface (v3_modes.cpp).
+    unsigned char TechniquesMonstre(Creature* creature);
+    float ForceTechniques(Creature* creature);
 
     // Ajoute une ligne au journal de donjon de cette carte, s'il y en a un (journal.cpp)
     void Journaliser(Map const* map, std::string const& ligne);

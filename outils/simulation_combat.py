@@ -3,9 +3,10 @@
 
 Les règles reprennent celles du serveur (v3_combat.cpp, v3_kit.cpp) :
 - tout coup porte ; seul le critique reste (×2, après l'armure, comme le moteur) ;
-- armure = réduction fixe : chaque coup physique perd armure / ARMURE_PAR_POINT, au moins 25 % du coup passent
-  (arrondi au supérieur) ;
-- dégâts des monstres ×4 en mêlée (avant l'armure), ×1,5 sur la durée ; malus du joueur face à un monstre plus fort :
+- armure en pourcentage (lot 3a de l'audit du jeu, 02/11/2026) : réduction = armure / (armure + ARMURE_K × (ARMURE_C +
+  puissance de l'attaquant)) ; avant : chaque coup physique perdait armure / ARMURE_PAR_POINT, au moins 25 % du coup
+  passaient. Chaque journal est relu avec la règle écrite dans son en-tête (regles_journal) ;
+- dégâts des monstres ×3 en mêlée (avant l'armure ; ×4 avant le lot 3a), ×1,5 sur la durée ; malus du joueur face à un monstre plus fort :
   -2 % par point de puissance manquant (au plus -75 %) ;
 - vie des monstres ×2 ; coups des monstres d'après le moteur : (dégâts de base + PA / 14 × variance) × modificateur ×
   vitesse, et ×1,5 pour le maximum (Creature::CalculateMinMaxDamage) ;
@@ -39,7 +40,11 @@ from quetes_durotar import sql
 
 JOURNAUX = r"C:\SolAzeroth\journaux\combat"
 ARMURE_PAR_POINT, ARMURE_MINIMUM = 20.0, 0.25
-MONSTRES_VIE, MONSTRES_DEGATS, MONSTRES_DUREE = 2.0, 4.0, 1.5
+# Audit du jeu, lot 3a (02/11/2026) : armure en pourcentage, rapportée à la puissance de l'attaquant (C1 du consensus) :
+# réduction = armure / (armure + ARMURE_K × (ARMURE_C + puissance de l'attaquant)). ARMURE_MODELE choisit la règle.
+ARMURE_MODELE = "pourcentage"
+ARMURE_K, ARMURE_C = 100.0, 3.0
+MONSTRES_VIE, MONSTRES_DEGATS, MONSTRES_DUREE = 2.0, 3.0, 1.5
 MALUS_PAR_POINT, MALUS_MAX = 2.0, 75.0
 REMPART_PART, REMPART_PLAFOND, REMPART_FRAPPE = 0.40, 0.30, 0.08
 REMPART_CRI_DEFI = 0.03
@@ -60,9 +65,13 @@ class Fiche:
             self.nom, self.puissance, self.vie, self.armure, self.bas, self.haut, self.vitesse, self.critique)
 
 
-def apres_armure(degats, armure):
+def apres_armure(degats, armure, puissance=0):
+    """Dégâts après l'armure de la cible ; puissance : celle de l'attaquant (règle en pourcentage)."""
     if degats <= 0:
         return 0
+    if ARMURE_MODELE == "pourcentage":
+        reduction = armure / (armure + ARMURE_K * (ARMURE_C + puissance)) if armure > 0 else 0.0
+        return max(1, round(degats * (1 - reduction)))
     return math.ceil(max(degats - armure / ARMURE_PAR_POINT, degats * ARMURE_MINIMUM))
 
 
@@ -104,7 +113,7 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None, pass
 
     def coup_joueur(pourcent):
         d = alea.uniform(joueur.bas, joueur.haut) * pourcent * (1 - malus)
-        d = apres_armure(int(d), monstre.armure)
+        d = apres_armure(int(d), monstre.armure, joueur.puissance)
         if alea.random() * 100 < joueur.critique:
             d *= 2
         f = p.get("inflige", 1.0)
@@ -155,7 +164,7 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None, pass
                 prochain[quoi] = t + 0.5
         elif quoi == "melee_m":
             brut = round(alea.randint(monstre.bas, monstre.haut) * MONSTRES_DEGATS)
-            d = apres_armure(brut, joueur.armure)
+            d = apres_armure(brut, joueur.armure, monstre.puissance)
             if alea.random() * 100 < monstre.critique:
                 d *= 2
             encaisser(d)
@@ -220,7 +229,7 @@ def combat_groupe(joueur, monstres, alea, cri=True, reaction=1.4):
         return min(max(0.0, m.puissance - joueur.puissance) * MALUS_PAR_POINT, MALUS_MAX) / 100.0
 
     def coup(m, pourcent):
-        d = apres_armure(int(alea.uniform(joueur.bas, joueur.haut) * pourcent * (1 - malus(m))), m.armure)
+        d = apres_armure(int(alea.uniform(joueur.bas, joueur.haut) * pourcent * (1 - malus(m))), m.armure, joueur.puissance)
         return d * 2 if alea.random() * 100 < joueur.critique else d
 
     def encaisser(d):
@@ -256,7 +265,7 @@ def combat_groupe(joueur, monstres, alea, cri=True, reaction=1.4):
         else:
             i = quoi[1]
             m = monstres[i]
-            d = apres_armure(round(alea.randint(m.bas, m.haut) * MONSTRES_DEGATS), joueur.armure)
+            d = apres_armure(round(alea.randint(m.bas, m.haut) * MONSTRES_DEGATS), joueur.armure, m.puissance)
             encaisser(d * 2 if alea.random() * 100 < m.critique else d)
             prochain[quoi] = t + m.vitesse * (1.25 if t < ralenti_jusqua else 1.0)
         for i, d in degats.items():
@@ -316,14 +325,58 @@ def dernier_journal():
     return max(fichiers, key=os.path.getmtime) if fichiers else None
 
 
+ENTETE_POURCENTAGE = re.compile(r"Armure : réduction = armure / \(armure \+ ([\d.]+) x \(([\d.]+)")
+ENTETE_DEGATS = re.compile(r"dégâts x([\d.]+)")
+
+
+def regles_journal(chemin):
+    """Règle d'armure et dégâts des monstres d'un journal, lus dans son en-tête (avant le 02/11/2026 : soustraction,
+    dégâts ×4)."""
+    regles = {"ARMURE_MODELE": "soustraction", "MONSTRES_DEGATS": 4.0}
+    with open(chemin, encoding="utf-8") as f:
+        entete = f.readline()
+    if m := ENTETE_POURCENTAGE.search(entete):
+        regles.update(ARMURE_MODELE="pourcentage", ARMURE_K=float(m[1]), ARMURE_C=float(m[2]))
+    if m := ENTETE_DEGATS.search(entete):
+        regles["MONSTRES_DEGATS"] = float(m[1])
+    return regles
+
+
+def appliquer(regles):
+    """Pose les règles d'un journal ; rend celles d'avant, pour les remettre."""
+    module = sys.modules[__name__]
+    avant = {k: getattr(module, k) for k in ("ARMURE_MODELE", "ARMURE_K", "ARMURE_C", "MONSTRES_DEGATS")}
+    for k, v in regles.items():
+        setattr(module, k, v)
+    return avant
+
+
+def au_present(combat):
+    """Fiche du joueur d'un combat, ramenée aux règles d'aujourd'hui : un journal d'avant le lot 3a (armure par
+    soustraction) a l'armure de l'ancien barème ; elle est convertie en nouvelle panoplie de sa puissance × la part de
+    l'ancienne qu'il portait (au plus 1,5)."""
+    j = combat["joueur"]
+    if not j or combat["regles"]["ARMURE_MODELE"] != "soustraction":
+        return j
+    import equipement_v3 as e3
+    p = j.puissance
+    ancienne = 849 + 211 + 12.87 * max(0.0, p - 2)            # maille et bouclier de l'ancien barème (à peu près plats)
+    nouvelle = (e3.ARMURE_PANOPLIE[3] + e3.ARMURE_BOUCLIER) * (e3.ARMURE_C + p)
+    f = Fiche(j.nom, j.vie, j.armure, j.bas, j.haut, j.vitesse, j.critique, j.puissance, j.poison)
+    f.armure = round(nouvelle * min(1.5, j.armure / ancienne))
+    return f
+
+
 def lire_journal(chemin):
-    """Combats du journal : [{joueur, monstres, bilan, poison, sorts}] ; « sorts » : sorts lancés par les monstres
-    (hors dégâts sur la durée), pour ne comparer au simulateur de mêlée que les combats qui n'en ont pas."""
+    """Combats du journal : [{joueur, monstres, bilan, poison, sorts, regles}] ; « sorts » : sorts lancés par les monstres
+    (hors dégâts sur la durée), pour ne comparer au simulateur de mêlée que les combats qui n'en ont pas ; « regles » :
+    celles de l'en-tête du journal, à poser avec appliquer() avant de rejouer le combat."""
     combats, courant = [], None
+    regles = regles_journal(chemin)
     with open(chemin, encoding="utf-8") as f:
         for ligne in f:
             if ligne.startswith("=== Combat"):
-                courant = {"joueur": None, "monstres": [], "bilan": None, "ticks": [], "sorts": set()}
+                courant = {"joueur": None, "monstres": [], "bilan": None, "ticks": [], "sorts": set(), "regles": regles}
                 combats.append(courant)
             elif courant is None:
                 continue

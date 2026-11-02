@@ -78,12 +78,37 @@ for i, alpha in ipairs({ 0.5, 0.5, 0.18 }) do
 end
 
 ------------------------------------------------------------------------
+-- Techniques du monstre (audit du jeu, lot 3a, 02/11/2026) : celles du mode de zone ou du donjon, et l'Enragé en
+-- rouge quand il joue (sous 30 % de vie). Avant, seule une émote dans la discussion le disait.
+------------------------------------------------------------------------
+local NOMS_TECHNIQUES = { "Enragé", "Renforçant", "Volcanique", "Explosif" }
+local ligneTech = CreateFrame("Frame", nil, cible)
+ligneTech:SetHeight(18)
+ligneTech:SetPoint("TOPLEFT", barre, "BOTTOMLEFT", 0, -8)
+ligneTech:SetPoint("TOPRIGHT", barre, "BOTTOMRIGHT", 0, -8)
+ligneTech:EnableMouse(true)
+ligneTech:Hide()
+local texteTech = S.Texte(ligneTech, "SemiBold", 13, "ambreClair")
+texteTech:SetPoint("LEFT")
+ligneTech:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine("Techniques du monstre", 1, 0.82, 0)
+    local force = S.etat.cibleForce or 1
+    for k = 1, 4 do
+        if math.floor((S.etat.cibleTechniques or 0) / 2 ^ (k - 1)) % 2 == 1 then
+            GameTooltip:AddLine(S.TECHNIQUES_DONJON[k], 1, 1, 1, true)
+        end
+    end
+    if force > 1 then GameTooltip:AddLine("Cauchemar : effets × " .. S.Nombre(force) .. ".", 0.94, 0.57, 0.54, true) end
+    GameTooltip:Show()
+end)
+ligneTech:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+------------------------------------------------------------------------
 -- Incantation
 ------------------------------------------------------------------------
 local incantation = CreateFrame("Frame", nil, cible)
 incantation:SetHeight(30)
-incantation:SetPoint("TOPLEFT", barre, "BOTTOMLEFT", 0, -12)
-incantation:SetPoint("TOPRIGHT", barre, "BOTTOMRIGHT", 0, -12)
 incantation:Hide()
 local motIncante = S.Texte(incantation, "Bold", 11, "rougeClair")
 motIncante:SetPoint("LEFT")
@@ -157,7 +182,7 @@ for i = 1, MAX_DEBUFFS do
 
     d:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:SetUnitDebuff("target", self.index)
+        if self.buff then GameTooltip:SetUnitBuff("target", self.index) else GameTooltip:SetUnitDebuff("target", self.index) end
     end)
     d:SetScript("OnLeave", function() GameTooltip:Hide() end)
     d:Hide()
@@ -176,6 +201,13 @@ end
 local function Disposer()
     local hauteur = 50 + 18
     local dernier = barre
+    if ligneTech:IsShown() then
+        hauteur = hauteur + 8 + 18
+        dernier = ligneTech
+    end
+    incantation:ClearAllPoints()
+    incantation:SetPoint("TOPLEFT", dernier, "BOTTOMLEFT", 0, -12)
+    incantation:SetPoint("TOPRIGHT", dernier, "BOTTOMRIGHT", 0, -12)
     if incantation:IsShown() then
         hauteur = hauteur + 12 + 30
         dernier = incantation
@@ -244,25 +276,33 @@ local function MajVie()
     end
 end
 
+-- Lot 3a (02/11/2026) : les buffs d'un ennemi d'abord (Renforcement, Bouclier de foudre… étaient invisibles), bordés
+-- d'ambre, puis les débuffs.
 local function MajDebuffs()
     local n = 0
-    for index = 1, 40 do
-        if n >= DebuffsVisibles() then break end
-        local nomSort, _, icone, nombre, _, duree, fin, lanceur = UnitDebuff("target", index)
-        if not nomSort then break end
-        n = n + 1
-        local d = debuffs[n]
-        d.index, d.dureeTotale, d.fin = index, duree, fin
-        d.icone:SetTexture(icone)
-        d.nom:SetText(nomSort)
-        S.Montrer(d.pile, nombre and nombre > 1)
-        d.pile.texte:SetText(nombre and nombre > 1 and ("×" .. nombre) or "")
-        local detail = (lanceur == "player" or lanceur == "pet") and "Par toi" or ""
-        if nombre and nombre > 1 then detail = nombre .. " cumuls" end
-        d.detail:SetText(detail)
-        S.Montrer(d.duree, duree and duree > 0)
-        d.duree:SetMinMaxValues(0, math.max(0.1, duree or 1))
-        d:Show()
+    local listes = { { UnitDebuff, false } }
+    if UnitCanAttack("player", "target") then table.insert(listes, 1, { UnitBuff, true }) end
+    for _, liste in ipairs(listes) do
+        for index = 1, 40 do
+            if n >= DebuffsVisibles() then break end
+            local nomSort, _, icone, nombre, _, duree, fin, lanceur = liste[1]("target", index)
+            if not nomSort then break end
+            n = n + 1
+            local d = debuffs[n]
+            d.index, d.buff, d.dureeTotale, d.fin = index, liste[2], duree, fin
+            d.icone:SetTexture(icone)
+            d.nom:SetText(nomSort)
+            d.cadreIcone:SetBackdropBorderColor(S.Couleur(liste[2] and "ambre" or "bleu"))
+            d.duree:SetStatusBarColor(S.Couleur(liste[2] and "ambre" or "bleu"))
+            S.Montrer(d.pile, nombre and nombre > 1)
+            d.pile.texte:SetText(nombre and nombre > 1 and ("×" .. nombre) or "")
+            local detail = liste[2] and "Renfort" or ((lanceur == "player" or lanceur == "pet") and "Par toi" or "")
+            if nombre and nombre > 1 then detail = nombre .. " cumuls" end
+            d.detail:SetText(detail)
+            S.Montrer(d.duree, duree and duree > 0)
+            d.duree:SetMinMaxValues(0, math.max(0.1, duree or 1))
+            d:Show()
+        end
     end
     for i = n + 1, MAX_DEBUFFS do debuffs[i]:Hide() end
     S.Montrer(rangee, n > 0)
@@ -296,8 +336,34 @@ incantation:SetScript("OnUpdate", function(self)
     if self.canalise then part = 1 - part end
     barreIncante:SetMinMaxValues(0, 1)
     barreIncante:SetValue(part)
-    pourcentIncante:SetText(math.floor(part * 100) .. " %")
+    -- Lot 3a (02/11/2026) : le temps qui reste, en secondes, plutôt qu'un pourcentage.
+    local reste = math.max(0, self.fin - GetTime())
+    pourcentIncante:SetText((string.format("%.1f s", reste):gsub("%.", ",")))
 end)
+
+local function MajTechniques()
+    local masque = (UnitExists("target") and not UnitIsPlayer("target")) and (S.etat.cibleTechniques or 0) or 0
+    local avant = ligneTech:IsShown()
+    if masque == 0 then
+        ligneTech:Hide()
+    else
+        local morceaux = {}
+        local vie = UnitHealth("target") / math.max(1, UnitHealthMax("target"))
+        for k = 1, 4 do
+            if math.floor(masque / 2 ^ (k - 1)) % 2 == 1 then
+                if k == 1 and vie < 0.3 and not UnitIsDead("target") then
+                    table.insert(morceaux, "|cffff5a46ENRAGÉ : + " .. math.floor(50 * (S.etat.cibleForce or 1) + 0.5)
+                        .. " % de dégâts|r")
+                else
+                    table.insert(morceaux, NOMS_TECHNIQUES[k])
+                end
+            end
+        end
+        texteTech:SetText("Techniques : " .. table.concat(morceaux, "  ·  "))
+        ligneTech:Show()
+    end
+    if avant ~= ligneTech:IsShown() then Disposer() end
+end
 
 local attente = 0
 rangee:SetScript("OnUpdate", function(self, ecoule)
@@ -330,6 +396,7 @@ local function MajTout()
             barre:SetMinMaxValues(0, 1)
             barre:SetValue(1)
             incantation:Hide()
+            ligneTech:Hide()
             rangee:Hide()
             Disposer()
             cible:Show()
@@ -341,6 +408,7 @@ local function MajTout()
     MajEntete()
     MajVie()
     MajPuissance()
+    MajTechniques()
     MajIncantation()
     MajDebuffs()
     cible:Show()
@@ -364,10 +432,11 @@ S.Ecouter("PLAYER_TARGET_CHANGED", function()
     local guid = UnitGUID("target")
     S.etat.ciblePuissance = guid and S.puissancesProches[guid:gsub("^0x", ""):upper()] or nil
     S.etat.cibleMalus = 0
+    S.etat.cibleTechniques, S.etat.cibleForce = 0, 1
 end)
 S.Ecouter("PLAYER_TARGET_CHANGED", MajTout)
 S.Ecouter("PLAYER_ENTERING_WORLD", MajTout)
-S.Ecouter("UNIT_HEALTH", function(_, unite) if unite == "target" then MajVie() end end)
+S.Ecouter("UNIT_HEALTH", function(_, unite) if unite == "target" then MajVie(); MajTechniques() end end)
 S.Ecouter("UNIT_MAXHEALTH", function(_, unite) if unite == "target" then MajVie() end end)
 S.Ecouter("UNIT_AURA", function(_, unite) if unite == "target" then MajDebuffs() end end)
 S.Ecouter("UNIT_CLASSIFICATION_CHANGED", function(_, unite) if unite == "target" then MajEntete() end end)
@@ -377,4 +446,4 @@ for _, evenement in ipairs({ "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNI
         "UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_CHANNEL_STOP" }) do
     S.Ecouter(evenement, function(_, unite) if unite == "target" then MajIncantation() end end)
 end
-S.Abonner("puissance", MajPuissance)
+S.Abonner("puissance", function() MajPuissance(); MajTechniques() end)

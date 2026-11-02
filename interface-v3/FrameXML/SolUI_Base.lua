@@ -294,7 +294,7 @@ S.Message("SOLKIT", function(champs)
     end
 end)
 
--- SOLPUISSANCE (v3_combat.cpp) : « PUISSANCE;joueur[;puissance de la cible;malus en %] », et
+-- SOLPUISSANCE (v3_combat.cpp) : « PUISSANCE;joueur[;puissance de la cible;malus en %;techniques;force en %] », et
 -- « PROCHES;guid:puissance:nom;… » pour les monstres à moins de 60 m, gardés ici pour afficher la puissance d'une cible
 -- dès qu'on la choisit, et sur les plaques de nom (par le nom, SolUI_Plaques.lua).
 S.puissancesProches, S.nomsProches, S.nombreProches = {}, {}, 0
@@ -316,6 +316,9 @@ S.Message("SOLPUISSANCE", function(champs)
     S.etat.puissance = tonumber(champs[2])
     S.etat.ciblePuissance = tonumber(champs[3])
     S.etat.cibleMalus = tonumber(champs[4]) or 0
+    -- Lot 3a (02/11/2026) : techniques de la cible (masque) et leur force (1 ; 1,5 en cauchemar).
+    S.etat.cibleTechniques = tonumber(champs[5]) or 0
+    S.etat.cibleForce = (tonumber(champs[6]) or 100) / 100
     Prevenir("puissance")
 end)
 

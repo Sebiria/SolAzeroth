@@ -183,6 +183,8 @@ S.Message("SOLAME", function(champs)
     elseif champs[1] == "ETEINTE" then
         RaidNotice_AddMessage(RaidWarningFrame, "Âme éteinte : ce personnage ne peut plus jouer.",
             ChatTypeInfo["RAID_WARNING"])
+    elseif champs[1] == "SUSPECTE" and S.MortSuspecte then
+        S.MortSuspecte(tonumber(champs[2]) or 0, tonumber(champs[3]) or 0)
     end
 end)
 
@@ -373,3 +375,137 @@ liste:SetScript("OnUpdate", function(self, ecoule)
         end
     end
 end)
+
+------------------------------------------------------------------------
+-- Audit du jeu, lot 3a (02/11/2026, C5 du consensus) : signaux du joueur et récapitulatif de la mort.
+-- - Vie basse : sous 35 %, les bords de l'écran battent en rouge.
+-- - Recharge globale : un trait sous le personnage, le temps qu'aucune technique ne peut partir.
+-- - À la mort : les derniers coups reçus (auteur, coup, montant, vie qui restait), le total des 10 dernières secondes
+--   et le plus gros coup. Une mort suspecte (v3_ame.cpp, message SOLAME « SUSPECTE ») y est dite : l'âme est gardée.
+------------------------------------------------------------------------
+local SEUIL_VIE_BASSE = 0.35
+local bords = CreateFrame("Frame", "SolUIVieBasse", UIParent)
+bords:SetAllPoints(UIParent)
+bords:SetFrameStrata("BACKGROUND")
+bords:Hide()
+local EPAISSEUR = 140
+for _, c in ipairs({ { "TOPLEFT", "BOTTOMLEFT", "HORIZONTAL", 1, 0, true }, { "TOPRIGHT", "BOTTOMRIGHT", "HORIZONTAL", 0, 1, true },
+        { "TOPLEFT", "TOPRIGHT", "VERTICAL", 0, 1, false }, { "BOTTOMLEFT", "BOTTOMRIGHT", "VERTICAL", 1, 0, false } }) do
+    local tx = bords:CreateTexture(nil, "BACKGROUND")
+    tx:SetTexture(S.BLANC)
+    tx:SetPoint(c[1])
+    tx:SetPoint(c[2])
+    if c[6] then tx:SetWidth(EPAISSEUR) else tx:SetHeight(EPAISSEUR) end
+    tx:SetGradientAlpha(c[3], 0.8, 0.08, 0.06, c[4] * 0.55, 0.8, 0.08, 0.06, c[5] * 0.55)
+end
+bords:SetScript("OnUpdate", function(self)
+    self:SetAlpha(0.55 + 0.45 * math.abs(math.sin(GetTime() * 2.5)))
+end)
+local function MajVieBasse()
+    local part = UnitHealth("player") / math.max(1, UnitHealthMax("player"))
+    S.Montrer(bords, part < SEUIL_VIE_BASSE and not UnitIsDeadOrGhost("player"))
+end
+S.Ecouter("UNIT_HEALTH", function(_, unite) if unite == "player" then MajVieBasse() end end)
+S.Ecouter("PLAYER_ENTERING_WORLD", MajVieBasse)
+
+-- Recharge globale : la plus récente des recharges courtes (1,6 s au plus) des sorts du grimoire.
+local gcd = CreateFrame("StatusBar", nil, perso)
+gcd:SetSize(120, 4)
+gcd:SetPoint("TOP", perso, "BOTTOM", 0, 6)
+gcd:SetStatusBarTexture(S.BLANC)
+gcd:SetStatusBarColor(S.Couleur("ambre"))
+gcd:SetBackdrop({ bgFile = S.BLANC })
+gcd:SetBackdropColor(S.Couleur("creux"))
+gcd.debut, gcd.duree = 0, 0
+gcd:Hide()
+local function MajGcd()
+    local debut, duree = 0, 0
+    for i = 1, 80 do
+        local nom = GetSpellName(i, BOOKTYPE_SPELL)
+        if not nom then break end
+        local d, l = GetSpellCooldown(i, BOOKTYPE_SPELL)
+        if l and l > 0 and l <= 1.6 and d > debut then debut, duree = d, l end
+    end
+    gcd.debut, gcd.duree = debut, duree
+    S.Montrer(gcd, duree > 0)
+end
+gcd:SetScript("OnUpdate", function(self)
+    local reste = self.debut + self.duree - GetTime()
+    if reste <= 0 then self:Hide() return end
+    self:SetMinMaxValues(0, self.duree)
+    self:SetValue(reste)
+end)
+S.Ecouter("SPELL_UPDATE_COOLDOWN", MajGcd)
+
+-- Récapitulatif de la mort.
+local COUPS_GARDES, FENETRE_COUPS = 12, 10
+local coups = {}
+local suivi = CreateFrame("Frame")
+suivi:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+suivi:SetScript("OnEvent", function(_, _, temps, evenement, _, source, _, cibleGuid, _, _, ...)
+    if cibleGuid ~= UnitGUID("player") then return end
+    local quoi, montant
+    if evenement == "SWING_DAMAGE" then
+        quoi, montant = "Mêlée", select(1, ...)
+    elseif evenement == "SPELL_DAMAGE" or evenement == "SPELL_PERIODIC_DAMAGE" or evenement == "RANGE_DAMAGE"
+            or evenement == "DAMAGE_SHIELD" then
+        quoi, montant = select(2, ...), select(4, ...)
+        if evenement == "SPELL_PERIODIC_DAMAGE" then quoi = quoi .. " (sur la durée)" end
+    elseif evenement == "ENVIRONMENTAL_DAMAGE" then
+        quoi, montant, source = "Environnement", select(2, ...), "Chute ou environnement"
+    else
+        return
+    end
+    table.insert(coups, { t = GetTime(), source = source or "?", quoi = quoi or "?", montant = montant or 0,
+        vie = UnitHealth("player") / math.max(1, UnitHealthMax("player")) })
+    if #coups > COUPS_GARDES then table.remove(coups, 1) end
+end)
+
+local recap = S.Fenetre("SolUIRecapMort", 620, 470, "Récapitulatif de la mort")
+local resumeRecap = S.Texte(recap, "SemiBold", 13, "clair")
+resumeRecap:SetPoint("TOPLEFT", recap, "TOPLEFT", 28, -66)
+resumeRecap:SetWidth(564)
+resumeRecap:SetJustifyH("LEFT")
+local lignesRecap = S.Texte(recap, "Regular", 13, "texte")
+lignesRecap:SetPoint("TOPLEFT", resumeRecap, "BOTTOMLEFT", 0, -14)
+lignesRecap:SetWidth(564)
+lignesRecap:SetJustifyH("LEFT")
+lignesRecap:SetSpacing(4)
+local suspecteRecap = S.Texte(recap, "SemiBold", 13, "texte")
+suspecteRecap:SetPoint("BOTTOMLEFT", recap, "BOTTOMLEFT", 28, 24)
+suspecteRecap:SetWidth(564)
+suspecteRecap:SetJustifyH("LEFT")
+suspecteRecap:SetTextColor(VIOLET_CLAIR[1], VIOLET_CLAIR[2], VIOLET_CLAIR[3])
+
+S.Ecouter("PLAYER_DEAD", function()
+    local mort, total, gros = GetTime(), 0, nil
+    local lignes = {}
+    for i = #coups, 1, -1 do
+        local c = coups[i]
+        if mort - c.t <= FENETRE_COUPS then
+            total = total + c.montant
+            if not gros or c.montant > gros.montant then gros = c end
+            if #lignes < 8 then
+                table.insert(lignes, 1, string.format("|cffb4b8bf-%s s|r   %s : %s   |cfff0918a-%s|r   |cffb4b8bf(vie %d %%)|r",
+                    (string.format("%.1f", mort - c.t):gsub("%.", ",")), c.source, c.quoi, S.Nombre(c.montant),
+                    math.floor(100 * c.vie + 0.5)))
+            end
+        end
+    end
+    if #lignes == 0 then
+        resumeRecap:SetText("Aucun coup reçu dans les " .. FENETRE_COUPS .. " dernières secondes.")
+    else
+        resumeRecap:SetText(S.Nombre(total) .. " dégâts reçus en " .. FENETRE_COUPS .. " s   ·   plus gros coup : "
+            .. S.Nombre(gros.montant) .. " (" .. gros.source .. ", " .. gros.quoi .. ")")
+    end
+    lignesRecap:SetText(table.concat(lignes, "\n"))
+    suspecteRecap:SetText("")
+    wipe(coups)
+    recap:Show()
+end)
+
+function S.MortSuspecte(montant, part)
+    suspecteRecap:SetText("Mort suspecte : un coup de " .. S.Nombre(montant) .. " (" .. part .. " % de ta vie). "
+        .. "L'âme est gardée et un signalement est parti.")
+    recap:Show()
+end

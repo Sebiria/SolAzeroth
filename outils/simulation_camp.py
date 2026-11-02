@@ -30,8 +30,9 @@ def fiches():
     vues = {}
     for f in sorted(sim.glob.glob(sim.os.path.join(sim.JOURNAUX, "*.log")), key=sim.os.path.getmtime):
         for c in sim.lire_journal(f):
+            # Lot 3a (02/11/2026) : fiches ramenées aux règles d'aujourd'hui (armure en pourcentage).
             if c["joueur"] and round(c["joueur"].puissance) >= 3:
-                vues[(c["joueur"].nom, round(c["joueur"].puissance))] = c["joueur"]
+                vues[(c["joueur"].nom, round(c["joueur"].puissance))] = sim.au_present(c)
     return [vues[k] for k in sorted(vues)]
 
 

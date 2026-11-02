@@ -3,8 +3,13 @@ l'utilisateur du 31/10/2026).
 
 - Barème commun à toutes nos pièces (récompenses de quête 910101-910119 et pièces fabriquées 910201-910226). Les
   récompenses reprenaient les chiffres de leur objet d'origine : tantôt des caractéristiques, tantôt rien. Désormais :
-  - armure et dégâts d'arme : ceux d'un objet d'origine vert de même type et de même niveau d'objet que la puissance
-    de la pièce (droite ajustée sur les objets verts de niveau 5 à 30) ;
+  - dégâts d'arme : ceux d'un objet d'origine vert de même type et de même niveau d'objet que la puissance de la pièce
+    (droite ajustée sur les objets verts de niveau 5 à 30) ;
+  - armure (audit du jeu, lot 3a, 02/11/2026) : poids de la pièce × (ARMURE_C + puissance), pour la règle en
+    pourcentage de v3_combat.cpp. Une panoplie à jour retire la même part des coups d'un monstre de sa puissance dans
+    toutes les zones : maille et bouclier 45 %, maille 40 %, cuir 25 %, tissu 12 % (simulation_armure.py).
+    Avant : la droite des objets verts, presque plate (environ 850 pour une maille, de la puissance 2 à 30). Migration
+    110 (armure_v3.py) ;
   - Puissance d'attaque (au moins 1) et Endurance, selon la puissance et l'emplacement. Prudence : au niveau 80 caché,
     le personnage n'a qu'environ 84 points de vie et 1 Endurance en donne 10. À calibrer.
 - Recettes (fenêtre Équipement, v3_equipement.cpp) : composants bruts de la Collection et un peu d'or. Maille, bouclier
@@ -76,6 +81,12 @@ CATEGORIES = ["Rudimentaire", "Maille", "Armes", "Cuir", "Tissu"]
 # Poids de l'emplacement (InventoryType) dans le barème.
 POIDS = {5: 1.0, 20: 1.0, 7: 1.0, 17: 1.0, 8: 0.75, 10: 0.75, 6: 0.75, 1: 0.75, 3: 0.75,
          9: 0.56, 16: 0.56, 14: 0.56, 13: 0.56, 21: 0.56, 22: 0.56}
+# Armure (lot 3a) : points par point de (ARMURE_C + puissance) pour 8 pièces (tête, épaules, torse, taille, jambes,
+# pieds, poignets, mains), réparties selon le poids de l'emplacement en seizièmes ; bouclier et cape à part.
+ARMURE_C = 3.0
+ARMURE_PANOPLIE = {1: 13.6, 2: 33.0, 3: 66.0}           # sous-classe : tissu, cuir, maille
+ARMURE_BOUCLIER, ARMURE_CAPE = 16.0, 1.2
+ARMURE_SEIZIEMES = {1: 13, 3: 12, 5: 16, 20: 16, 6: 9, 7: 14, 8: 11, 9: 7, 10: 10}
 AP_PAR_POINT, ENDURANCE_PAR_POINT = 0.6, 0.12
 PUISSANCE_ATTAQUE, ENDURANCE = 38, 7
 COLONNES = ["entry", "name", "class", "subclass", "InventoryType", "armor", "dmg_min1", "dmg_max1", "delay", "block"]
@@ -109,6 +120,17 @@ def baremes():
     return armures, {k: droite(v) for k, v in armes.items()}
 
 
+def armure(sous_classe, emplacement, puissance):
+    """Armure d'une pièce de cette puissance (rang 0)."""
+    if emplacement == 14:
+        unites = ARMURE_BOUCLIER
+    elif emplacement == 16:
+        unites = ARMURE_CAPE
+    else:
+        unites = ARMURE_PANOPLIE[sous_classe] * ARMURE_SEIZIEMES[emplacement] / 92.0
+    return max(1, round(unites * (ARMURE_C + puissance)))
+
+
 def objets(entrees):
     lignes = sql("SELECT %s FROM acore_world.item_template WHERE entry IN (%s)"
                  % (", ".join(COLONNES), ",".join(map(str, entrees))))
@@ -122,8 +144,7 @@ def caracteristiques(modele, puissance, armures, armes):
     poids = POIDS[emplacement]
     c = {"armor": 0, "dmg_min1": 0, "dmg_max1": 0}
     if classe == 4:
-        a, b = armures[(sous_classe, 5 if emplacement == 20 else emplacement)]
-        c["armor"] = max(1, round(a + b * puissance))
+        c["armor"] = armure(sous_classe, emplacement, puissance)
     else:
         a, b = armes[emplacement == 17]
         cadence = int(modele["delay"]) / 1000

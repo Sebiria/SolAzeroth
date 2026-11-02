@@ -21,12 +21,13 @@ SolAzeroth.Version = 3
 
 SolAzeroth.V3.RegenVie = 2
 
-#    SolAzeroth.V3.ArmureParPoint          Armure = réduction fixe (v3) : chaque coup physique perd armure / cette valeur
-#                                          points de dégâts. Défaut : 20 (100 d'armure retirent 5 points par coup).
-#    SolAzeroth.V3.ArmureMinimum           Part du coup qui passe toujours l'armure, en %. Défaut : 25.
+#    SolAzeroth.V3.ArmureK                 Armure (v3, audit du jeu lot 3a, 02/11/2026) : réduction des coups physiques =
+#    SolAzeroth.V3.ArmureC                 armure / (armure + ArmureK x (ArmureC + puissance de l'attaquant)).
+#                                          Défauts : 100 et 3 (maille et bouclier à jour : 45 % contre un monstre de leur
+#                                          puissance ; outils\simulation_armure.py).
 
-SolAzeroth.V3.ArmureParPoint = 20
-SolAzeroth.V3.ArmureMinimum = 25
+SolAzeroth.V3.ArmureK = 100
+SolAzeroth.V3.ArmureC = 3
 
 #    SolAzeroth.V3.MalusParPoint           Malus hors de sa puissance (v3) : dégâts infligés en moins, en %, par point de
 #                                          puissance qui manque face au monstre combattu. Défaut : 2.
@@ -38,12 +39,12 @@ SolAzeroth.V3.MalusMax = 75
 #    SolAzeroth.V3.MonstresVie             Calibrage (v3) : vie des monstres multipliée par ce chiffre (appliqué à leur
 #                                          apparition, donc au prochain redémarrage). Défaut : 2.
 #    SolAzeroth.V3.MonstresDegats          Dégâts des monstres contre le joueur et ses familiers, multipliés avant l'armure :
-#                                          mêlée et techniques physiques. Défaut : 4.
+#                                          mêlée et techniques physiques. Défaut : 3 (4 avant l'armure en pourcentage).
 #    SolAzeroth.V3.MonstresDegatsSorts     Même chose pour leurs sorts magiques, qui ne passent pas par l'armure. Défaut : 2.
 #    SolAzeroth.V3.MonstresDegatsDuree     Même chose pour leurs dégâts sur la durée (Corruption, saignements…). Défaut : 1.5.
 
 SolAzeroth.V3.MonstresVie = 2
-SolAzeroth.V3.MonstresDegats = 4
+SolAzeroth.V3.MonstresDegats = 3
 SolAzeroth.V3.MonstresDegatsSorts = 2
 SolAzeroth.V3.MonstresDegatsDuree = 1.5
 

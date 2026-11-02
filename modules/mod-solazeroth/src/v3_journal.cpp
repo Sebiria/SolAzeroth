@@ -70,11 +70,12 @@ namespace
         {
             std::filesystem::create_directories(DOSSIER);
             j->fichier.open(DOSSIER + "/" + player->GetName() + "_" + Heure() + ".log", std::ios::app);
-            j->fichier << "Journal de combat de " << player->GetName() << " (Sol'Azeroth v3). Armure : "
-                << sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureParPoint", 20.0f) << " points d'armure retirent 1 point par coup physique, "
-                << sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureMinimum", 25.0f) << " % du coup passent toujours. Monstres : vie x"
+            // Lot 3a (02/11/2026) : la règle d'armure est écrite ici, les outils relisent chaque journal avec la sienne.
+            j->fichier << "Journal de combat de " << player->GetName() << " (Sol'Azeroth v3). Armure : réduction = armure / (armure + "
+                << sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureK", 100.0f) << " x ("
+                << sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureC", 3.0f) << " + puissance de l'attaquant)). Monstres : vie x"
                 << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresVie", 2.0f) << ", dégâts x"
-                << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 4.0f) << " (avant l'armure), sorts x"
+                << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 3.0f) << " (avant l'armure), sorts x"
                 << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsSorts", 2.0f) << ", sur la durée x"
                 << sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsDuree", 1.5f) << ".\n";
         }
@@ -115,10 +116,13 @@ namespace
 
     void FicheJoueur(Journal* j, Player* p)
     {
-        j->fichier << Acore::StringFormat("  Joueur {} : puissance {:.1f}, vie {}/{}, armure {} (-{:.1f} par coup), force {:.0f}, "
+        float puissance = SolAzeroth::PuissanceJoueur(p);
+        float armure = float(p->GetArmor());
+        float reduction = 100.0f * armure / std::max(1.0f, armure + sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureK", 100.0f)
+            * (sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureC", 3.0f) + puissance));
+        j->fichier << Acore::StringFormat("  Joueur {} : puissance {:.1f}, vie {}/{}, armure {} (-{:.0f} % contre sa puissance), force {:.0f}, "
             "endurance {:.0f}, puissance d'attaque {:.0f}, arme {:.1f}-{:.1f} toutes les {:.2f} s, critique {:.1f} %, Rempart {}\n",
-            p->GetName(), SolAzeroth::PuissanceJoueur(p), p->GetHealth(), p->GetMaxHealth(), p->GetArmor(),
-            p->GetArmor() / sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureParPoint", 20.0f),
+            p->GetName(), puissance, p->GetHealth(), p->GetMaxHealth(), p->GetArmor(), reduction,
             p->GetStat(STAT_STRENGTH), p->GetStat(STAT_STAMINA), p->GetTotalAttackPowerValue(BASE_ATTACK),
             p->GetFloatValue(UNIT_FIELD_MINDAMAGE), p->GetFloatValue(UNIT_FIELD_MAXDAMAGE), p->GetAttackTime(BASE_ATTACK) / 1000.0f,
             p->GetFloatValue(PLAYER_CRIT_PERCENTAGE), Rempart(p));

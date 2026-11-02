@@ -2,14 +2,18 @@
 // - Tout coup porte : plus de raté, d'esquive, de parade, de blocage, ni de coup érafle ou écrasant, en mêlée comme pour
 //   les sorts (résistance aux effets comprise). Seul le critique reste. Les sorts passent par l'accroche OnSpellHitRoll,
 //   ajoutée au moteur (patches\azerothcore-v3-combat.patch).
-// - Armure = réduction fixe : chaque coup physique perd armure / SolAzeroth.V3.ArmureParPoint points de dégâts, à la place
-//   du pourcentage du moteur, en gardant au moins SolAzeroth.V3.ArmureMinimum % du coup.
+// - Armure (audit du jeu, lot 3a, 02/11/2026, C1 du consensus) : réduction en pourcentage, rapportée à la puissance de
+//   l'attaquant, à rendement décroissant : armure / (armure + SolAzeroth.V3.ArmureK × (SolAzeroth.V3.ArmureC + puissance
+//   de l'attaquant)), sans plancher. Le barème des pièces suit (outils\equipement_v3.py, migration 110) : une panoplie
+//   de maille et un bouclier à jour retirent 45 % de la mêlée d'un monstre de leur puissance, moins contre un plus fort.
+//   Avant : chaque coup perdait armure / 20 points, au moins 25 % du coup passaient ; dès environ 600 d'armure, tous les
+//   coups tombaient au plancher (outils\simulation_armure.py).
 // - Plus de ressource : les sorts ne coûtent plus ni mana, ni rage, ni énergie, ni puissance runique (les sorts payés en
 //   vie gardent leur coût). L'affichage des barres disparaît avec l'interface v3 (F4).
 // - Puissance du personnage : moyenne des niveaux d'objet équipés, rang d'amélioration compris (E1 : rang de la version
 //   d'équipement, SolAzeroth.V3.PuissanceParRang par rang ; provisoire : les chiffres par qualité et origine restent à
 //   fixer, question 3 du document). Envoyée à l'interface (« SOLPUISSANCE ») et
-//   affichée par .puissance. La puissance des monstres à moins de 60 m part aussi d'avance (« PROCHES;guid:puissance:nom;… »,
+//   affichée par .puissance (« PUISSANCE;joueur[;puissance de la cible;malus;techniques;force en %] »). La puissance des monstres à moins de 60 m part aussi d'avance (« PROCHES;guid:puissance:nom;… »,
 //   seulement les nouveaux, chaque seconde) : l'interface l'affiche dès qu'on cible, sans attendre le serveur (31/10/2026).
 // - Malus hors de sa puissance : face à un monstre plus fort, les dégâts infligés par le joueur et ses familiers baissent
 //   de SolAzeroth.V3.MalusParPoint % par point de puissance manquant, au plus SolAzeroth.V3.MalusMax %.
@@ -51,12 +55,12 @@ namespace
 
     struct Reglages
     {
-        float armureParPoint = 20.0f;
-        float armureMinimum = 25.0f;
+        float armureK = 100.0f;
+        float armureC = 3.0f;
         float malusParPoint = 2.0f;
         float malusMax = 75.0f;
         float pourcentParRang = 0.1f;
-        float degatsMonstres = 4.0f;
+        float degatsMonstres = 3.0f;
         float degatsSorts = 2.0f;
         float degatsDuree = 1.5f;
     } reglages;
@@ -205,8 +209,10 @@ namespace
     {
         Puissance* p = PuissanceDe(player);
         std::string message = Acore::StringFormat("PUISSANCE;{:.1f}", p->valeur);
+        // Lot 3a (02/11/2026) : puis les techniques de la cible et leur force en % (SolUI_Cible.lua).
         if (Creature* cible = Monstre(player->GetSelectedUnit()))
-            message += Acore::StringFormat(";{};{:.0f}", uint32(SolAzeroth::PuissanceCreature(cible)), Malus(player, cible));
+            message += Acore::StringFormat(";{};{:.0f};{};{:.0f}", uint32(SolAzeroth::PuissanceCreature(cible)),
+                Malus(player, cible), uint32(SolAzeroth::TechniquesMonstre(cible)), 100.0f * SolAzeroth::ForceTechniques(cible));
         if (message != p->affiche)
         {
             p->affiche = message;
@@ -289,11 +295,22 @@ public:
         toujours = true;
     }
 
-    void OnAfterCalcArmorReducedDamage(Unit const* /*attaquant*/, Unit const* /*victime*/, uint32 degats, float armure,
+    void OnAfterCalcArmorReducedDamage(Unit const* attaquant, Unit const* /*victime*/, uint32 degats, float armure,
         uint32& reduits) override
     {
-        float minimum = degats * reglages.armureMinimum / 100.0f;
-        reduits = uint32(std::ceil(std::max(degats - armure / reglages.armureParPoint, minimum)));
+        if (!degats || armure <= 0.0f)
+        {
+            reduits = degats;
+            return;
+        }
+        // Puissance de l'attaquant : celle du joueur (ou du maître d'un familier), sinon celle du monstre.
+        float puissance = 0.0f;
+        if (Player* joueur = attaquant ? attaquant->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr)
+            puissance = SolAzeroth::PuissanceJoueur(joueur);
+        else if (Creature const* monstre = attaquant ? attaquant->ToCreature() : nullptr)
+            puissance = SolAzeroth::PuissanceCreature(monstre);
+        float reduction = armure / (armure + reglages.armureK * (reglages.armureC + puissance));
+        reduits = std::max<uint32>(1, uint32(std::lround(degats * (1.0f - reduction))));
     }
 
     void OnSpellPowerCost(WorldObject const* lanceur, SpellInfo const* sort, int32& cout) override
@@ -411,12 +428,12 @@ public:
 
     void OnAfterConfigLoad(bool /*reload*/) override
     {
-        reglages.armureParPoint = std::max(0.1f, sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureParPoint", 20.0f));
-        reglages.armureMinimum = sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureMinimum", 25.0f);
+        reglages.armureK = std::max(1.0f, sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureK", 100.0f));
+        reglages.armureC = std::max(0.0f, sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureC", 3.0f));
         reglages.malusParPoint = sConfigMgr->GetOption<float>("SolAzeroth.V3.MalusParPoint", 2.0f);
         reglages.malusMax = sConfigMgr->GetOption<float>("SolAzeroth.V3.MalusMax", 75.0f);
         reglages.pourcentParRang = sConfigMgr->GetOption<float>("SolAzeroth.V3.PuissanceParRang", 0.1f);
-        reglages.degatsMonstres = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 4.0f);
+        reglages.degatsMonstres = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegats", 3.0f);
         reglages.degatsSorts = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsSorts", 2.0f);
         reglages.degatsDuree = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresDegatsDuree", 1.5f);
     }

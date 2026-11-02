@@ -274,7 +274,7 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
         brut = alea.uniform(joueur.bas, joueur.haut) + pa / 14.0 * joueur.vitesse - moins
         brut *= pourcent * (1 - malus(e.m)) * (1 + sum(v for v, _ in actif("degats_pct")) / 100.0)
         armure = e.m.armure + sum(v for _, v in e.actifs(e.armure, t))
-        d = sim.apres_armure(int(max(0, brut)), max(0, armure))
+        d = sim.apres_armure(int(max(0, brut)), max(0, armure), joueur.puissance)
         if alea.random() * 100 < joueur.critique:
             d *= 2
         d = round(d * (1 + sum(v for _, v in e.actifs(e.subis, t)) / 100.0))
@@ -307,7 +307,7 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
         if sort:
             brut *= facteur_sorts
         brut *= 1 + sum(v for _, v in e.actifs(e.pct, t)) / 100.0
-        d = sim.apres_armure(round(brut), armure_joueur())
+        d = sim.apres_armure(round(brut), armure_joueur(), e.m.puissance)
         if alea.random() * 100 < e.m.critique:
             d *= 2
         for x in e.declenche:
@@ -324,7 +324,7 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
             fin = t + dure
             if genre == "direct":
                 d = v * facteur_sorts
-                encaisser(sim.apres_armure(round(d * sim.MONSTRES_DEGATS), armure_joueur()) if extra
+                encaisser(sim.apres_armure(round(d * sim.MONSTRES_DEGATS), armure_joueur(), e.m.puissance) if extra
                           else round(d * 2))
             elif genre == "arme":
                 frappe_monstre(i, 1.0, v, True)

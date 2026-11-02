@@ -373,6 +373,18 @@ bool SolAzeroth::RareDeCauchemar(Creature* creature)
     return etat && etat->rare;
 }
 
+unsigned char SolAzeroth::TechniquesMonstre(Creature* creature)
+{
+    EtatMonstre const* etat = creature ? creature->CustomData.Get<EtatMonstre>("solazeroth_v3_mode") : nullptr;
+    return etat ? etat->techniques : 0;
+}
+
+float SolAzeroth::ForceTechniques(Creature* creature)
+{
+    EtatMonstre const* etat = creature ? creature->CustomData.Get<EtatMonstre>("solazeroth_v3_mode") : nullptr;
+    return etat ? REGLES[etat->mode].technique : 1.0f;
+}
+
 class solazeroth_v3_modes_unites : public UnitScript
 {
 public:

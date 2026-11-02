@@ -10,12 +10,17 @@
 // - À zéro, l'âme est éteinte : le personnage est immobilisé, prévenu, puis déconnecté au bout de 5 s ; chaque
 //   connexion suivante fait de même. Le joueur le supprime lui-même. .ame fixer <nom> <valeur> (MJ) le déverrouille
 //   après une mort due à un bogue, même hors ligne.
+// - Mort suspecte (audit du jeu, lot 3a, 02/11/2026, C5 du consensus) : un seul coup qui emporte au moins
+//   SUSPECT_PART % de la vie maximale, porté par un monstre qui n'est pas un boss et pas plus fort que le joueur de
+//   SUSPECT_ECART points de puissance, sent le bogue (sort mal mis à l'échelle, coup démesuré). L'âme est gardée, et un
+//   signalement part tout seul dans solazeroth_v3_signalements (texte « Mort suspecte : … »).
 // L'interface (SolUI_Perso.lua) reçoit « AME;âme;maximum;perte à la prochaine mort;éclats par point;repos (0/1) » et
 // « ETEINTE » (message SOLAME), à la connexion, à chaque changement, et toutes les 10 s.
 
 #include "SolAzeroth.h"
 #include "ChallengeModes.h"
 #include "Chat.h"
+#include "Creature.h"
 #include "CommandScript.h"
 #include "DatabaseEnv.h"
 #include "Player.h"
@@ -37,6 +42,8 @@ namespace
     float const ECLATS_PAR_POINT = 4.0f;
     uint32 const DELAI_EXPULSION = 5000;
     uint32 const TICK_ENVOI = 2000;
+    uint32 const SUSPECT_PART = 75;
+    float const SUSPECT_ECART = 2.0f;
 
     struct Ame : DataMap::Base
     {
@@ -46,6 +53,11 @@ namespace
         uint8 renvoi = 0;
         int32 expulsion = -1;   // ms avant la déconnexion d'une âme éteinte (-1 : aucune ; 0 : déjà expulsé)
         std::string affiche;
+        // Coup qui a tué (mort suspecte) : montant, part de la vie maximale, auteur, et s'il est suspect.
+        uint32 dernierCoup = 0;
+        uint32 dernierePart = 0;
+        std::string auteur;
+        bool suspect = false;
     };
 
     Ame* AmeDe(Player* player)
@@ -105,7 +117,48 @@ namespace
     {
         return sChallengeModes->challengeEnabledForPlayer(SETTING_HARDCORE, player);
     }
+
+    std::string Echappe(std::string texte)
+    {
+        CharacterDatabase.EscapeString(texte);
+        return texte;
+    }
+
+    void SignalerMortSuspecte(Player* player, Ame const* a)
+    {
+        std::string texte = Acore::StringFormat("Mort suspecte : un coup de {} ({} % de la vie maximale) porté par {}, "
+            "puissance du joueur {:.1f}. Âme gardée.", a->dernierCoup, a->dernierePart, a->auteur,
+            SolAzeroth::PuissanceJoueur(player));
+        CharacterDatabase.Execute("INSERT INTO solazeroth_v3_signalements (compte, guid, personnage, niveau, carte, zone, "
+            "lieu, x, y, z, o, cible, texte) VALUES ({}, {}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, '{}', '{}')",
+            player->GetSession()->GetAccountId(), player->GetGUID().GetCounter(), Echappe(player->GetName()),
+            player->GetLevel(), player->GetMapId(), player->GetZoneId(), player->GetAreaId(), player->GetPositionX(),
+            player->GetPositionY(), player->GetPositionZ(), player->GetOrientation(), Echappe(a->auteur), Echappe(texte));
+    }
 }
+
+// Le coup qui tue : retenu pour la garde « mort suspecte ».
+class solazeroth_v3_ame_coups : public UnitScript
+{
+public:
+    solazeroth_v3_ame_coups() : UnitScript("solazeroth_v3_ame_coups", true, { UNITHOOK_ON_DAMAGE }) { }
+
+    void OnDamage(Unit* attaquant, Unit* victime, uint32& degats) override
+    {
+        Player* player = victime ? victime->ToPlayer() : nullptr;
+        if (!player || !degats || degats < player->GetHealth())
+            return;
+        Ame* a = AmeDe(player);
+        a->dernierCoup = degats;
+        a->dernierePart = uint32(100ull * degats / std::max<uint32>(1, player->GetMaxHealth()));
+        Creature* monstre = attaquant ? attaquant->ToCreature() : nullptr;
+        a->auteur = monstre ? monstre->GetName() : (attaquant ? attaquant->GetName() : std::string("l'environnement"));
+        a->suspect = monstre && !monstre->GetCharmerOrOwnerPlayerOrPlayerItself() && !monstre->IsDungeonBoss()
+            && !monstre->isWorldBoss() && !SolAzeroth::EstBossFinal(monstre->GetEntry())
+            && a->dernierePart >= SUSPECT_PART
+            && SolAzeroth::PuissanceCreature(monstre) <= SolAzeroth::PuissanceJoueur(player) + SUSPECT_ECART;
+    }
+};
 
 class solazeroth_v3_ame : public PlayerScript
 {
@@ -134,6 +187,15 @@ public:
         Ame* a = AmeDe(player);
         if (a->valeur == 0)
             return;
+        if (a->suspect)
+        {
+            a->suspect = false;
+            SignalerMortSuspecte(player, a);
+            ChatHandler(player->GetSession()).PSendSysMessage("|cffb48ce6Mort suspecte|r (un coup de {} : {} % de ta vie, "
+                "par {}) : l'âme est gardée, et un signalement est parti.", a->dernierCoup, a->dernierePart, a->auteur);
+            SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("SUSPECTE;{};{}", a->dernierCoup, a->dernierePart));
+            return;
+        }
         uint32 perte = Perte(player);
         if (SolAzeroth::PassifActif(player, SolAzeroth::AME_TENACE))   // − 20 %, arrondi au hasard (v3_passifs.cpp)
         {
@@ -275,5 +337,6 @@ public:
 void AddSC_solazeroth_v3_ame()
 {
     new solazeroth_v3_ame();
+    new solazeroth_v3_ame_coups();
     new solazeroth_v3_ame_commandes();
 }

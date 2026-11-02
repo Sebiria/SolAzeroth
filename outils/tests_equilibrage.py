@@ -98,7 +98,9 @@ def verifier_durees(erreurs):
             if (not c["joueur"] or len(c["monstres"]) != 1 or c["sorts"] or not b or b["tues"] != 1
                     or b["duree"] < 3):
                 continue
+            avant = sim.appliquer(c["regles"])     # chaque journal avec sa règle d'armure (lot 3a)
             r = sim.simuler(c["joueur"], c["monstres"][0], 200)
+            sim.appliquer(avant)
             if r["victoire"] > 50:
                 rapports.append(r["duree"] / b["duree"])
     if len(rapports) < MIN_COMBATS:
@@ -118,7 +120,9 @@ def verifier_modele():
     combats = sim.lire_journal(REFERENCE)
     reel = combats[0]
     m = reel["monstres"][0]
+    avant = sim.appliquer(reel["regles"])
     r = sim.simuler(reel["joueur"], m, 3000)
+    sim.appliquer(avant)
     for nom, simule, mesure in (("joueur", r["dps_joueur"], REEL_JOUEUR), ("monstre", r["dps_monstre"], REEL_MONSTRE)):
         ecart = simule / mesure - 1
         print("  dégâts par seconde du %s : simulé %.2f, réel %.2f (%+.0f %%)" % (nom, simule, mesure, 100 * ecart))
@@ -144,7 +148,7 @@ def verdict(joueur, monstre, r):
 
 def rapport():
     # Fiche du personnage : le journal le plus récent qui en a une, sinon le combat de référence.
-    fiches = (c["joueur"] for chemin in list(reversed(journaux())) + [REFERENCE]
+    fiches = (sim.au_present(c) for chemin in list(reversed(journaux())) + [REFERENCE]
               for c in reversed(sim.lire_journal(chemin)) if c["joueur"])
     joueur = next(fiches)
     # Les pièces remplacées sont lues sur le même personnage que la fiche (avant le 02/11/2026 : toujours Test).
