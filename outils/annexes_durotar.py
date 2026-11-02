@@ -266,7 +266,7 @@ RELIQUES = [
     ("A45", "Collier de perles de la grève", 2, 5382, (-529, -5216), "Au bout de la grève, là où le renégat compte ses prises.", 9, MAGE_ROYAL),
     ("A46", "Fétiche de jade", 2, 5104, (-1385, -5780), "Le requin de l'Écho a avalé plus d'une offrande.", 11, MAGE_ROYAL),
 ]
-BONUS_FAMILLE = {0: "un bouclier ou un orbe (Rempart ou Orbe de cendre)", 1: "3 po et 2 Œil ténébreux", 2: "des bottes (Sandales de Sen'jin)"}
+BONUS_FAMILLE = {0: "une main gauche selon ta classe (Rempart, Orbe ou Dague de cendre)", 1: "3 po et 2 Œil ténébreux", 2: "des bottes (Sandales de Sen'jin)"}
 
 # Techniques (lignes SmartAI 50 et suivantes) : (créature, événement, paramètres d'événement, drapeaux, action,
 # paramètres d'action, cible, décalage (x, y), commentaire). Événements : 0 en combat (délai min/max, répétition
