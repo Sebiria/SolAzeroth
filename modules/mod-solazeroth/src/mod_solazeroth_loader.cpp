@@ -51,6 +51,7 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_v3_rares_secrets();
         AddSC_solazeroth_v3_filons();
         AddSC_solazeroth_v3_demoniste();
+        AddSC_solazeroth_v3_armures();
         AddSC_solazeroth_v3_journal();
         AddSC_solazeroth_v3_mort();
         AddSC_solazeroth_v3_bivouac();

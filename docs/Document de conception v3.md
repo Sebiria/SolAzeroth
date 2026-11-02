@@ -905,6 +905,12 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **Invocations** (aucun familier permanent) : créatures 910050 à 910052, à vie tirée de celle du démoniste. Leurs attaques sont des sorts lancés au nom du démoniste : sa puissance d'attaque, la menace sur lui. Elles repartent à la fin de leur durée, ou si le démoniste meurt ou s'éloigne de plus de 60 m.
   - **Interface** : losange du passif par spécialisation, texte de la carte de spécialisation. Le vérificateur de zone (`gabarit_zone.py`) lit maintenant les techniques par spécialisation (conforme).
   - **Aucune attaque automatique** (choix de l'utilisateur : que des sorts) : le minuteur d'attaque du démoniste est tenu toujours chargé et sa posture d'attaque coupée (`v3_demoniste.cpp`).
+- **Démoniste, lot D3 : équipement en tissu** (02/11/2026) : construit (`outils\tissu_v3.py`, migration 124, `v3_armures.cpp`) ; pas encore vérifié en jeu.
+  - **Armures par classe** (règle de l'utilisateur) : le guerrier ne porte que de la maille, le démoniste que du tissu ; les capes vont à tous. La plaque du guerrier à partir de la puissance 40 viendra avec ces zones. Aucun personnage existant ne portait une pièce hors de son type.
+  - **Versions en tissu** des pièces que donne le monde sans qu'on les choisisse (récompenses de quête 910101-910119, pièces d'annexes 910121-910132) : 21 pièces de maille deviennent 21 pièces en tissu (910401 et suivantes), même nom, même puissance, même puissance d'attaque et même Endurance ; seule l'armure est celle du tissu (12 % de réduction au lieu de 40 %). Les 3 boucliers deviennent des orbes tenus en main gauche (Orbe de Margoz, de la garde de Tiragarde, de cendre), sans armure. Mêmes rangs 1 à 5.
+  - **Échange** : une pièce reçue dans le mauvais type (quête, butin, courrier) devient sa version au rang égal, dans les deux sens, à la mise à jour suivante du joueur, avec un message. La fenêtre de récompense de quête montre encore la pièce de maille.
+  - **Fabrication** : inchangée ; chacun fabrique son type. Les recettes de tissu de Durotar et du Gouffre couvrent déjà les emplacements de la maille ; il n'y a pas d'orbe à fabriquer.
+  - **Armes** : l'arme ne comptant que par ses caractéristiques, le démoniste apprend toutes les armes à une main (épées, masses, haches, dagues) et les bâtons ; ses compétences sont rendues à chaque application du kit.
 
 ## 5. Questions pour les prochaines séries
 

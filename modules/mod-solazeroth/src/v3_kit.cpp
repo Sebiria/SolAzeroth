@@ -54,6 +54,9 @@ namespace
     uint32 const BOUCLIER_DE_DEPART = 2362;    // Vieux bouclier en bois
     uint32 const SORT_DAGUES = 1180;           // Dagues
     uint32 const DAGUE_DE_DEPART = 2092;       // Dague usée
+    uint32 const SORT_MASSES_1M = 198;         // Masses à une main
+    uint32 const SORT_HACHES_1M = 196;         // Haches à une main
+    uint32 const SORT_BATONS = 227;            // Bâtons
     uint32 const REMPART = 100010;
     size_t const EMPLACEMENTS_DE_DEPART = 3;
     size_t const EQUIPEES_MAX = 8;
@@ -122,17 +125,21 @@ namespace
         uint32 passif;                                  // passif d'identité (0 : aucun)
         uint8 caracteristique;                          // principale : repas, feu, puissance d'attaque (v3_niveau.cpp)
         std::vector<Technique> const* ordre;
-        uint32 competence;                              // compétence d'arme apprise au choix
+        std::vector<uint32> competences;                // compétences d'arme, apprises au choix et à chaque application
         std::vector<std::pair<uint8, uint32>> armes;    // armes de départ, posées si les mains sont vides
     };
 
     std::vector<Specialisation> const SPECIALISATIONS =
     {
         { SPE_GUERRIER_TANK, CLASS_WARRIOR, "tank", "guerrier tank", SPELLFAMILY_WARRIOR, PASSIF_REMPART, STAT_STRENGTH,
-          &ORDRE_TANK,
-          SORT_EPEES_1M, { { EQUIPMENT_SLOT_MAINHAND, EPEE_DE_DEPART }, { EQUIPMENT_SLOT_OFFHAND, BOUCLIER_DE_DEPART } } },
-        { SPE_DEMONISTE_AFFLICTION, CLASS_WARLOCK, "affliction", "démoniste Affliction", SPELLFAMILY_WARLOCK, PASSIF_MOISSON, STAT_INTELLECT,
-          &ORDRE_AFFLICTION, SORT_DAGUES, { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART } } },
+          &ORDRE_TANK, { SORT_EPEES_1M },
+          { { EQUIPMENT_SLOT_MAINHAND, EPEE_DE_DEPART }, { EQUIPMENT_SLOT_OFFHAND, BOUCLIER_DE_DEPART } } },
+        // Lot D3 : l'arme ne compte que par ses caractéristiques ; le démoniste porte donc toutes les armes à une main que
+        // donne le monde (épées, masses, haches, dagues) et les bâtons.
+        { SPE_DEMONISTE_AFFLICTION, CLASS_WARLOCK, "affliction", "démoniste Affliction", SPELLFAMILY_WARLOCK,
+          PASSIF_MOISSON, STAT_INTELLECT, &ORDRE_AFFLICTION,
+          { SORT_DAGUES, SORT_EPEES_1M, SORT_MASSES_1M, SORT_HACHES_1M, SORT_BATONS },
+          { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART } } },
     };
 
     Specialisation const* SpeParId(uint8 id)
@@ -407,6 +414,11 @@ namespace
             else if (!equipee && player->HasSpell(t.sort))
                 player->removeSpell(t.sort, SPEC_MASK_ALL, false);
         }
+        if (Specialisation const* s = SpeParId(kit->spe))
+            if (s->classe == player->getClass())
+                for (uint32 competence : s->competences)
+                    if (!player->HasSpell(competence))
+                        player->learnSpell(competence);
         for (Specialisation const& s : SPECIALISATIONS)
         {
             if (!s.passif || s.classe != player->getClass())
@@ -777,8 +789,9 @@ public:
         }
         kit->spe = choisie->id;
         // Armes de la spécialisation, si les mains sont vides : Épée courte usée et Vieux bouclier en bois ; Dague usée.
-        if (!player->HasSpell(choisie->competence))
-            player->learnSpell(choisie->competence);
+        for (uint32 competence : choisie->competences)
+            if (!player->HasSpell(competence))
+                player->learnSpell(competence);
         for (auto [emplacement, objet] : choisie->armes)
         {
             uint16 destination;
