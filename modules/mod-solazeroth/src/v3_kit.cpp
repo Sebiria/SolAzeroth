@@ -120,7 +120,8 @@ namespace
     };
 
     // Voleur Assassinat (lot V2, v3_voleur.cpp) : mêmes étapes du récit, maîtres du voleur (Rwag dans la Vallée, Kaplak à
-    // Razor Hill). Rupture vient à Sen'jin : la proposition la plaçait avant Évasion, sans étape libre entre les deux.
+    // Razor Hill). Lot V6 (choix de l'utilisateur) : l'Éventail de couteaux vient à Sen'jin, pour les combats à deux
+    // monstres ; la Rupture prend sa place en zone 4.
     std::vector<Technique> const ORDRE_ASSASSINAT =
     {
         { 100302, "Estropier", 0, 0, nullptr, false },
@@ -129,12 +130,12 @@ namespace
         { 100307, "Évasion", 910005, 0, "Rwag", true },                          // Les vils quasits, avant Yarrog
         { 100308, "Camouflage", 910008, 0, "Kaplak", false },                    // Un rapport à Orgnil (Tranchecolline)
         { 100311, "Coup bas", 0, 2, "Kaplak", true },                            // chef renforcé de Tranchecolline
-        { 100306, "Rupture", 910019, 0, "Kaplak", false },                       // Le crâne de Minshina (Sen'jin)
+        { 100316, "Éventail de couteaux", 910019, 0, "Kaplak", false },          // Le crâne de Minshina (Sen'jin)
         { 100312, "Poison affaiblissant", PLUS_TARD, 0, nullptr, true },         // zone 2
         { 100313, "Lancer de couteau", PLUS_TARD, 0, nullptr, false },           // zone 2
         { 100314, "Sprint", PLUS_TARD, 0, nullptr, false },                      // zone 3
         { 100318, "Feinte", PLUS_TARD, 0, nullptr, false },                      // zone 3
-        { 100316, "Éventail de couteaux", PLUS_TARD, 0, nullptr, true },         // zone 4
+        { 100306, "Rupture", PLUS_TARD, 0, nullptr, true },                      // zone 4
         { 100315, "Disparition", PLUS_TARD, 0, nullptr, false },                 // zone 5
         { 100320, "Aiguillon perfide", PLUS_TARD, 0, nullptr, false },           // zone 5
         { 100317, "Cape d'ombre", PLUS_TARD, 0, nullptr, true },                 // zone 6

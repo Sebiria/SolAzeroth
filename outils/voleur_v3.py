@@ -51,6 +51,8 @@ CUMULS_MAX = 5
 AFFAIBLISSEMENT = 8                 # % de dégâts infligés en moins par cumul
 ESTROPIER_POURCENT = 300            # chaque main (la gauche frappe à moitié)
 ENVENIMER_POURCENT = 180            # par cumul consommé
+EVENTAIL_POURCENT = 75              # de l'arme en main droite, sur chaque ennemi à 8 m
+EVENTAIL_CUMULS = 2                 # cumuls de Poison mortel posés sur chaque ennemi touché (au plus 2 : effets 1 et 2)
 RECHARGES = {ESTROPIER: 4000, COUP_DE_PIED: 12000, EVASION: 60000, CAMOUFLAGE: 6000, COUP_BAS: 25000,
              AFFAIBLISSANT: 10000, LANCER: 6000, SPRINT: 60000, DISPARITION: 120000, EVENTAIL: 10000, CAPE: 90000,
              FEINTE: 20000, VENDETTA: 120000, AIGUILLON: 12000}
@@ -207,8 +209,12 @@ def lignes(d):
     t.effet(e, 1, t.DECLENCHER, 0, t.SOI, declencheur=CAMOUFLAGE)
     l.append(e)
 
-    e = sort(d, 51723, EVENTAIL, "Éventail de couteaux", "Dégâts autour de soi (8 m) : 75 % des dégâts de l'arme.")
-    t.effet(e, 0, t.ARME_POURCENT, 75, t.AUTOUR_DE_SOI, t.ZONE_SOURCE, t.R8)
+    e = sort(d, 51723, EVENTAIL, "Éventail de couteaux", "Dégâts autour de soi (8 m) : %d %% des dégâts de l'arme, et %d cumuls de Poison mortel "
+             "sur chaque ennemi touché." % (EVENTAIL_POURCENT, EVENTAIL_CUMULS))
+    t.effet(e, 0, t.ARME_POURCENT, EVENTAIL_POURCENT, t.AUTOUR_DE_SOI, t.ZONE_SOURCE, t.R8)
+    # Lot V6 : le poison sur chaque ennemi touché (le moteur lance le sort déclenché sur chaque cible de la zone).
+    for i in range(1, 1 + EVENTAIL_CUMULS):
+        t.effet(e, i, t.DECLENCHER, 0, t.AUTOUR_DE_SOI, t.ZONE_SOURCE, t.R8, declencheur=POISON)
     l.append(e)
 
     e = sort(d, 31224, CAPE, "Cape d'ombre", "Insensible aux sorts pendant 5 s.", "Insensible aux sorts.", duree=t.D5)

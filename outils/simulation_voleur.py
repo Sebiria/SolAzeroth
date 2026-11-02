@@ -13,7 +13,8 @@ Règles reprises du serveur (voleur_v3.py, v3_voleur.cpp, v3_combat.cpp) et de s
   cumul retire AFFAIBLISSEMENT aux dégâts du monstre ;
 - Estropier (6 s) : un coup par main, un cumul sûr ; Envenimer : consomme les cumuls quand il y en a 5 ;
 - Durotar : Évasion (−50 % de dégâts subis 6 s, sous la moitié de la vie), Coup bas (étourdit 4 s, dès le début et à
-  chaque recharge), Rupture entretenue, et l'ouverture camouflée (Garrot) ;
+  chaque recharge), Rupture entretenue (zone 4), Éventail de couteaux dès deux monstres (Durotar, lot V6), et
+  l'ouverture camouflée (Garrot) ;
 - potion et passifs : mêmes clés que simulation_combat.combat.
 Contre un groupe : les coups vont au premier monstre en vie, les monstres frappent tous, Coup bas en étourdit un.
 
@@ -42,7 +43,7 @@ R = {k: v / 1000.0 for k, v in v3.RECHARGES.items()}
 DUREE_POISON, TIC_POISON = 12.0, 3.0
 DUREE_RUPTURE, TIC_RUPTURE, DUREE_GARROT, TIC_GARROT = 12.0, 2.0, 18.0, 3.0
 VALLEE = ("estropier", "envenimer", "coup_de_pied", "evasion")
-DUROTAR = VALLEE + ("camouflage", "coup_bas", "rupture")
+DUROTAR = VALLEE + ("camouflage", "coup_bas", "eventail")
 
 
 class Voleur:
@@ -201,6 +202,13 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, recharges=None, potion=
             elif pret_a("evasion") and vie_j < j.vie * 0.5:
                 evasion = t + 6.0
                 pret["evasion"] = t + R[v3.EVASION] * rf
+            elif pret_a("eventail") and sum(1 for v in vies if v > 0) >= 2:
+                # Éventail de couteaux : chaque monstre vivant (tous au contact), chacun peut recevoir les Toxines.
+                for k in range(len(monstres)):
+                    if vies[k] > 0:
+                        blesser(k, coup(k, j.main, v3.EVENTAIL_POURCENT / 100.0))
+                        poser(k, v3.EVENTAIL_CUMULS)
+                pret["eventail"] = t + R[v3.EVENTAIL] * rf
             elif "envenimer" in kit and cumuls[i] >= v3.CUMULS_MAX:
                 d = coup(i, j.main, v3.ENVENIMER_POURCENT / 100.0 * cumuls[i], toxines=False)
                 cumuls[i] = 0

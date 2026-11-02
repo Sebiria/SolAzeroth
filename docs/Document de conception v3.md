@@ -948,7 +948,7 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **lot V2, kit** (`outils\voleur_v3.py`, migration 129, `v3_voleur.cpp`, ordre dans `v3_kit.cpp`) :
     - **Toxines** (passif) : chaque coup de mêlée a 50 % de chances de poser un cumul de Poison mortel (5 au plus, 12 s) ; chaque cumul fait des dégâts de Nature et retire 8 % aux dégâts de la cible. Le moteur pose le poison (déclenchement écrit dans Spell.dbc) ;
     - au départ Estropier (les deux dagues, 300 % de chaque arme, pose un cumul) et Envenimer (180 % de l'arme par cumul consommé ; refusé sans cumul) ;
-    - maîtres : Coup de pied et Évasion (Rwag), Camouflage, Coup bas et Rupture (Kaplak) ; le reste du panel plus tard (Poison affaiblissant, Lancer de couteau, Sprint, Disparition, Éventail de couteaux, Cape d'ombre, Feinte…) ;
+    - maîtres : Coup de pied et Évasion (Rwag), Camouflage, Coup bas et Éventail de couteaux (Kaplak ; Rupture avant le lot V6) ; le reste du panel plus tard (Poison affaiblissant, Lancer de couteau, Sprint, Disparition, Rupture, Cape d'ombre, Feinte…) ;
     - Camouflage : le premier coup qui le brise est un Garrot (saignement et silence 3 s) ; l'annuler soi-même ne donne rien ;
     - techniques : deux dagues exigées, temps de recharge global 0,75 s.
   - **lot V3, équipement** : table `solazeroth_v3_versions (origine, classe, version)` (migration 130, `tissu_v3.py`), qui remplace `solazeroth_v3_conversions` : une ligne par pièce et par classe. Démoniste : maille en tissu, bouclier en orbe, arme en dague ; voleur : maille en cuir (modèles de cuir), bouclier et arme en dague. Récompense de quête échangée dès qu'elle est donnée (`OnPlayerQuestRewardItem`), annexes données directement dans la bonne version (`SolAzeroth::VersionDe`). La fenêtre de quête montre la version (`SolUI_Versions.lua`, WARLOCK et ROGUE).
@@ -962,6 +962,10 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - forces : Gouffre gagné à toutes les difficultés, même sans rang ; rares secrets bien plus faciles qu'au guerrier (62 à 70 % sans bonus, contre 0 %) ;
     - Évasion plus fréquente n'aide presque pas les combats à deux monstres : gardée à 60 s.
   - **lot V5, interface** : carte de spécialisation (Toxines, cumuls, dagues), losange du passif (goutte rouge clair), page du lexique « Toxines et dagues », répliques de Gornek et Zureetha pour le voleur, bouton d'Envenimer éclairé à 5 cumuls et Coup de pied quand la cible incante ; les cumuls se lisent déjà sur le cadre de la cible. Guide d'essai : `Guide d'essai — voleur.md`.
+  - **lot V6, Éventail de couteaux en Durotar** (choix de l'utilisateur, après la simulation qui donnait 12 % de victoires contre deux monstres en fin de Durotar) :
+    - l'Éventail prend l'étape de Sen'jin (Le crâne de Minshina, Kaplak) ; la Rupture passe en zone 4, avec l'emplacement qu'ouvrait l'Éventail ;
+    - simulation : l'Éventail seul (75 % de l'arme autour de soi, 10 s) n'aidait presque pas (16 %), même plus fréquent ou plus fort : le voleur meurt de ce qu'il encaisse, pas de ce qu'il inflige. Il pose donc 2 cumuls de Poison mortel sur chaque ennemi touché (deux effets qui déclenchent le poison) : les deux monstres sont affaiblis ;
+    - deux monstres en fin de Durotar : 49 % (guerrier 100 %, démoniste 94 %) ; trois : perdu, comme le guerrier. Le reste ne change pas (un seul monstre : il ne s'en sert pas).
   - **Pas encore vérifié en jeu.**
 
 ## 5. Questions pour les prochaines séries
