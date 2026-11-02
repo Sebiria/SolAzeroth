@@ -16,6 +16,10 @@ le 90e centile (les mêmes bornes que la puissance conseillée de v3_niveau.cpp)
 - Fabrication : fenêtre Équipement, catégorie Cuisine, près d'un feu (le Feu de camp v3 compte), en 5 s.
 - Le plat de Blizzard garde son nom et son icône ; son sort de nourriture (assis, vie rendue, banni en v3) est remplacé.
 
+Audit du jeu, lot 4c (02/11/2026, choix de l'utilisateur : la caractéristique et un bonus propre) : chaque plat a en
+plus son effet (BONUS), plus fort pour l'ingrédient le plus rare (simulation_lot4c.py). Les auras réécrites passent par
+la migration 117 (bonus_v3.py), la 079 étant déjà appliquée.
+
 Appelé par auras_nommees.py, qui écrit le Spell.dbc du client, la migration 079 et SolUI_Cuisine.lua.
 """
 import os
@@ -23,7 +27,7 @@ import os
 import dbc
 from collection_v3 import requete
 from hauts_faits_natifs import DBC_SERVEUR
-from techniques_v3 import AURA, SOI, effet, technique
+from techniques_v3 import AURA, ARMURE_POURCENT, DEGATS_INFLIGES, SOI, VIE_POURCENT, effet, technique
 
 MIGRATION = r"C:\SolAzeroth\sql\migrations\079_v3_cuisine"
 LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Cuisine.lua"
@@ -39,6 +43,16 @@ HERBES = 3                          # les plus répandues de la zone
 # Épices douces, eau de source fraîche, lait glacé, farine simple, sel : vendus toute l'année (pas de fête).
 ASSAISONNEMENTS = [2678, 159, 1179, 30817, 4289]
 SCRIPT = "spell_solazeroth_v3_plat"
+# Lot 4c : bonus propre de chaque plat, (aura, misc, valeur, texte). Rareté de l'ingrédient de Blizzard à Durotar (chance
+# × monstres) : sanglier 24 300, dard de scorpide 13 300, crocilisque 1 080, maquereau 590, thon 185.
+CRIT_POURCENT, HATE_MELEE_DISTANCE = 290, 192
+BONUS = {
+    2681: (VIE_POURCENT, 0, 3, "vie maximale augmentée de 3 %"),            # Viande de sanglier rôtie
+    5473: (ARMURE_POURCENT, 1, 8, "armure augmentée de 8 %"),              # Surprise du scorpide
+    3662: (CRIT_POURCENT, 0, 3, "chances de coup critique augmentées de 3 %"),   # Steak de crocilisque
+    787: (DEGATS_INFLIGES, 127, 3, "dégâts infligés augmentés de 3 %"),    # Maquereau ombré
+    5095: (HATE_MELEE_DISTANCE, 0, 12, "vitesse d'attaque augmentée de 12 %"),   # Thon arc-en-ciel
+}
 
 
 def puissance_moyenne(zone):
@@ -110,17 +124,22 @@ def lignes(d, liste):
     icone = d.chercher(BIEN_NOURRI)[133]
     t = []
     for p in liste:
+        bonus = BONUS.get(p["objet"])
         e = technique(d, BIEN_NOURRI, p["sort"], p["nom"],
-                      "Augmente de %d la Force, l'Agilité ou l'Intelligence, selon ta spécialisation, pendant 30 min "
-                      "(repas de %s). Un seul repas à la fois." % (p["puissance"], p["nom_zone"]), icone, 0)
+                      "Augmente de %d la Force, l'Agilité ou l'Intelligence, selon ta spécialisation%s, pendant 30 min "
+                      "(repas de %s). Un seul repas à la fois." % (p["puissance"], " ; " + bonus[3] if bonus else "",
+                                                                   p["nom_zone"]), icone, 0)
         e[213] = 0
         effet(e, 0, FACTICE, 0, SOI)
         t.append(e)
         for buff, (misc, carac) in zip(p["buffs"], CARACTERISTIQUES):
             e = technique(d, BIEN_NOURRI, buff, "Bien nourri", "", icone, 0,
-                          "%s augmentée de %d." % (carac, p["puissance"]), duree=D30MIN)
+                          "%s augmentée de %d%s." % (carac, p["puissance"], " ; " + bonus[3] if bonus else ""),
+                          duree=D30MIN)
             e[213] = 0
             effet(e, 0, AURA, p["puissance"], SOI, aura=CARACTERISTIQUE, misc=misc)
+            if bonus:
+                effet(e, 1, AURA, bonus[2], SOI, aura=bonus[0], misc=bonus[1])
             t.append(e)
     return t
 

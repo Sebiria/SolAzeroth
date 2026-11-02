@@ -9,6 +9,7 @@ import subprocess
 
 import dbc
 import bivouac_v3
+import bonus_v3
 import cuisine_v3
 import icones_retail
 import montures_v3
@@ -143,7 +144,8 @@ def main():
     montures, catalogue = montures_v3.lignes(d)
     passifs = passifs_v3.lignes(d)
     monstres = sorts_monstres_v3.lignes(d)   # v3 (01/11/2026) : sorts des monstres, migration 106
-    d.enregistrements.extend(lignes + incantations + kit + bivouac + cuisine + passifs + monstres)
+    bonus = bonus_v3.lignes(d)               # audit du jeu, lot 4c : migration 117
+    d.enregistrements.extend(lignes + incantations + kit + bivouac + cuisine + passifs + monstres + bonus)
     os.makedirs(DBC_CLIENT, exist_ok=True)
     d.enregistrer(os.path.join(DBC_CLIENT, "Spell.dbc"))
 
@@ -201,6 +203,9 @@ def main():
                                                   "USE acore_world;", up[3]])
     cuisine_v3.ecrire(plats, ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e))
                               for e in cuisine])
+    en_sql = lambda liste: ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e))
+                            for e in liste]
+    bonus_v3.ecrire(en_sql(bonus), en_sql(cuisine), [e[0] for e in cuisine])
     montures_v3.ecrire(montures, catalogue, ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(
         valeur_sql(d, t, v) for t, v in zip(types, e)) for e in montures])
     passifs_v3.ecrire(["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e))

@@ -34,6 +34,13 @@
 //     <sac> <case> <sac> <case> pose sur la seconde pièce (même emplacement) le rang de la première moins un ; la
 //     première revient au rang 0. Les pierres taillées des rangs 4 et 5 ne sont pas redemandées. Le champ 12 de « OBJ »
 //     donne l'emplacement (InventoryType, la robe comptée comme un torse) pour l'aperçu de l'interface.
+// - Audit du jeu, lot 4c (02/11/2026, choix de l'utilisateur ; sorts : outils\bonus_v3.py, migration 117 ; chiffres :
+//   outils\simulation_lot4c.py) :
+//   - variantes, choisies à la fabrication d'une pièce (.equipement fabriquer <objet> <1 Critique|2 Hâte|3 Vol de vie>),
+//     gardées à l'amélioration et au transfert (solazeroth_v3_variantes, par objet) : par pièce portée, + 1 % de
+//     critique, + 2 % de hâte ou 0,5 % de vol de vie (une aura à cumuls par variante). Champ 13 de « OBJ » : la variante ;
+//   - panoplie du Gouffre (pièces bleues à Braise, rangs compris) : 2 pièces + 3 % de dégâts, 4 pièces − 5 % de dégâts
+//     subis, 6 pièces 3 % de vol de vie. Recompté chaque seconde.
 
 #include "SolAzeroth.h"
 #include "CellImpl.h"
@@ -49,6 +56,7 @@
 #include "Random.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "SpellAuras.h"
 #include "StringFormat.h"
 #include <algorithm>
 #include <set>
@@ -158,6 +166,8 @@ namespace
         return false;
     }
 
+    uint8 VarianteDe(Item const* item);
+
     void EnvoyerPiece(Player* player, Item* item, int32 sac, uint32 caseInterface)
     {
         auto it = item ? rangs.find(item->GetEntry()) : rangs.end();
@@ -178,9 +188,10 @@ namespace
                     cumul[cible - 4][1] += o;
                 }
         }
-        SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("OBJ;{};{};{};{};{};{};{};{};{};{};{}", sac,
+        SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("OBJ;{};{};{};{};{};{};{};{};{};{};{};{}", sac,
             caseInterface, item->GetEntry(), rang, eclats, prix, cumul[0][0], cumul[0][1], cumul[1][0], cumul[1][1],
-            uint32(item->GetTemplate()->InventoryType == INVTYPE_ROBE ? INVTYPE_CHEST : item->GetTemplate()->InventoryType)));
+            uint32(item->GetTemplate()->InventoryType == INVTYPE_ROBE ? INVTYPE_CHEST : item->GetTemplate()->InventoryType),
+            uint32(VarianteDe(item))));
     }
 
     bool Desenchantable(Item* item)
@@ -257,6 +268,70 @@ namespace
     std::unordered_map<uint32, Haute> hautes;
     uint32 const BRAISE = 910190;
 
+    // Lot 4c : variantes et panoplie du Gouffre (outils\bonus_v3.py).
+    uint32 const PANOPLIE_2 = 101600, PANOPLIE_4 = 101601, PANOPLIE_6 = 101602;
+    uint32 const SORTS_VARIANTES[] = { 0, 101603, 101604, 101605 };   // Critique, Hâte, Vol de vie
+    uint8 const VARIANTES = 3;
+    uint32 const GOUFFRE_PREMIERE = 910241, GOUFFRE_DERNIERE = 910271;
+    float const VOL_PAR_PIECE = 0.005f, VOL_PANOPLIE = 0.03f;
+    uint32 const RECOMPTE = 1000;
+    std::unordered_map<uint32, uint8> variantes;   // objet (guid) -> variante
+
+    uint8 VarianteDe(Item const* item)
+    {
+        auto it = variantes.find(item->GetGUID().GetCounter());
+        return it == variantes.end() ? 0 : it->second;
+    }
+
+    void FixerVariante(uint32 item, uint8 variante)
+    {
+        if (variante)
+        {
+            variantes[item] = variante;
+            CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_variantes (item, variante) VALUES ({}, {})", item, variante);
+        }
+        else if (variantes.erase(item))
+            CharacterDatabase.Execute("DELETE FROM solazeroth_v3_variantes WHERE item = {}", item);
+    }
+
+    // Cumuls d'une aura : n (0 la retire).
+    void Cumuls(Player* player, uint32 sort, uint8 n)
+    {
+        Aura* aura = player->GetAura(sort);
+        if (!n)
+        {
+            if (aura)
+                player->RemoveAurasDueToSpell(sort);
+            return;
+        }
+        if (!aura)
+            aura = player->AddAura(sort, player);
+        if (aura && aura->GetStackAmount() != n)
+            aura->SetStackAmount(n);
+    }
+
+    // Pièces portées : panoplie du Gouffre et variantes.
+    void Recompter(Player* player)
+    {
+        uint8 gouffre = 0, parVariante[VARIANTES + 1] = {};
+        for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
+        {
+            Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+            auto it = item ? rangs.find(item->GetEntry()) : rangs.end();
+            if (it == rangs.end())
+                continue;
+            if (it->second.base >= GOUFFRE_PREMIERE && it->second.base <= GOUFFRE_DERNIERE)
+                ++gouffre;
+            ++parVariante[VarianteDe(item)];
+        }
+        bool vivant = player->IsAlive();
+        Cumuls(player, PANOPLIE_2, vivant && gouffre >= 2 ? 1 : 0);
+        Cumuls(player, PANOPLIE_4, vivant && gouffre >= 4 ? 1 : 0);
+        Cumuls(player, PANOPLIE_6, vivant && gouffre >= 6 ? 1 : 0);
+        for (uint8 v = 1; v <= VARIANTES; ++v)
+            Cumuls(player, SORTS_VARIANTES[v], vivant ? parVariante[v] : 0);
+    }
+
     struct Plans : DataMap::Base
     {
         std::set<uint32> objets;
@@ -317,6 +392,8 @@ namespace
         uint16 destPorte = 0;
         bool porte = Porte(bag, slot) && player->CanEquipNewItem(slot, destPorte, entree, true) == EQUIP_ERR_OK;
         uint32 enchantement = item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT);
+        uint8 variante = VarianteDe(item);
+        FixerVariante(item->GetGUID().GetCounter(), 0);
         player->DestroyItem(bag, slot, true);
         Item* nouveau = nullptr;
         if (porte)
@@ -330,7 +407,9 @@ namespace
         }
         if (nouveau && enchantement)
             Enchanter(player, nouveau, enchantement);
-        if (!nouveau)
+        if (nouveau)
+            FixerVariante(nouveau->GetGUID().GetCounter(), variante);
+        else
             LOG_ERROR("module", "Sol'Azeroth v3 : version {} perdue pour {}", entree, player->GetName());
         return nouveau;
     }
@@ -342,6 +421,7 @@ namespace
     {
         uint32 objet = 0;   // 0 : aucune fabrication en cours
         uint32 reste = 0;
+        uint8 variante = 0;   // lot 4c
         Position depart;
     };
 
@@ -402,7 +482,7 @@ namespace
         SolAzeroth::EnvoyerAddon(player, PREFIXE, fin);
     }
 
-    void TerminerFabrication(Player* player, uint32 objet)
+    void TerminerFabrication(Player* player, uint32 objet, uint8 variante)
     {
         ChatHandler chat(player->GetSession());
         ItemPosCountVec dest;
@@ -415,7 +495,11 @@ namespace
             Prendre(player, h->composant, h->nombre);
         player->ModifyMoney(-int32(recette.prix));
         if (Item* item = player->StoreNewItem(dest, objet, true))
+        {
             player->SendNewItem(item, 1, false, true);
+            if (rangs.count(objet))
+                FixerVariante(item->GetGUID().GetCounter(), variante);
+        }
         Envoyer(player);
     }
 }
@@ -472,6 +556,13 @@ public:
                 Field* f = r->Fetch();
                 recettes[f[0].Get<uint32>()].composants.emplace_back(f[1].Get<uint32>(), f[2].Get<uint32>());
             } while (r->NextRow());
+        }
+        variantes.clear();
+        if (QueryResult r = CharacterDatabase.Query("SELECT item, variante FROM solazeroth_v3_variantes"))
+        {
+            do
+                variantes[(*r)[0].Get<uint32>()] = (*r)[1].Get<uint8>();
+            while (r->NextRow());
         }
         hautes.clear();
         if (QueryResult r = WorldDatabase.Query("SELECT objet, composant, nombre, plan FROM solazeroth_v3_recettes_hautes"))
@@ -568,8 +659,13 @@ public:
         return true;
     }
 
-    static bool HandleFabriquer(ChatHandler* handler, uint32 objet)
+    static bool HandleFabriquer(ChatHandler* handler, uint32 objet, Optional<uint8> variante)
     {
+        if (variante && *variante > VARIANTES)
+        {
+            handler->SendErrorMessage("Variante : 1 Critique, 2 Hâte, 3 Vol de vie.");
+            return false;
+        }
         Player* player = handler->GetPlayer();
         Fabrication* fabrication = player->CustomData.GetDefault<Fabrication>(CLE_FABRICATION);
         if (fabrication->objet)
@@ -587,6 +683,7 @@ public:
         }
         Recette const& recette = recettes.at(objet);
         fabrication->objet = objet;
+        fabrication->variante = variante.value_or(0);
         fabrication->reste = recette.feu ? DUREE_CUISINE : DUREE_FABRICATION;
         fabrication->depart = player->GetPosition();
         // Assis au coin du feu, on cuisine sans se lever (se lever éteindrait le Feu de camp).
@@ -884,6 +981,11 @@ public:
     solazeroth_v3_equipement_joueur() : PlayerScript("solazeroth_v3_equipement_joueur", { PLAYERHOOK_ON_UPDATE,
         PLAYERHOOK_ON_DELETE }) { }
 
+    struct Recompte : DataMap::Base
+    {
+        uint32 attente = 0;
+    };
+
     void OnPlayerDelete(ObjectGuid guid, uint32 /*compte*/) override
     {
         CharacterDatabase.Execute("DELETE FROM solazeroth_v3_plans WHERE guid = {}", guid.GetCounter());
@@ -891,6 +993,14 @@ public:
 
     void OnPlayerUpdate(Player* player, uint32 diff) override
     {
+        Recompte* recompte = player->CustomData.GetDefault<Recompte>("solazeroth_v3_recompte");
+        if (recompte->attente > diff)
+            recompte->attente -= diff;
+        else
+        {
+            recompte->attente = RECOMPTE;
+            Recompter(player);
+        }
         Fabrication* fabrication = player->CustomData.Get<Fabrication>(CLE_FABRICATION);
         if (!fabrication || !fabrication->objet)
             return;
@@ -906,13 +1016,36 @@ public:
             return;
         }
         uint32 objet = fabrication->objet;
+        uint8 variante = fabrication->variante;
         ArreterFabrication(player, *fabrication, "FINI");
-        TerminerFabrication(player, objet);
+        TerminerFabrication(player, objet, variante);
+    }
+};
+
+// Lot 4c : vol de vie de la variante et du palier 6 de la panoplie du Gouffre.
+class solazeroth_v3_equipement_unites : public UnitScript
+{
+public:
+    solazeroth_v3_equipement_unites() : UnitScript("solazeroth_v3_equipement_unites", true, { UNITHOOK_ON_DAMAGE }) { }
+
+    void OnDamage(Unit* attaquant, Unit* victime, uint32& degats) override
+    {
+        Player* player = attaquant ? attaquant->ToPlayer() : nullptr;
+        if (!player || !victime || !victime->ToCreature() || !degats || !player->IsAlive())
+            return;
+        float part = 0.0f;
+        if (Aura const* aura = player->GetAura(SORTS_VARIANTES[3]))
+            part += VOL_PAR_PIECE * aura->GetStackAmount();
+        if (player->HasAura(PANOPLIE_6))
+            part += VOL_PANOPLIE;
+        if (part > 0.0f)
+            player->ModifyHealth(int32(std::min(degats, victime->GetHealth()) * part));
     }
 };
 
 void AddSC_solazeroth_v3_equipement()
 {
+    new solazeroth_v3_equipement_unites();
     new solazeroth_v3_equipement_joueur();
     new solazeroth_v3_equipement_monde();
     new solazeroth_v3_equipement_commandes();

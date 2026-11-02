@@ -67,6 +67,9 @@ end)
 -- « PIECE;sac;case;entrée;InventoryType;enchantement;table de désenchantement », « FIN ».
 -- Lot 4b (02/11/2026) : « HAUTE;objet;composant;nombre;prix du plan;plan possédé » après « DEBUT » (recettes hautes), et
 -- l'emplacement de la pièce en 12e champ de « OBJ » (transfert de rang).
+-- Lot 4c : la variante (0 aucune, 1 Critique, 2 Hâte, 3 Vol de vie) en 13e champ de « OBJ ».
+local NOMS_VARIANTES = { "Critique", "Hâte", "Vol de vie" }
+local EFFETS_VARIANTES = { "+ 1 % de critique", "+ 2 % de hâte", "0,5 % de vol de vie" }
 S.HAUTES = {}
 -- Lot 4a (02/11/2026) : prix de Mogra, fournisseuse de matériaux de Razor Hill (v3_fournisseur.cpp) :
 -- « PRIX;objet:prix:reste aujourd'hui,… ». Affichés dans les listes de courses.
@@ -117,7 +120,8 @@ S.Message("SOLEQUIP", function(champs)
         table.insert(recues, { sac = tonumber(champs[2]), case = tonumber(champs[3]), id = tonumber(champs[4]),
             rang = tonumber(champs[5]) or 0, eclats = tonumber(champs[6]) or 0, prix = tonumber(champs[7]) or 0,
             jusqua = { [4] = { tonumber(champs[8]) or 0, tonumber(champs[9]) or 0 },
-                [5] = { tonumber(champs[10]) or 0, tonumber(champs[11]) or 0 } }, emplacement = tonumber(champs[12]) or 0 })
+                [5] = { tonumber(champs[10]) or 0, tonumber(champs[11]) or 0 } }, emplacement = tonumber(champs[12]) or 0,
+            variante = tonumber(champs[13]) or 0 })
     elseif champs[1] == "FIN" then
         pieces, armures = recues, armuresRecues
     end
@@ -199,7 +203,8 @@ local niveaux, categorieDe = {}, {}   -- { nom, sous = { { nom, recettes } } } ;
 do
     local index = {}
     for _, c in ipairs(S.RECETTES) do
-        local nom = c.feu and c.nom or c.gouffre and "Gouffre" or c.nom == "Rudimentaire" and c.nom or "Inhabituel"
+        local nom = (c.feu or c.surplus) and c.nom or c.gouffre and "Gouffre" or c.nom == "Rudimentaire" and c.nom
+            or "Inhabituel"
         local niveau = index[nom]
         if not niveau then
             niveau = { nom = nom, sous = {}, parGenre = {} }
@@ -284,9 +289,23 @@ local prixFabrication = S.Texte(detail, "Regular", 13, "texte")
 prixFabrication:SetPoint("TOPLEFT", titreComposants, "BOTTOMLEFT", 0, -8 - 4 * 22 - 8)
 local fabriquer = S.BoutonPlat(detail, "Fabriquer", 180, 40, 14)
 fabriquer:SetPoint("BOTTOMLEFT")
+local varianteChoisie = 1
+local function AvecVariante(c) return not c.feu and not c.surplus end
 fabriquer:SetScript("OnClick", function()
-    if choisie then SendChatMessage(".equipement fabriquer " .. choisie[1], "SAY") end
+    if not choisie then return end
+    local c = categorieDe[choisie]
+    SendChatMessage(".equipement fabriquer " .. choisie[1] .. (AvecVariante(c) and (" " .. varianteChoisie) or ""), "SAY")
 end)
+-- Lot 4c : variante choisie à la fabrication, par pièce portée.
+local boutonsVariantes = {}
+for v = 1, 3 do
+    local bv = S.BoutonPlat(detail, NOMS_VARIANTES[v], 118, 30, 12)
+    bv:SetPoint("BOTTOMLEFT", fabriquer, "TOPLEFT", (v - 1) * 126, 44)
+    bv:SetScript("OnClick", function() varianteChoisie = v; Maj() end)
+    boutonsVariantes[v] = bv
+end
+local effetVariante = S.Texte(detail, "Regular", 12, "gris")
+effetVariante:SetPoint("BOTTOMLEFT", boutonsVariantes[1], "TOPLEFT", 0, 6)
 local plan = S.BoutonPlat(detail, "Acheter le plan", 180, 40, 14)
 plan:SetPoint("LEFT", fabriquer, "RIGHT", 10, 0)
 plan:SetScript("OnClick", function()
@@ -332,7 +351,7 @@ local function MajFabrication()
             l.recette, l.icone.id = r, r[1]
             l.icone.icone:SetTexture(GetItemIcon(r[1]))
             l.texte:SetText(r[2])
-            l.info:SetText("Puissance " .. r[3])
+            l.info:SetText(categorieDe[r].surplus and "Consommable, 1 h" or ("Puissance " .. r[3]))
             l:Choisir(choisie == r)
         end
     end
@@ -344,7 +363,13 @@ local function MajFabrication()
     detailNom:SetText(r[2])
     detailNom:SetTextColor(select(2, NomObjet(r[1], r[2])))
     detailPuissance:SetText(c.feu and ("Repas de " .. (r[7] or "") .. " : +" .. r[3] .. " pendant 30 min")
-        or ("Puissance " .. r[3]))
+        or c.surplus and "Consommable : bonus pendant 1 h" or ("Puissance " .. r[3]))
+    for v, bv in ipairs(boutonsVariantes) do
+        S.Montrer(bv, AvecVariante(c) and not progression:IsShown())
+        bv:Choisir(v == varianteChoisie)
+    end
+    S.Montrer(effetVariante, AvecVariante(c) and not progression:IsShown())
+    effetVariante:SetText("Variante : " .. EFFETS_VARIANTES[varianteChoisie] .. " par pièce portée.")
     local puissance = S.etat.puissance or 0
     local okPuissance = puissance + 0.05 >= r[4]
     local lignes = {}
@@ -366,7 +391,7 @@ local function MajFabrication()
     end
     conditions:SetText(table.concat(lignes, "\n"))
     local tout = okPuissance and (forge or not c.forge) and (feu or not c.feu)
-    S.Montrer(achat, not c.feu and not c.gouffre and not progression:IsShown())   -- les bleues ne se vendent pas
+    S.Montrer(achat, not c.feu and not c.gouffre and not c.surplus and not progression:IsShown())   -- les bleues ne se vendent pas
     -- Lot 4b : recette haute, un composant de plus sans son plan.
     local haute = not c.feu and S.HAUTES[r[1]]
     local liste = r[6]
@@ -382,6 +407,10 @@ local function MajFabrication()
             .. " de plus, ou son plan, acheté une fois.|r")
     elseif haute then
         table.insert(lignes, "|cff8cc4a6Plan appris : pas de composant de plus.|r")
+    end
+    if c.gouffre then
+        table.insert(lignes, "|cffffd100Panoplie du Gouffre :|r |cffb4b8bf2 pièces + 3 % de dégâts ; 4 pièces − 5 % de "
+            .. "dégâts subis ; 6 pièces 3 % de vol de vie.|r")
     end
     conditions:SetText(table.concat(lignes, "\n"))
     for n, ligne in ipairs(composants) do
@@ -505,7 +534,8 @@ local function MajAmelioration()
             local nom, r, g, b = NomObjet(p.id)
             l.nom:SetText(nom)
             l.nom:SetTextColor(r, g, b)
-            l.place:SetText(p.sac == -1 and "Porté" or "Dans le sac")
+            l.place:SetText((p.sac == -1 and "Porté" or "Dans le sac")
+                .. (NOMS_VARIANTES[p.variante] and ("  ·  " .. NOMS_VARIANTES[p.variante]) or ""))
             l.source = SourceDuTransfert(p)
             S.Montrer(l.transfert, l.source)
             if l.source then l.transfert:SetAlpha(S.NombreCollection(BRAISE) >= 1 and 1 or 0.5) end
