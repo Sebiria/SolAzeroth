@@ -12,7 +12,8 @@
 #   moyenne 2,5 minerais (1 à 4) et 5 % de chances de chaque gemme brute ; 5 minerais se prospectent en une gemme
 #   (Malachite 55 %, Œil de tigre 35 %, Œil ténébreux 10 %) ; une pierre taillée demande 2 gemmes de sa sorte ;
 # - option « transfert » : à chaque changement de secteur, la nouvelle pièce garde le rang de l'ancienne moins un
-#   (proposition C6 de « Audit du jeu\10_consensus.md », pas construite).
+#   (proposition C6 de « Audit du jeu\10_consensus.md », construite au lot 4b avec une Braise du Gouffre par transfert,
+#   que la simulation ne compte pas).
 # À mesurer en jeu : le nombre de filons minés par % de zone (--filons n'est qu'une hypothèse) ; l'or (OR_PAR_POURCENT)
 # est estimé d'après le rapport de l'artisan de l'audit (environ 27 po pour tout Durotar).
 import argparse

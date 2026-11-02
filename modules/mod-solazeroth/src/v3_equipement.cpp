@@ -25,6 +25,15 @@
 //   .equipement desenchanter <sac> <case> : une pièce du sac, verte ou mieux, donne le butin de sa table, rangé dans la
 //   Collection. .equipement enchanter <sac> <case> <id> : un enchantement de solazeroth_v3_enchantements, payé en
 //   composants et en or, remplace celui de la pièce. Améliorer une pièce garde son enchantement.
+// - Audit du jeu, lot 4b (02/11/2026, C6 du consensus ; outils\fabrication_v3.py, migration 116) :
+//   - une recette s'ouvre à la puissance de la pièce moins 2 (« fabrication limitée au secteur + 2 ») ;
+//   - recettes hautes (solazeroth_v3_recettes_hautes) : la pièce la plus forte de chaque palier demande un composant de
+//     plus, rare dans son secteur, sauf avec son plan, acheté une fois en or (.equipement plan <objet>, au personnage,
+//     solazeroth_v3_plans). Interface : « HAUTE;objet;composant;nombre;prix du plan;plan possédé 0|1 » après « DEBUT » ;
+//   - transfert de rang (choix de l'utilisateur : un rang de moins et une Braise du Gouffre) : .equipement transferer
+//     <sac> <case> <sac> <case> pose sur la seconde pièce (même emplacement) le rang de la première moins un ; la
+//     première revient au rang 0. Les pierres taillées des rangs 4 et 5 ne sont pas redemandées. Le champ 12 de « OBJ »
+//     donne l'emplacement (InventoryType, la robe comptée comme un torse) pour l'aperçu de l'interface.
 
 #include "SolAzeroth.h"
 #include "CellImpl.h"
@@ -42,6 +51,7 @@
 #include "ScriptMgr.h"
 #include "StringFormat.h"
 #include <algorithm>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -168,8 +178,9 @@ namespace
                     cumul[cible - 4][1] += o;
                 }
         }
-        SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("OBJ;{};{};{};{};{};{};{};{};{};{}", sac,
-            caseInterface, item->GetEntry(), rang, eclats, prix, cumul[0][0], cumul[0][1], cumul[1][0], cumul[1][1]));
+        SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("OBJ;{};{};{};{};{};{};{};{};{};{};{}", sac,
+            caseInterface, item->GetEntry(), rang, eclats, prix, cumul[0][0], cumul[0][1], cumul[1][0], cumul[1][1],
+            uint32(item->GetTemplate()->InventoryType == INVTYPE_ROBE ? INVTYPE_CHEST : item->GetTemplate()->InventoryType)));
     }
 
     bool Desenchantable(Item* item)
@@ -201,11 +212,14 @@ namespace
         player->ApplyEnchantment(item, PERM_ENCHANTMENT_SLOT, true);
     }
 
+    void EnvoyerHautes(Player* player);
+
     void Envoyer(Player* player)
     {
         SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("FORGE;{};{}", PresDUneForge(player) ? 1 : 0,
             PresDUnFeu(player) ? 1 : 0));
         SolAzeroth::EnvoyerAddon(player, PREFIXE, "DEBUT");
+        EnvoyerHautes(player);
         for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
             EnvoyerPieces(player, player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot), -1, slot);
         for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
@@ -236,6 +250,89 @@ namespace
     {
         ItemTemplate const* modele = sObjectMgr->GetItemTemplate(objet);
         return modele ? modele->Name1 : std::to_string(objet);
+    }
+
+    // Lot 4b : recettes hautes et plans.
+    struct Haute { uint32 composant = 0, nombre = 0, plan = 0; };
+    std::unordered_map<uint32, Haute> hautes;
+    uint32 const BRAISE = 910190;
+
+    struct Plans : DataMap::Base
+    {
+        std::set<uint32> objets;
+        bool lus = false;
+    };
+
+    Plans* PlansDe(Player* player)
+    {
+        Plans* plans = player->CustomData.GetDefault<Plans>("solazeroth_v3_plans");
+        if (!plans->lus)
+        {
+            plans->lus = true;
+            if (QueryResult r = CharacterDatabase.Query("SELECT objet FROM solazeroth_v3_plans WHERE guid = {}",
+                player->GetGUID().GetCounter()))
+            {
+                do
+                    plans->objets.insert((*r)[0].Get<uint32>());
+                while (r->NextRow());
+            }
+        }
+        return plans;
+    }
+
+    void EnvoyerHautes(Player* player)
+    {
+        for (auto const& [objet, h] : hautes)
+            SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("HAUTE;{};{};{};{};{}", objet, h.composant,
+                h.nombre, h.plan, PlansDe(player)->objets.count(objet) ? 1 : 0));
+    }
+
+    // Composant de plus d'une recette haute ; aucun avec son plan.
+    Haute const* HauteSansPlan(Player* player, uint32 objet)
+    {
+        auto it = hautes.find(objet);
+        return it == hautes.end() || PlansDe(player)->objets.count(objet) ? nullptr : &it->second;
+    }
+
+    uint8 Emplacement(ItemTemplate const* modele)
+    {
+        return modele->InventoryType == INVTYPE_ROBE ? uint8(INVTYPE_CHEST) : uint8(modele->InventoryType);
+    }
+
+    bool Porte(uint8 bag, uint8 slot)
+    {
+        return bag == INVENTORY_SLOT_BAG_0 && slot < EQUIPMENT_SLOT_END;
+    }
+
+    bool PeutRemplacer(Player* player, uint8 bag, uint8 slot, uint32 entree)
+    {
+        uint16 dest = 0;
+        return !Porte(bag, slot) || player->CanEquipNewItem(slot, dest, entree, true) == EQUIP_ERR_OK;
+    }
+
+    // Remplace une pièce par une autre de ses versions, à la même place, en gardant son enchantement (amélioration,
+    // transfert). Vérifier PeutRemplacer avant.
+    Item* Remplacer(Player* player, uint8 bag, uint8 slot, Item* item, uint32 entree)
+    {
+        uint16 destPorte = 0;
+        bool porte = Porte(bag, slot) && player->CanEquipNewItem(slot, destPorte, entree, true) == EQUIP_ERR_OK;
+        uint32 enchantement = item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT);
+        player->DestroyItem(bag, slot, true);
+        Item* nouveau = nullptr;
+        if (porte)
+            nouveau = player->EquipNewItem(destPorte, entree, true);
+        else
+        {
+            ItemPosCountVec dest;
+            if (player->CanStoreNewItem(bag, slot, dest, entree, 1) == EQUIP_ERR_OK
+                || player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, entree, 1) == EQUIP_ERR_OK)
+                nouveau = player->StoreNewItem(dest, entree, true);
+        }
+        if (nouveau && enchantement)
+            Enchanter(player, nouveau, enchantement);
+        if (!nouveau)
+            LOG_ERROR("module", "Sol'Azeroth v3 : version {} perdue pour {}", entree, player->GetName());
+        return nouveau;
     }
 
     uint32 const DUREE_FABRICATION = 10000, DUREE_CUISINE = 5000;
@@ -280,6 +377,11 @@ namespace
                 chat.SendErrorMessage("Il manque {} × {}.", nombre - Possede(player, composant), Nom(composant));
                 return false;
             }
+        if (Haute const* h = HauteSansPlan(player, objet); h && Possede(player, h->composant) < h->nombre)
+        {
+            chat.SendErrorMessage("Recette haute : il faut aussi {} × {}, ou son plan.", h->nombre, Nom(h->composant));
+            return false;
+        }
         if (!player->HasEnoughMoney(recette.prix))
         {
             chat.SendErrorMessage("Pas assez d'or.");
@@ -309,6 +411,8 @@ namespace
         Recette const& recette = recettes.at(objet);
         for (auto const& [composant, nombre] : recette.composants)
             Prendre(player, composant, nombre);
+        if (Haute const* h = HauteSansPlan(player, objet))
+            Prendre(player, h->composant, h->nombre);
         player->ModifyMoney(-int32(recette.prix));
         if (Item* item = player->StoreNewItem(dest, objet, true))
             player->SendNewItem(item, 1, false, true);
@@ -368,6 +472,13 @@ public:
                 Field* f = r->Fetch();
                 recettes[f[0].Get<uint32>()].composants.emplace_back(f[1].Get<uint32>(), f[2].Get<uint32>());
             } while (r->NextRow());
+        }
+        hautes.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT objet, composant, nombre, plan FROM solazeroth_v3_recettes_hautes"))
+        {
+            do
+                hautes[(*r)[0].Get<uint32>()] = { (*r)[1].Get<uint32>(), (*r)[2].Get<uint32>(), (*r)[3].Get<uint32>() };
+            while (r->NextRow());
         }
         if (QueryResult r = WorldDatabase.Query("SELECT id, enchantement, prix FROM solazeroth_v3_enchantements"))
         {
@@ -441,6 +552,8 @@ public:
             { "enchanter", HandleEnchanter, SEC_PLAYER, Console::No },
             { "prospecter", HandleProspecter, SEC_PLAYER, Console::No },
             { "tailler",   HandleTailler,   SEC_PLAYER, Console::No },
+            { "plan",      HandlePlan,      SEC_PLAYER, Console::No },
+            { "transferer", HandleTransferer, SEC_PLAYER, Console::No },
         };
         static ChatCommandTable commandes =
         {
@@ -573,9 +686,7 @@ public:
                 handler->SendErrorMessage("Il manque {} × {} (joaillerie).", nombre - Possede(player, pierre), Nom(pierre));
                 return false;
             }
-        bool porte = bag == INVENTORY_SLOT_BAG_0 && slot < EQUIPMENT_SLOT_END;
-        uint16 destPorte = 0;
-        if (porte && player->CanEquipNewItem(slot, destPorte, suivant, true) != EQUIP_ERR_OK)
+        if (!PeutRemplacer(player, bag, slot, suivant))
         {
             handler->SendErrorMessage("Impossible de porter la nouvelle version.");
             return false;
@@ -584,25 +695,97 @@ public:
         for (auto const& [pierre, nombre] : pierres)
             Prendre(player, pierre, nombre);
         player->ModifyMoney(-int32(prix));
-        uint32 enchantement = item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT);
-        player->DestroyItem(bag, slot, true);
-        Item* nouveau = nullptr;
-        if (porte)
-            nouveau = player->EquipNewItem(destPorte, suivant, true);
-        else
-        {
-            ItemPosCountVec dest;
-            if (player->CanStoreNewItem(bag, slot, dest, suivant, 1) == EQUIP_ERR_OK
-                || player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, suivant, 1) == EQUIP_ERR_OK)
-                nouveau = player->StoreNewItem(dest, suivant, true);
-        }
-        if (nouveau && enchantement)
-            Enchanter(player, nouveau, enchantement);
-        if (!nouveau)
-            LOG_ERROR("module", "Sol'Azeroth v3 : amélioration de {} perdue pour {}", suivant, player->GetName());
-        else
+        if (Remplacer(player, bag, slot, item, suivant))
             ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat("|cff8cc4a6Amélioration :|r {} passe au rang {}.",
                 Nom(actuel.base), actuel.rang + 1));
+        Envoyer(player);
+        return true;
+    }
+
+    // Lot 4b : .equipement plan <objet> : la recette haute se fabrique sans son composant de plus.
+    static bool HandlePlan(ChatHandler* handler, uint32 objet)
+    {
+        Player* player = handler->GetPlayer();
+        auto it = hautes.find(objet);
+        if (it == hautes.end())
+        {
+            handler->SendErrorMessage("Cette recette n'a pas de plan.");
+            return false;
+        }
+        Plans* plans = PlansDe(player);
+        if (plans->objets.count(objet))
+        {
+            handler->SendErrorMessage("Tu as déjà ce plan.");
+            return false;
+        }
+        if (!player->HasEnoughMoney(it->second.plan))
+        {
+            handler->SendErrorMessage("Pas assez d'or.");
+            return false;
+        }
+        player->ModifyMoney(-int32(it->second.plan));
+        plans->objets.insert(objet);
+        CharacterDatabase.Execute("INSERT IGNORE INTO solazeroth_v3_plans (guid, objet) VALUES ({}, {})",
+            player->GetGUID().GetCounter(), objet);
+        handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Plan appris :|r {} se fabrique sans {}.", Nom(objet),
+            Nom(it->second.composant)));
+        Envoyer(player);
+        return true;
+    }
+
+    // Lot 4b : .equipement transferer <sac> <case> <sac> <case> : le rang de la première pièce, moins un, passe sur la
+    // seconde (même emplacement) ; la première revient au rang 0. Coût : une Braise du Gouffre.
+    static bool HandleTransferer(ChatHandler* handler, int32 sacSource, uint32 caseSource, int32 sacCible, uint32 caseCible)
+    {
+        Player* player = handler->GetPlayer();
+        uint8 bagS, slotS, bagC, slotC;
+        Item* source = PositionDuJeu(sacSource, caseSource, bagS, slotS) ? player->GetItemByPos(bagS, slotS) : nullptr;
+        Item* cible = PositionDuJeu(sacCible, caseCible, bagC, slotC) ? player->GetItemByPos(bagC, slotC) : nullptr;
+        auto is = source ? rangs.find(source->GetEntry()) : rangs.end();
+        auto ic = cible ? rangs.find(cible->GetEntry()) : rangs.end();
+        if (is == rangs.end() || ic == rangs.end() || source == cible)
+        {
+            handler->SendErrorMessage("Choisis deux pièces améliorables.");
+            return false;
+        }
+        if (Emplacement(source->GetTemplate()) != Emplacement(cible->GetTemplate()))
+        {
+            handler->SendErrorMessage("Les deux pièces doivent aller au même emplacement.");
+            return false;
+        }
+        if (is->second.rang < 2)
+        {
+            handler->SendErrorMessage("La pièce d'origine doit être au moins au rang 2.");
+            return false;
+        }
+        uint8 rang = is->second.rang - 1;
+        if (ic->second.rang >= rang)
+        {
+            handler->SendErrorMessage("La nouvelle pièce est déjà au rang {} ou mieux.", rang);
+            return false;
+        }
+        if (player->IsInCombat())
+        {
+            handler->SendErrorMessage("Pas pendant un combat.");
+            return false;
+        }
+        if (Possede(player, BRAISE) < 1)
+        {
+            handler->SendErrorMessage("Il faut une Braise du Gouffre.");
+            return false;
+        }
+        uint32 versionCible = Version(ic->second.base, rang), versionSource = Version(is->second.base, 0);
+        if (!versionCible || !versionSource || !PeutRemplacer(player, bagC, slotC, versionCible)
+            || !PeutRemplacer(player, bagS, slotS, versionSource))
+        {
+            handler->SendErrorMessage("Impossible de porter la nouvelle version.");
+            return false;
+        }
+        Prendre(player, BRAISE, 1);
+        Remplacer(player, bagC, slotC, cible, versionCible);
+        Remplacer(player, bagS, slotS, source, versionSource);
+        handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Transfert :|r {} passe au rang {} ; {} revient au rang 0.",
+            Nom(ic->second.base), rang, Nom(is->second.base)));
         Envoyer(player);
         return true;
     }
@@ -698,7 +881,13 @@ public:
 class solazeroth_v3_equipement_joueur : public PlayerScript
 {
 public:
-    solazeroth_v3_equipement_joueur() : PlayerScript("solazeroth_v3_equipement_joueur", { PLAYERHOOK_ON_UPDATE }) { }
+    solazeroth_v3_equipement_joueur() : PlayerScript("solazeroth_v3_equipement_joueur", { PLAYERHOOK_ON_UPDATE,
+        PLAYERHOOK_ON_DELETE }) { }
+
+    void OnPlayerDelete(ObjectGuid guid, uint32 /*compte*/) override
+    {
+        CharacterDatabase.Execute("DELETE FROM solazeroth_v3_plans WHERE guid = {}", guid.GetCounter());
+    }
 
     void OnPlayerUpdate(Player* player, uint32 diff) override
     {

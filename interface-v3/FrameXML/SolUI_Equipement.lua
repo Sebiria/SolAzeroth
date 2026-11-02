@@ -65,6 +65,9 @@ end)
 -- « FORGE;forge 0|1;feu 0|1 », « DEBUT », « OBJ;sac;case;entrée;rang;éclats;or;éclats et or jusqu'au rang 4;
 -- éclats et or jusqu'au rang 5 »,
 -- « PIECE;sac;case;entrée;InventoryType;enchantement;table de désenchantement », « FIN ».
+-- Lot 4b (02/11/2026) : « HAUTE;objet;composant;nombre;prix du plan;plan possédé » après « DEBUT » (recettes hautes), et
+-- l'emplacement de la pièce en 12e champ de « OBJ » (transfert de rang).
+S.HAUTES = {}
 -- Lot 4a (02/11/2026) : prix de Mogra, fournisseuse de matériaux de Razor Hill (v3_fournisseur.cpp) :
 -- « PRIX;objet:prix:reste aujourd'hui,… ». Affichés dans les listes de courses.
 S.FOURNISSEUR = {}
@@ -103,6 +106,10 @@ S.Message("SOLEQUIP", function(champs)
         feu = champs[3] == "1"
     elseif champs[1] == "DEBUT" then
         recues, armuresRecues = {}, {}
+        wipe(S.HAUTES)
+    elseif champs[1] == "HAUTE" then
+        S.HAUTES[tonumber(champs[2])] = { composant = tonumber(champs[3]), nombre = tonumber(champs[4]) or 1,
+            plan = tonumber(champs[5]) or 0, possede = champs[6] == "1" }
     elseif champs[1] == "PIECE" then
         table.insert(armuresRecues, { sac = tonumber(champs[2]), case = tonumber(champs[3]), id = tonumber(champs[4]),
             type = tonumber(champs[5]) or 0, enchantement = tonumber(champs[6]) or 0, table = tonumber(champs[7]) or 0 })
@@ -110,11 +117,11 @@ S.Message("SOLEQUIP", function(champs)
         table.insert(recues, { sac = tonumber(champs[2]), case = tonumber(champs[3]), id = tonumber(champs[4]),
             rang = tonumber(champs[5]) or 0, eclats = tonumber(champs[6]) or 0, prix = tonumber(champs[7]) or 0,
             jusqua = { [4] = { tonumber(champs[8]) or 0, tonumber(champs[9]) or 0 },
-                [5] = { tonumber(champs[10]) or 0, tonumber(champs[11]) or 0 } } })
+                [5] = { tonumber(champs[10]) or 0, tonumber(champs[11]) or 0 } }, emplacement = tonumber(champs[12]) or 0 })
     elseif champs[1] == "FIN" then
         pieces, armures = recues, armuresRecues
     end
-    if champs[1] ~= "OBJ" and champs[1] ~= "PIECE" and champs[1] ~= "DEBUT" then Maj() end
+    if champs[1] ~= "OBJ" and champs[1] ~= "PIECE" and champs[1] ~= "DEBUT" and champs[1] ~= "HAUTE" then Maj() end
 end)
 
 local function NomObjet(id, defaut)
@@ -280,6 +287,11 @@ fabriquer:SetPoint("BOTTOMLEFT")
 fabriquer:SetScript("OnClick", function()
     if choisie then SendChatMessage(".equipement fabriquer " .. choisie[1], "SAY") end
 end)
+local plan = S.BoutonPlat(detail, "Acheter le plan", 180, 40, 14)
+plan:SetPoint("LEFT", fabriquer, "RIGHT", 10, 0)
+plan:SetScript("OnClick", function()
+    if choisie then SendChatMessage(".equipement plan " .. choisie[1], "SAY") end
+end)
 local achat = S.Texte(detail, "Regular", 12, "gris")
 achat:SetPoint("BOTTOMLEFT", fabriquer, "TOPLEFT", 0, 14)
 achat:SetWidth(370)
@@ -355,8 +367,25 @@ local function MajFabrication()
     conditions:SetText(table.concat(lignes, "\n"))
     local tout = okPuissance and (forge or not c.forge) and (feu or not c.feu)
     S.Montrer(achat, not c.feu and not c.gouffre and not progression:IsShown())   -- les bleues ne se vendent pas
+    -- Lot 4b : recette haute, un composant de plus sans son plan.
+    local haute = not c.feu and S.HAUTES[r[1]]
+    local liste = r[6]
+    if haute and not haute.possede then
+        liste = { unpack(r[6]) }
+        table.insert(liste, { haute.composant, haute.nombre })
+    end
+    S.Montrer(plan, haute and not haute.possede)
+    if haute and not haute.possede then
+        plan.texte:SetText("Plan : " .. S.Argent(haute.plan))
+        plan:SetAlpha(GetMoney() >= haute.plan and 1 or 0.5)
+        table.insert(lignes, "|cffb4b8bfRecette haute : " .. haute.nombre .. " " .. S.NomCollection(haute.composant)
+            .. " de plus, ou son plan, acheté une fois.|r")
+    elseif haute then
+        table.insert(lignes, "|cff8cc4a6Plan appris : pas de composant de plus.|r")
+    end
+    conditions:SetText(table.concat(lignes, "\n"))
     for n, ligne in ipairs(composants) do
-        local comp = r[6][n]
+        local comp = liste[n]
         S.Montrer(ligne, comp)
         if comp then
             local a = S.NombreCollection(comp[1])
@@ -375,6 +404,7 @@ end
 -- Page 2 : amélioration
 ------------------------------------------------------------------------
 local p2 = pages[2]
+local BRAISE, transfert = 910190, nil   -- lot 4b : transfert de rang en attente de confirmation
 local decalage = 0
 local intro = S.Texte(p2, "Regular", 13, "gris")
 intro:SetPoint("TOPLEFT", 24, -16)
@@ -413,11 +443,53 @@ for n = 1, LIGNES do
         local p = self.ligne.piece
         if p then SendChatMessage(".equipement ameliorer " .. p.sac .. " " .. p.case, "SAY") end
     end)
+    l.transfert = S.BoutonPlat(l, "Transférer", 110, 34, 13)
+    l.transfert:SetPoint("RIGHT", l.bouton, "LEFT", -8, 0)
+    l.transfert.ligne = l
+    l.transfert:SetScript("OnClick", function(self)
+        local p, source = self.ligne.piece, self.ligne.source
+        if not p or not source then return end
+        local nomS, nomC = (NomObjet(source.id)), (NomObjet(p.id))
+        transfert = { source = source, cible = p }
+        StaticPopupDialogs["SOLUI_TRANSFERT_RANG"].text = "Transférer le rang de " .. nomS .. " (rang " .. source.rang
+            .. ") sur " .. nomC .. " ?\n\n" .. nomC .. " passe au rang " .. (source.rang - 1) .. " ; " .. nomS
+            .. " revient au rang 0.\nCoût : 1 Braise du Gouffre (tu en as " .. S.NombreCollection(BRAISE) .. ")."
+        StaticPopup_Show("SOLUI_TRANSFERT_RANG")
+    end)
     lignesPieces[n] = l
 end
 local vide = S.Texte(p2, "Regular", 14, "gris")
 vide:SetPoint("TOP", 0, -140)
 vide:SetText("Aucune pièce améliorable : seules nos pièces (quêtes, fabrication, marchands) ont des rangs.")
+
+-- Lot 4b : transfert de rang (un rang de moins, une Braise du Gouffre), avec aperçu avant confirmation.
+StaticPopupDialogs["SOLUI_TRANSFERT_RANG"] = {
+    text = "",
+    button1 = "Transférer",
+    button2 = "Annuler",
+    OnAccept = function()
+        local d = transfert
+        if d then
+            SendChatMessage(".equipement transferer " .. d.source.sac .. " " .. d.source.case .. " " .. d.cible.sac .. " "
+                .. d.cible.case, "SAY")
+        end
+    end,
+    timeout = 0,
+    whileDead = false,
+    hideOnEscape = true,
+}
+
+-- La pièce de même emplacement dont le rang, moins un, dépasse celui de p (la plus haute).
+local function SourceDuTransfert(p)
+    local meilleure
+    for _, q in ipairs(pieces) do
+        if q ~= p and q.emplacement == p.emplacement and q.emplacement > 0 and q.rang >= 2 and q.rang - 1 > p.rang
+            and (not meilleure or q.rang > meilleure.rang) then
+            meilleure = q
+        end
+    end
+    return meilleure
+end
 
 local function MajAmelioration()
     local eclats = S.NombreCollection(ECLAT)
@@ -434,6 +506,9 @@ local function MajAmelioration()
             l.nom:SetText(nom)
             l.nom:SetTextColor(r, g, b)
             l.place:SetText(p.sac == -1 and "Porté" or "Dans le sac")
+            l.source = SourceDuTransfert(p)
+            S.Montrer(l.transfert, l.source)
+            if l.source then l.transfert:SetAlpha(S.NombreCollection(BRAISE) >= 1 and 1 or 0.5) end
             if p.rang >= 5 then
                 l.rang:SetText("Rang 5 (maximum)")
                 l.cout:SetText("")

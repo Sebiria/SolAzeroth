@@ -14,7 +14,8 @@ l'utilisateur du 31/10/2026).
     le personnage n'a qu'environ 84 points de vie et 1 Endurance en donne 10. À calibrer.
 - Recettes (fenêtre Équipement, v3_equipement.cpp) : composants bruts de la Collection et un peu d'or. Maille, bouclier
   et armes se fabriquent près d'une enclume ou d'une forge ; cuir et tissu partout. Une recette s'ouvre à la puissance
-  de la pièce moins 4.
+  de la pièce moins 4 ; moins 2 depuis le lot 4b de l'audit (02/11/2026, C6 du consensus : « fabrication limitée au
+  secteur + 2 », migration 116, outils\fabrication_v3.py), les rudimentaires restant ouvertes dès le départ.
 - Recettes rudimentaires (01/11/2026, demande de l'utilisateur) : 8 pièces de puissance 3 et 4, sans forge, ouvertes
   dès le départ, pour fabriquer dans la vallée des Épreuves (filons de cuivre et lin des Vils quasits : migration 086).
   Elles comblent le creux avant l'Épée d'officier de Kul Tiras (puissance 6, quête 12).
@@ -197,6 +198,11 @@ def prix(p, poids):
     return round(p * poids * 100)
 
 
+def requise(p):
+    """Puissance requise pour fabriquer une pièce de puissance p (lot 4b : p - 2 ; rudimentaires : 0)."""
+    return 0 if p <= 4 else p - 2
+
+
 def main():
     armures, armes = baremes()
     toutes = pieces()
@@ -252,7 +258,7 @@ def main():
     w("CREATE TABLE solazeroth_v3_recettes (objet INT UNSIGNED NOT NULL PRIMARY KEY, forge TINYINT UNSIGNED NOT NULL, "
       "puissance TINYINT UNSIGNED NOT NULL, prix INT UNSIGNED NOT NULL);")
     w("INSERT INTO solazeroth_v3_recettes VALUES %s;" % ", ".join(
-        "(%d, %d, %d, %d)" % (e, categorie in FORGE, max(0, p - 4), p * 5) for e, _, _, p, _, categorie in RECETTES))
+        "(%d, %d, %d, %d)" % (e, categorie in FORGE, requise(p), p * 5) for e, _, _, p, _, categorie in RECETTES))
     w("DROP TABLE IF EXISTS solazeroth_v3_recettes_composants;")
     w("CREATE TABLE solazeroth_v3_recettes_composants (objet INT UNSIGNED NOT NULL, composant INT UNSIGNED NOT NULL, "
       "nombre INT UNSIGNED NOT NULL, PRIMARY KEY (objet, composant));")
@@ -301,7 +307,7 @@ def main():
         lua.append("    { nom = %s, forge = %s, recettes = {" % (lua_texte(categorie), "true" if categorie in FORGE else "false"))
         for e, nom, source, p, composants, c in RECETTES:
             if c == categorie:
-                lua.append("        { %d, %s, %d, %d, %d, { %s }, %s }," % (e, lua_texte(nom), p, max(0, p - 4), p * 5,
+                lua.append("        { %d, %s, %d, %d, %d, { %s }, %s }," % (e, lua_texte(nom), p, requise(p), p * 5,
                            ", ".join("{ %d, %d }" % kv for kv in composants.items()), lua_texte(genre(sources[source]))))
         lua.append("    } },")
     lua.append("}")
