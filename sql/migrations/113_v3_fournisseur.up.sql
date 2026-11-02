@@ -3,11 +3,11 @@
 USE acore_world;
 CREATE TABLE IF NOT EXISTS solazeroth_v3_fournisseur (objet INT UNSIGNED NOT NULL PRIMARY KEY, nom VARCHAR(64) NOT NULL, prix INT UNSIGNED NOT NULL, plafond INT UNSIGNED NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 DELETE FROM solazeroth_v3_fournisseur;
-INSERT INTO solazeroth_v3_fournisseur VALUES (2770, 'Minerai de cuivre', 800, 20);
-INSERT INTO solazeroth_v3_fournisseur VALUES (2835, 'Pierre brute', 4000, 20);
-INSERT INTO solazeroth_v3_fournisseur VALUES (2589, 'Etoffe de lin', 2000, 20);
-INSERT INTO solazeroth_v3_fournisseur VALUES (2318, 'Cuir léger', 1333, 20);
-INSERT INTO solazeroth_v3_fournisseur VALUES (2934, 'Lanières de cuir déchirées', 2000, 20);
+INSERT INTO solazeroth_v3_fournisseur VALUES (2589, 'Etoffe de lin', 1000, 20);
+INSERT INTO solazeroth_v3_fournisseur VALUES (2934, 'Lanières de cuir déchirées', 1000, 20);
+INSERT INTO solazeroth_v3_fournisseur VALUES (2318, 'Cuir léger', 2000, 20);
+INSERT INTO solazeroth_v3_fournisseur VALUES (2835, 'Pierre brute', 800, 20);
+INSERT INTO solazeroth_v3_fournisseur VALUES (2770, 'Minerai de cuivre', 4000, 20);
 DELETE FROM creature_template WHERE entry = 910030;
 DELETE FROM creature_template_model WHERE CreatureID = 910030;
 DELETE FROM creature WHERE guid = 9100030;

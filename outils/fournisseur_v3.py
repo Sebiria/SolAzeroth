@@ -20,12 +20,14 @@ MIGRATION = r"C:\SolAzeroth\sql\migrations\113_v3_fournisseur"
 OR_PAR_HEURE = 30000        # cuivre
 FACTEUR = 4                 # le consensus : 3 à 5 fois la valeur du farm
 PLAFOND = 20
-RYTHMES = {                 # entrée : unités par minute de farm (hypothèses à mesurer en jeu)
-    2770: 2.5,              # Minerai de cuivre : un filon par minute, 2,5 minerais par filon
-    2835: 0.5,              # Pierre brute : une pour deux filons
-    2589: 1.0,              # Étoffe de lin : humanoïdes, un combat et demi par minute
-    2318: 1.5,              # Cuir léger : bêtes, dans le butin du corps
-    2934: 1.0,              # Lanières de cuir déchirées
+RYTHMES = {                 # entrée : unités par minute de farm (hypothèses à mesurer en jeu ; ordre revu par
+                            # l'utilisateur le 02/11/2026 : lin et lanières les plus faciles, puis le cuir léger, la
+                            # pierre brute ; le minerai de cuivre le plus rare)
+    2589: 2.0,              # Étoffe de lin : humanoïdes, nombreux
+    2934: 2.0,              # Lanières de cuir déchirées
+    2318: 1.0,              # Cuir léger : plus rare que les lanières
+    2835: 2.5,              # Pierre brute
+    2770: 0.5,              # Minerai de cuivre : le plus rare
 }
 PNJ, MODELE, GUID = 910030, 3168, 9100030       # copie de Flakk (Fournitures, Razor Hill)
 PLACE = (325.9, -4767.6, 12.6, 1.6)
