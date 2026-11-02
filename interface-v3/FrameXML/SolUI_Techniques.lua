@@ -18,7 +18,10 @@ local function CibleInterruptible()
     return nom ~= nil and not protege
 end
 -- Passif d'identité de chaque spécialisation (lot D2) : Rempart du guerrier tank, Moisson du démoniste Affliction.
-local PASSIFS = { [1] = { sort = 100009, icone = "Bouclier" }, [2] = { sort = 100200, icone = "Moisson" } }
+-- Retour de l'utilisateur (02/11/2026) : la taille est bonne, mais le losange manquait de lisibilité. Symbole plus
+-- grand et plus épais, fond sombre presque opaque, une couleur par passif.
+local PASSIFS = { [1] = { sort = 100009, icone = "Bouclier", couleur = "ambreClair" },
+    [2] = { sort = 100200, icone = "Moisson", couleur = "vertClair" } }
 
 local groupe = CreateFrame("Frame", "SolUITechniques", S.racine)
 groupe:SetSize(26 + 18 + 4 * TAILLE + 3 * ECART + 18 + 26, 2 * TAILLE + ECART)
@@ -33,10 +36,10 @@ passif:SetPoint("BOTTOMLEFT", groupe, "BOTTOMLEFT", -6, 30 + 2)
 passif:EnableMouse(true)
 local losange = S.Texture(passif, "ARTWORK", "Losange", S.Couleur("ambre"))
 losange:SetAllPoints()
-local fondLosange = S.Texture(passif, "BACKGROUND", "Losange", 0.04, 0.04, 0.047, 0.4)
+local fondLosange = S.Texture(passif, "BACKGROUND", "LosangePlein", 0.04, 0.04, 0.047, 0.88)
 fondLosange:SetAllPoints()
 local bouclier = S.Texture(passif, "OVERLAY", "Bouclier", S.Couleur("ambre"))   -- l'icône du passif
-bouclier:SetSize(14, 14)
+bouclier:SetSize(20, 20)
 bouclier:SetPoint("CENTER")
 local textePassif = S.Texte(passif, "Regular", 10, "ambre")
 textePassif:SetPoint("TOP", passif, "BOTTOM", 0, -1)
@@ -236,7 +239,12 @@ S.Ecouter("PLAYER_REGEN_ENABLED", function() if enAttente then MajTouches() end 
 local function MajPassif()
     local p = PASSIFS[S.etat.spe]
     S.Montrer(passif, p ~= nil)
-    if p then bouclier:SetTexture(S.TEXTURES .. p.icone) end
+    if p then
+        bouclier:SetTexture(S.TEXTURES .. p.icone)
+        bouclier:SetVertexColor(S.Couleur(p.couleur))
+        losange:SetVertexColor(S.Couleur(p.couleur))
+        textePassif:SetTextColor(S.Couleur(p.couleur))
+    end
 end
 
 S.Ecouter("UPDATE_BINDINGS", MajTouches)

@@ -123,12 +123,13 @@ def halo(nom, taille, interieur):
     image.save(os.path.join(TEXTURES, nom + ".tga"))
 
 
-def losange(nom, taille, epaisseur):
+def losange(nom, taille, epaisseur, plein=False):
     image = blanc(taille, taille)
     dessin = ImageDraw.Draw(image)
     t, e = taille * SUR, epaisseur * SUR
     m = e
-    dessin.polygon([(t / 2, m), (t - m, t / 2), (t / 2, t - m), (m, t / 2)], outline="white", width=int(e))
+    dessin.polygon([(t / 2, m), (t - m, t / 2), (t / 2, t - m), (m, t / 2)], outline="white", width=int(e),
+                   fill="white" if plein else None)
     enregistrer(image, nom, taille, taille)
 
 
@@ -195,8 +196,9 @@ def textures():
     rectangle_arrondi("BoutonBord", 128, 28, 3)
     halo("Halo", 64, 20)
     losange("Losange", 64, 3)
-    bouclier("Bouclier", 64, 1.2)
-    faucille("Moisson", 64, 1.2)
+    losange("LosangePlein", 64, 3, plein=True)   # fond du losange du passif (02/11/2026)
+    bouclier("Bouclier", 64, 1.8)   # trait plus épais : losange du passif plus lisible (02/11/2026)
+    faucille("Moisson", 64, 1.8)
     epingle("Epingle")
     epingle("EpingleCreux", 4)
     epingle("EpingleOmbre", 0, 2)
