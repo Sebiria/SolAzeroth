@@ -79,7 +79,11 @@ foreach ($ancien in 'SolAzerothEcart', 'SolAzerothFormation', 'SolAzerothGrimoir
                     'SolAzerothSpes', 'SolAzerothTalents', 'SolAzerothRessources', 'SolAzerothDefis',
                     'SolAzerothButin',
                     # 01/11/2026 : macros, barres de postures et de totems, sacs (inventaire dans la Collection)
-                    'SolAzerothMacros', 'SolAzerothBarres', 'SolAzerothSacs') {
+                    'SolAzerothMacros', 'SolAzerothBarres', 'SolAzerothSacs',
+                    # 02/11/2026, audit du jeu (lot 1) : amélioration en Marques, Codex, contrats, hauts faits
+                    # et journal de collection de la v2
+                    'SolAzerothAmelioration', 'SolAzerothCodex', 'SolAzerothContrats', 'SolAzerothHautsFaits',
+                    'SolAzerothJournal') {
     Remove-Item "$client\Interface\AddOns\$ancien" -Recurse -Force -ErrorAction SilentlyContinue
 }
 # Patch client unique (V7) : il contient aussi les fichiers de mod-arac, donc Patch-A.MPQ est rangé dans les archives.

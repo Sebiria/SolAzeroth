@@ -18,7 +18,7 @@ table.insert(ENTREES, { "Carte", "INV_Misc_Map02", function() ToggleFrame(WorldM
 local deroulant = CreateFrame("Frame", "SolUIBarreMenu", UIParent, "UIDropDownMenuTemplate")
 local menuJeu = {}
 for _, e in ipairs(S.MENU_JEU) do table.insert(menuJeu, { text = e[1], func = e[2], notCheckable = true }) end
-table.insert(ENTREES, { "Menu : sorts, hauts faits, réglages", "INV_Misc_Gear_01", function(self)
+table.insert(ENTREES, { "Menu : réglages et menu du jeu", "INV_Misc_Gear_01", function(self)
     EasyMenu(menuJeu, deroulant, self, 0, 0, "MENU")
 end })
 

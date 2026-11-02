@@ -28,6 +28,17 @@ void Addmod_solazerothScripts()
         AddSC_solazeroth_hauts_faits();     // hauts faits v2 (points de talent, Marques) : retirés en v3 le 31/10/2026
         AddSC_solazeroth_butin();           // choix du butin des boss : en v3, les chefs ne laissent que des composants (F6)
         AddSC_solazeroth_renom();           // Renom : en v3, le rang d'aventurier le remplace (v3_aventurier.cpp)
+        // Audit du jeu, lot 1 (02/11/2026, « Audit du jeu\10_consensus.md », C3) : ces systèmes v2 payaient encore en
+        // v3 sans interface. Leurs fonctions restent dans le module (la v3 donne et retire les Marques avec celles de
+        // marques.cpp), mais leurs scripts ne tournent plus.
+        AddSC_solazeroth_marques();         // 3 Marques par quête rendue, Marques des boss selon la menace, jetons dus
+        AddSC_solazeroth_bonus();           // enchantement de bonus des boss et .solameliorer (+Endurance par rang)
+        AddSC_solazeroth_defis_boss();      // défis de boss tirés au sort (à réécrire en v3, visibles)
+        AddSC_solazeroth_intendant();       // butin bleu des boss contre des Marques
+        AddSC_solazeroth_contrats();        // tableau de contrats et .solcontrat (les contrats v3 sont des quêtes)
+        AddSC_solazeroth_malchance();       // protection contre la malchance et Éclats de raid
+        AddSC_solazeroth_codex();           // Codex : en v3, le pourcentage de zone et le rang d'aventurier
+        AddSC_solazeroth_journal_collection();  // journal de collection des boss : en v3, la Collection
     }
     else
     {
@@ -55,14 +66,6 @@ void Addmod_solazerothScripts()
     AddSC_solazeroth_reinitialisation();
     AddSC_solazeroth_journal();
     AddSC_solazeroth_pistage();
-    AddSC_solazeroth_marques();
-    AddSC_solazeroth_bonus();
-    AddSC_solazeroth_defis_boss();
-    AddSC_solazeroth_intendant();
-    AddSC_solazeroth_contrats();
-    AddSC_solazeroth_malchance();
-    AddSC_solazeroth_codex();
-    AddSC_solazeroth_journal_collection();
     AddSC_solazeroth_hardcore();
     AddSC_solazeroth_ambiance();
     AddSC_solazeroth_citadelle();

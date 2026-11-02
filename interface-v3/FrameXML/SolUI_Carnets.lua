@@ -225,8 +225,8 @@ local function Slash(commande)
     end
 end
 
+-- Audit du jeu, lot 1 (02/11/2026) : plus d'entrée « Hauts faits », la fenêtre du jeu ne montre que ceux de la v2.
 S.MENU_JEU = {
-    { "Hauts faits", function() ToggleAchievementFrame() end },
     { "Réglages Sol'Azeroth", function() Slash("/sol") end },
     { "Menu du jeu", function()
         if GameMenuFrame:IsShown() then HideUIPanel(GameMenuFrame) else ShowUIPanel(GameMenuFrame) end

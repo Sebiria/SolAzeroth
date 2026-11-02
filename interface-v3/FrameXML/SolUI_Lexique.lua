@@ -29,7 +29,7 @@ S.LEXIQUE = {
           "La monnaie de l'effort, à côté de l'or et des éclats : un objet du sac. Elle paie le camp, la carte des reliques, les passifs et les montures.",
           T("Obtenir")
           .. "• Primes, contrats et défis : 5 à 30 (médaille d'argent ×1,5, d'or ×2).\n"
-          .. "• Chaque quête rendue : 3. Chaque relique : 5.\n"
+          .. "• Chaque relique : 5.\n"
           .. "• Épreuve du jour : 1 par vague tenue, une fois par jour.\n"
           .. "• Dernier boss d'un donjon : 2 par difficulté au-dessus de 1.\n\n"
           .. T("Dépenser")
