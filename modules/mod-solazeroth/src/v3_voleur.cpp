@@ -5,6 +5,10 @@
 //   cumuls, qu'il consomme.
 // - Camouflage : quand il se brise (coup donné ou reçu), l'Ouverture fait du coup suivant un Garrot. Rien si le joueur
 //   l'annule lui-même.
+// - Lot V7 (02/11/2026, idée de l'utilisateur) : l'Éventail de couteaux lancé en Camouflage devient Assommer, sur la
+//   cible du joueur. Un seul bouton : le serveur choisit, car le jeu interdit de changer le sort d'un bouton en combat.
+//   Assommer a sa propre recharge ; l'Éventail, refusé sans message, ne prend pas la sienne. Assommer exige une cible
+//   hors combat ; tout dégât la libère (Spell.dbc).
 
 #include "SolAzeroth.h"
 #include "Player.h"
@@ -15,7 +19,7 @@
 
 namespace
 {
-    uint32 const POISON = 100301, OUVERTURE = 100310;
+    uint32 const POISON = 100301, CAMOUFLAGE = 100308, OUVERTURE = 100310, ASSOMMER = 100322;
 }
 
 class spell_solazeroth_v3_envenimer : public SpellScript
@@ -75,8 +79,51 @@ class spell_solazeroth_v3_camouflage : public AuraScript
     }
 };
 
+class spell_solazeroth_v3_eventail : public SpellScript
+{
+    PrepareSpellScript(spell_solazeroth_v3_eventail);
+
+    SpellCastResult Verifier()
+    {
+        Player* voleur = GetCaster()->ToPlayer();
+        if (!voleur || !voleur->HasAura(CAMOUFLAGE))
+            return SPELL_CAST_OK;
+        Unit* cible = voleur->GetSelectedUnit();
+        if (!cible || cible == voleur)
+            return SPELL_FAILED_BAD_TARGETS;
+        // Assommer fait ses propres vérifications (portée, recharge, cible hors combat) et dit ses propres erreurs.
+        voleur->CastSpell(cible, ASSOMMER, false);
+        return SPELL_FAILED_DONT_REPORT;
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_solazeroth_v3_eventail::Verifier);
+    }
+};
+
+class spell_solazeroth_v3_assommer : public SpellScript
+{
+    PrepareSpellScript(spell_solazeroth_v3_assommer);
+
+    SpellCastResult Verifier()
+    {
+        Unit* cible = GetExplTargetUnit();
+        if (cible && cible->IsInCombat())
+            return SPELL_FAILED_TARGET_AFFECTING_COMBAT;
+        return SPELL_CAST_OK;
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_solazeroth_v3_assommer::Verifier);
+    }
+};
+
 void AddSC_solazeroth_v3_voleur()
 {
     RegisterSpellScript(spell_solazeroth_v3_envenimer);
     RegisterSpellScript(spell_solazeroth_v3_camouflage);
+    RegisterSpellScript(spell_solazeroth_v3_eventail);
+    RegisterSpellScript(spell_solazeroth_v3_assommer);
 }

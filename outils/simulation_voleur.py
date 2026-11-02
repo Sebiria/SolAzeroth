@@ -185,6 +185,10 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, recharges=None, potion=
     # Ouverture camouflée : le premier coup est un Garrot.
     if "camouflage" in kit:
         garrot[0] = t + DUREE_GARROT
+    # Lot V7 : en Camouflage, l'Éventail assomme le second monstre ; le voleur ouvre ensuite sur le premier.
+    assomme = [-1.0] * len(monstres)
+    if "camouflage" in kit and "eventail" in kit and len(monstres) >= 2:
+        assomme[1] = float(v3.ASSOMMER_DUREE)
     while t < DUREE_MAX:
         t, quoi = min((v, k) for k, v in prochain.items() if v is not None)
         i = cible()
@@ -202,7 +206,7 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, recharges=None, potion=
             elif pret_a("evasion") and vie_j < j.vie * 0.5:
                 evasion = t + 6.0
                 pret["evasion"] = t + R[v3.EVASION] * rf
-            elif pret_a("eventail") and sum(1 for v in vies if v > 0) >= 2:
+            elif pret_a("eventail") and sum(1 for v in vies if v > 0) >= 2 and not any(a > t for a in assomme):
                 # Éventail de couteaux : chaque monstre vivant (tous au contact), chacun peut recevoir les Toxines.
                 for k in range(len(monstres)):
                     if vies[k] > 0:
@@ -249,6 +253,9 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, recharges=None, potion=
                 continue
             if etourdi[k] >= t:
                 prochain[quoi] = etourdi[k] + 0.01
+                continue
+            if assomme[k] >= t:
+                prochain[quoi] = assomme[k] + 0.01
                 continue
             brut = round(alea.randint(m.bas, m.haut) * sim.MONSTRES_DEGATS)
             d = sim.apres_armure(brut, j.armure, m.puissance)

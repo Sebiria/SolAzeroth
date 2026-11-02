@@ -203,6 +203,7 @@ S.LEXIQUE = {
           .. "• Évasion : dégâts subis réduits de moitié pendant 6 s.\n"
           .. "• Coup bas étourdit, Coup de pied interrompt ; le Camouflage ouvre par un Garrot.\n"
           .. "• Éventail de couteaux (Sen'jin) : frappe autour de toi et pose 2 cumuls sur chaque ennemi.\n"
+          .. "• En Camouflage, le même bouton devient Assommer : ta cible, hors combat, est neutralisée 10 s ; tout dégât la libère, et tu restes camouflé. Chacun a sa recharge.\n"
           .. "• Le cuir protège moins que la maille : le voleur gagne en tuant vite, seul contre un." },
         { "techniques", "Techniques",
           "Ni rage ni mana : deux techniques à recharge au départ, d'autres apprises au fil du récit, et le passif de ta spécialisation.",

@@ -32,6 +32,7 @@ MIGRATION = r"C:\SolAzeroth\sql\migrations\129_v3_kit_voleur"
 (TOXINES, POISON, ESTROPIER, ESTROPIER_MG, ENVENIMER, COUP_DE_PIED, RUPTURE, EVASION, CAMOUFLAGE, GARROT, OUVERTURE,
  COUP_BAS, AFFAIBLISSANT, LANCER, SPRINT, DISPARITION, EVENTAIL, CAPE, FEINTE, VENDETTA, AIGUILLON,
  GARROT_SILENCE) = range(100300, 100322)
+ASSOMMER = 100322                   # lot V7 : l'Éventail de couteaux lancé en Camouflage (v3_voleur.cpp)
 TECHNIQUES = (100302, 100320)
 SANS_RECHARGE_GLOBALE = (ESTROPIER_MG, GARROT, OUVERTURE)   # déclenchés
 
@@ -53,7 +54,8 @@ ESTROPIER_POURCENT = 300            # chaque main (la gauche frappe à moitié)
 ENVENIMER_POURCENT = 180            # par cumul consommé
 EVENTAIL_POURCENT = 75              # de l'arme en main droite, sur chaque ennemi à 8 m
 EVENTAIL_CUMULS = 2                 # cumuls de Poison mortel posés sur chaque ennemi touché (au plus 2 : effets 1 et 2)
-RECHARGES = {ESTROPIER: 4000, COUP_DE_PIED: 12000, EVASION: 60000, CAMOUFLAGE: 6000, COUP_BAS: 25000,
+ASSOMMER_DUREE = 10                 # s (durée t.D10) ; tout dégât le brise
+RECHARGES = {ASSOMMER: 10000, ESTROPIER: 4000, COUP_DE_PIED: 12000, EVASION: 60000, CAMOUFLAGE: 6000, COUP_BAS: 25000,
              AFFAIBLISSANT: 10000, LANCER: 6000, SPRINT: 60000, DISPARITION: 120000, EVENTAIL: 10000, CAPE: 90000,
              FEINTE: 20000, VENDETTA: 120000, AIGUILLON: 12000}
 # Part de la puissance d'attaque : coup direct, ou par tic (et par cumul pour le Poison mortel).
@@ -67,6 +69,8 @@ BONUS = {
 SCRIPTS = {
     ENVENIMER: "spell_solazeroth_v3_envenimer",
     CAMOUFLAGE: "spell_solazeroth_v3_camouflage",
+    EVENTAIL: "spell_solazeroth_v3_eventail",
+    ASSOMMER: "spell_solazeroth_v3_assommer",
 }
 
 
@@ -210,11 +214,23 @@ def lignes(d):
     l.append(e)
 
     e = sort(d, 51723, EVENTAIL, "Éventail de couteaux", "Dégâts autour de soi (8 m) : %d %% des dégâts de l'arme, et %d cumuls de Poison mortel "
-             "sur chaque ennemi touché." % (EVENTAIL_POURCENT, EVENTAIL_CUMULS))
+             "sur chaque ennemi touché. En Camouflage, il devient Assommer (sa propre recharge)." % (EVENTAIL_POURCENT,
+                                                                                             EVENTAIL_CUMULS))
     t.effet(e, 0, t.ARME_POURCENT, EVENTAIL_POURCENT, t.AUTOUR_DE_SOI, t.ZONE_SOURCE, t.R8)
     # Lot V6 : le poison sur chaque ennemi touché (le moteur lance le sort déclenché sur chaque cible de la zone).
     for i in range(1, 1 + EVENTAIL_CUMULS):
         t.effet(e, i, t.DECLENCHER, 0, t.AUTOUR_DE_SOI, t.ZONE_SOURCE, t.R8, declencheur=POISON)
+    l.append(e)
+
+    # Lot V7 (idée de l'utilisateur) : lancé par l'Éventail en Camouflage, sur la cible. Le Camouflage reste (attribut
+    # de Blizzard gardé) ; tout dégât le brise (drapeau d'interruption gardé, seuil de dégâts du moteur retiré).
+    e = sort(d, 6770, ASSOMMER, "Assommer",
+             "En Camouflage, par l'Éventail de couteaux : la cible, hors combat, est neutralisée %d s. Tout dégât la "
+             "libère. Vous restez camouflé." % ASSOMMER_DUREE, "Assommé.", duree=t.D10)
+    t.effet(e, 0, t.AURA, 0, t.CIBLE, aura=t.ETOURDI)
+    e[32] |= 0x2                    # AURA_INTERRUPT_FLAG_TAKE_DAMAGE
+    e[34:37] = [0, 0, 0]
+    e[205], e[206] = t.RECHARGE_GLOBALE, 750
     l.append(e)
 
     e = sort(d, 31224, CAPE, "Cape d'ombre", "Insensible aux sorts pendant 5 s.", "Insensible aux sorts.", duree=t.D5)

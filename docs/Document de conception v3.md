@@ -966,6 +966,11 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
     - l'Éventail prend l'étape de Sen'jin (Le crâne de Minshina, Kaplak) ; la Rupture passe en zone 4, avec l'emplacement qu'ouvrait l'Éventail ;
     - simulation : l'Éventail seul (75 % de l'arme autour de soi, 10 s) n'aidait presque pas (16 %), même plus fréquent ou plus fort : le voleur meurt de ce qu'il encaisse, pas de ce qu'il inflige. Il pose donc 2 cumuls de Poison mortel sur chaque ennemi touché (deux effets qui déclenchent le poison) : les deux monstres sont affaiblis ;
     - deux monstres en fin de Durotar : 49 % (guerrier 100 %, démoniste 94 %) ; trois : perdu, comme le guerrier. Le reste ne change pas (un seul monstre : il ne s'en sert pas).
+  - **lot V7, Assommer** (idée de l'utilisateur : « en furtivité on transforme l'Éventail en Assommer ») :
+    - en Camouflage, l'Éventail de couteaux lance Assommer sur la cible (sort 100322) ; hors Camouflage, c'est l'Éventail. Chacun sa recharge de 10 s. Un seul bouton : le serveur choisit (`spell_solazeroth_v3_eventail`, `v3_voleur.cpp`), car le jeu interdit de changer le sort d'un bouton en combat ; l'interface montre l'icône d'Assommer et éclaire le bouton sur une cible hors combat ;
+    - règles (recommandations acceptées) : la cible doit être hors combat ; le Camouflage reste ; tout dégât sur la cible la libère (l'Éventail aussi). 10 s ;
+    - simulation, deux monstres en fin de Durotar : 97 % de victoires, 34 % de vie (49 % sans Assommer ; guerrier 100 %, 44 %). 15 s donnait 100 % : 10 s gardé, comme proposé ;
+    - limite connue : le client refuse l'appui si l'Éventail est en recharge, même en Camouflage (rare : le Camouflage ne se prend qu'hors combat).
   - **Pas encore vérifié en jeu.**
 
 ## 5. Questions pour les prochaines séries

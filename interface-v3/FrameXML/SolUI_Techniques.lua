@@ -13,6 +13,8 @@ local HEURT = 100019     -- Heurt de bouclier : mis en avant quand la cible inca
 local TRAIT, TRANSE = 100201, 100223   -- Trait de l'ombre : mis en avant sous la Transe de l'ombre (lot D4)
 -- Lot V5 : Envenimer mis en avant quand la cible porte 5 cumuls de ton Poison mortel ; Coup de pied comme le Heurt.
 local ENVENIMER, POISON, CUMULS_MAX, COUP_DE_PIED = 100304, 100301, 5, 100305
+-- Lot V7 : en Camouflage, le bouton de l'Éventail montre Assommer (le serveur lance Assommer à sa place).
+local EVENTAIL, ASSOMMER, CAMOUFLAGE = 100316, 100322, 100308
 
 local function CibleInterruptible()
     if not UnitCanAttack("player", "target") then return false end
@@ -192,6 +194,9 @@ local function Etat(b)
     b.recharge:SetText(enRecharge and (reste >= 60 and S.Duree(reste) or math.ceil(reste)) or "")
 
     local nom, sort = SortDe(emplacement)
+    local assommer = (sort == EVENTAIL or (nom and nom == GetSpellInfo(EVENTAIL)))
+        and UnitBuff("player", GetSpellInfo(CAMOUFLAGE) or "") ~= nil
+    if assommer then b.icone:SetTexture(select(3, GetSpellInfo(ASSOMMER))) end
     local actif = nom and UnitBuff("player", nom) ~= nil
     S.Montrer(b.point, actif)
     S.Montrer(b.anneauActif, actif)
@@ -201,6 +206,7 @@ local function Etat(b)
         or ((sort == HEURT or nom == GetSpellInfo(HEURT)) and CibleInterruptible())
         or ((sort == COUP_DE_PIED or nom == GetSpellInfo(COUP_DE_PIED)) and CibleInterruptible())
         or ((sort == ENVENIMER or nom == GetSpellInfo(ENVENIMER)) and CumulsDePoison() >= CUMULS_MAX)
+        or (assommer and UnitCanAttack("player", "target") and not UnitAffectingCombat("target"))
         or ((sort == TRAIT or nom == GetSpellInfo(TRAIT)) and UnitBuff("player", GetSpellInfo(TRANSE) or "") ~= nil))
     if enAvant then
         b.halo:Show()
