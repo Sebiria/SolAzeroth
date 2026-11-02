@@ -100,9 +100,9 @@ local SPES = {
             .. "techniques ; d'autres s'ouvrent avec ta puissance (Techniques équipées)." },
     WARLOCK = { id = 2, cle = "affliction", nom = "Démoniste — Affliction",
         icone = "Interface\\Icons\\Spell_Shadow_DeathCoil",
-        texte = "Maléfices et drains, à distance : une part des dégâts sur la durée revient en vie. Aucun familier "
-            .. "permanent : les démons sont des invocations de quelques secondes.\nSes techniques ne sont "
-            .. "pas encore prêtes : elles viennent au prochain lot." },
+        texte = "Passif Moisson : 20 % des dégâts de tes sorts sur la durée te reviennent en vie. Maléfices et "
+            .. "drains, à distance et en mouvement ; les démons sont des invocations de quelques secondes.\nTu commences "
+            .. "avec 3 emplacements de techniques ; d'autres s'ouvrent au fil de l'histoire (Techniques équipées)." },
 }
 -- La classe est lue à l'affichage : au chargement de l'interface, elle peut ne pas être connue.
 local function MaSpe() return SPES[select(2, UnitClass("player"))] or SPES.WARRIOR end

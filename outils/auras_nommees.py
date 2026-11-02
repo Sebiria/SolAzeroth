@@ -11,6 +11,7 @@ import dbc
 import bivouac_v3
 import bonus_v3
 import cuisine_v3
+import demoniste_v3
 import icones_retail
 import montures_v3
 import passifs_v3
@@ -138,6 +139,7 @@ def main():
     lignes = [nouvelle_aura(d, modele, *a) for a in AURAS]
     incantations = [nouvelle_incantation(d, d.chercher(MODELE_INCANTATION), *i[:4]) for i in INCANTATIONS]
     kit = techniques_v3.lignes(d, icones_retail.identifiants())
+    demoniste = demoniste_v3.lignes(d)   # lot D2 : migration 123
     bivouac = bivouac_v3.lignes(d, icones_retail.identifiants())
     plats = cuisine_v3.plats()
     cuisine = cuisine_v3.lignes(d, plats)
@@ -145,7 +147,7 @@ def main():
     passifs = passifs_v3.lignes(d)
     monstres = sorts_monstres_v3.lignes(d)   # v3 (01/11/2026) : sorts des monstres, migration 106
     bonus = bonus_v3.lignes(d)               # audit du jeu, lot 4c : migration 117
-    d.enregistrements.extend(lignes + incantations + kit + bivouac + cuisine + passifs + monstres + bonus)
+    d.enregistrements.extend(lignes + incantations + kit + demoniste + bivouac + cuisine + passifs + monstres + bonus)
     os.makedirs(DBC_CLIENT, exist_ok=True)
     d.enregistrer(os.path.join(DBC_CLIENT, "Spell.dbc"))
 
@@ -206,6 +208,7 @@ def main():
     en_sql = lambda liste: ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e))
                             for e in liste]
     bonus_v3.ecrire(en_sql(bonus), en_sql(cuisine), [e[0] for e in cuisine])
+    demoniste_v3.ecrire(en_sql(demoniste), [e[0] for e in demoniste], sql_texte)
     montures_v3.ecrire(montures, catalogue, ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(
         valeur_sql(d, t, v) for t, v in zip(types, e)) for e in montures])
     passifs_v3.ecrire(["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(valeur_sql(d, t, v) for t, v in zip(types, e))

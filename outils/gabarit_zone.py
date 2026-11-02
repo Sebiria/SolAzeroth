@@ -54,6 +54,9 @@ DUROTAR = {
     "camp": {"feu": (1, 2), "potion": (2, 3)},
     "specialisations": {
         "guerrier_tank": {"emplacements": (3, 5), "techniques": [100011, 100013, 100012, 100019, 100015, 100014, 100016]},
+        # Lot D2 : mêmes étapes du récit (Diablotin, Drain de vie, Peur, Marcheur du Vide, Malédiction d'agonie).
+        "demoniste_affliction": {"emplacements": (3, 5),
+                                 "techniques": [100201, 100202, 100203, 100205, 100206, 100207, 100204]},
     },
     "donjon": {"nom": "Gouffre de Ragefeu", "carte": 389, "puissance": (10, 12)},
     # Revenu mesuré (simulation_rangs.py) ; filons présents à la fois (pools et filons seuls, filons_heure.py).
@@ -89,10 +92,12 @@ def extrapoler(base, nom, zone, plage, specialisations, recolte=None, donjon=Non
 # Lot 3b (« Audit du jeu\lot_3b_deblocages_proposition.md ») : techniques et emplacements des zones suivantes.
 TARIDES = extrapoler(DUROTAR, "Les Tarides", 17, (11, 25), {
     "guerrier_tank": {"emplacements": (5, 6), "techniques": [100020, 100018]},    # Fracasser armure, Mur protecteur
+    "demoniste_affliction": {"emplacements": (5, 6), "techniques": [100208, 100209]},   # Faiblesse, Siphon de vie
 }, recolte={"filons": [1731, 1732, 1733], "plantes": [1617, 1618, 1619, 1620, 2041, 2045, 3729]})
 TARIDES["economie"]["filons_actifs"] = 166   # filons_heure.py (cuivre, étain, argent de la zone 17)
 ZONE_3 = extrapoler(TARIDES, "Zone 3 (fictive)", None, (26, 40), {
     "guerrier_tank": {"emplacements": (6, 6), "techniques": [100021, 100017]},    # Désarmement, Ravage
+    "demoniste_affliction": {"emplacements": (6, 6), "techniques": [100213, 100211]},   # Voile mortel, Graine
 })
 ZONES = [DUROTAR, TARIDES, ZONE_3]
 
@@ -184,10 +189,18 @@ def sql(requete):
     return [l.split("\t") for l in r.stdout.decode("utf-8").splitlines()]
 
 
+# Listes de v3_kit.cpp (ORDRE_<nom>) et spécialisations du gabarit (lot D2 : une liste par spécialisation).
+ORDRES = {"TANK": "guerrier_tank", "AFFLICTION": "demoniste_affliction"}
+
+
 def techniques_du_kit():
-    """Techniques de v3_kit.cpp (ORDRE) ouvertes dès aujourd'hui, c'est-à-dire pas « PLUS_TARD »."""
+    """Techniques de chaque liste de v3_kit.cpp ouvertes dès aujourd'hui, c'est-à-dire pas « PLUS_TARD »."""
     texte = open(KIT, encoding="utf-8").read()
-    return [int(s) for s, quete in re.findall(r'\{ (\d+), "[^"]+", (\w+), \d+,', texte) if quete != "PLUS_TARD"]
+    lu = {}
+    for nom, bloc in re.findall(r"std::vector<Technique> const ORDRE_(\w+) =\s*\{(.*?)\n    \};", texte, re.S):
+        lu[ORDRES.get(nom, nom)] = [int(s) for s, quete in re.findall(r'\{ (\d+), "[^"]+", (\w+), \d+,', bloc)
+                                    if quete != "PLUS_TARD"]
+    return lu
 
 
 def relire_durotar():
@@ -244,9 +257,10 @@ def comparer_durotar(lu):
     for o in d["recolte"]["filons"] + d["recolte"]["plantes"]:
         if str(o) not in lu["recolte"]:
             ecarts.append(f"récolte : {o} n'apparaît pas dans la zone {d['zone']}")
-    if lu["techniques"] != d["specialisations"]["guerrier_tank"]["techniques"]:
-        ecarts.append(f"techniques : gabarit {d['specialisations']['guerrier_tank']['techniques']}, "
-                      f"v3_kit.cpp {lu['techniques']}")
+    for spe in sorted(set(lu["techniques"]) | set(d["specialisations"])):
+        gabarit = d["specialisations"].get(spe, {}).get("techniques")
+        if lu["techniques"].get(spe) != gabarit:
+            ecarts.append(f"techniques ({spe}) : gabarit {gabarit}, v3_kit.cpp {lu['techniques'].get(spe)}")
     return ecarts
 
 

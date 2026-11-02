@@ -17,7 +17,8 @@ local function CibleInterruptible()
     if not nom then nom, _, _, _, _, _, _, protege = UnitChannelInfo("target") end
     return nom ~= nil and not protege
 end
-local PASSIF = 100009
+-- Passif d'identité de chaque spécialisation (lot D2) : Rempart du guerrier tank, Moisson du démoniste Affliction.
+local PASSIFS = { [1] = { sort = 100009, icone = "Bouclier" }, [2] = { sort = 100200, icone = "Moisson" } }
 
 local groupe = CreateFrame("Frame", "SolUITechniques", S.racine)
 groupe:SetSize(26 + 18 + 4 * TAILLE + 3 * ECART + 18 + 26, 2 * TAILLE + ECART)
@@ -34,7 +35,7 @@ local losange = S.Texture(passif, "ARTWORK", "Losange", S.Couleur("ambre"))
 losange:SetAllPoints()
 local fondLosange = S.Texture(passif, "BACKGROUND", "Losange", 0.04, 0.04, 0.047, 0.4)
 fondLosange:SetAllPoints()
-local bouclier = S.Texture(passif, "OVERLAY", "Bouclier", S.Couleur("ambre"))
+local bouclier = S.Texture(passif, "OVERLAY", "Bouclier", S.Couleur("ambre"))   -- l'icône du passif
 bouclier:SetSize(14, 14)
 bouclier:SetPoint("CENTER")
 local textePassif = S.Texte(passif, "Regular", 10, "ambre")
@@ -42,7 +43,7 @@ textePassif:SetPoint("TOP", passif, "BOTTOM", 0, -1)
 textePassif:SetText("P A S S I F")
 passif:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:SetHyperlink("spell:" .. PASSIF)
+    GameTooltip:SetHyperlink("spell:" .. PASSIFS[S.etat.spe].sort)
 end)
 passif:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
@@ -233,7 +234,9 @@ end
 S.Ecouter("PLAYER_REGEN_ENABLED", function() if enAttente then MajTouches() end end)
 
 local function MajPassif()
-    S.Montrer(passif, S.etat.spe == 1)
+    local p = PASSIFS[S.etat.spe]
+    S.Montrer(passif, p ~= nil)
+    if p then bouclier:SetTexture(S.TEXTURES .. p.icone) end
 end
 
 S.Ecouter("UPDATE_BINDINGS", MajTouches)

@@ -889,6 +889,22 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **Caractéristique principale par spécialisation** (choix de l'utilisateur, 02/11/2026 : le plus simple, sans dette technique, l'Agilité viendra plus tard) : Force pour le guerrier tank, Intelligence pour le démoniste Affliction. Elle choisit le repas et le repos du feu, et donne la puissance d'attaque par **une seule règle pour toutes les classes** (`v3_niveau.cpp`) : 2 par point, au lieu des formules de Blizzard par classe. Le guerrier ne change pas en mêlée ; les sorts du démoniste suivent son Intelligence.
   - Les caractéristiques gardent leurs autres effets du jeu (choix de l'utilisateur) : Force, blocage ; Agilité, critique, esquive et armure ; Intelligence, critique des sorts. Ils restent petits, car elles ne viennent que de la base et des repas ; à compter dans les simulations des classes suivantes.
   - **Interface** : la fenêtre Spécialisation montre la spécialisation de la classe (« Démoniste — Affliction ») ; la Fiche nomme la spécialisation ; la fenêtre des techniques équipées vaut pour toute spécialisation.
+- **Démoniste, lot D2 : kit Affliction** (02/11/2026) : construit (`outils\demoniste_v3.py`, migration 123, `v3_demoniste.cpp`, ordre dans `v3_kit.cpp`) ; pas encore vérifié en jeu, coefficients à calibrer au lot D4.
+  - **Règles de l'utilisateur, pour cette classe et les suivantes** : aucun dégât d'arme, l'arme ne compte que par ses caractéristiques. Les sorts font une part de la puissance d'attaque (table `spell_bonus_data` du moteur, base 0), avec un sort faible lançable en boucle. Toute incantation et toute canalisation se fait en mouvement (drapeaux retirés dans le Spell.dbc du serveur et du client, par `demoniste_v3.sort()`, que les classes suivantes reprendront).
+  - Sorts magiques d'Ombre (critique des sorts, sans armure), hors de la famille du démoniste, temps de recharge global de 0,75 s.
+  - **Passif Moisson** : 20 % des dégâts des sorts sur la durée reviennent en vie (losange du passif : une faucille).
+  - **Départ** : Trait de l'ombre (25 % de la PA, 1,5 s d'incantation, sans recharge), Corruption (100 % en 15 s).
+  - **Durotar**, aux mêmes étapes que le guerrier, maîtres Nartok (Vallée) puis Dhugru Gorelust (Razor Hill) :
+    - Diablotin (Les crocs de la Vallée) : 15 s, recharge 45 s, un trait de feu de 15 % de la PA toutes les 2 s ;
+    - Drain de vie (Les vils quasits, un emplacement) : canalisé 5 s, 25 % de la PA par seconde, rendus en vie ;
+    - Peur (Un rapport à Orgnil) : 6 s, recharge 20 s ;
+    - Marcheur du Vide (chef renforcé de Tranchecolline, un emplacement) : 10 s, recharge 60 s ; il provoque les ennemis à 15 m et encaisse (vie et armure du démoniste) ;
+    - Malédiction d'agonie (Le crâne de Minshina) : 144 % de la PA en 24 s, par tiers à 50, 100 et 150 %.
+    - L'Agonie passe en dernier, à la place que le brouillon donnait au Marcheur : les cinq étapes du guerrier sont reprises telles quelles.
+  - **Panel des zones suivantes** : Malédiction de faiblesse et Siphon de vie (zone 2), Voile mortel et Graine de corruption (zone 3), Hurlement de terreur (zone 4), Drain d'âme et Pierre de soins (zone 5), Chasseur corrompu (zone 6, interrompt et réduit au silence, puis mord), Affliction instable (zone 7, +50 % sur une cible qui porte Corruption et Agonie).
+  - **Invocations** (aucun familier permanent) : créatures 910050 à 910052, à vie tirée de celle du démoniste. Leurs attaques sont des sorts lancés au nom du démoniste : sa puissance d'attaque, la menace sur lui. Elles repartent à la fin de leur durée, ou si le démoniste meurt ou s'éloigne de plus de 60 m.
+  - **Interface** : losange du passif par spécialisation, texte de la carte de spécialisation. Le vérificateur de zone (`gabarit_zone.py`) lit maintenant les techniques par spécialisation (conforme).
+  - **Pas encore traité** : l'attaque automatique au contact reste possible avec la dague de départ.
 
 ## 5. Questions pour les prochaines séries
 

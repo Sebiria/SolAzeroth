@@ -14,8 +14,9 @@
 // Les sorts eux-mêmes (copies retouchées de sorts de Blizzard) sont générés par outils\techniques_v3.py (migration 061).
 // Démoniste, lot D1 (02/11/2026, « Démoniste — proposition.md ») : les spécialisations sont une table (SPECIALISATIONS) :
 // classe, clé de « .kit spe », passif, techniques dans l'ordre du récit, armes de départ. Le démoniste Affliction y entre
-// sans technique (elles viennent au lot D2). Ses anciens sorts sont retirés comme ceux du guerrier, et il n'a aucun
-// familier permanent (règle de l'utilisateur : seulement des invocations temporaires, pour toutes les classes).
+// avec ses techniques au lot D2 (outils\demoniste_v3.py, migration 123, v3_demoniste.cpp). Ses anciens sorts sont
+// retirés comme ceux du guerrier, et il n'a aucun familier permanent (règle de
+// l'utilisateur : seulement des invocations temporaires, pour toutes les classes).
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -47,6 +48,7 @@ namespace
     uint8 const SPE_GUERRIER_TANK = 1;
     uint8 const SPE_DEMONISTE_AFFLICTION = 2;
     uint32 const PASSIF_REMPART = 100009;
+    uint32 const PASSIF_MOISSON = 100200;
     uint32 const SORT_EPEES_1M = 201;          // Épées à une main
     uint32 const EPEE_DE_DEPART = 25;          // Épée courte usée
     uint32 const BOUCLIER_DE_DEPART = 2362;    // Vieux bouclier en bois
@@ -88,8 +90,27 @@ namespace
         { 100026, "Dernier rempart", PLUS_TARD, 0, nullptr, false },             // zone 7
     };
 
-    // Démoniste Affliction : ses techniques viennent au lot D2 ; en attendant, il n'a que l'attaque automatique.
-    std::vector<Technique> const ORDRE_AFFLICTION = {};
+    // Démoniste Affliction (lot D2, v3_demoniste.cpp) : mêmes étapes du récit que le guerrier, maîtres du démoniste
+    // (Nartok dans la Vallée, Dhugru Gorelust à Razor Hill). Emplacements ouverts aux mêmes étapes.
+    std::vector<Technique> const ORDRE_AFFLICTION =
+    {
+        { 100201, "Trait de l'ombre", 0, 0, nullptr, false },
+        { 100202, "Corruption", 0, 0, nullptr, false },
+        { 100203, "Diablotin", 910002, 0, "Nartok", false },                     // Les crocs de la Vallée
+        { 100205, "Drain de vie", 910005, 0, "Nartok", true },                   // Les vils quasits, avant Yarrog
+        { 100206, "Peur", 910008, 0, "Dhugru Gorelust", false },                 // Un rapport à Orgnil (Tranchecolline)
+        { 100207, "Marcheur du Vide", 0, 2, "Dhugru Gorelust", true },          // chef renforcé de Tranchecolline
+        { 100204, "Malédiction d'agonie", 910019, 0, "Dhugru Gorelust", false }, // Le crâne de Minshina (Sen'jin)
+        { 100208, "Malédiction de faiblesse", PLUS_TARD, 0, nullptr, true },     // zone 2
+        { 100209, "Siphon de vie", PLUS_TARD, 0, nullptr, false },               // zone 2
+        { 100213, "Voile mortel", PLUS_TARD, 0, nullptr, false },                // zone 3
+        { 100211, "Graine de corruption", PLUS_TARD, 0, nullptr, false },        // zone 3
+        { 100210, "Hurlement de terreur", PLUS_TARD, 0, nullptr, true },         // zone 4
+        { 100214, "Drain d'âme", PLUS_TARD, 0, nullptr, false },                 // zone 5
+        { 100215, "Pierre de soins", PLUS_TARD, 0, nullptr, false },             // zone 5
+        { 100216, "Chasseur corrompu", PLUS_TARD, 0, nullptr, true },            // zone 6
+        { 100217, "Affliction instable", PLUS_TARD, 0, nullptr, false },         // zone 7
+    };
 
     struct Specialisation
     {
@@ -98,7 +119,7 @@ namespace
         char const* cle;                                // .kit spe <clé>
         char const* nom;
         uint32 famille;                                 // SpellFamilyName des anciens sorts de la classe, retirés
-        uint32 passif;                                  // 0 : aucun pour l'instant
+        uint32 passif;                                  // passif d'identité (0 : aucun)
         uint8 caracteristique;                          // principale : repas, feu, puissance d'attaque (v3_niveau.cpp)
         std::vector<Technique> const* ordre;
         uint32 competence;                              // compétence d'arme apprise au choix
@@ -110,7 +131,7 @@ namespace
         { SPE_GUERRIER_TANK, CLASS_WARRIOR, "tank", "guerrier tank", SPELLFAMILY_WARRIOR, PASSIF_REMPART, STAT_STRENGTH,
           &ORDRE_TANK,
           SORT_EPEES_1M, { { EQUIPMENT_SLOT_MAINHAND, EPEE_DE_DEPART }, { EQUIPMENT_SLOT_OFFHAND, BOUCLIER_DE_DEPART } } },
-        { SPE_DEMONISTE_AFFLICTION, CLASS_WARLOCK, "affliction", "démoniste Affliction", SPELLFAMILY_WARLOCK, 0, STAT_INTELLECT,
+        { SPE_DEMONISTE_AFFLICTION, CLASS_WARLOCK, "affliction", "démoniste Affliction", SPELLFAMILY_WARLOCK, PASSIF_MOISSON, STAT_INTELLECT,
           &ORDRE_AFFLICTION, SORT_DAGUES, { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART } } },
     };
 
@@ -773,8 +794,8 @@ public:
         for (uint8 bouton = 0; bouton < 12; ++bouton)
             player->removeActionButton(bouton);
         Appliquer(player);
-        handler->PSendSysMessage("|cff40c0ffSpécialisation choisie : {}. {}|r", choisie->nom, choisie->id == SPE_GUERRIER_TANK
-            ? "Le Rempart et tes premières techniques sont prêts." : "Ses techniques ne sont pas encore prêtes.");
+        handler->PSendSysMessage("|cff40c0ffSpécialisation choisie : {}. {} et tes premières techniques sont prêts.|r",
+            choisie->nom, choisie->id == SPE_GUERRIER_TANK ? "Le Rempart" : "La Moisson");
         return true;
     }
 

@@ -142,6 +142,19 @@ def bouclier(nom, taille, epaisseur):
     enregistrer(image, nom, taille, taille)
 
 
+def faucille(nom, taille, epaisseur):
+    """Petite faucille au trait (losange du passif Moisson du démoniste, lot D2) : lame en arc, manche oblique."""
+    image = blanc(taille, taille)
+    dessin = ImageDraw.Draw(image)
+    k = taille * SUR / 12.0
+    largeur = int(epaisseur * SUR)
+    dessin.arc((1.5 * k, 1.5 * k, 9.5 * k, 9.5 * k), 150, 360, fill="white", width=largeur)   # dos de la lame
+    dessin.arc((2.8 * k, 3.6 * k, 8.8 * k, 9.6 * k), 165, 345, fill="white", width=largeur)   # tranchant
+    dessin.line([(9.4 * k, 5.5 * k), (7.4 * k, 11 * k)], fill="white", width=largeur)          # manche
+    dessin.line([(2.0 * k, 7.5 * k), (2.9 * k, 7.4 * k)], fill="white", width=largeur)          # pointe
+    enregistrer(image, nom, taille, taille)
+
+
 def epingle(nom, retrait=0.0, flou=0):
     """Épingle de la mini-carte (maquette « Épingle », 01/11/2026) dans une texture de 64 x 64 : rond en haut, pointe en
     bas au centre (le point visé). Rond de rayon 23 centré en (32, 25,6), pointe en (32, 61,4). « retrait » rétrécit la
@@ -183,6 +196,7 @@ def textures():
     halo("Halo", 64, 20)
     losange("Losange", 64, 3)
     bouclier("Bouclier", 64, 1.2)
+    faucille("Moisson", 64, 1.2)
     epingle("Epingle")
     epingle("EpingleCreux", 4)
     epingle("EpingleOmbre", 0, 2)
