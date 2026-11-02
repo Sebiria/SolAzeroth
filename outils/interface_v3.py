@@ -226,8 +226,9 @@ def toc_du_client():
 
 
 # Lot 6a : ce qui est prêt à la création (noms de fichier de GetAvailableRaces et GetAvailableClasses).
-RACES_PRETES, CLASSES_PRETES = ("ORC", "TROLL"), ("WARRIOR",)
-PAS_PRET = "|cffff9080Pas encore prêt : seuls l'orc et le troll guerriers ont leur zone de départ.|r"
+# Démoniste, lot D1 (02/11/2026) : ouvert à la création.
+RACES_PRETES, CLASSES_PRETES = ("ORC", "TROLL"), ("WARRIOR", "WARLOCK")
+PAS_PRET = "|cffff9080Pas encore prêt : seuls l'orc et le troll, guerriers ou démonistes, ont leur zone de départ.|r"
 CREATION = [
     # Les races et classes qui ne sont pas prêtes : grisées, avec le message au survol.
     ("""		if ( select(i+2, ...) == 1 ) then

@@ -36,9 +36,10 @@ $reglages = [ordered]@{
         # v3, F5a : la mort ne coûte rien (retour à la pierre de foyer, v3_mort.cpp), pas même l'usure de l'équipement
         'DurabilityLoss.OnDeath'          = '0'
         # Audit du jeu, lot 6a (02/11/2026) : seuls l'orc et le troll guerriers sont prêts (kit et zone de départ) ;
-        # l'écran de création grise les autres (outils\interface_v3.py)
+        # l'écran de création grise les autres (outils\interface_v3.py). Démoniste, lot D1 (02/11/2026) : ouvert aussi
+        # (masque des classes fermées : 1534 - 256)
         'CharacterCreating.Disabled.RaceMask'  = '1661'
-        'CharacterCreating.Disabled.ClassMask' = '1534'
+        'CharacterCreating.Disabled.ClassMask' = '1278'
     }
     'authserver.conf' = [ordered]@{
         'BindIP'  = '"127.0.0.1"'

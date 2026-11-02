@@ -882,6 +882,12 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **Règles de l'utilisateur** : ce sont les classes qui s'adaptent au monde, sauf exception ; aucun familier permanent, pour toutes les classes concernées, seulement des invocations temporaires à la puissance du joueur ; le guerrier ne porte que de la maille, puis de la plaque à partir de la puissance 40 (plus tard).
   - **Choix** : Affliction en premier (passif Moisson : une part des dégâts sur la durée revient en vie) ; les récompenses de maille deviennent leur version en tissu pour un démoniste (pièces et recettes de tissu à créer) ; orc et troll.
   - Les sorts du démoniste infligent un pourcentage des dégâts d'une arme normalisée, comme les techniques du guerrier : l'équipement actuel (puissance d'attaque et endurance) suffit, sans nouvelle caractéristique.
+- **Démoniste, lot D1 : fondations** (02/11/2026) : construit ; pas encore vérifié en jeu.
+  - **Création** : le démoniste orc et le démoniste troll sont ouverts (`ClassMask` 1278 dans `configurer.ps1` et la configuration du serveur, classe dégrisée à l'écran de création).
+  - **Spécialisations de plusieurs classes** (`v3_kit.cpp`) : une table donne, pour chaque spécialisation, sa classe, sa clé (`.kit spe tank`, `.kit spe affliction`), son passif, ses techniques dans l'ordre du récit et ses armes de départ. Le démoniste Affliction y entre sans technique ni passif (lot D2) ; il reçoit la compétence Dagues et une Dague usée.
+  - Ses anciens sorts (famille du démoniste : Trait de l'ombre, invocations de Blizzard…) sont retirés à la création et à chaque application du kit, comme ceux du guerrier ; tout familier est renvoyé (aucun familier permanent).
+  - Sa caractéristique principale (repas) est la Force, qui nourrit la puissance d'attaque que suivent ses sorts.
+  - **Interface** : la fenêtre Spécialisation montre la spécialisation de la classe (« Démoniste — Affliction ») ; la Fiche nomme la spécialisation ; la fenêtre des techniques équipées vaut pour toute spécialisation.
 
 ## 5. Questions pour les prochaines séries
 

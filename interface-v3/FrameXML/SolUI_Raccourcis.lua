@@ -410,7 +410,7 @@ end)
 
 function MajTechniques()
     local techniques = S.etat.techniques or {}
-    local avecSpe = S.etat.spe == 1 and #techniques > 0
+    local avecSpe = (S.etat.spe or 0) >= 1 and #techniques > 0
     S.Montrer(sansSpe, not avecSpe)
     S.Montrer(appliquer, avecSpe)
     S.Montrer(compte, avecSpe)

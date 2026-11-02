@@ -92,31 +92,44 @@ S.Panneau(carte, 0.6)
 local icone = carte:CreateTexture(nil, "ARTWORK")
 icone:SetSize(56, 56)
 icone:SetPoint("TOPLEFT", 16, -16)
-icone:SetTexture("Interface\\Icons\\SolAzeroth_inv_shield_1h_artifactmagnar_d_01")
+-- Lot D1 : une spécialisation prête par classe (guerrier tank, démoniste Affliction).
+local SPES = {
+    WARRIOR = { id = 1, cle = "tank", nom = "Guerrier — Tank", icone = "Interface\\Icons\\SolAzeroth_inv_shield_1h_artifactmagnar_d_01",
+        texte = "Passif Rempart : chaque coup encaissé remplit un bouclier qui absorbe les coups suivants. Le garder "
+            .. "pour tenir, ou le dépenser pour rendre les coups.\nTu commences avec 3 emplacements de "
+            .. "techniques ; d'autres s'ouvrent avec ta puissance (Techniques équipées)." },
+    WARLOCK = { id = 2, cle = "affliction", nom = "Démoniste — Affliction",
+        icone = "Interface\\Icons\\Spell_Shadow_DeathCoil",
+        texte = "Maléfices et drains, à distance : une part des dégâts sur la durée revient en vie. Aucun familier "
+            .. "permanent : les démons sont des invocations de quelques secondes.\nSes techniques ne sont "
+            .. "pas encore prêtes : elles viennent au prochain lot." },
+}
+-- La classe est lue à l'affichage : au chargement de l'interface, elle peut ne pas être connue.
+local function MaSpe() return SPES[select(2, UnitClass("player"))] or SPES.WARRIOR end
 local nomSpe = S.Texte(carte, "Bold", 18, "ambreClair")
 nomSpe:SetPoint("TOPLEFT", 88, -18)
-nomSpe:SetText("Guerrier — Tank")
 local texteSpe = S.Texte(carte, "Regular", 13, "texte")
 texteSpe:SetPoint("TOPLEFT", 88, -46)
 texteSpe:SetWidth(520)
 texteSpe:SetJustifyH("LEFT")
 texteSpe:SetSpacing(3)
-texteSpe:SetText("Passif Rempart : chaque coup encaissé remplit un bouclier qui absorbe les coups suivants. Le garder "
-    .. "pour tenir, ou le dépenser pour rendre les coups.\nTu commences avec 3 emplacements de techniques ; d'autres "
-    .. "s'ouvrent avec ta puissance (Techniques équipées).")
 local etatSpe = S.Texte(spe, "Regular", 13, "gris")
 etatSpe:SetPoint("TOPLEFT", carte, "BOTTOMLEFT", 0, -16)
 etatSpe:SetWidth(632)
 etatSpe:SetJustifyH("LEFT")
 local choisir = S.BoutonPlat(spe, "Choisir cette spécialisation", 260, 40, 14)
 choisir:SetPoint("BOTTOMRIGHT", -24, 20)
-choisir:SetScript("OnClick", function() SendChatMessage(".kit spe tank", "SAY") end)
+choisir:SetScript("OnClick", function() SendChatMessage(".kit spe " .. MaSpe().cle, "SAY") end)
 local versTechniques = S.BoutonPlat(spe, "Techniques équipées", 220, 40, 14)
 versTechniques:SetPoint("BOTTOMRIGHT", -24, 20)
 versTechniques:SetScript("OnClick", function() S.OuvrirCarnet("techniques", 2) end)
 
 local function MajSpe()
-    local choisie = S.etat.spe == 1
+    local maSpe = MaSpe()
+    icone:SetTexture(maSpe.icone)
+    nomSpe:SetText(maSpe.nom)
+    texteSpe:SetText(maSpe.texte)
+    local choisie = S.etat.spe == maSpe.id
     S.Montrer(choisir, S.etat.spe == 0)
     S.Montrer(versTechniques, choisie)
     choisir:Choisir(false)
@@ -134,7 +147,7 @@ spe:SetScript("OnShow", function() MajSpe(); SendChatMessage(".kit", "SAY") end)
 -- Un guerrier sans spécialisation : la page s'ouvre d'elle-même à la première réponse du serveur, et revient après la
 -- cinématique d'introduction (Échap, qui la passe, fermait aussi la page).
 local vueSansSpe = false
-local function SansSpe() return S.etat.spe == 0 and select(2, UnitClass("player")) == "WARRIOR" end
+local function SansSpe() return S.etat.spe == 0 and SPES[select(2, UnitClass("player"))] ~= nil end
 S.Abonner("kit", function()
     if spe:IsShown() then MajSpe() end
     if not vueSansSpe and SansSpe() then

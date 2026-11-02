@@ -165,7 +165,8 @@ local function Maj()
     if not f:IsShown() then return end
     for _, c in pairs(cases) do MajCase(c) end
     nom:SetText(UnitName("player"))
-    spe:SetText(S.etat.spe == 1 and "Guerrier — Tank" or (UnitClass("player")))
+    spe:SetText(S.etat.spe == 1 and "Guerrier — Tank" or S.etat.spe == 2 and "Démoniste — Affliction"
+        or (UnitClass("player")))
 
     -- Niveau d'objet moyen sans les rangs, et nombre de variantes Vol de vie portées.
     local somme, nombre, vols = 0, 0, 0

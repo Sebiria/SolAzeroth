@@ -12,6 +12,10 @@
 //   consomment, Vengeance le demande plein, Frappe du bouclier et Dernier rempart le remplissent, Cri de défi aussi
 //   (SolAzeroth.V3.Rempart.CriDefi % de la vie maximale par ennemi attiré, à la place de la provocation, 31/10/2026).
 // Les sorts eux-mêmes (copies retouchées de sorts de Blizzard) sont générés par outils\techniques_v3.py (migration 061).
+// Démoniste, lot D1 (02/11/2026, « Démoniste — proposition.md ») : les spécialisations sont une table (SPECIALISATIONS) :
+// classe, clé de « .kit spe », passif, techniques dans l'ordre du récit, armes de départ. Le démoniste Affliction y entre
+// sans technique (elles viennent au lot D2). Ses anciens sorts sont retirés comme ceux du guerrier, et il n'a aucun
+// familier permanent (règle de l'utilisateur : seulement des invocations temporaires, pour toutes les classes).
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -20,6 +24,7 @@
 #include "DatabaseEnv.h"
 #include "MotionMaster.h"
 #include "MovementTypedefs.h"
+#include "Pet.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "SpellAuraEffects.h"
@@ -40,10 +45,13 @@ namespace
     uint32 const TICK_REMPART = 250;
     uint8 const SPE_AUCUNE = 0;
     uint8 const SPE_GUERRIER_TANK = 1;
+    uint8 const SPE_DEMONISTE_AFFLICTION = 2;
     uint32 const PASSIF_REMPART = 100009;
     uint32 const SORT_EPEES_1M = 201;          // Épées à une main
     uint32 const EPEE_DE_DEPART = 25;          // Épée courte usée
     uint32 const BOUCLIER_DE_DEPART = 2362;    // Vieux bouclier en bois
+    uint32 const SORT_DAGUES = 1180;           // Dagues
+    uint32 const DAGUE_DE_DEPART = 2092;       // Dague usée
     uint32 const REMPART = 100010;
     size_t const EMPLACEMENTS_DE_DEPART = 3;
     size_t const EQUIPEES_MAX = 8;
@@ -59,8 +67,8 @@ namespace
         bool emplacement;      // ouvre aussi un emplacement
     };
 
-    // Ordre d'affichage, celui du récit.
-    Technique const ORDRE[] =
+    // Guerrier tank. Ordre d'affichage, celui du récit.
+    std::vector<Technique> const ORDRE_TANK =
     {
         { 100011, "Frappe du bouclier", 0, 0, nullptr, false },
         { 100013, "Charge", 0, 0, nullptr, false },
@@ -79,7 +87,52 @@ namespace
         { 100025, "Vengeance", PLUS_TARD, 0, nullptr, true },                    // zone 6
         { 100026, "Dernier rempart", PLUS_TARD, 0, nullptr, false },             // zone 7
     };
-    size_t const NB_TECHNIQUES = std::size(ORDRE);
+
+    // Démoniste Affliction : ses techniques viennent au lot D2 ; en attendant, il n'a que l'attaque automatique.
+    std::vector<Technique> const ORDRE_AFFLICTION = {};
+
+    struct Specialisation
+    {
+        uint8 id;
+        uint8 classe;
+        char const* cle;                                // .kit spe <clé>
+        char const* nom;
+        uint32 famille;                                 // SpellFamilyName des anciens sorts de la classe, retirés
+        uint32 passif;                                  // 0 : aucun pour l'instant
+        std::vector<Technique> const* ordre;
+        uint32 competence;                              // compétence d'arme apprise au choix
+        std::vector<std::pair<uint8, uint32>> armes;    // armes de départ, posées si les mains sont vides
+    };
+
+    std::vector<Specialisation> const SPECIALISATIONS =
+    {
+        { SPE_GUERRIER_TANK, CLASS_WARRIOR, "tank", "guerrier tank", SPELLFAMILY_WARRIOR, PASSIF_REMPART, &ORDRE_TANK,
+          SORT_EPEES_1M, { { EQUIPMENT_SLOT_MAINHAND, EPEE_DE_DEPART }, { EQUIPMENT_SLOT_OFFHAND, BOUCLIER_DE_DEPART } } },
+        { SPE_DEMONISTE_AFFLICTION, CLASS_WARLOCK, "affliction", "démoniste Affliction", SPELLFAMILY_WARLOCK, 0,
+          &ORDRE_AFFLICTION, SORT_DAGUES, { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART } } },
+    };
+
+    Specialisation const* SpeParId(uint8 id)
+    {
+        for (Specialisation const& s : SPECIALISATIONS)
+            if (s.id == id)
+                return &s;
+        return nullptr;
+    }
+
+    // Une classe qui a une spécialisation v3 : ses anciens sorts sont retirés et le kit s'applique.
+    Specialisation const* PremiereDeLaClasse(uint8 classe)
+    {
+        for (Specialisation const& s : SPECIALISATIONS)
+            if (s.classe == classe)
+                return &s;
+        return nullptr;
+    }
+
+    bool ClasseGeree(Player* player)
+    {
+        return PremiereDeLaClasse(player->getClass()) != nullptr;
+    }
 
     struct Reglages
     {
@@ -94,7 +147,7 @@ namespace
     {
         uint8 spe = SPE_AUCUNE;
         std::vector<uint32> equipees;
-        uint32 debloquees = 0;              // un bit par technique de ORDRE
+        uint32 debloquees = 0;              // un bit par technique de l'ordre de la spécialisation
         bool applique = false;              // pas encore appliqué depuis la connexion
         uint32 attente = 0;
         uint32 attenteRempart = 0;
@@ -106,9 +159,16 @@ namespace
         return player->CustomData.GetDefault<Kit>("solazeroth_v3_kit");
     }
 
-    bool EstTechnique(uint32 sort)
+    std::vector<Technique> const& OrdreDe(Player* player)
     {
-        for (Technique const& t : ORDRE)
+        static std::vector<Technique> const aucun;
+        Specialisation const* s = SpeParId(KitDe(player)->spe);
+        return s && s->classe == player->getClass() ? *s->ordre : aucun;
+    }
+
+    bool EstTechnique(std::vector<Technique> const& ordre, uint32 sort)
+    {
+        for (Technique const& t : ordre)
             if (t.sort == sort)
                 return true;
         return false;
@@ -116,9 +176,10 @@ namespace
 
     char const* NomDe(uint32 sort)
     {
-        for (Technique const& t : ORDRE)
-            if (t.sort == sort)
-                return t.nom;
+        for (Specialisation const& s : SPECIALISATIONS)
+            for (Technique const& t : *s.ordre)
+                if (t.sort == sort)
+                    return t.nom;
         return "?";
     }
 
@@ -135,26 +196,27 @@ namespace
 
     uint32 Debloquees(Player* player)
     {
+        std::vector<Technique> const& ordre = OrdreDe(player);
         uint32 masque = 0;
-        for (size_t i = 0; i < NB_TECHNIQUES; ++i)
-            if (Ouverte(player, ORDRE[i]))
+        for (size_t i = 0; i < ordre.size(); ++i)
+            if (Ouverte(player, ordre[i]))
                 masque |= 1u << i;
         return masque;
     }
 
-    size_t Emplacements(uint32 debloquees)
+    size_t Emplacements(std::vector<Technique> const& ordre, uint32 debloquees)
     {
         size_t emplacements = EMPLACEMENTS_DE_DEPART;
-        for (size_t i = 0; i < NB_TECHNIQUES; ++i)
-            if (ORDRE[i].emplacement && (debloquees & (1u << i)))
+        for (size_t i = 0; i < ordre.size(); ++i)
+            if (ordre[i].emplacement && (debloquees & (1u << i)))
                 ++emplacements;
         return std::min(emplacements, EQUIPEES_MAX);
     }
 
-    bool EstDebloquee(uint32 sort, uint32 debloquees)
+    bool EstDebloquee(std::vector<Technique> const& ordre, uint32 sort, uint32 debloquees)
     {
-        for (size_t i = 0; i < NB_TECHNIQUES; ++i)
-            if (ORDRE[i].sort == sort)
+        for (size_t i = 0; i < ordre.size(); ++i)
+            if (ordre[i].sort == sort)
                 return debloquees & (1u << i);
         return false;
     }
@@ -231,13 +293,14 @@ namespace
     void Envoyer(Player* player)
     {
         Kit* kit = KitDe(player);
+        std::vector<Technique> const& ordre = OrdreDe(player);
         uint32 debloquees = Debloquees(player);
         std::string message = Acore::StringFormat("ETAT;{};{:.0f};{};", kit->spe, SolAzeroth::PuissanceJoueur(player),
-            Emplacements(debloquees));
-        for (size_t i = 0; i < NB_TECHNIQUES; ++i)
+            Emplacements(ordre, debloquees));
+        for (size_t i = 0; i < ordre.size(); ++i)
         {
-            bool equipee = std::find(kit->equipees.begin(), kit->equipees.end(), ORDRE[i].sort) != kit->equipees.end();
-            message += Acore::StringFormat("{}{}:{}", i ? "," : "", ORDRE[i].sort,
+            bool equipee = std::find(kit->equipees.begin(), kit->equipees.end(), ordre[i].sort) != kit->equipees.end();
+            message += Acore::StringFormat("{}{}:{}", i ? "," : "", ordre[i].sort,
                 !(debloquees & (1u << i)) ? 0 : (equipee ? 2 : 1));
         }
         SolAzeroth::EnvoyerAddon(player, PREFIXE, message);
@@ -267,47 +330,53 @@ namespace
     void Appliquer(Player* player)
     {
         Kit* kit = KitDe(player);
-        if (player->getClass() != CLASS_WARRIOR)
+        Specialisation const* classe = PremiereDeLaClasse(player->getClass());
+        if (!classe)
             return;
 
-        // Anciens sorts du guerrier : postures, Frappe héroïque… Les techniques v3 sont hors de la famille du guerrier.
+        // Anciens sorts de la classe : postures, Frappe héroïque, Trait de l'ombre de Blizzard… Les techniques v3 sont hors
+        // de la famille de la classe.
         std::vector<uint32> anciens;
         for (auto const& [sort, etat] : player->GetSpellMap())
             if (etat->State != PLAYERSPELL_REMOVED)
                 if (SpellInfo const* info = sSpellMgr->GetSpellInfo(sort))
-                    if (info->SpellFamilyName == SPELLFAMILY_WARRIOR)
+                    if (info->SpellFamilyName == classe->famille)
                         anciens.push_back(sort);
         for (uint32 sort : anciens)
             player->removeSpell(sort, SPEC_MASK_ALL, false);
+        // Aucun familier permanent (règle de l'utilisateur, 02/11/2026) : les invocations seront des techniques.
+        if (Pet* familier = player->GetPet())
+            player->RemovePet(familier, PET_SAVE_AS_DELETED);
 
-        uint32 debloquees = kit->spe == SPE_GUERRIER_TANK ? Debloquees(player) : 0;
-        size_t emplacements = Emplacements(debloquees);
+        std::vector<Technique> const& ordre = OrdreDe(player);
+        uint32 debloquees = kit->spe != SPE_AUCUNE ? Debloquees(player) : 0;
+        size_t emplacements = Emplacements(ordre, debloquees);
         if (kit->applique)
-            for (size_t i = 0; i < NB_TECHNIQUES; ++i)
+            for (size_t i = 0; i < ordre.size(); ++i)
                 if ((debloquees & (1u << i)) && !(kit->debloquees & (1u << i)))
                     ChatHandler(player->GetSession()).PSendSysMessage("|cff40c0ff{} t'enseigne une nouvelle technique : {}.{}|r "
                         "Équipe-la : carnet Techniques (touche K), onglet Techniques équipées.",
-                        ORDRE[i].maitre ? ORDRE[i].maitre : "On", ORDRE[i].nom,
-                        ORDRE[i].emplacement ? Acore::StringFormat(" Un emplacement de plus ({}).", emplacements) : "");
+                        ordre[i].maitre ? ordre[i].maitre : "On", ordre[i].nom,
+                        ordre[i].emplacement ? Acore::StringFormat(" Un emplacement de plus ({}).", emplacements) : "");
         kit->debloquees = debloquees;
         kit->applique = true;
 
         // Techniques équipées : seulement celles qui sont débloquées, complétées dans l'ordre jusqu'aux emplacements.
         std::vector<uint32> equipees;
         for (uint32 sort : kit->equipees)
-            if (EstDebloquee(sort, debloquees) && std::find(equipees.begin(), equipees.end(), sort) == equipees.end()
+            if (EstDebloquee(ordre, sort, debloquees) && std::find(equipees.begin(), equipees.end(), sort) == equipees.end()
                 && equipees.size() < emplacements)
                 equipees.push_back(sort);
-        for (size_t i = 0; i < NB_TECHNIQUES && equipees.size() < emplacements; ++i)
-            if ((debloquees & (1u << i)) && std::find(equipees.begin(), equipees.end(), ORDRE[i].sort) == equipees.end())
-                equipees.push_back(ORDRE[i].sort);
+        for (size_t i = 0; i < ordre.size() && equipees.size() < emplacements; ++i)
+            if ((debloquees & (1u << i)) && std::find(equipees.begin(), equipees.end(), ordre[i].sort) == equipees.end())
+                equipees.push_back(ordre[i].sort);
         if (equipees != kit->equipees)
         {
             kit->equipees = equipees;
             Sauver(player);
         }
 
-        for (Technique const& t : ORDRE)
+        for (Technique const& t : ordre)
         {
             bool equipee = std::find(equipees.begin(), equipees.end(), t.sort) != equipees.end();
             if (equipee && !player->HasSpell(t.sort))
@@ -315,11 +384,16 @@ namespace
             else if (!equipee && player->HasSpell(t.sort))
                 player->removeSpell(t.sort, SPEC_MASK_ALL, false);
         }
-        bool passif = kit->spe == SPE_GUERRIER_TANK;
-        if (passif && !player->HasSpell(PASSIF_REMPART))
-            player->learnSpell(PASSIF_REMPART);
-        else if (!passif && player->HasSpell(PASSIF_REMPART))
-            player->removeSpell(PASSIF_REMPART, SPEC_MASK_ALL, false);
+        for (Specialisation const& s : SPECIALISATIONS)
+        {
+            if (!s.passif || s.classe != player->getClass())
+                continue;
+            bool passif = s.id == kit->spe;
+            if (passif && !player->HasSpell(s.passif))
+                player->learnSpell(s.passif);
+            else if (!passif && player->HasSpell(s.passif))
+                player->removeSpell(s.passif, SPEC_MASK_ALL, false);
+        }
 
         PoserSurLaBarre(player);
         Envoyer(player);
@@ -331,7 +405,8 @@ namespace
 // Caractéristique principale de la spécialisation (repas, v3_cuisine.cpp) ; sans spécialisation, celle de la classe.
 unsigned char SolAzeroth::CaracteristiquePrincipale(Player* player)
 {
-    if (KitDe(player)->spe == SPE_GUERRIER_TANK)
+    // Démoniste Affliction : ses sorts suivent les dégâts de l'arme, donc la puissance d'attaque, que nourrit la Force.
+    if (KitDe(player)->spe == SPE_GUERRIER_TANK || KitDe(player)->spe == SPE_DEMONISTE_AFFLICTION)
         return STAT_STRENGTH;
     switch (player->getClass())
     {
@@ -538,16 +613,17 @@ public:
 
     // F5d (31/10/2026) : le guerrier naît sans ses anciens sorts (Frappe héroïque, Posture de combat…) ni barre
     // d'action. Sinon Appliquer les retire à la première connexion, et le jeu l'annonce dans la discussion.
-    // Le personnage est déjà enregistré : on corrige la base avant sa première connexion.
+    // Le personnage est déjà enregistré : on corrige la base avant sa première connexion. Lot D1 : le démoniste aussi.
     void OnPlayerCreate(Player* player) override
     {
-        if (player->getClass() != CLASS_WARRIOR)
+        Specialisation const* classe = PremiereDeLaClasse(player->getClass());
+        if (!classe)
             return;
         uint32 guid = player->GetGUID().GetCounter();
         std::string sorts;
         for (auto const& [sort, etat] : player->GetSpellMap())
             if (SpellInfo const* info = sSpellMgr->GetSpellInfo(sort))
-                if (info->SpellFamilyName == SPELLFAMILY_WARRIOR)
+                if (info->SpellFamilyName == classe->famille)
                     sorts += (sorts.empty() ? "" : ",") + std::to_string(sort);
         if (!sorts.empty())
             CharacterDatabase.DirectExecute("DELETE FROM character_spell WHERE guid = {} AND spell IN ({})", guid, sorts);
@@ -574,7 +650,7 @@ public:
                 kit->equipees.push_back(sort);
         }
         // Le kit s'applique au premier passage de OnPlayerUpdate, une fois la puissance calculée (v3_combat.cpp).
-        if (player->getClass() == CLASS_WARRIOR && kit->spe == SPE_AUCUNE)
+        if (ClasseGeree(player) && kit->spe == SPE_AUCUNE)
             ChatHandler(player->GetSession()).SendSysMessage("|cff40c0ffChoisis ta spécialisation : carnet Techniques (touche K), onglet Spécialisation.|r");
     }
 
@@ -600,7 +676,7 @@ public:
         kit->attente = 0;
         // Le Rempart est renvoyé au moins toutes les 2 s : l'interface v3 (F4) le retrouve après un /reload.
         kit->rempartEnvoye.clear();
-        if (player->getClass() != CLASS_WARRIOR)
+        if (!ClasseGeree(player))
             return;
         if (!kit->applique || (kit->spe != SPE_AUCUNE && Debloquees(player) != kit->debloquees))
             Appliquer(player);
@@ -655,14 +731,19 @@ public:
         return true;
     }
 
-    // .kit spe tank : choix de la spécialisation, une fois pour toutes (le changement viendra plus tard).
+    // .kit spe tank|affliction : choix de la spécialisation, une fois pour toutes (le changement viendra plus tard).
     static bool HandleSpe(ChatHandler* handler, std::string nom)
     {
         Player* player = handler->GetPlayer();
         Kit* kit = KitDe(player);
-        if (player->getClass() != CLASS_WARRIOR || nom != "tank")
+        Specialisation const* choisie = nullptr;
+        for (Specialisation const& s : SPECIALISATIONS)
+            if (s.classe == player->getClass() && nom == s.cle)
+                choisie = &s;
+        if (!choisie)
         {
-            handler->SendErrorMessage("Seule la spécialisation tank du guerrier existe pour l'instant.");
+            handler->SendErrorMessage("Spécialisations prêtes : guerrier tank (.kit spe tank), démoniste Affliction "
+                "(.kit spe affliction).");
             return false;
         }
         if (kit->spe != SPE_AUCUNE)
@@ -670,12 +751,11 @@ public:
             handler->SendErrorMessage("Ta spécialisation est déjà choisie.");
             return false;
         }
-        kit->spe = SPE_GUERRIER_TANK;
-        // Armes de la spécialisation, si les mains sont vides : Épée courte usée et Vieux bouclier en bois.
-        if (!player->HasSpell(SORT_EPEES_1M))
-            player->learnSpell(SORT_EPEES_1M);
-        for (auto [emplacement, objet] : { std::pair<uint8, uint32>{ EQUIPMENT_SLOT_MAINHAND, EPEE_DE_DEPART },
-                                           std::pair<uint8, uint32>{ EQUIPMENT_SLOT_OFFHAND, BOUCLIER_DE_DEPART } })
+        kit->spe = choisie->id;
+        // Armes de la spécialisation, si les mains sont vides : Épée courte usée et Vieux bouclier en bois ; Dague usée.
+        if (!player->HasSpell(choisie->competence))
+            player->learnSpell(choisie->competence);
+        for (auto [emplacement, objet] : choisie->armes)
         {
             uint16 destination;
             if (!player->GetItemByPos(INVENTORY_SLOT_BAG_0, emplacement)
@@ -690,7 +770,8 @@ public:
         for (uint8 bouton = 0; bouton < 12; ++bouton)
             player->removeActionButton(bouton);
         Appliquer(player);
-        handler->SendSysMessage("|cff40c0ffSpécialisation choisie : guerrier tank. Le Rempart et tes premières techniques sont prêts.|r");
+        handler->PSendSysMessage("|cff40c0ffSpécialisation choisie : {}. {}|r", choisie->nom, choisie->id == SPE_GUERRIER_TANK
+            ? "Le Rempart et tes premières techniques sont prêts." : "Ses techniques ne sont pas encore prêtes.");
         return true;
     }
 
@@ -710,13 +791,14 @@ public:
             handler->SendErrorMessage("Les techniques se changent hors combat.");
             return false;
         }
+        std::vector<Technique> const& ordre = OrdreDe(player);
         uint32 debloquees = Debloquees(player);
-        size_t emplacements = Emplacements(debloquees);
+        size_t emplacements = Emplacements(ordre, debloquees);
         std::vector<uint32> equipees;
         std::istringstream flux{ std::string(liste) };
         for (uint32 sort; flux >> sort;)
         {
-            if (!EstTechnique(sort) || !EstDebloquee(sort, debloquees))
+            if (!EstTechnique(ordre, sort) || !EstDebloquee(ordre, sort, debloquees))
             {
                 handler->SendErrorMessage("Technique inconnue ou pas encore débloquée.");
                 return false;
