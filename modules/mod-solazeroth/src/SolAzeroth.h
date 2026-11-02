@@ -249,6 +249,7 @@ void AddSC_solazeroth_v3_fournisseur();
 void AddSC_solazeroth_v3_semaine();
 void AddSC_solazeroth_v3_paroles();
 void AddSC_solazeroth_v3_rares_secrets();
+void AddSC_solazeroth_v3_filons();
 void AddSC_solazeroth_v3_journal();
 void AddSC_solazeroth_v3_mort();
 void AddSC_solazeroth_v3_bivouac();
