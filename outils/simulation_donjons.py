@@ -2,15 +2,20 @@
 
 1. Difficultés : la fiche la plus forte des journaux (puissance 9,7), avec F7 (potion rang 2, Repos) et 0, 2 ou 4 rangs
    d'objet, contre un Massacreur de la Lame brûlante (11323, élite) et Taragaman l'Affameur (11520, dernier boss) :
-   - difficulté 1 : puissance d'origine (15 et 16) ;
-   - difficultés 2 à 5 : puissance de base du joueur (sans les rangs) + écart, vie et dégâts × facteur ; les techniques
+   - difficulté 1 : puissance de la base (celle du calibrage du Gouffre, migration 102) ;
+   - difficultés 2 à 5 : puissance de base du joueur (sans les rangs) arrondie en dessous + écart, ou celle du monstre
+     si elle est plus forte (v3_modes.cpp), vie et dégâts × facteur ; les techniques
      (Enragé, Renforçant, Volcanique, Explosif, Fortifié, Tyrannique) ne sont pas simulées une à une : chacune compte
      pour + TECHNIQUE de dégâts subis, et Fortifié/Tyrannique sont dans le facteur moyen.
 2. Passifs : contre un monstre réglé pour que la fiche gagne environ une fois sur deux, victoires avec chaque passif
    simulable, à comparer avec « + 5 % de puissance » (+ 5 % de dégâts infligés et − 5 % de dégâts subis).
+Audit du jeu, lot 2 (02/11/2026) : le monstre des passifs est réglé par dichotomie et sa référence mesurée sur le
+monstre retenu (avant : pas de ± 5 % qui oscillaient, puis une référence prise avant le dernier pas, d'où des passifs
+tous négatifs) ; puissance visée arrondie en dessous, comme le serveur.
 
 py simulation_donjons.py
 """
+import math
 import os
 import sys
 
@@ -55,7 +60,6 @@ def difficultes(joueur):
     print("   %-18s %s" % ("", "   ".join("diff. %d     " % d for d in range(1, 6))))
     for n in (0, 2, 4):
         j = camp.repos(modes.rangs(joueur, n), 5)
-        base = round(joueur.puissance)          # sans les rangs
         cases = []
         for d in range(1, 6):
             paire = []
@@ -64,9 +68,8 @@ def difficultes(joueur):
                     m = sim.monstre_depuis_base(entree)
                 else:
                     ecart, facteur, techniques = DIFFICULTES[d]
-                    origine = sim.monstre_depuis_base(entree).puissance
-                    m = modes.renforcer(sim.monstre_depuis_base(entree, max(origine, base + ecart)), facteur,
-                                        1 + TECHNIQUE * techniques)
+                    m = modes.renforcer(sim.monstre_depuis_base(entree, modes.puissance_visee(joueur, ecart, entree)),
+                                        facteur, 1 + TECHNIQUE * techniques)
                 paire.append("%3.0f" % taux(j, m))
             cases.append(" / ".join(paire))
         print("   %-18s %s" % ("+ %d rangs d'objet" % n, "   ".join("%-12s" % c for c in cases)))
@@ -77,7 +80,7 @@ def etalonnees(joueur):
     de victoires sans rang d'objet (le Gouffre n'est pas encore calibré pour la v3), puis chaque difficulté appliquée
     à cet élite étalonné."""
     j0 = camp.repos(joueur, 5)
-    base = round(joueur.puissance)
+    base = math.floor(joueur.puissance)
     reglage = 1.0
     for _ in range(60):
         m = modes.renforcer(sim.monstre_depuis_base(ELITE, base), reglage, 1.0)
@@ -97,13 +100,19 @@ def etalonnees(joueur):
 
 def passifs(joueur):
     j = camp.repos(joueur, 5)
-    niveau = round(joueur.puissance)
-    m = sim.monstre_depuis_base(3122, niveau)
-    for _ in range(40):
-        t = taux(j, m)
-        if 40 <= t <= 60:
+    niveau = math.floor(joueur.puissance)
+    bas, haut = 0.2, 5.0                    # facteur de vie et de dégâts du monstre
+    for _ in range(14):
+        k = (bas + haut) / 2
+        t = taux(j, modes.renforcer(sim.monstre_depuis_base(3122, niveau), k, 1.0))
+        if 45 <= t <= 55:
             break
-        m = modes.renforcer(m, 1.05 if t > 60 else 0.95, 1.0)
+        if t > 55:
+            bas = k
+        else:
+            haut = k
+    m = modes.renforcer(sim.monstre_depuis_base(3122, niveau), k, 1.0)
+    t = taux(j, m)
     print("\n2. Passifs, contre un fouette-queue réglé à %.0f %% de victoires (vie %d, coups %d-%d)" % (t, m.vie, m.bas, m.haut))
     for nom, p in PASSIFS.items():
         print("   %-46s %3.0f %%  (%+.0f)" % (nom, taux(j, m, passifs=p), taux(j, m, passifs=p) - t))

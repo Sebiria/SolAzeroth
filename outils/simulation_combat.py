@@ -308,6 +308,7 @@ MONSTRE = re.compile(r"Monstre (.+?) \(entrée (\d+)\) : puissance (\d+), vie \d
                      r"toutes les ([\d.]+) s")
 BILAN = re.compile(r"Bilan du combat (\d+) : ([\d.]+) s, (\d+) monstre.*vie (\d+)/(\d+)")
 POISON = re.compile(r"-> (\S+) \| (.+?) \((\d+)\) \[périodique\] \| (\d+) \| armure -0 \| absorbé (\d+)")
+SORT = re.compile(r"^\s*[\d.]+ s  (.+?) -> \S+ \| .+? \((\d+)\)( \[périodique\])? \|")
 
 
 def dernier_journal():
@@ -316,12 +317,13 @@ def dernier_journal():
 
 
 def lire_journal(chemin):
-    """Combats du journal : [{joueur, monstres, bilan, poison}]."""
+    """Combats du journal : [{joueur, monstres, bilan, poison, sorts}] ; « sorts » : sorts lancés par les monstres
+    (hors dégâts sur la durée), pour ne comparer au simulateur de mêlée que les combats qui n'en ont pas."""
     combats, courant = [], None
     with open(chemin, encoding="utf-8") as f:
         for ligne in f:
             if ligne.startswith("=== Combat"):
-                courant = {"joueur": None, "monstres": [], "bilan": None, "ticks": []}
+                courant = {"joueur": None, "monstres": [], "bilan": None, "ticks": [], "sorts": set()}
                 combats.append(courant)
             elif courant is None:
                 continue
@@ -335,6 +337,8 @@ def lire_journal(chemin):
             elif m := POISON.search(ligne):
                 temps = float(ligne.split("s")[0])
                 courant["ticks"].append((temps, int(m[4]) + int(m[5])))
+            elif (m := SORT.match(ligne)) and not m[3] and courant["joueur"] and m[1] != courant["joueur"].nom:
+                courant["sorts"].add(int(m[2]))
             elif m := BILAN.search(ligne):
                 courant["bilan"] = {"duree": float(m[2]), "tues": int(m[3]), "vie": int(m[4])}
     for c in combats:
@@ -347,13 +351,18 @@ def lire_journal(chemin):
 
 
 # --- Fiches bâties depuis la base ---------------------------------------------------------------------------------
-def monstre_depuis_base(entree, niveau=None):
+def monstre_depuis_base(entree, niveau=None, reglages=None):
+    """Fiche du monstre tirée de la base ; « reglages » remplace ses modificateurs de vie et de dégâts (anciens
+    réglages gardés par les migrations de calibrage, pour relire un journal écrit avant elles)."""
     l = sql("SELECT COALESCE(NULLIF(lo.Name, ''), t.name), t.minlevel, t.maxlevel, t.unit_class, t.`exp`, "
             "t.HealthModifier, t.DamageModifier, t.ArmorModifier, t.BaseAttackTime, t.BaseVariance, t.`rank` "
             "FROM acore_world.creature_template t LEFT JOIN acore_world.creature_template_locale lo "
             "ON lo.entry = t.entry AND lo.locale = 'frFR' WHERE t.entry = %d" % entree)[0]
     nom, bas, haut, classe, extension = l[0], int(l[1]), int(l[2]), int(l[3]), int(l[4])
     vie_mod, degats_mod, armure_mod = float(l[5]), float(l[6]), float(l[7])
+    if reglages:
+        vie_mod = reglages.get("HealthModifier", vie_mod)
+        degats_mod = reglages.get("DamageModifier", degats_mod)
     vitesse, variance = int(l[8]) / 1000.0, float(l[9])
     niveau = niveau or haut
     s = sql("SELECT basehp%d, basearmor, attackpower, damage_base, damage_exp1, damage_exp2 FROM "
@@ -362,7 +371,8 @@ def monstre_depuis_base(entree, niveau=None):
     pa = float(s[2])
     minimum = (base + pa / 14.0 * variance) * degats_mod * vitesse
     maximum = (base * 1.5 + pa / 14.0 * variance) * degats_mod * vitesse
-    fiche = Fiche(nom, round(int(s[0]) * vie_mod * MONSTRES_VIE), round(int(s[1]) * armure_mod),
+    # Vie : arrondie au-dessus par le jeu (CreatureBaseStats::GenerateHealth), puis multipliée par v3_niveau.cpp.
+    fiche = Fiche(nom, max(1, int(math.ceil(int(s[0]) * vie_mod) * MONSTRES_VIE)), round(int(s[1]) * armure_mod),
                   round(minimum), round(maximum), vitesse, CRITIQUE_MONSTRE, niveau)
     fiche.entree = entree
     return fiche
