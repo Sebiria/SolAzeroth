@@ -14,6 +14,12 @@
 //   chaque boss (rencontres d'instance) en donne un avec 15 % de chances par difficulté, et le dernier des boss
 //   tués d'une instance en donne un de plus. Il sert aux pièces bleues (outils\equipement_gouffre_v3.py).
 // - Interface (préfixe SOLDONJON) : « DONJON;difficulté;ouvertes;verrouillé;techniques » en donjon, « AUCUN » dehors.
+// - Téléportation (02/11/2026, demande de l'utilisateur, à la place de .reinitialiser) : un donjon dont le dernier
+//   boss est tombé au moins une fois (au compte, solazeroth_v3_aventurier genre 7) se rejoint de n'importe où, hors
+//   combat et hors d'une instance, par .teleportdonjon <carte> (carnet Aventure, onglet Téléportation). Le donjon est
+//   remis à zéro avant : instance neuve, difficulté à choisir à l'entrée. Arrivée : celle de l'entrée du donjon
+//   (areatrigger_teleport) ; les conditions d'entrée restent (Gouffre de Ragefeu : v3_gouffre.cpp). Interface (préfixe
+//   SOLTELEPORT) : « DEBUT », un « DONJON;carte;nom » par donjon terminé, « FIN ».
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -21,13 +27,17 @@
 #include "Containers.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "DBCStores.h"
+#include "InstanceSaveMgr.h"
 #include "Map.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "Random.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
+#include "World.h"
 #include "WorldSession.h"
+#include <map>
 #include <set>
 #include <unordered_map>
 #include <vector>
@@ -56,6 +66,43 @@ namespace
     std::unordered_map<uint32, uint32> bossesParCarte;  // carte -> nombre de boss
     std::unordered_map<uint32, uint32> composants;      // carte -> composant de donjon
     uint32 const CHANCE_COMPOSANT = 15;                 // % par difficulté, à chaque boss
+    uint8 const AVENTURIER_DONJON = 7;                  // genre « donjon terminé » de v3_aventurier.cpp
+
+    struct Destination
+    {
+        float x, y, z, o;
+        std::string nom;
+    };
+    std::map<uint32, Destination> destinations;          // carte -> entrée du donjon
+    std::unordered_map<uint32, std::set<uint32>> termines;   // compte -> cartes des donjons terminés
+
+    std::set<uint32>& Termines(uint32 compte)
+    {
+        auto it = termines.find(compte);
+        if (it != termines.end())
+            return it->second;
+        std::set<uint32>& cartes = termines[compte];
+        if (QueryResult r = CharacterDatabase.Query("SELECT cle FROM solazeroth_v3_aventurier WHERE compte = {} AND genre = {}",
+            compte, AVENTURIER_DONJON))
+        {
+            do
+                cartes.insert((*r)[0].Get<uint32>());
+            while (r->NextRow());
+        }
+        return cartes;
+    }
+
+    void EnvoyerDestinations(Player* player)
+    {
+        SolAzeroth::EnvoyerAddon(player, "SOLTELEPORT", "DEBUT");
+        for (uint32 carte : Termines(player->GetSession()->GetAccountId()))
+        {
+            auto d = destinations.find(carte);
+            if (d != destinations.end())
+                SolAzeroth::EnvoyerAddon(player, "SOLTELEPORT", Acore::StringFormat("DONJON;{};{}", carte, d->second.nom));
+        }
+        SolAzeroth::EnvoyerAddon(player, "SOLTELEPORT", "FIN");
+    }
 
     struct Suivi : DataMap::Base
     {
@@ -237,6 +284,8 @@ public:
         Gagner(player, points * difficulte);
         if (boss)
             ComposantDeDonjon(player, map, creature->GetEntry(), difficulte);
+        if (final && map->IsNonRaidDungeon())
+            Termines(player->GetSession()->GetAccountId()).insert(map->GetId());
         if (!final || difficulte < 2)
             return;
         SolAzeroth::DonnerMarques(player, 2 * (difficulte - 1), Acore::StringFormat("difficulté {}", uint32(difficulte)));
@@ -328,6 +377,23 @@ public:
                 composants[(*r)[0].Get<uint32>()] = (*r)[1].Get<uint32>();
             while (r->NextRow());
         }
+        // Entrée de chaque donjon : la première porte (areatrigger_teleport) qui y mène.
+        destinations.clear();
+        LocaleConstant langue = sWorld->GetDefaultDbcLocale();
+        if (QueryResult r = WorldDatabase.Query("SELECT target_map, target_position_x, target_position_y, target_position_z, "
+            "target_orientation FROM areatrigger_teleport ORDER BY ID"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                uint32 carte = f[0].Get<uint32>();
+                MapEntry const* m = sMapStore.LookupEntry(carte);
+                if (!m || !m->IsNonRaidDungeon() || destinations.count(carte))
+                    continue;
+                destinations[carte] = { f[1].Get<float>(), f[2].Get<float>(), f[3].Get<float>(), f[4].Get<float>(),
+                    m->name[langue][0] ? m->name[langue] : m->name[0] };
+            } while (r->NextRow());
+        }
         LOG_INFO("module", ">> Sol'Azeroth v3 : difficultés de donjon, {} instance(s) en cours", instances.size());
     }
 };
@@ -342,8 +408,42 @@ public:
         static ChatCommandTable commandes =
         {
             { "donjon", HandleDonjon, SEC_PLAYER, Console::No },
+            { "teleportdonjon", HandleTeleportDonjon, SEC_PLAYER, Console::No },
         };
         return commandes;
+    }
+
+    // .teleportdonjon : liste des donjons terminés (interface) ; .teleportdonjon <carte> : remise à zéro et départ.
+    static bool HandleTeleportDonjon(ChatHandler* handler, Optional<uint32> carte)
+    {
+        Player* player = handler->GetPlayer();
+        if (!carte)
+        {
+            EnvoyerDestinations(player);
+            return true;
+        }
+        auto d = destinations.find(*carte);
+        if (d == destinations.end() || !Termines(player->GetSession()->GetAccountId()).count(*carte))
+        {
+            handler->SendErrorMessage("Ce donjon n'est pas encore terminé : la téléportation s'ouvre à la chute de son dernier boss.");
+            return false;
+        }
+        if (player->GetMap()->Instanceable())
+        {
+            handler->SendErrorMessage("Sors d'abord de l'instance.");
+            return false;
+        }
+        if (player->IsInCombat() || !player->IsAlive() || player->IsInFlight())
+        {
+            handler->SendErrorMessage("Pas en combat, ni mort, ni en vol.");
+            return false;
+        }
+        for (uint8 difficulte = 0; difficulte < MAX_DIFFICULTY; ++difficulte)
+            if (sInstanceSaveMgr->PlayerGetBoundInstance(player->GetGUID(), *carte, Difficulty(difficulte)))
+                sInstanceSaveMgr->PlayerUnbindInstance(player->GetGUID(), *carte, Difficulty(difficulte), true, player);
+        handler->PSendSysMessage("{} remis à zéro : instance neuve.", d->second.nom);
+        player->TeleportTo(*carte, d->second.x, d->second.y, d->second.z, d->second.o);
+        return true;
     }
 
     // .donjon : état ; .donjon <1-5> : difficulté du donjon, avant le premier combat.

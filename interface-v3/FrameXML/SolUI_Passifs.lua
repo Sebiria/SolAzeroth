@@ -7,6 +7,7 @@
 --   clic sur un passif : il va dans l'emplacement choisi, ou en sort s'il y est déjà.
 -- - Fenêtre d'entrée de donjon : au premier pas dans un donjon, tant que le premier combat n'est pas livré, choix de
 --   la difficulté (1 à 5, celles qu'ouvre le rang d'aventurier) et techniques des monstres tirées pour le donjon.
+-- - Fenêtre de téléportation (carnet Aventure, onglet Téléportation) : les donjons terminés, à rejoindre remis à zéro.
 
 local S = SolUI
 
@@ -348,6 +349,54 @@ S.Message("SOLDONJON", function(champs)
     end
     dedans = true
     if d:IsShown() then MajDonjon() end
+end)
+
+------------------------------------------------------------------------
+-- Téléportation (02/11/2026, demande de l'utilisateur) : vers un donjon terminé, remis à zéro (v3_donjons.cpp)
+------------------------------------------------------------------------
+local tp = S.Fenetre("SolUITeleportation", 560, 400, "Téléportation vers les donjons")
+local consigneTp = S.Texte(tp, "Regular", 12, "gris")
+consigneTp:SetPoint("TOPLEFT", tp, "TOPLEFT", 28, -66)
+consigneTp:SetWidth(504)
+consigneTp:SetJustifyH("LEFT")
+consigneTp:SetText("Un donjon dont le dernier boss est tombé au moins une fois se rejoint d'ici, hors combat et hors "
+    .. "d'une instance. Il est remis à zéro avant le départ : instance neuve, difficulté à choisir à l'entrée.")
+local videTp = S.Texte(tp, "Regular", 13, "texte")
+videTp:SetPoint("TOPLEFT", tp, "TOPLEFT", 28, -124)
+videTp:SetWidth(504)
+videTp:SetJustifyH("LEFT")
+videTp:SetText("Aucun donjon terminé pour l'instant.")
+local departs = {}
+for i = 1, 6 do
+    local b = S.BoutonPlat(tp, "", 504, 36, 13)
+    b:SetPoint("TOPLEFT", tp, "TOPLEFT", 28, -124 - (i - 1) * 42)
+    b:Hide()
+    departs[i] = b
+end
+
+local destinations, recues = {}, nil
+local function MajTeleportation()
+    S.Montrer(videTp, #destinations == 0)
+    for i, b in ipairs(departs) do
+        local e = destinations[i]
+        S.Montrer(b, e ~= nil)
+        if e then
+            b.texte:SetText(e.nom .. "  ·  entrer, instance neuve")
+            b:SetScript("OnClick", function() Commande(".teleportdonjon " .. e.carte); tp:Hide() end)
+        end
+    end
+end
+tp:SetScript("OnShow", function() MajTeleportation(); Commande(".teleportdonjon") end)
+
+S.Message("SOLTELEPORT", function(champs)
+    if champs[1] == "DEBUT" then
+        recues = {}
+    elseif recues and champs[1] == "DONJON" then
+        table.insert(recues, { carte = tonumber(champs[2]), nom = champs[3] or "?" })
+    elseif recues and champs[1] == "FIN" then
+        destinations, recues = recues, nil
+        if tp:IsShown() then MajTeleportation() end
+    end
 end)
 
 -- Réponse du serveur « Emplacement 2 : passif 47. » : le nom du passif à la place de son numéro (signalement du

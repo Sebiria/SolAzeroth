@@ -46,6 +46,8 @@ S.CARNETS = {
         { nom = "Montures", cadre = Fenetre("SolUIAventurier"), page = function() S.PageAventurier(2) end },
         { nom = "Passifs extérieurs", cadre = Fenetre("SolUIPassifs"), page = function() S.PagePassifs(2) end },
         { nom = "Donjons", cadre = Fenetre("SolUIPassifs"), page = function() S.PagePassifs(1) end },
+        -- 02/11/2026 : retour dans un donjon terminé, remis à zéro (SolUI_Passifs.lua).
+        { nom = "Téléportation", cadre = Fenetre("SolUITeleportation") },
     } },
     -- 01/11/2026 : le lexique, un onglet par thème (SolUI_Lexique.lua).
     { id = "lexique", nom = "Lexique", touche = "J", icone = "INV_Misc_Book_09", onglets = S.OngletsLexique() },
@@ -71,7 +73,7 @@ titre:SetPoint("TOPLEFT", 16, -16)
 local touche = S.Texte(colonne, "Regular", 11, "gris")
 touche:SetPoint("TOPLEFT", titre, "BOTTOMLEFT", 0, -4)
 local boutons = {}
-for i = 1, 6 do
+for i = 1, 7 do
     local b = S.BoutonPlat(colonne, "", LARGEUR - 24, 34, 12)
     b:SetPoint("TOPLEFT", 12, -64 - (i - 1) * HAUT_ONGLET)
     boutons[i] = b
