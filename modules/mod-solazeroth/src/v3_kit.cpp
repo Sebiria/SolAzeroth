@@ -23,6 +23,7 @@
 #include "CommandScript.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
+#include "ItemTemplate.h"
 #include "MotionMaster.h"
 #include "MovementTypedefs.h"
 #include "Pet.h"
@@ -47,6 +48,7 @@ namespace
     uint8 const SPE_AUCUNE = 0;
     uint8 const SPE_GUERRIER_TANK = 1;
     uint8 const SPE_DEMONISTE_AFFLICTION = 2;
+    uint8 const SPE_VOLEUR_ASSASSINAT = 3;
     uint32 const PASSIF_REMPART = 100009;
     uint32 const PASSIF_MOISSON = 100200;
     uint32 const SORT_EPEES_1M = 201;          // Épées à une main
@@ -57,6 +59,7 @@ namespace
     uint32 const SORT_MASSES_1M = 198;         // Masses à une main
     uint32 const SORT_HACHES_1M = 196;         // Haches à une main
     uint32 const SORT_BATONS = 227;            // Bâtons
+    uint32 const SORT_AMBIDEXTRIE = 674;       // Ambidextrie
     uint32 const REMPART = 100010;
     size_t const EMPLACEMENTS_DE_DEPART = 3;
     size_t const EQUIPEES_MAX = 8;
@@ -115,6 +118,9 @@ namespace
         { 100217, "Affliction instable", PLUS_TARD, 0, nullptr, false },         // zone 7
     };
 
+    // Voleur Assassinat : ses techniques viennent au lot V2.
+    std::vector<Technique> const ORDRE_ASSASSINAT = { };
+
     struct Specialisation
     {
         uint8 id;
@@ -127,19 +133,29 @@ namespace
         std::vector<Technique> const* ordre;
         std::vector<uint32> competences;                // compétences d'arme, apprises au choix et à chaque application
         std::vector<std::pair<uint8, uint32>> armes;    // armes de départ, posées si les mains sont vides
+        std::vector<uint32> permises;                   // sous-classes d'arme de mêlée équipables (vide : toutes)
     };
 
     std::vector<Specialisation> const SPECIALISATIONS =
     {
         { SPE_GUERRIER_TANK, CLASS_WARRIOR, "tank", "guerrier tank", SPELLFAMILY_WARRIOR, PASSIF_REMPART, STAT_STRENGTH,
           &ORDRE_TANK, { SORT_EPEES_1M },
-          { { EQUIPMENT_SLOT_MAINHAND, EPEE_DE_DEPART }, { EQUIPMENT_SLOT_OFFHAND, BOUCLIER_DE_DEPART } } },
-        // Lot D3 : l'arme ne compte que par ses caractéristiques ; le démoniste porte donc toutes les armes à une main que
-        // donne le monde (épées, masses, haches, dagues) et les bâtons.
+          { { EQUIPMENT_SLOT_MAINHAND, EPEE_DE_DEPART }, { EQUIPMENT_SLOT_OFFHAND, BOUCLIER_DE_DEPART } },
+          // Règle de l'utilisateur (02/11/2026) : le tank n'équipe aucune arme à deux mains.
+          { ITEM_SUBCLASS_WEAPON_AXE, ITEM_SUBCLASS_WEAPON_MACE, ITEM_SUBCLASS_WEAPON_SWORD, ITEM_SUBCLASS_WEAPON_FIST,
+            ITEM_SUBCLASS_WEAPON_DAGGER } },
+        // Lot D3 : l'arme ne compte que par ses caractéristiques. Règle de l'utilisateur (02/11/2026) : ni ambidextrie, ni
+        // arme tranchante ou contondante (épée, masse, hache) ; dagues et bâtons seulement.
         { SPE_DEMONISTE_AFFLICTION, CLASS_WARLOCK, "affliction", "démoniste Affliction", SPELLFAMILY_WARLOCK,
-          PASSIF_MOISSON, STAT_INTELLECT, &ORDRE_AFFLICTION,
-          { SORT_DAGUES, SORT_EPEES_1M, SORT_MASSES_1M, SORT_HACHES_1M, SORT_BATONS },
-          { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART } } },
+          PASSIF_MOISSON, STAT_INTELLECT, &ORDRE_AFFLICTION, { SORT_DAGUES, SORT_BATONS },
+          { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART } },
+          { ITEM_SUBCLASS_WEAPON_DAGGER, ITEM_SUBCLASS_WEAPON_STAFF } },
+        // Lot V1 (« Voleur — proposition.md ») : deux dagues obligatoires, aucune autre arme. Kit et passif Toxines au
+        // lot V2.
+        { SPE_VOLEUR_ASSASSINAT, CLASS_ROGUE, "assassinat", "voleur Assassinat", SPELLFAMILY_ROGUE, 0, STAT_AGILITY,
+          &ORDRE_ASSASSINAT, { SORT_DAGUES, SORT_AMBIDEXTRIE },
+          { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART }, { EQUIPMENT_SLOT_OFFHAND, DAGUE_DE_DEPART } },
+          { ITEM_SUBCLASS_WEAPON_DAGGER } },
     };
 
     Specialisation const* SpeParId(uint8 id)
@@ -456,6 +472,29 @@ unsigned char SolAzeroth::CaracteristiquePrincipale(Player* player)
         default:
             return STAT_INTELLECT;
     }
+}
+
+// Arme de mêlée que la spécialisation peut équiper (v3_armures.cpp) ; sans spécialisation, toutes. Les armes à distance,
+// cannes à pêche et outils ne sont pas concernés.
+bool SolAzeroth::ArmePermise(Player* player, ItemTemplate const* modele)
+{
+    if (!modele || modele->Class != ITEM_CLASS_WEAPON)
+        return true;
+    switch (modele->SubClass)
+    {
+        case ITEM_SUBCLASS_WEAPON_AXE: case ITEM_SUBCLASS_WEAPON_AXE2: case ITEM_SUBCLASS_WEAPON_MACE:
+        case ITEM_SUBCLASS_WEAPON_MACE2: case ITEM_SUBCLASS_WEAPON_POLEARM: case ITEM_SUBCLASS_WEAPON_SWORD:
+        case ITEM_SUBCLASS_WEAPON_SWORD2: case ITEM_SUBCLASS_WEAPON_STAFF: case ITEM_SUBCLASS_WEAPON_EXOTIC:
+        case ITEM_SUBCLASS_WEAPON_EXOTIC2: case ITEM_SUBCLASS_WEAPON_FIST: case ITEM_SUBCLASS_WEAPON_DAGGER:
+        case ITEM_SUBCLASS_WEAPON_SPEAR:
+            break;
+        default:
+            return true;
+    }
+    Specialisation const* s = SpeParId(KitDe(player)->spe);
+    if (!s || s->classe != player->getClass() || s->permises.empty())
+        return true;
+    return std::find(s->permises.begin(), s->permises.end(), modele->SubClass) != s->permises.end();
 }
 
 class spell_solazeroth_v3_rempart : public AuraScript
@@ -779,7 +818,7 @@ public:
         if (!choisie)
         {
             handler->SendErrorMessage("Spécialisations prêtes : guerrier tank (.kit spe tank), démoniste Affliction "
-                "(.kit spe affliction).");
+                "(.kit spe affliction), voleur Assassinat (.kit spe assassinat).");
             return false;
         }
         if (kit->spe != SPE_AUCUNE)
@@ -788,7 +827,8 @@ public:
             return false;
         }
         kit->spe = choisie->id;
-        // Armes de la spécialisation, si les mains sont vides : Épée courte usée et Vieux bouclier en bois ; Dague usée.
+        // Armes de la spécialisation, si les mains sont vides : Épée courte usée et Vieux bouclier en bois ; Dague usée ;
+        // deux Dagues usées.
         for (uint32 competence : choisie->competences)
             if (!player->HasSpell(competence))
                 player->learnSpell(competence);
@@ -808,7 +848,8 @@ public:
             player->removeActionButton(bouton);
         Appliquer(player);
         handler->PSendSysMessage("|cff40c0ffSpécialisation choisie : {}. {} et tes premières techniques sont prêts.|r",
-            choisie->nom, choisie->id == SPE_GUERRIER_TANK ? "Le Rempart" : "La Moisson");
+            choisie->nom, choisie->id == SPE_GUERRIER_TANK ? "Le Rempart"
+                : choisie->id == SPE_DEMONISTE_AFFLICTION ? "La Moisson" : "Tes deux dagues");
         return true;
     }
 

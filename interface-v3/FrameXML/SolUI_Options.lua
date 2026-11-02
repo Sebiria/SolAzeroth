@@ -92,19 +92,26 @@ S.Panneau(carte, 0.6)
 local icone = carte:CreateTexture(nil, "ARTWORK")
 icone:SetSize(56, 56)
 icone:SetPoint("TOPLEFT", 16, -16)
--- Lot D1 : une spécialisation prête par classe (guerrier tank, démoniste Affliction).
+-- Lot D1 : une spécialisation prête par classe (guerrier tank, démoniste Affliction, voleur Assassinat au lot V1).
 local SPES = {
     WARRIOR = { id = 1, cle = "tank", nom = "Guerrier — Tank", icone = "Interface\\Icons\\SolAzeroth_inv_shield_1h_artifactmagnar_d_01",
         texte = "Passif Rempart : chaque coup encaissé remplit un bouclier qui absorbe les coups suivants. Le garder "
-            .. "pour tenir, ou le dépenser pour rendre les coups.\nTu commences avec 3 emplacements de "
+            .. "pour tenir, ou le dépenser pour rendre les coups. Une arme à une main et un bouclier : aucune arme à "
+            .. "deux mains.\nTu commences avec 3 emplacements de "
             .. "techniques ; d'autres s'ouvrent avec ta puissance (Techniques équipées)." },
     WARLOCK = { id = 2, cle = "affliction", nom = "Démoniste — Affliction",
         icone = "Interface\\Icons\\Spell_Shadow_DeathCoil",
         texte = "Passif Moisson : 25 % des dégâts de tes sorts sur la durée te reviennent en vie, et tes maléfices "
             .. "rendent parfois ton Trait de l'ombre instantané. Maléfices et drains, à distance : les sorts "
-            .. "instantanés se lancent en courant, les autres à l'arrêt ; ton arme ne frappe pas, elle nourrit ta "
-            .. "puissance d'attaque ; les démons sont des invocations de quelques secondes.\nTu commences "
+            .. "instantanés se lancent en courant, les autres à l'arrêt ; ton arme, une dague ou un bâton, ne frappe "
+            .. "pas : elle nourrit ta puissance d'attaque ; les démons sont des invocations de quelques secondes.\nTu "
+            .. "commences "
             .. "avec 3 emplacements de techniques ; d'autres s'ouvrent au fil de l'histoire (Techniques équipées)." },
+    -- Lot V1 : la spécialisation existe, son kit arrive au lot V2.
+    ROGUE = { id = 3, cle = "assassinat", nom = "Voleur — Assassinat", icone = "Interface\\Icons\\Ability_Rogue_Eviscerate",
+        texte = "Deux dagues, une dans chaque main : aucune autre arme. Tes coups empoisonnent ; chaque cumul de "
+            .. "poison affaiblit les coups de ta cible.\nEn construction : passif Toxines et techniques arrivent au "
+            .. "prochain lot." },
 }
 -- La classe est lue à l'affichage : au chargement de l'interface, elle peut ne pas être connue.
 local function MaSpe() return SPES[select(2, UnitClass("player"))] or SPES.WARRIOR end

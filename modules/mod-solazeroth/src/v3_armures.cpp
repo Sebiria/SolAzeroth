@@ -32,12 +32,17 @@ namespace
         {
             case CLASS_WARRIOR: return ITEM_SUBCLASS_ARMOR_MAIL;
             case CLASS_WARLOCK: return ITEM_SUBCLASS_ARMOR_CLOTH;
+            case CLASS_ROGUE: return ITEM_SUBCLASS_ARMOR_LEATHER;
             default: return 0;
         }
     }
 
     bool Portable(Player const* player, ItemTemplate const* modele)
     {
+        // Armes par spécialisation (02/11/2026) : tank sans arme à deux mains, démoniste en dague ou bâton, voleur en
+        // dagues.
+        if (!SolAzeroth::ArmePermise(const_cast<Player*>(player), modele))
+            return false;
         if (!modele || modele->Class != ITEM_CLASS_ARMOR || modele->InventoryType == INVTYPE_CLOAK)
             return true;
         switch (modele->SubClass)

@@ -39,7 +39,7 @@ Objets utiles :
 
 - [ ] Récompense de quête en maille ou bouclier : la fenêtre de quête montre déjà la version tissu ou l'orbe, et on reçoit bien celle-là, sans message.
 - [ ] Une meilleure arme augmente la puissance d'attaque (fiche du personnage), même si elle ne frappe pas.
-- [ ] Toutes les armes à une main se portent : dagues, épées, masses, haches, bâtons. Les armes à deux mains ne se portent pas.
+- [ ] Seules les dagues et les bâtons se portent : épées, masses et haches sont refusées (« compétence requise »). Les épées et la masse des quêtes arrivent en dague (Dague d'officier de Kul Tiras, Dague de Sen'jin…), et la fenêtre de quête montre déjà la dague.
 - [ ] Artisanat (P), Fabrication, « Armes et boucliers » : les trois orbes sont rangés avec les boucliers. Ils se fabriquent sans forge, avec les gemmes de la Collection.
 - [ ] L'Orbe ardent du Gouffre compte dans la panoplie du Gouffre : avec 2 pièces bleues, l'aura « Panoplie du Gouffre (2) ».
 - [ ] Les orbes s'améliorent en rang (+1 à +5) comme les autres pièces.

@@ -16,6 +16,11 @@ du tissu ; les capes, en tissu, vont à tous (v3_armures.cpp).
 
 Écrit la migration 124 et SolUI_Versions.lua (la fenêtre de quête montre au démoniste la version qu'il recevra) ;
 quetes_durotar.item_dbc() ajoute les nouvelles lignes à l'Item.dbc du patch.
+
+Armes (02/11/2026, règles de l'utilisateur) : le démoniste ne manie que dagues et bâtons, le voleur Assassinat que des
+dagues. Les épées et la masse que donnent les quêtes ont donc leur version en dague, de même puissance et de mêmes
+rangs (migration 127, qui ajoute ses paires à la table de la 124 : rejouer la 127 après toute reprise de la 124). Les
+armes du Gouffre se fabriquent : chacun fabrique la sienne (Lame psalmodiante, une dague).
 """
 import os
 import sys
@@ -35,6 +40,10 @@ MODELES = {5: 6241, 6: 2283, 7: 2958, 8: 3307, 9: 6543, 10: 3308, MAIN_GAUCHE: 1
 PREMIERE = 910401
 # Noms des orbes (un bouclier tenu en main gauche n'a pas de sens en orbe).
 ORBES = {910116: "Orbe de Margoz", 910122: "Orbe de la garde de Tiragarde", 910131: "Orbe de cendre"}
+MIGRATION_ARMES = r"C:\SolAzeroth\sql\migrations\127_v3_dagues"
+DAGUE = 4947                              # Dague dentelée : verte, à une main, 1,5 s
+DAGUES = [(910108, 910451, "Dague d'officier de Kul Tiras"), (910113, 910452, "Dague de Sen'jin"),
+          (910119, 910453, "Dague de l'Affameur"), (910125, 910454, "Dague du capitaine Plate-défense")]
 
 
 def a_convertir():
@@ -57,7 +66,60 @@ def lignes_dbc():
     for _, n, _, modele, _ in paires():
         lignes.append((n, modele, None))
         lignes += [(e3.entree_rang(n, r), n, None) for r in range(1, e3.RANGS + 1)]
+    for _, n, _ in DAGUES:
+        lignes.append((n, DAGUE, None))
+        lignes += [(e3.entree_rang(n, r), n, None) for r in range(1, e3.RANGS + 1)]
     return lignes
+
+
+def puissances_armes():
+    return {int(e): int(p) for e, p in sql("SELECT entry, ItemLevel FROM acore_world.item_template WHERE entry IN (%s)"
+                                           % ", ".join(str(o) for o, _, _ in DAGUES))}
+
+
+def ecrire_armes(armures, armes):
+    """Migration 127 : versions en dague des armes de quête, et leurs paires dans solazeroth_v3_conversions."""
+    modele = e3.objets({DAGUE})[DAGUE]
+    puissances = puissances_armes()
+    nouvelles = [n for _, n, _ in DAGUES]
+    toutes = [e3.entree_rang(n, r) if r else n for n in nouvelles for r in range(e3.RANGS + 1)]
+    up = ["-- v3 : versions en dague des armes de quête, pour le démoniste et le voleur. Généré par outils\\tissu_v3.py :",
+          "-- ne pas modifier à la main.",
+          "USE acore_world;"]
+    w = up.append
+    w("DELETE FROM item_template WHERE entry IN (%s);" % ", ".join(map(str, toutes)))
+    for origine, n, nom in DAGUES:
+        c = e3.caracteristiques(modele, puissances[origine], armures, armes)
+        for r in range(e3.RANGS + 1):
+            entree = e3.entree_rang(n, r) if r else n
+            w("CREATE TEMPORARY TABLE sol_objet SELECT * FROM item_template WHERE entry = %d;" % DAGUE)
+            w("UPDATE sol_objet SET entry = %d, name = %s, description = '', Quality = 2, bonding = 1, ItemLevel = %d, "
+              "RequiredLevel = 0, RequiredSkill = 0, RequiredSkillRank = 0, AllowableClass = -1, AllowableRace = -1, "
+              "BuyPrice = 0, SellPrice = 0, RandomProperty = 0, RandomSuffix = 0, spellid_1 = 0, spelltrigger_1 = 0, "
+              "%s;" % (entree, s("%s +%d" % (nom, r) if r else nom), puissances[origine],
+                       e3.colonnes_sql(e3.au_rang(c, r, 0))))
+            w("INSERT INTO item_template SELECT * FROM sol_objet;")
+            w("DROP TEMPORARY TABLE sol_objet;")
+    w("DELETE FROM solazeroth_v3_rangs WHERE base IN (%s);" % ", ".join(map(str, nouvelles)))
+    w("INSERT INTO solazeroth_v3_rangs VALUES %s;" % ", ".join(
+        "(%d, %d, %d)" % (e3.entree_rang(n, r) if r else n, n, r) for n in nouvelles for r in range(e3.RANGS + 1)))
+    paires_armes = []
+    for origine, n, _ in DAGUES:
+        for r in range(e3.RANGS + 1):
+            a, b = (e3.entree_rang(origine, r), e3.entree_rang(n, r)) if r else (origine, n)
+            paires_armes += [(a, b), (b, a)]
+    w("REPLACE INTO solazeroth_v3_conversions VALUES %s;" % ", ".join("(%d, %d)" % p for p in paires_armes))
+    down = ["-- Retire les versions en dague des armes de quête.",
+            "USE acore_world;",
+            "DELETE FROM solazeroth_v3_conversions WHERE origine IN (%s);" % ", ".join(str(a) for a, _ in paires_armes),
+            "DELETE FROM solazeroth_v3_rangs WHERE base IN (%s);" % ", ".join(map(str, nouvelles)),
+            "DELETE FROM item_template WHERE entry IN (%s);" % ", ".join(map(str, toutes))]
+    for suffixe, lignes in ((".up.sql", up), (".down.sql", down)):
+        with open(MIGRATION_ARMES + suffixe, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lignes) + "\n")
+    for origine, n, nom in DAGUES:
+        print(origine, "->", n, nom, "puissance", puissances[origine],
+              e3.caracteristiques(modele, puissances[origine], armures, armes))
 
 
 def caracteristiques(modele, puissance, armures, armes):
@@ -114,9 +176,13 @@ def main():
            "-- Classe -> pièce du monde -> { sa version que la classe reçoit, son nom } (v3_armures.cpp).",
            "SolUI.VERSIONS = {", "    WARLOCK = {"]
     lua += ['        [%d] = { %d, "%s" },' % (origine, n, nom) for origine, n, nom, _, _ in liste]
+    lua += ['        [%d] = { %d, "%s" },' % (origine, n, nom) for origine, n, nom in DAGUES]
+    lua += ["    },", "    ROGUE = {"]
+    lua += ['        [%d] = { %d, "%s" },' % (origine, n, nom) for origine, n, nom in DAGUES]
     lua += ["    },", "}"]
     with open(VERSIONS_LUA, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lua) + "\n")
+    ecrire_armes(armures, armes)
     import quetes_durotar
     quetes_durotar.item_dbc()
     for origine, n, nom, modele, p in liste:

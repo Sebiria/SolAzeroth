@@ -26,5 +26,15 @@ SolUI.VERSIONS = {
         [910130] = { 910422, "Cuirasse de la purge" },
         [910131] = { 910423, "Orbe de cendre" },
         [910132] = { 910424, "Sandales de Sen'jin" },
+        [910108] = { 910451, "Dague d'officier de Kul Tiras" },
+        [910113] = { 910452, "Dague de Sen'jin" },
+        [910119] = { 910453, "Dague de l'Affameur" },
+        [910125] = { 910454, "Dague du capitaine Plate-défense" },
+    },
+    ROGUE = {
+        [910108] = { 910451, "Dague d'officier de Kul Tiras" },
+        [910113] = { 910452, "Dague de Sen'jin" },
+        [910119] = { 910453, "Dague de l'Affameur" },
+        [910125] = { 910454, "Dague du capitaine Plate-défense" },
     },
 }

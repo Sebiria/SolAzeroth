@@ -9,6 +9,7 @@ class Creature;
 class Item;
 class Map;
 class Player;
+struct ItemTemplate;
 
 namespace SolAzeroth
 {
@@ -78,6 +79,8 @@ namespace SolAzeroth
     unsigned char RangEquipement(unsigned int entree);
     // v3 : caractéristique principale (STAT_STRENGTH, STAT_AGILITY ou STAT_INTELLECT) de la spécialisation (v3_kit.cpp).
     unsigned char CaracteristiquePrincipale(Player* player);
+    // v3 : arme de mêlée que la spécialisation peut équiper (v3_kit.cpp ; règle appliquée par v3_armures.cpp).
+    bool ArmePermise(Player* player, ItemTemplate const* modele);
     // Ligue Destin (défi choisi au niveau 1, lua_scripts/defis.lua) : ni sorts ni talents d'une autre classe (formation.cpp).
     bool EstDestin(Player* player);
     // Ligue Remix (ligues.cpp) : monde à ton niveau imposé (echelle.cpp).
