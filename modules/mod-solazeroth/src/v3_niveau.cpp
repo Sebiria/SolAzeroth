@@ -4,6 +4,9 @@
 // - Les créatures gardent la vie, les dégâts et l'armure de leur niveau d'origine, qui devient leur « puissance »,
 //   puis passent au niveau 80 : à niveau égal, plus de bonus ni de malus de toucher, de critique ou d'esquive.
 // - La puissance d'attaque des joueurs ne compte plus le niveau (formule du niveau 1).
+// - Lot D1 (02/11/2026) : une seule règle pour toutes les classes, au lieu des formules de Blizzard par classe : la
+//   puissance d'attaque de base vaut 2 par point de caractéristique principale (Force, Agilité ou Intelligence, selon la
+//   spécialisation : v3_kit.cpp), comme la Force du guerrier. Les sorts du démoniste suivent ainsi son Intelligence.
 // - Régénération de vie : celle du jeu, selon l'Esprit, est coupée (Rate.Health = 0.001) car elle remplissait les petites
 //   réserves de vie en quelques secondes ; hors combat, le joueur récupère SolAzeroth.V3.RegenVie % de sa vie maximum
 //   par seconde (2 par défaut, demande du 31/10/2026), rendus toutes les 2 secondes ; le Repos au coin du feu en
@@ -146,11 +149,21 @@ class solazeroth_v3_niveau_joueur : public PlayerScript
 {
 public:
     solazeroth_v3_niveau_joueur() : PlayerScript("solazeroth_v3_niveau_joueur", {
-        PLAYERHOOK_ON_BEFORE_UPDATE_ATTACK_POWER_AND_DAMAGE, PLAYERHOOK_ON_UPDATE }) { }
+        PLAYERHOOK_ON_BEFORE_UPDATE_ATTACK_POWER_AND_DAMAGE, PLAYERHOOK_ON_AFTER_UPDATE_ATTACK_POWER_AND_DAMAGE,
+        PLAYERHOOK_ON_UPDATE }) { }
 
     void OnPlayerBeforeUpdateAttackPowerAndDamage(Player* /*player*/, float& level, float& /*val2*/, bool /*ranged*/) override
     {
         level = 1.0f;
+    }
+
+    // Formule du guerrier au niveau 1 (3 + 2 × Force − 20), appliquée à la caractéristique principale de chacun.
+    void OnPlayerAfterUpdateAttackPowerAndDamage(Player* player, float& level, float& base, float& /*mod*/,
+        float& /*multiplicateur*/, bool ranged) override
+    {
+        float caracteristique = player->GetStat(Stats(SolAzeroth::CaracteristiquePrincipale(player)));
+        base = std::max(0.0f, level * 3.0f + caracteristique * 2.0f - 20.0f)
+            * player->GetPctModifierValue(ranged ? UNIT_MOD_ATTACK_POWER_RANGED : UNIT_MOD_ATTACK_POWER, BASE_PCT);
     }
 
     void OnPlayerUpdate(Player* player, uint32 diff) override

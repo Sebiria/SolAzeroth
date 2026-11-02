@@ -99,6 +99,7 @@ namespace
         char const* nom;
         uint32 famille;                                 // SpellFamilyName des anciens sorts de la classe, retirés
         uint32 passif;                                  // 0 : aucun pour l'instant
+        uint8 caracteristique;                          // principale : repas, feu, puissance d'attaque (v3_niveau.cpp)
         std::vector<Technique> const* ordre;
         uint32 competence;                              // compétence d'arme apprise au choix
         std::vector<std::pair<uint8, uint32>> armes;    // armes de départ, posées si les mains sont vides
@@ -106,9 +107,10 @@ namespace
 
     std::vector<Specialisation> const SPECIALISATIONS =
     {
-        { SPE_GUERRIER_TANK, CLASS_WARRIOR, "tank", "guerrier tank", SPELLFAMILY_WARRIOR, PASSIF_REMPART, &ORDRE_TANK,
+        { SPE_GUERRIER_TANK, CLASS_WARRIOR, "tank", "guerrier tank", SPELLFAMILY_WARRIOR, PASSIF_REMPART, STAT_STRENGTH,
+          &ORDRE_TANK,
           SORT_EPEES_1M, { { EQUIPMENT_SLOT_MAINHAND, EPEE_DE_DEPART }, { EQUIPMENT_SLOT_OFFHAND, BOUCLIER_DE_DEPART } } },
-        { SPE_DEMONISTE_AFFLICTION, CLASS_WARLOCK, "affliction", "démoniste Affliction", SPELLFAMILY_WARLOCK, 0,
+        { SPE_DEMONISTE_AFFLICTION, CLASS_WARLOCK, "affliction", "démoniste Affliction", SPELLFAMILY_WARLOCK, 0, STAT_INTELLECT,
           &ORDRE_AFFLICTION, SORT_DAGUES, { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART } } },
     };
 
@@ -402,12 +404,13 @@ namespace
 
 // ---------------------------------------------------------------- Sorts
 
-// Caractéristique principale de la spécialisation (repas, v3_cuisine.cpp) ; sans spécialisation, celle de la classe.
+// Caractéristique principale de la spécialisation (repas, feu, puissance d'attaque) ; sans spécialisation, celle de
+// la classe.
 unsigned char SolAzeroth::CaracteristiquePrincipale(Player* player)
 {
-    // Démoniste Affliction : ses sorts suivent les dégâts de l'arme, donc la puissance d'attaque, que nourrit la Force.
-    if (KitDe(player)->spe == SPE_GUERRIER_TANK || KitDe(player)->spe == SPE_DEMONISTE_AFFLICTION)
-        return STAT_STRENGTH;
+    if (Specialisation const* s = SpeParId(KitDe(player)->spe))
+        if (s->classe == player->getClass())
+            return s->caracteristique;
     switch (player->getClass())
     {
         case CLASS_WARRIOR:
