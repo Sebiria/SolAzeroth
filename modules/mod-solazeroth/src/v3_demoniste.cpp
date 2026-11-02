@@ -9,6 +9,9 @@
 // - Invocations temporaires (aucun familier permanent, règle de l'utilisateur) : Diablotin, Marcheur du Vide, Chasseur
 //   corrompu. Leur vie suit celle du démoniste ; leurs attaques sont des sorts lancés au nom du démoniste (puissance
 //   d'attaque du démoniste, menace sur lui). Elles repartent à la fin de leur durée, ou si le démoniste meurt ou s'éloigne.
+// - Aucune attaque automatique (règle de l'utilisateur, 02/11/2026 : que des sorts). Le module passe après le coup
+//   automatique dans la mise à jour du joueur : le minuteur d'attaque est donc tenu toujours chargé, et la posture
+//   d'attaque coupée.
 
 #include "SolAzeroth.h"
 #include "Creature.h"
@@ -30,6 +33,7 @@ namespace
     int32 const PART_MOISSON = 20;              // % des dégâts sur la durée rendus en vie
     uint32 const CADENCE = 2000;                // une attaque d'invocation toutes les 2 s
     float const DISTANCE_MAX = 60.0f;           // au-delà, l'invocation repart
+    int32 const JAMAIS_PRET = 60000;            // minuteur d'attaque automatique, rechargé à chaque mise à jour
 
     struct Invocation
     {
@@ -122,6 +126,22 @@ public:
             int32 soin = std::max<int32>(1, int32(degats * PART_MOISSON / 100));
             attaquant->CastCustomSpell(attaquant, MOISSON_SOIN, &soin, nullptr, nullptr, true);
         }
+    }
+};
+
+class solazeroth_v3_demoniste_joueur : public PlayerScript
+{
+public:
+    solazeroth_v3_demoniste_joueur() : PlayerScript("solazeroth_v3_demoniste_joueur", { PLAYERHOOK_ON_UPDATE }) { }
+
+    void OnPlayerUpdate(Player* player, uint32 /*diff*/) override
+    {
+        if (player->getClass() != CLASS_WARLOCK)
+            return;
+        player->setAttackTimer(BASE_ATTACK, JAMAIS_PRET);
+        player->setAttackTimer(OFF_ATTACK, JAMAIS_PRET);
+        if (player->HasUnitState(UNIT_STATE_MELEE_ATTACKING))
+            player->AttackStop();
     }
 };
 
@@ -313,6 +333,7 @@ struct npc_solazeroth_v3_chasseur : public solazeroth_v3_invocation_ai
 void AddSC_solazeroth_v3_demoniste()
 {
     new solazeroth_v3_demoniste_unites();
+    new solazeroth_v3_demoniste_joueur();
     RegisterSpellScript(spell_solazeroth_v3_invocation);
     RegisterSpellScript(spell_solazeroth_v3_graine);
     RegisterCreatureAI(npc_solazeroth_v3_diablotin);

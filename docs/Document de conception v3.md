@@ -904,7 +904,7 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **Panel des zones suivantes** : Malédiction de faiblesse et Siphon de vie (zone 2), Voile mortel et Graine de corruption (zone 3), Hurlement de terreur (zone 4), Drain d'âme et Pierre de soins (zone 5), Chasseur corrompu (zone 6, interrompt et réduit au silence, puis mord), Affliction instable (zone 7, +50 % sur une cible qui porte Corruption et Agonie).
   - **Invocations** (aucun familier permanent) : créatures 910050 à 910052, à vie tirée de celle du démoniste. Leurs attaques sont des sorts lancés au nom du démoniste : sa puissance d'attaque, la menace sur lui. Elles repartent à la fin de leur durée, ou si le démoniste meurt ou s'éloigne de plus de 60 m.
   - **Interface** : losange du passif par spécialisation, texte de la carte de spécialisation. Le vérificateur de zone (`gabarit_zone.py`) lit maintenant les techniques par spécialisation (conforme).
-  - **Pas encore traité** : l'attaque automatique au contact reste possible avec la dague de départ.
+  - **Aucune attaque automatique** (choix de l'utilisateur : que des sorts) : le minuteur d'attaque du démoniste est tenu toujours chargé et sa posture d'attaque coupée (`v3_demoniste.cpp`).
 
 ## 5. Questions pour les prochaines séries
 
