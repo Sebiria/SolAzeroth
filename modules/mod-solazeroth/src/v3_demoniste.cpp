@@ -1,11 +1,13 @@
 // v3, lot D2 (02/11/2026) : ce que Spell.dbc ne sait pas écrire dans le kit du démoniste Affliction (sorts :
 // outils\demoniste_v3.py, migration 123 ; spécialisation et ordre de déblocage : v3_kit.cpp).
 // - Les sorts ne font que de la puissance d'attaque (spell_bonus_data) : aucun dégât d'arme (règle de l'utilisateur).
-// - Moisson (passif) : 20 % des dégâts des sorts sur la durée reviennent en vie.
+// - Moisson (passif) : 25 % des dégâts des sorts sur la durée reviennent en vie (20 % avant le calibrage du lot D4).
 // - Malédiction d'agonie : le tiers du milieu à 100 %, le premier à 50 %, le dernier à 150 %.
 // - Drain d'âme : double sur une cible sous 25 % de vie. Affliction instable : +50 % sur une cible qui porte Corruption
 //   et Agonie.
 // - Graine de corruption : explose à la fin, ou à la mort de la cible.
+// - Peur et Hurlement de terreur (lot D4) : brisés quand la cible a perdu SEUIL_PEUR % de sa vie maximale. Le moteur
+//   prenait 1/4,75 de la vie d'un guerrier du niveau du lanceur (80, soit environ 2 000) : la peur ne cassait jamais.
 // - Invocations temporaires (aucun familier permanent, règle de l'utilisateur) : Diablotin, Marcheur du Vide, Chasseur
 //   corrompu. Leur vie suit celle du démoniste ; leurs attaques sont des sorts lancés au nom du démoniste (puissance
 //   d'attaque du démoniste, menace sur lui). Elles repartent à la fin de leur durée, ou si le démoniste meurt ou s'éloigne.
@@ -30,7 +32,8 @@ namespace
         MARCHEUR = 100207, SIPHON = 100209, GRAINE = 100211, EXPLOSION_GRAINE = 100212, DRAIN_D_AME = 100214,
         CHASSEUR = 100216, INSTABLE = 100217, MOISSON_SOIN = 100218, TRAIT_DE_FEU = 100219, VERROU = 100220,
         MORSURE = 100221, TOURMENT = 100222;
-    int32 const PART_MOISSON = 20;              // % des dégâts sur la durée rendus en vie
+    int32 const PART_MOISSON = 25;              // % des dégâts sur la durée rendus en vie
+    int32 const SEUIL_PEUR = 15;                // % de la vie maximale de la cible qui brise la peur
     uint32 const CADENCE = 2000;                // une attaque d'invocation toutes les 2 s
     float const DISTANCE_MAX = 60.0f;           // au-delà, l'invocation repart
     int32 const JAMAIS_PRET = 60000;            // minuteur d'attaque automatique, rechargé à chaque mise à jour
@@ -208,6 +211,23 @@ class spell_solazeroth_v3_graine : public AuraScript
     }
 };
 
+class spell_solazeroth_v3_peur : public AuraScript
+{
+    PrepareAuraScript(spell_solazeroth_v3_peur);
+
+    void Seuil(AuraEffect const* /*effet*/, int32& montant, bool& recalcul)
+    {
+        if (Unit* cible = GetUnitOwner())
+            montant = std::max<int32>(1, int32(cible->CountPctFromMaxHealth(SEUIL_PEUR)));
+        recalcul = false;
+    }
+
+    void Register() override
+    {
+        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_solazeroth_v3_peur::Seuil, EFFECT_0, SPELL_AURA_MOD_FEAR);
+    }
+};
+
 // Commun aux invocations : ne prend pas l'initiative, suit le démoniste, repart avec lui.
 struct solazeroth_v3_invocation_ai : public ScriptedAI
 {
@@ -336,6 +356,7 @@ void AddSC_solazeroth_v3_demoniste()
     new solazeroth_v3_demoniste_joueur();
     RegisterSpellScript(spell_solazeroth_v3_invocation);
     RegisterSpellScript(spell_solazeroth_v3_graine);
+    RegisterSpellScript(spell_solazeroth_v3_peur);
     RegisterCreatureAI(npc_solazeroth_v3_diablotin);
     RegisterCreatureAI(npc_solazeroth_v3_marcheur);
     RegisterCreatureAI(npc_solazeroth_v3_chasseur);

@@ -179,15 +179,26 @@ S.LEXIQUE = {
           .. T("Dépenser")
           .. "• Il absorbe les coups suivants.\n"
           .. "• Riposte du rempart et Second souffle le consomment." },
+        { "moisson", "Moisson et démons",
+          "Le démoniste Affliction : que des sorts, une part de ta puissance d'attaque, et des démons de quelques secondes.",
+          T("Les sorts")
+          .. "• Aucune attaque automatique : l'arme ne compte que par ses caractéristiques.\n"
+          .. "• Instantanés en courant ; incantations et drains à l'arrêt (un coup reçu les retarde).\n"
+          .. "• Moisson : 25 % des dégâts sur la durée te reviennent en vie.\n\n"
+          .. T("Les démons")
+          .. "• Diablotin (15 s) : traits de feu sur ta cible, sans attirer les monstres.\n"
+          .. "• Marcheur du Vide (10 s) : attire les monstres proches et encaisse.\n"
+          .. "• Peur : 6 s de fuite, brisée quand le monstre a perdu 15 % de sa vie." },
         { "techniques", "Techniques",
           "Ni rage ni mana : deux techniques à recharge au départ, d'autres apprises au fil du récit, et le passif de ta spécialisation.",
           T("Techniques")
           .. "• Les maîtres les enseignent à des étapes du récit (Gornek, Gar'Thok, Gadrin en Durotar).\n"
           .. "• 3 emplacements au départ, 5 à la fin de Durotar, 8 plus tard ; changées hors combat (touche K).\n"
-          .. "• Un bouclier est exigé ; temps de recharge global de 0,75 s.\n\n"
+          .. "• Le guerrier exige un bouclier ; temps de recharge global de 0,75 s.\n\n"
           .. T("Combat")
           .. "• Pas de menace : les monstres n'ont que toi à frapper.\n"
-          .. "• Guerrier tank : Rempart, une part des coups reçus devient un bouclier." },
+          .. "• Guerrier tank : Rempart, une part des coups reçus devient un bouclier.\n"
+          .. "• Démoniste Affliction : Moisson, une part des dégâts sur la durée te revient en vie." },
     } },
     { "Survie", {
         { "regeneration", "Vie et régénération",
