@@ -6,6 +6,9 @@
 // - Drain d'âme : double sur une cible sous 25 % de vie. Affliction instable : +50 % sur une cible qui porte Corruption
 //   et Agonie.
 // - Graine de corruption : explose à la fin, ou à la mort de la cible.
+// - Transe de l'ombre (lot D4, idée de l'utilisateur) : chaque tic de Corruption ou d'Agonie a CHANCE_TRANSE % de
+//   chances de rendre le prochain Trait de l'ombre instantané (aura visible, modificateur de Spell.dbc) ; le Trait
+//   lancé sans incantation la consomme.
 // - Peur et Hurlement de terreur (lot D4) : brisés quand la cible a perdu SEUIL_PEUR % de sa vie maximale. Le moteur
 //   prenait 1/4,75 de la vie d'un guerrier du niveau du lanceur (80, soit environ 2 000) : la peur ne cassait jamais.
 // - Invocations temporaires (aucun familier permanent, règle de l'utilisateur) : Diablotin, Marcheur du Vide, Chasseur
@@ -31,9 +34,10 @@ namespace
     uint32 const MOISSON = 100200, CORRUPTION = 100202, DIABLOTIN = 100203, AGONIE = 100204, DRAIN_DE_VIE = 100205,
         MARCHEUR = 100207, SIPHON = 100209, GRAINE = 100211, EXPLOSION_GRAINE = 100212, DRAIN_D_AME = 100214,
         CHASSEUR = 100216, INSTABLE = 100217, MOISSON_SOIN = 100218, TRAIT_DE_FEU = 100219, VERROU = 100220,
-        MORSURE = 100221, TOURMENT = 100222;
+        MORSURE = 100221, TOURMENT = 100222, TRANSE = 100223;
     int32 const PART_MOISSON = 25;              // % des dégâts sur la durée rendus en vie
     int32 const SEUIL_PEUR = 15;                // % de la vie maximale de la cible qui brise la peur
+    float const CHANCE_TRANSE = 10.0f;          // % par tic de Corruption ou d'Agonie
     uint32 const CADENCE = 2000;                // une attaque d'invocation toutes les 2 s
     float const DISTANCE_MAX = 60.0f;           // au-delà, l'invocation repart
     int32 const JAMAIS_PRET = 60000;            // minuteur d'attaque automatique, rechargé à chaque mise à jour
@@ -128,6 +132,8 @@ public:
         {
             int32 soin = std::max<int32>(1, int32(degats * PART_MOISSON / 100));
             attaquant->CastCustomSpell(attaquant, MOISSON_SOIN, &soin, nullptr, nullptr, true);
+            if ((sort->Id == CORRUPTION || sort->Id == AGONIE) && roll_chance_f(CHANCE_TRANSE))
+                attaquant->CastSpell(attaquant, TRANSE, true);
         }
     }
 };
@@ -225,6 +231,24 @@ class spell_solazeroth_v3_peur : public AuraScript
     void Register() override
     {
         DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_solazeroth_v3_peur::Seuil, EFFECT_0, SPELL_AURA_MOD_FEAR);
+    }
+};
+
+// Trait de l'ombre lancé sans incantation (sous la Transe) : il la consomme.
+class spell_solazeroth_v3_trait : public SpellScript
+{
+    PrepareSpellScript(spell_solazeroth_v3_trait);
+
+    void Consommer()
+    {
+        if (GetSpell()->GetCastTime() == 0)
+            if (Unit* lanceur = GetCaster())
+                lanceur->RemoveAurasDueToSpell(TRANSE);
+    }
+
+    void Register() override
+    {
+        OnCast += SpellCastFn(spell_solazeroth_v3_trait::Consommer);
     }
 };
 
@@ -357,6 +381,7 @@ void AddSC_solazeroth_v3_demoniste()
     RegisterSpellScript(spell_solazeroth_v3_invocation);
     RegisterSpellScript(spell_solazeroth_v3_graine);
     RegisterSpellScript(spell_solazeroth_v3_peur);
+    RegisterSpellScript(spell_solazeroth_v3_trait);
     RegisterCreatureAI(npc_solazeroth_v3_diablotin);
     RegisterCreatureAI(npc_solazeroth_v3_marcheur);
     RegisterCreatureAI(npc_solazeroth_v3_chasseur);

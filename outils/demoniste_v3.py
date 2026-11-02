@@ -17,10 +17,11 @@ Aucun familier permanent (règle de l'utilisateur) : Diablotin, Marcheur du Vide
 de quelques secondes (v3_demoniste.cpp). Leurs attaques sont des sorts lancés au nom du démoniste : elles suivent sa
 puissance d'attaque, et la menace va sur lui (sauf la provocation du Marcheur).
 
-Calibrage du lot D4 (simulation_demoniste.py, 02/11/2026) : parts de PA du premier jet × 1,6, Diablotin toutes les 30 s
-(45 avant), Moisson à 25 % (20 avant). Le démoniste seul égale alors le guerrier sur les mêmes pièces (fin de Durotar :
-13 à 15 s, 73 à 90 % de vie, contre 10 à 15 s et 80 %) et gagne 93 fois sur 100 contre deux monstres de sa puissance
-(guerrier : 100). Les sorts des zones suivantes ont reçu le même facteur, sans simulation propre.
+Calibrage du lot D4 (simulation_demoniste.py, 02/11/2026) : l'arme compte dans la puissance d'attaque (ses dégâts par
+seconde × 14, v3_niveau.cpp), d'où des parts de PA à 0,64 × celles du premier jet ; Diablotin toutes les 30 s (45
+avant), Moisson à 25 % (20 avant), Transe de l'ombre. Le démoniste seul égale alors le guerrier sur les mêmes pièces
+(fin de Durotar : 12 à 13 s, 77 à 88 % de vie, contre 10 à 15 s et 80 %) et gagne contre deux monstres de sa puissance
+(guerrier aussi). Les sorts des zones suivantes ont reçu le même facteur, sans simulation propre.
 
 Appelé par auras_nommees.py, qui écrit le Spell.dbc du client et la migration 123.
 """
@@ -33,7 +34,15 @@ MOISSON, TRAIT, CORRUPTION, DIABLOTIN, AGONIE, DRAIN_DE_VIE, PEUR, MARCHEUR = ra
 FAIBLESSE, SIPHON, HURLEMENT, GRAINE, VOILE, DRAIN_D_AME, PIERRE, CHASSEUR, INSTABLE = (
     100208, 100209, 100210, 100211, 100213, 100214, 100215, 100216, 100217)
 EXPLOSION_GRAINE, MOISSON_SOIN, TRAIT_DE_FEU, VERROU, MORSURE, TOURMENT = 100212, 100218, 100219, 100220, 100221, 100222
+TRANSE = 100223
 TECHNIQUES = (100201, 100217)
+
+# Transe de l'ombre (lot D4) : le prochain Trait de l'ombre est instantané. Le modificateur de temps d'incantation ne
+# touche que les sorts de sa famille qui portent son drapeau : la famille 2, qu'aucun sort de Blizzard n'utilise, et le
+# drapeau du seul Trait. Le serveur la donne (10 % par tic de Corruption ou d'Agonie) et la retire au Trait instantané.
+FAMILLE_SOL, DRAPEAU_TRAIT = 2, 0x1
+AJOUT_POURCENT, MOD_INCANTATION = 108, 10      # SPELL_AURA_ADD_PCT_MODIFIER, SPELLMOD_CASTING_TIME
+D10 = 1                                        # SpellDuration.dbc : 10 s
 
 # Effets et auras propres au démoniste (SharedDefines.h, SpellAuraDefines.h)
 FACTICE, SOIN_POURCENT, ATTAQUE_MOI = 3, 136, 114
@@ -49,18 +58,18 @@ OMBRE, FEU = 32, 4
 
 # Part de la puissance d'attaque (calibrée au lot D4) : coup direct, ou par tic.
 BONUS = {
-    TRAIT: (0.40, 0),               # 1,5 s d'incantation, sans recharge : le sort faible, en boucle
-    CORRUPTION: (0, 0.32),          # 5 tics : 160 % en 15 s
-    AGONIE: (0, 0.19),              # 12 tics : 50 %, puis 100 %, puis 150 % de ce tic (v3_demoniste.cpp)
-    DRAIN_DE_VIE: (0, 0.40),        # 5 tics, rend autant
-    SIPHON: (0, 0.32),              # 4 tics, rend la moitié
-    GRAINE: (0, 0.24),              # 6 tics
-    EXPLOSION_GRAINE: (0.80, 0),
-    VOILE: (0.96, 0),
-    DRAIN_D_AME: (0, 0.32),         # 5 tics, double sous 25 % de vie
-    INSTABLE: (0, 0.40),            # 5 tics, +50 % sur une cible qui porte Corruption et Agonie
-    TRAIT_DE_FEU: (0.24, 0),        # toutes les 2 s pendant 15 s
-    MORSURE: (0.24, 0),             # toutes les 2 s pendant 15 s
+    TRAIT: (0.16, 0),               # 1,5 s d'incantation, sans recharge : le sort faible, en boucle
+    CORRUPTION: (0, 0.13),          # 5 tics : 65 % en 15 s
+    AGONIE: (0, 0.08),              # 12 tics : 50 %, puis 100 %, puis 150 % de ce tic (v3_demoniste.cpp)
+    DRAIN_DE_VIE: (0, 0.16),        # 5 tics, rend autant
+    SIPHON: (0, 0.13),              # 4 tics, rend la moitié
+    GRAINE: (0, 0.10),              # 6 tics
+    EXPLOSION_GRAINE: (0.32, 0),
+    VOILE: (0.38, 0),
+    DRAIN_D_AME: (0, 0.13),         # 5 tics, double sous 25 % de vie
+    INSTABLE: (0, 0.16),            # 5 tics, +50 % sur une cible qui porte Corruption et Agonie
+    TRAIT_DE_FEU: (0.10, 0),        # toutes les 2 s pendant 15 s
+    MORSURE: (0.10, 0),             # toutes les 2 s pendant 15 s
 }
 
 SCRIPTS = {
@@ -68,6 +77,7 @@ SCRIPTS = {
     MARCHEUR: "spell_solazeroth_v3_invocation",
     CHASSEUR: "spell_solazeroth_v3_invocation",
     GRAINE: "spell_solazeroth_v3_graine",
+    TRAIT: "spell_solazeroth_v3_trait",
     PEUR: "spell_solazeroth_v3_peur",
     HURLEMENT: "spell_solazeroth_v3_peur",
 }
@@ -103,7 +113,10 @@ def lignes(d):
 
     # Passif d'identité (17498 : le modèle du Rempart).
     e = t.technique(d, 17498, MOISSON, "Moisson",
-                    "Passif. 25 % des dégâts de vos sorts sur la durée vous reviennent en vie.",
+                    "Passif. 25 % des dégâts de vos sorts sur la durée vous reviennent en vie. Chaque dégât de "
+                    "Corruption ou de Malédiction d'agonie a 10 % de chances de rendre votre prochain Trait de l'ombre "
+                    "instantané (Transe de l'ombre). Votre arme ne frappe pas : ses dégâts par seconde × 14 s'ajoutent à "
+                    "votre puissance d'attaque.",
                     d.chercher(63108)[133], 0, duree=t.INFINIE)
     e[4], e[5:12] = t.PASSIF | t.SANS_ANNULATION, [0] * 7
     t.effet(e, 0, t.AURA, 0, t.SOI, aura=t.AURA_FACTICE)
@@ -114,13 +127,21 @@ def lignes(d):
 
     # Départ (2 techniques)
     e = sort(d, 686, TRAIT, "Trait de l'ombre",
-             "Projette un trait d'ombre sur la cible : 40 % de votre puissance d'attaque.", 0,
+             "Projette un trait d'ombre sur la cible : 16 % de votre puissance d'attaque.", 0,
              incantation=INCANTATION_1_5)
     t.effet(e, 0, t.DEGATS, 0, t.CIBLE)
+    e[208], e[209] = FAMILLE_SOL, DRAPEAU_TRAIT
+    l.append(e)
+
+    e = sort(d, 17941, TRANSE, "Transe de l'ombre", "", 0, "Votre prochain Trait de l'ombre est instantané.",
+             duree=D10)
+    t.effet(e, 0, t.AURA, -100, t.SOI, aura=AJOUT_POURCENT, misc=MOD_INCANTATION)
+    e[122] = DRAPEAU_TRAIT
+    e[208] = FAMILLE_SOL
     l.append(e)
 
     e = sort(d, 172, CORRUPTION, "Corruption",
-             "Corrompt la cible : 160 % de votre puissance d'attaque en 15 s.", 0, "Dégâts d'Ombre toutes les 3 s.",
+             "Corrompt la cible : 65 % de votre puissance d'attaque en 15 s.", 0, "Dégâts d'Ombre toutes les 3 s.",
              duree=t.D15)
     t.effet(e, 0, t.AURA, 1, t.CIBLE)
     periodique(e, 0, PERIODIQUE, 3000)
@@ -128,7 +149,7 @@ def lignes(d):
 
     # Durotar, au fil de l'histoire (5)
     e = sort(d, 688, DIABLOTIN, "Diablotin",
-             "Invoque un diablotin pendant 15 s. Il lance des traits de feu sur votre cible (24 % de votre puissance "
+             "Invoque un diablotin pendant 15 s. Il lance des traits de feu sur votre cible (10 % de votre puissance "
              "d'attaque toutes les 2 s) et n'attire pas les monstres.", 30000)
     t.effet(e, 0, FACTICE, 0, t.SOI)
     l.append(e)
@@ -138,14 +159,14 @@ def lignes(d):
     l.append(e)
 
     e = sort(d, 980, AGONIE, "Malédiction d'agonie",
-             "Maudit la cible : 228 % de votre puissance d'attaque en 24 s, de plus en plus fort.",
+             "Maudit la cible : 96 % de votre puissance d'attaque en 24 s, de plus en plus fort.",
              0, "Dégâts d'Ombre croissants toutes les 2 s.", duree=D24)
     t.effet(e, 0, t.AURA, 1, t.CIBLE)
     periodique(e, 0, PERIODIQUE, 2000)
     l.append(e)
 
     e = sort(d, 689, DRAIN_DE_VIE, "Drain de vie",
-             "Canalisé, 5 s : 40 % de votre puissance d'attaque chaque seconde, et vous rend autant.", 10000,
+             "Canalisé, 5 s : 16 % de votre puissance d'attaque chaque seconde, et vous rend autant.", 10000,
              "Vie drainée chaque seconde.", duree=t.D5, attributs1=CANALISE)
     t.effet(e, 0, t.AURA, 1, t.CIBLE)
     periodique(e, 0, DRAIN, 1000, 1.0)
@@ -176,7 +197,7 @@ def lignes(d):
     l.append(e)
 
     e = sort(d, 172, SIPHON, "Siphon de vie",
-             "128 % de votre puissance d'attaque en 12 s ; vous rend la moitié des dégâts.", 10000,
+             "52 % de votre puissance d'attaque en 12 s ; vous rend la moitié des dégâts.", 10000,
              "Vie drainée toutes les 3 s.", duree=D12)
     e[133] = d.chercher(63108)[133]
     t.effet(e, 0, t.AURA, 1, t.CIBLE)
@@ -191,7 +212,7 @@ def lignes(d):
     l.append(e)
 
     e = sort(d, 27243, GRAINE, "Graine de corruption",
-             "144 % de votre puissance d'attaque en 18 s. À la fin, ou si la cible meurt, la graine explose : 80 % "
+             "60 % de votre puissance d'attaque en 18 s. À la fin, ou si la cible meurt, la graine explose : 32 % "
              "de votre puissance d'attaque aux ennemis à 10 m.", 15000, "Dégâts d'Ombre toutes les 3 s.", duree=D18,
              incantation=INCANTATION_1_5)
     t.effet(e, 0, t.AURA, 1, t.CIBLE)
@@ -202,7 +223,7 @@ def lignes(d):
     l.append(e)
 
     e = sort(d, 6789, VOILE, "Voile mortel",
-             "96 % de votre puissance d'attaque, et la cible, horrifiée, fuit pendant 3 s.", 30000, "Horrifié.",
+             "38 % de votre puissance d'attaque, et la cible, horrifiée, fuit pendant 3 s.", 30000, "Horrifié.",
              duree=t.D3)
     t.effet(e, 0, t.DEGATS, 0, t.CIBLE)
     t.effet(e, 1, t.AURA, 0, t.CIBLE, aura=PEUR_AURA)
@@ -210,7 +231,7 @@ def lignes(d):
     l.append(e)
 
     e = sort(d, 1120, DRAIN_D_AME, "Drain d'âme",
-             "Canalisé, 5 s : 32 % de votre puissance d'attaque chaque seconde, le double sur une cible sous 25 % de "
+             "Canalisé, 5 s : 13 % de votre puissance d'attaque chaque seconde, le double sur une cible sous 25 % de "
              "vie.", 15000, "Âme drainée.", duree=t.D5, attributs1=CANALISE)
     t.effet(e, 0, t.AURA, 1, t.CIBLE)
     periodique(e, 0, PERIODIQUE, 1000)
@@ -222,7 +243,7 @@ def lignes(d):
 
     e = sort(d, 691, CHASSEUR, "Chasseur corrompu",
              "Invoque un chasseur corrompu pendant 15 s. Il interrompt l'incantation de votre cible et la réduit au "
-             "silence 3 s, puis la mord (24 % de votre puissance d'attaque toutes les 2 s).", 45000)
+             "silence 3 s, puis la mord (10 % de votre puissance d'attaque toutes les 2 s).", 45000)
     t.effet(e, 0, FACTICE, 0, t.SOI)
     l.append(e)
     e = sort(d, 19647, VERROU, "Verrou magique", "", 0, "Réduit au silence.", duree=t.D3)
@@ -237,7 +258,7 @@ def lignes(d):
     l.append(e)
 
     e = sort(d, 30108, INSTABLE, "Affliction instable",
-             "200 % de votre puissance d'attaque en 15 s ; +50 % sur une cible qui porte déjà Corruption et "
+             "80 % de votre puissance d'attaque en 15 s ; +50 % sur une cible qui porte déjà Corruption et "
              "Malédiction d'agonie.", 12000, "Dégâts d'Ombre toutes les 3 s.", duree=t.D15, incantation=INCANTATION_1_5)
     t.effet(e, 0, t.AURA, 1, t.CIBLE)
     periodique(e, 0, PERIODIQUE, 3000)

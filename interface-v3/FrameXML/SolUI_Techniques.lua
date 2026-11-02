@@ -10,6 +10,7 @@ local TAILLE, ECART = 46, 8
 local RIPOSTE = 100014   -- Riposte du rempart : mise en avant quand le Rempart est bien rempli
 local SEUIL_RIPOSTE = 0.5
 local HEURT = 100019     -- Heurt de bouclier : mis en avant quand la cible incante un sort qu'on peut interrompre (lot 3b)
+local TRAIT, TRANSE = 100201, 100223   -- Trait de l'ombre : mis en avant sous la Transe de l'ombre (lot D4)
 
 local function CibleInterruptible()
     if not UnitCanAttack("player", "target") then return false end
@@ -188,7 +189,8 @@ local function Etat(b)
 
     local enAvant = not enRecharge and (((sort == RIPOSTE or nom == GetSpellInfo(RIPOSTE))
         and S.etat.rempart and S.etat.plafond > 0 and S.etat.rempart >= SEUIL_RIPOSTE * S.etat.plafond)
-        or ((sort == HEURT or nom == GetSpellInfo(HEURT)) and CibleInterruptible()))
+        or ((sort == HEURT or nom == GetSpellInfo(HEURT)) and CibleInterruptible())
+        or ((sort == TRAIT or nom == GetSpellInfo(TRAIT)) and UnitBuff("player", GetSpellInfo(TRANSE) or "") ~= nil))
     if enAvant then
         b.halo:Show()
         b.halo:SetAlpha(0.45 + 0.35 * math.sin(GetTime() * math.pi / 1.2))

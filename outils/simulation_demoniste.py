@@ -14,6 +14,8 @@ Règles reprises du serveur (v3_demoniste.cpp, demoniste_v3.py, v3_combat.cpp) e
   (×0,5, ×1, ×1,5) ;
 - Diablotin (15 s) : Trait de feu toutes les 2 s, sans être attaqué. Marcheur du Vide (10 s) : provoque les monstres à
   15 m, qui le frappent ; sa vie est celle du démoniste × PART_MARCHEUR, son armure la sienne ;
+- arme (v3_niveau.cpp) : elle ne frappe pas ; ses dégâts par seconde × 14 s'ajoutent à la PA ;
+- Transe de l'ombre : chaque tic de Corruption ou d'Agonie a CHANCE_TRANSE de rendre le prochain Trait instantané ;
 - Peur (6 s) : brisée quand le monstre a perdu SEUIL_PEUR de sa vie maximale depuis qu'il fuit (v3_demoniste.cpp ;
   le moteur prenait 1/4,75 de la vie d'un guerrier du niveau du lanceur, 80 : jamais atteint) ; le monstre revient en
   RETOUR_PEUR × le temps de fuite (il fuit en zigzag, pas en ligne droite : supposé).
@@ -42,6 +44,7 @@ GCD, INCANTATION = 0.75, 1.5
 RETARD, RETARDS_MAX = 0.5, 2
 RETOUR_PEUR = 0.5
 SEUIL_PEUR = 0.15
+CHANCE_TRANSE = 0.10
 PART_MARCHEUR = 1.0                 # v3_demoniste.cpp
 PART_MOISSON = 0.25                  # v3_demoniste.cpp
 # Recharges (demoniste_v3.py) et durées des invocations (v3_demoniste.cpp), en s.
@@ -106,6 +109,9 @@ def demoniste(objets, guid, nom="démoniste", repas=0, vie_enchant=0, armure_enc
             niveaux.append(o["niveau"])
     vie = VIE_BASE + min(endurance, 20) + 10 * max(0, endurance - 20) + vie_enchant
     pa += max(0, 3 + 2 * (INTELLIGENCE_BASE + repas) - 20)
+    if 15 in portes:
+        arme = sim.objet(portes[15])
+        pa += round((arme["bas"] + arme["haut"]) / 2 / arme["vitesse"] * 14)
     puissance = round(sum(niveaux) / len(niveaux), 1) if niveaux else 1
     return Demoniste(nom, vie, armure, pa, puissance)
 
@@ -135,6 +141,7 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None)
     vie, t, libre = j.vie, 0.0, 0.0
     marcheur_jusqua, vie_marcheur = -1.0, 0
     diablotin_jusqua, feu = -1.0, None
+    transe = False
     drain = None                              # (cible, tics restants, prochain tic, intervalle)
     incantation = None                        # (sort, cible, fin, retards)
     inflige = subi = 0
@@ -228,6 +235,8 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None)
             liste = corruption[i] if genre == "corruption" else agonie[i]
             _, part = liste.pop(0)
             soigner(round(frapper(i, part, False) * PART_MOISSON))
+            if alea.random() < CHANCE_TRANSE:
+                transe = True
             continue
         if quoi == "feu":
             frapper(c, p["feu"], True)
@@ -309,6 +318,11 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None)
             pret["drain"] = t + RECHARGES["drain"] + alea.uniform(0, 2 * reaction)
             libre = DUREE_MAX + 1
         else:
+            if action == "trait" and transe:
+                transe = False
+                frapper(c, p["trait"], True)
+                libre = t + GCD
+                continue
             incantation = (action, c, t + INCANTATION, 0)
             libre = DUREE_MAX + 1
     return terminer(False, t, vie, inflige, subi)

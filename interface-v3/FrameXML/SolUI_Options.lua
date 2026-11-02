@@ -100,9 +100,10 @@ local SPES = {
             .. "techniques ; d'autres s'ouvrent avec ta puissance (Techniques équipées)." },
     WARLOCK = { id = 2, cle = "affliction", nom = "Démoniste — Affliction",
         icone = "Interface\\Icons\\Spell_Shadow_DeathCoil",
-        texte = "Passif Moisson : 25 % des dégâts de tes sorts sur la durée te reviennent en vie. Maléfices et "
-            .. "drains, à distance : les sorts instantanés se lancent en courant, les autres à l'arrêt ; les démons "
-            .. "sont des invocations de quelques secondes.\nTu commences "
+        texte = "Passif Moisson : 25 % des dégâts de tes sorts sur la durée te reviennent en vie, et tes maléfices "
+            .. "rendent parfois ton Trait de l'ombre instantané. Maléfices et drains, à distance : les sorts "
+            .. "instantanés se lancent en courant, les autres à l'arrêt ; ton arme ne frappe pas, elle nourrit ta "
+            .. "puissance d'attaque ; les démons sont des invocations de quelques secondes.\nTu commences "
             .. "avec 3 emplacements de techniques ; d'autres s'ouvrent au fil de l'histoire (Techniques équipées)." },
 }
 -- La classe est lue à l'affichage : au chargement de l'interface, elle peut ne pas être connue.

@@ -7,6 +7,7 @@
 // - Lot D1 (02/11/2026) : une seule règle pour toutes les classes, au lieu des formules de Blizzard par classe : la
 //   puissance d'attaque de base vaut 2 par point de caractéristique principale (Force, Agilité ou Intelligence, selon la
 //   spécialisation : v3_kit.cpp), comme la Force du guerrier. Les sorts du démoniste suivent ainsi son Intelligence.
+//   Lot D4 : un lanceur de sorts y ajoute les dégâts par seconde de son arme × 14.
 // - Régénération de vie : celle du jeu, selon l'Esprit, est coupée (Rate.Health = 0.001) car elle remplissait les petites
 //   réserves de vie en quelques secondes ; hors combat, le joueur récupère SolAzeroth.V3.RegenVie % de sa vie maximum
 //   par seconde (2 par défaut, demande du 31/10/2026), rendus toutes les 2 secondes ; le Repos au coin du feu en
@@ -18,6 +19,7 @@
 #include "Config.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "Item.h"
 #include "Log.h"
 #include "ObjectMgr.h"
 #include "Player.h"
@@ -36,6 +38,11 @@ namespace
     struct Puissance : DataMap::Base
     {
         uint8 valeur = 0;
+    };
+
+    struct ArmePortee : DataMap::Base
+    {
+        uint32 entree = 0;
     };
 
     struct Regen : DataMap::Base
@@ -158,16 +165,43 @@ public:
     }
 
     // Formule du guerrier au niveau 1 (3 + 2 × Force − 20), appliquée à la caractéristique principale de chacun.
+    // Lot D4 (02/11/2026) : un lanceur de sorts (caractéristique principale Intelligence, aujourd'hui le seul démoniste)
+    // ne frappe pas avec son arme ; ses dégâts par seconde × 14 s'ajoutent à sa puissance d'attaque, celle des sorts,
+    // comme le moteur les ajoute aux coups de mêlée. Une meilleure arme vaut ainsi autant pour lui que pour le guerrier.
     void OnPlayerAfterUpdateAttackPowerAndDamage(Player* player, float& level, float& base, float& /*mod*/,
         float& /*multiplicateur*/, bool ranged) override
     {
         float caracteristique = player->GetStat(Stats(SolAzeroth::CaracteristiquePrincipale(player)));
-        base = std::max(0.0f, level * 3.0f + caracteristique * 2.0f - 20.0f)
+        base = (std::max(0.0f, level * 3.0f + caracteristique * 2.0f - 20.0f) + PuissanceDeLArme(player))
             * player->GetPctModifierValue(ranged ? UNIT_MOD_ATTACK_POWER_RANGED : UNIT_MOD_ATTACK_POWER, BASE_PCT);
+    }
+
+    static float PuissanceDeLArme(Player* player)
+    {
+        if (SolAzeroth::CaracteristiquePrincipale(player) != STAT_INTELLECT)
+            return 0.0f;
+        Item* arme = player->GetWeaponForAttack(BASE_ATTACK, true);
+        ItemTemplate const* modele = arme ? arme->GetTemplate() : nullptr;
+        if (!modele || !modele->Delay)
+            return 0.0f;
+        float moyenne = (modele->Damage[0].DamageMin + modele->Damage[0].DamageMax) / 2.0f;
+        return moyenne / (modele->Delay / 1000.0f) * 14.0f;
     }
 
     void OnPlayerUpdate(Player* player, uint32 diff) override
     {
+        // Arme changée : la puissance d'attaque du lanceur de sorts suit (l'équipement ne la recalcule pas toujours).
+        if (SolAzeroth::CaracteristiquePrincipale(player) == STAT_INTELLECT)
+        {
+            Item* arme = player->GetWeaponForAttack(BASE_ATTACK, true);
+            ArmePortee* a = player->CustomData.GetDefault<ArmePortee>("solazeroth_v3_arme_portee");
+            uint32 entree = arme ? arme->GetEntry() : 0;
+            if (entree != a->entree)
+            {
+                a->entree = entree;
+                player->UpdateAttackPowerAndDamage();
+            }
+        }
         Regen* r = player->CustomData.GetDefault<Regen>("solazeroth_v3_regen");
         r->attente += diff;
         if (r->attente < TICK_REGEN)

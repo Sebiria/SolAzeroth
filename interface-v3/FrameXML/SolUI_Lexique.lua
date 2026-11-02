@@ -182,9 +182,10 @@ S.LEXIQUE = {
         { "moisson", "Moisson et démons",
           "Le démoniste Affliction : que des sorts, une part de ta puissance d'attaque, et des démons de quelques secondes.",
           T("Les sorts")
-          .. "• Aucune attaque automatique : l'arme ne compte que par ses caractéristiques.\n"
+          .. "• Aucune attaque automatique : les dégâts par seconde de ton arme × 14 s'ajoutent à ta puissance d'attaque.\n"
           .. "• Instantanés en courant ; incantations et drains à l'arrêt (un coup reçu les retarde).\n"
-          .. "• Moisson : 25 % des dégâts sur la durée te reviennent en vie.\n\n"
+          .. "• Moisson : 25 % des dégâts sur la durée te reviennent en vie.\n"
+          .. "• Transe de l'ombre : chaque dégât de Corruption ou d'Agonie a 10 % de chances de rendre ton prochain Trait de l'ombre instantané (icône dans tes effets).\n\n"
           .. T("Les démons")
           .. "• Diablotin (15 s) : traits de feu sur ta cible, sans attirer les monstres.\n"
           .. "• Marcheur du Vide (10 s) : attire les monstres proches et encaisse.\n"
