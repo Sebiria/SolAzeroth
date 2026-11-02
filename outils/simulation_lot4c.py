@@ -6,6 +6,9 @@ simulation_donjons.py (la fiche la plus forte des journaux, contre un fouette-qu
 - Plats : chacun garde la caractéristique ; son bonus propre est plus fort pour l'ingrédient le plus rare.
 - Consommables du surplus : pierre à aiguiser et nécessaire d'armure, 1 h.
 Repère : « + 5 % de puissance » (+ 5 % de dégâts infligés et − 5 % de dégâts subis).
+Cumuls (02/11/2026, demande de l'utilisateur) : un seul repas à la fois, mais il s'ajoute aux consommables, à la
+panoplie et aux variantes. On mesure les cumuls contre le même monstre, puis contre un monstre plus dur (vie et dégâts
+× 1,08 : environ 5 % de victoires sans bonus), où l'on voit encore la différence.
 
 py simulation_lot4c.py
 """
@@ -36,6 +39,18 @@ PLATS = [("Viande de sanglier rôtie : + 3 % de vie", {"vie": 1.03}),
 # + 5 % de dégâts et + 10 % d'armure valaient + 23 et + 16, plus qu'un plat : ramenés au niveau des plats communs.
 CONSOMMABLES = [("Pierre à aiguiser : + 3 % de dégâts physiques", {"inflige": 1.03}),
                 ("Nécessaire d'armure : + 8 % d'armure", {"armure": 1.08})]
+
+
+def cumul(*bonus):
+    """Plusieurs bonus ensemble : les pourcentages se multiplient, critique, hâte et vol de vie s'additionnent."""
+    total = {}
+    for b in bonus:
+        for k, v in b.items():
+            if k in ("critique", "hate", "vol"):
+                total[k] = total.get(k, 0.0) + v
+            else:
+                total[k] = total.get(k, 1.0) * v
+    return total
 
 
 def fiche(j, vie=1.0, armure=1.0, critique=0.0, hate=0.0):
@@ -88,6 +103,28 @@ def main():
     print("Consommables du surplus")
     for nom, bonus in CONSOMMABLES:
         ligne(nom, bonus)
+
+    maquereau, thon = PLATS[3][1], PLATS[4][1]
+    pierre, renfort = CONSOMMABLES[0][1], CONSOMMABLES[1][1]
+    panoplie6 = PANOPLIE[2][1]
+    huit = {"Critique": {"critique": VARIANTES["Critique"] * PIECES}, "Hâte": {"hate": VARIANTES["Hâte"] * PIECES / 100},
+            "Vol de vie": {"vol": VARIANTES["Vol de vie"] * PIECES}}
+    cumuls = [("+ 5 % de puissance (repère)", {"inflige": 1.05, "subis": 0.95}),
+              ("+ 10 % de puissance (repère)", {"inflige": 1.10, "subis": 0.90}),
+              ("Maquereau + pierre (dégâts × 1,03 × 1,03)", cumul(maquereau, pierre)),
+              ("Maquereau + pierre + renfort", cumul(maquereau, pierre, renfort)),
+              ("Thon + pierre + renfort", cumul(thon, pierre, renfort)),
+              ("Panoplie 6 + maquereau + pierre + renfort", cumul(panoplie6, maquereau, pierre, renfort)),
+              ("Panoplie 6 + thon + pierre + renfort", cumul(panoplie6, thon, pierre, renfort))]
+    for v, b8 in huit.items():
+        cumuls.append(("Tout : panoplie 6, 8 × %s, thon, pierre, renfort" % v, cumul(panoplie6, b8, thon, pierre, renfort)))
+    dur = modes.renforcer(sim.monstre_depuis_base(3122, niveau), k * 1.08, 1.0)
+    t_dur = donjons.taux(j, dur)
+    print("\nCumuls (un repas, les consommables, la panoplie, les variantes)")
+    print("   %-52s %s" % ("", "monstre réglé (%.0f %%)   plus dur (%.0f %%)" % (t, t_dur)))
+    for nom, bonus in cumuls:
+        v, v_dur = essai(j, m, bonus), essai(j, dur, bonus)
+        print("   %-52s %3.0f %% (%+3.0f)          %3.0f %% (%+3.0f)" % (nom, v, v - t, v_dur, v_dur - t_dur))
 
 
 if __name__ == "__main__":
