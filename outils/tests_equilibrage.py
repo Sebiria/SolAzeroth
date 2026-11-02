@@ -27,8 +27,8 @@ REEL_JOUEUR, REEL_MONSTRE = 86 / 25.8, 74 / 25.8
 TOLERANCE = 0.30   # un seul combat réel : ses dés comptent
 TOLERANCE_DUREE = 0.15   # médiane de la durée simulée ÷ durée réelle, sur tous les combats en mêlée seule
 MIN_COMBATS = 30
-# Réglages d'origine gardés par les migrations de calibrage (primes 105, Gouffre 102, sorts 107).
-ORIGINES = ["solazeroth_v3_sorts_calibre_origine", "solazeroth_v3_primes_origine", "solazeroth_v3_gouffre_origine"]
+# Réglages d'origine gardés par les migrations de calibrage (primes 105, Gouffre 102, sorts 107, lot 3c 111).
+ORIGINES = ["solazeroth_v3_calibre_3c_origine", "solazeroth_v3_sorts_calibre_origine", "solazeroth_v3_primes_origine", "solazeroth_v3_gouffre_origine"]
 REPAS_DUROTAR = 6
 # Enchantements de Durotar (enchantement_v3.py) : plastron +5 vie, cape +10 armure, brassards +1 Force, arme +1 dégât.
 ENCHANTEMENTS_DUROTAR = dict(vie=5, armure=10, force=1, degats=1)

@@ -823,6 +823,14 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - Interface : la fenêtre des techniques montre qui enseigne chaque technique verrouillée et le nombre d'emplacements ; le Heurt de bouclier s'illumine quand la cible incante un sort qu'on peut interrompre.
   - Dégâts d'arme normalisés : pas faits. Avec le bouclier exigé, les armes à deux mains (la Claymore en cuivre) ne portent plus les techniques.
   - Simulation (combats réels, Frappe à 5 %) : monstre seul 31 % de vie perdue en médiane (cible 15 à 30), vallée 17 %, groupes 74 % sans Cri de défi et 70 % avec. Les élites (3 combats) et les groupes restent trop durs : c'est le lot 3c.
+- **Audit du jeu, lot 3c : recalibrage des monstres** (02/11/2026, C1 et C2 du consensus) : construit, pas encore vérifié en jeu.
+  - Outil `calibre_3c.py`, migration 111 : 85 monstres de Durotar et du Gouffre réglés, chacun simulé contre la fiche de Sebiria la plus proche de sa puissance (à puissance égale au-delà de 9), avec la potion de départ et le Heurt de bouclier. On repart des réglages d'avant la migration 107 : les lanceurs de sorts retrouvent leurs dégâts, et leurs sorts ne baissent que si la mêlée au plus bas (×0,3) ne suffit pas (16 monstres, table solazeroth_v3_sorts_facteur). Seuls les monstres hors de leur cible bougent.
+  - Cibles (vie perdue, une défaite comptant 100 %) : vallée 5 à 20 %, monstre seul 15 à 30 %, élites et chefs 30 à 60 % (et 12 à 15 s, par la vie). Les monstres du Gouffre hors boss visent la cible du monstre seul : ils vont par groupes.
+  - Résultat en médiane : vallée de 2 à 10 % ; monstre seul de 42 à 26 % ; élites et chefs de 56 à 49 %, en 14 s au lieu de 18. Toutes les victoires restent à 100 % en médiane.
+  - Chefs renforcés : un renfort au plus appelé en combat (Benedict en appelait 4, Kolkanis et Gazz'uz 2 : 0 % de victoires en simulation, et la mort de Test contre Benedict et ses 4 soldats, journal du 31/10/2026). Le Gazz'uz renforcé perd son marcheur du Vide, retiré partout dans la zone par la migration 106 mais pas des copies. Avec le renfort, ces combats durent 17 à 22 s.
+  - Simulateur (`simulation_sorts.py`) : interruption par le Heurt de bouclier (puis silence 3 s), renforts appelés en combat, zones au sol (Pluie de feu) quittées au bout de 3 s, vie des monstres réglable.
+  - Laissés tels quels ou hors cible : le Requin du sable (imbattable, danger du décor) ; la Matriarche des scorpides (élite de puissance 4), encore à 91 % de vie perdue et 73 % de victoires au plus bas des réglages.
+  - `tests_equilibrage.py` relit les journaux d'avant avec la table solazeroth_v3_calibre_3c_origine : il passe.
 
 ## 5. Questions pour les prochaines séries
 

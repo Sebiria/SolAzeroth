@@ -12,7 +12,9 @@ aussi les sorts de son script SmartAI, comme le serveur :
   durée (SolAzeroth.V3.MonstresDegats, MonstresDegatsSorts, MonstresDegatsDuree) ;
 - effets joués : dégâts directs, coups d'arme, dégâts sur la durée, drain, soins (sur soi ou un allié), étourdissement
   du joueur, vitesse d'attaque, dégâts en plus (fixes ou en %), dégâts subis en %, armure (du joueur ou du monstre),
-  soins reçus en %, boucliers de dégâts et effets déclenchés, renforts (diablotins, marcheurs) ;
+  soins reçus en %, boucliers de dégâts et effets déclenchés, renforts (diablotins, marcheurs), et renforts appelés
+  en combat par le script (chefs renforcés, lot 3c) ;
+- zones au sol (Pluie de feu…) : le joueur en sort au bout de SORTIE_DE_ZONE s (lot 3c) ;
 - ignorés : ce que la v3 annule (esquive, blocage, chances de toucher), la course, la taille, les interruptions (le
   joueur n'incante pas), l'Intelligence.
 
@@ -23,6 +25,7 @@ chiffres que simulation_combat.combat() : c'est vérifié par py simulation_sort
 py simulation_sorts.py --monstre 3205             sorts de Zalazane, et le combat avec et sans eux
 """
 import argparse
+import copy
 import os
 import random
 import struct
@@ -39,9 +42,14 @@ SOI, ENNEMI = "soi", "ennemi"
 # Événements SmartAI joués (les autres ne se produisent pas contre un joueur seul qui n'incante pas).
 EN_COMBAT, HORS_COMBAT, VIE_BASSE, ENGAGEMENT, A_DISTANCE, ALLIE_BLESSE, ALLIE_SANS_BUFF = 0, 1, 2, 4, 9, 14, 16
 PAS_REPETABLE = 1
+INVOQUER = 12                # SMART_ACTION_SUMMON_CREATURE
+INTERRUPTIBLE = 0x8          # Spell.dbc, InterruptFlags : SPELL_INTERRUPT_FLAG_INTERRUPT
+SILENCE_HEURT = 3.0          # Heurt de bouclier (techniques_v3.py) : réduit au silence 3 s
+SORTIE_DE_ZONE = 3.0         # temps passé dans une zone au sol : réaction (1,4 s) et quelques pas
 
 _spell = _durees = _bd = None
 SORTS_AJOUTES = {}   # sorts Sol'Azeroth (spell_dbc) : id -> enregistrement, ajoutés par sorts_monstres_v3.py
+APPELES = {}         # renforts appelés en combat : (entrée, puissance) -> fiche
 
 
 def _charger():
@@ -113,7 +121,8 @@ def effets(sid, niveau, classe, cible_script):
             sortie.append(("renfort", SOI, misc, 0, None))
         elif effet in (6, 27, 35):
             if aura == 3:
-                sortie.append(("dot", ENNEMI, v, dure, intervalle))
+                # Zone au sol (effet 27, Pluie de feu…) : le joueur en sort (lot 3c, 02/11/2026).
+                sortie.append(("dot", ENNEMI, v, min(dure, SORTIE_DE_ZONE) if effet == 27 else dure, intervalle))
             elif aura == 53:
                 sortie.append(("drain", ENNEMI, v, dure, intervalle))
             elif aura == 8:
@@ -161,11 +170,18 @@ def sorts_du_monstre(entree, niveau, classe=None):
     if classe is None:
         classe = int(sql("SELECT unit_class FROM acore_world.creature_template WHERE entry = %d" % entree)[0][0])
     liste = []
-    for ev, chance, drapeaux, p1, p2, p3, p4, sid, cible in sql(
+    for ev, chance, drapeaux, p1, p2, p3, p4, sid, cible, action in sql(
             "SELECT event_type, event_chance, event_flags, event_param1, event_param2, event_param3, event_param4, "
-            "action_param1, target_type FROM acore_world.smart_scripts WHERE source_type = 0 AND entryorguid = %d AND "
-            "action_type IN (11, 85, 86, 134) ORDER BY id" % entree):
+            "action_param1, target_type, action_type FROM acore_world.smart_scripts WHERE source_type = 0 AND "
+            "entryorguid = %d AND action_type IN (11, 85, 86, 134, %d) ORDER BY id" % (entree, INVOQUER)):
         ev, sid, cible = int(ev), int(sid), int(cible)
+        if int(action) == INVOQUER:
+            # Renfort appelé par le script (chefs renforcés, migration 075) : lot 3c, 02/11/2026.
+            if ev in (EN_COMBAT, VIE_BASSE, ENGAGEMENT):
+                liste.append({"id": -sid, "evenement": ev, "p": [int(p1), int(p2), int(p3), int(p4)],
+                              "chance": int(chance), "unique": bool(int(drapeaux) & PAS_REPETABLE), "cible": cible,
+                              "incantation": 0.0, "interruptible": False, "effets": [("appel", SOI, sid, 0, None)]})
+            continue
         e = enregistrement(sid)
         if not e or ev not in (EN_COMBAT, HORS_COMBAT, VIE_BASSE, ENGAGEMENT, A_DISTANCE, ALLIE_BLESSE, ALLIE_SANS_BUFF):
             continue
@@ -175,7 +191,7 @@ def sorts_du_monstre(entree, niveau, classe=None):
         liste.append({"id": sid, "evenement": ev, "p": [int(p1), int(p2), int(p3), int(p4)], "chance": int(chance),
                       "unique": bool(int(drapeaux) & PAS_REPETABLE), "cible": cible,
                       "incantation": incantation(e) if ev not in (HORS_COMBAT, ALLIE_SANS_BUFF) else 0.0,
-                      "effets": ef})
+                      "interruptible": bool(e[31] & INTERRUPTIBLE), "effets": ef})
     return liste
 
 
@@ -213,11 +229,18 @@ class Etat:
 
 
 def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, melee=1.0, facteur_sorts=1.0,
-                 cri=True):
+                 cri=True, heurt=None, vie=1.0):
     """Combat contre des monstres (avec leurs sorts et leurs renforts). melee : facteur sur la mêlée des monstres
-    (réglage de DamageModifier) ; facteur_sorts : sur les dégâts et soins de leurs sorts. Renvoie (victoire, durée,
-    vie restante, dégâts infligés, dégâts subis)."""
+    (réglage de DamageModifier) ; facteur_sorts : sur les dégâts et soins de leurs sorts ; vie : facteur sur la vie des
+    monstres principaux (réglage de HealthModifier). heurt (lot 3c, 02/11/2026) : recharge du Heurt de bouclier en
+    secondes, ou None sans lui ; le joueur voit l'incantation après son délai de réaction et l'interrompt si elle dure
+    encore, puis le monstre est réduit au silence SILENCE_HEURT s. Renvoie (victoire, durée, vie restante, dégâts
+    infligés, dégâts subis)."""
     tous = []
+    if vie != 1.0:
+        monstres = [copy.copy(m) for m in monstres]
+        for m in monstres:
+            m.vie = max(1, round(m.vie * vie))
     for m in monstres:
         tous.append(m)
         if sorts:
@@ -225,6 +248,7 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
     etats = [Etat(m) for m in tous]
     for e in etats:
         e.principal = any(e.m is m for m in monstres)   # le facteur de mêlée ne touche pas les renforts
+    heurt_pret = 0.0
     vie_j = joueur.vie
     plafond = int(joueur.vie * sim.REMPART_PLAFOND)
     rempart = 0
@@ -239,7 +263,6 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
     charges, potion_prete, soins_restants = (potion[0] if potion else 0), 0.0, 0
     dots = []      # [prochain tick, fin, valeur par tick, intervalle, drain : indice du monstre ou None, clé]
     debuffs = {}   # clé -> (fin, genre, valeur, cumuls)
-    minuteries = {}
 
     def actif(genre):
         return [(v, c) for (f, g, v, c) in debuffs.values() if g == genre and f > t]
@@ -342,6 +365,8 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
                 e.hots.append([t + extra, fin, v * facteur_sorts, extra])
             elif genre == "etourdi":
                 etourdi_jusqua = max(etourdi_jusqua, fin)
+            elif genre == "appel":
+                appeler(v, e.m.puissance)
             elif genre == "degats_plus":
                 e.plus.append((fin, v))
             elif genre == "degats_pct" and qui == SOI:
@@ -364,22 +389,32 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
                     cumuls = min((extra or 1) or 1, debuffs[cle][3] + 1)
                 debuffs[cle] = (fin, genre, v, cumuls)
 
-    # Minuteries des sorts ; ceux d'avant le combat (renforcements, renforts) sont déjà là.
+    def armer(i, debut):
+        """Minuteries des sorts du monstre i ; ceux d'avant le combat (renforcements, renforts) sont déjà là."""
+        for n, s in enumerate(etats[i].m.sorts):
+            ev, p = s["evenement"], s["p"]
+            if ev in (HORS_COMBAT, ALLIE_SANS_BUFF):
+                if alea.random() * 100 < s["chance"]:
+                    lancer(i, dict(s, effets=[x for x in s["effets"] if x[0] != "renfort"]))
+            elif ev in (ENGAGEMENT, A_DISTANCE, VIE_BASSE, ALLIE_BLESSE):
+                prochain[("sort", i, n)] = debut
+            elif ev == EN_COMBAT:
+                prochain[("sort", i, n)] = debut + alea.uniform(p[0], max(p[0], p[1])) / 1000.0
+
+    def appeler(entree, puissance):
+        """Renfort appelé en combat : il frappe le joueur, avec ses sorts."""
+        cle = (entree, puissance)
+        if cle not in APPELES:
+            APPELES[cle] = monstre_avec_sorts(entree, puissance, renforts=False)
+        etats.append(Etat(APPELES[cle]))
+        etats[-1].principal = False
+        i = len(etats) - 1
+        prochain[("melee_m", i)] = t + etats[i].m.vitesse * alea.uniform(0.5, 1.0)
+        armer(i, t)
+
     if sorts:
-        for i, e in enumerate(etats):
-            for n, s in enumerate(e.m.sorts):
-                ev, p = s["evenement"], s["p"]
-                if ev in (HORS_COMBAT, ALLIE_SANS_BUFF):
-                    if alea.random() * 100 < s["chance"]:
-                        lancer(i, dict(s, effets=[x for x in s["effets"] if x[0] != "renfort"]))
-                elif ev in (ENGAGEMENT, A_DISTANCE):
-                    minuteries[(i, n)] = 0.0
-                elif ev == EN_COMBAT:
-                    minuteries[(i, n)] = alea.uniform(p[0], max(p[0], p[1])) / 1000.0
-                elif ev in (VIE_BASSE, ALLIE_BLESSE):
-                    minuteries[(i, n)] = 0.0
-    for k, v in minuteries.items():
-        prochain[("sort",) + k] = v
+        for i in range(len(etats)):
+            armer(i, 0.0)
     prochain["tick"] = None
 
     def prochain_tick():
@@ -461,6 +496,9 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
                 if s["incantation"] > 0:
                     e.incante_jusqua = t + s["incantation"]
                     prochain[("fin",) + quoi[1:]] = e.incante_jusqua
+                    vu = max(t + alea.uniform(0, 2 * reaction), heurt_pret, etourdi_jusqua)
+                    if heurt is not None and s["interruptible"] and vu < e.incante_jusqua:
+                        prochain[("heurt",) + quoi[1:]] = vu
                 else:
                     lancer(i, s)
                 repete = (p[2], p[3]) if ev in (EN_COMBAT, VIE_BASSE, ALLIE_BLESSE) else (0, 0)
@@ -476,6 +514,17 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
             prochain[quoi] = None
             if etats[i].vie > 0:
                 lancer(i, etats[i].m.sorts[n])
+        elif quoi[0] == "heurt":
+            _, i, n = quoi
+            prochain[quoi] = None
+            e = etats[i]
+            if t >= heurt_pret and prochain.get(("fin", i, n)) is not None and e.vie > 0:
+                prochain[("fin", i, n)] = None
+                e.incante_jusqua = t
+                heurt_pret = t + heurt
+                for k, v in prochain.items():
+                    if v is not None and isinstance(k, tuple) and k[0] == "sort" and k[1] == i:
+                        prochain[k] = max(v, t + SILENCE_HEURT)
         if vie_j > 0:
             boire()
         for i, d in degats.items():
