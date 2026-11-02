@@ -63,7 +63,7 @@ A = [
          resume="Tue la Matriarche des scorpides, dans la crevasse à l'est du champ des scorpides ouvriers.",
          intro="Sarkoth avait une compagne, plus vieille et plus grosse. Elle niche dans la crevasse, à l'est du champ "
                "des ouvriers. Sa piqûre ronge l'armure, et quand elle souffre, ses ouvriers accourent. Reviens quand tu "
-               "seras mieux équipé, si tu tiens à ta peau.",
+               "seras mieux $Géquipé:équipée;, si tu tiens à ta peau.",
          prog="La matriarche vit encore ?", fin="Elle est morte. La Vallée dormira mieux. Prends ceci, taillé dans sa chitine."),
     dict(q=910212, cle="A12", famille="Primes", titre="Le commandant de la garde", de=TRANCHE, a=TRANCHE, p=7, part=125,
          tuer=[(5809, 1, (-227, -5094), None)], argent=12500, insignes=25, eclats=15, equip=910122,
@@ -213,7 +213,7 @@ A = [
          tuer=[(CREDIT_VAGUE5, 1, (-883, -4295), "Vague 5 de l'épreuve tenue")], argent=7500, insignes=15, eclats=9,
          resume="Parle à Zun'jala pour lancer l'épreuve, et tiens jusqu'à la vague 5.",
          intro="Les esprits de la terre rouge jugent les gardiens. Dix vagues, de plus en plus dures, vingt secondes de "
-               "répit entre deux. Tiens cinq vagues pour commencer. Dis-moi quand tu es prêt.",
+               "répit entre deux. Tiens cinq vagues pour commencer. Dis-moi quand tu es $Gprêt:prête;.",
          prog="Les esprits attendent.", fin="Cinq vagues. Les esprits t'ont vu."),
     dict(q=910327, cle="A27", famille="Défis", titre="L'épreuve des esprits (2)", de=ZUNJALA, a=ZUNJALA, prev=910227,
          p=11, part=100, tuer=[(CREDIT_VAGUE10, 1, (-883, -4295), "Vague 10 de l'épreuve tenue")], argent=12000,

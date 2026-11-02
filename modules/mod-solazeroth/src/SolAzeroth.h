@@ -59,6 +59,10 @@ namespace SolAzeroth
     // Lot 4a : défi répétable déjà payé plein tarif aujourd'hui (v3_annexes.cpp).
     bool DefiPayeAujourdhui(Player* player, unsigned int quete);
     bool CarteReliques(Player* player);
+    // Lot 6b : rares secrets de la zone, « SECRETS;vaincus;total;noms » pour la fenêtre des objectifs, vide si la zone
+    // n'en a pas (v3_rares_secrets.cpp) ; monture ajoutée aux montures du compte (v3_aventurier.cpp).
+    std::string RaresSecrets(Player* player, unsigned int zone);
+    void AjouterMontureCompte(Player* player, unsigned int sort);
     // Lot 4a : boucle de la semaine (v3_semaine.cpp) : affixe de la semaine (une technique de donjon, masque comme
     // TechniquesMonstre) et progrès de l'objectif de la semaine ; points de rang de l'objectif rempli (v3_aventurier.cpp).
     enum ObjectifSemaine : unsigned char { SEMAINE_DONJON = 1, SEMAINE_DEFIS, SEMAINE_ELITES };
@@ -243,6 +247,8 @@ void AddSC_solazeroth_v3_cuisine();
 void AddSC_solazeroth_v3_kit();
 void AddSC_solazeroth_v3_fournisseur();
 void AddSC_solazeroth_v3_semaine();
+void AddSC_solazeroth_v3_paroles();
+void AddSC_solazeroth_v3_rares_secrets();
 void AddSC_solazeroth_v3_journal();
 void AddSC_solazeroth_v3_mort();
 void AddSC_solazeroth_v3_bivouac();

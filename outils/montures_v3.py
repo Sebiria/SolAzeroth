@@ -122,7 +122,7 @@ VITESSES = {
     130: ["Mammouth laineux", "Mammouth des glaces", "Mammouth de guerre noir", "Grand mammouth des glaces",
           "Grand mammouth de guerre noir", "Cheval de guerre de l'Aube d'argent", "Destrier d'Argent",
           "Cheval de guerre blanc de croisé", "Cheval de guerre noir de croisé"],
-    135: ["Raptor razzashi rapide", "Tigre zulien rapide", "Faucon-pérégrin blanc rapide", "Seigneur corbeau",
+    135: ["Tigre zulien rapide", "Faucon-pérégrin blanc rapide", "Seigneur corbeau",
           "Ours de guerre amani", "Destrier de la mort de Vaillefendre", "Cheval de guerre embrasé",
           "Char d'assaut qiraji bleu", "Char d'assaut qiraji jaune", "Char d'assaut qiraji rouge",
           "Char d'assaut qiraji vert"],
@@ -131,6 +131,8 @@ VITESSES = {
     145: ["Tigre spectral rapide", "Mammouth de voyage de la toundra", "Rhinocéros laineux blanc"],
     150: ["Char d'assaut qiraji noir", "Destrier de la mort cramoisi"],
 }
+# Lot 6b (02/11/2026) : montures secrètes, hors boutique, gagnées ailleurs (rares_secrets_v3.py) : nom -> vitesse.
+SECRETES = {"Raptor razzashi rapide": 60}
 MONTURE, OBJET_MONTURE = 15, 5                # classe et sous-classe des objets de monture
 EFFET_MONTE, EFFET_VITESSE = 78, 32           # auras des montures terrestres
 MONTE = [33388, 33391, 34090, 34091, 54197, 33389, 33392, 34092, 34093, 54198]   # formations à la monte
@@ -151,7 +153,7 @@ def montures(d):
 def lignes(d):
     """Réécrit la vitesse des montures dans Spell.dbc ; rend (sorts modifiés, catalogue [(sort, nom, vitesse)])."""
     par_nom = montures(d)
-    noms = [n for liste in VITESSES.values() for n in liste]
+    noms = [n for liste in VITESSES.values() for n in liste] + list(SECRETES)
     assert len(noms) == len(set(noms)), "monture rangée à deux vitesses"
     assert set(noms) == set(par_nom), ("répartition incomplète", set(par_nom) ^ set(noms))
     modifies, catalogue = [], []
@@ -162,6 +164,10 @@ def lignes(d):
                 e[VITESSE] = vitesse - 1
                 modifies.append(e)
             catalogue.append((sorts[0][0], nom, vitesse))
+    for nom, vitesse in SECRETES.items():   # vitesse réécrite, mais pas de vente
+        for e in par_nom[nom]:
+            e[VITESSE] = vitesse - 1
+            modifies.append(e)
     return modifies, catalogue
 
 

@@ -1,0 +1,12 @@
+USE acore_world;
+UPDATE quest_template_addon SET PrevQuestID = 0 WHERE ID = 910005;
+INSERT INTO conditions (SourceTypeOrReferenceId, SourceGroup, SourceEntry, SourceId, ElseGroup, ConditionTypeOrReference, ConditionTarget, ConditionValue1, ConditionValue2, ConditionValue3, NegativeCondition, ErrorType, ErrorTextId, ScriptName, Comment) VALUES (19, 0, 910005, 0, 0, 8, 0, 910002, 0, 0, 0, 0, 0, '', 'Sol''Azeroth v3 : D05 demande D02');
+INSERT INTO conditions (SourceTypeOrReferenceId, SourceGroup, SourceEntry, SourceId, ElseGroup, ConditionTypeOrReference, ConditionTarget, ConditionValue1, ConditionValue2, ConditionValue3, NegativeCondition, ErrorType, ErrorTextId, ScriptName, Comment) VALUES (19, 0, 910005, 0, 0, 8, 0, 910004, 0, 0, 0, 0, 0, '', 'Sol''Azeroth v3 : D05 demande D04');
+UPDATE quest_template_addon SET PrevQuestID = 910005 WHERE ID = 910007;
+UPDATE quest_template_addon SET PrevQuestID = 910009 WHERE ID = 910012;
+UPDATE quest_template_addon SET PrevQuestID = 910016 WHERE ID = 910017;
+UPDATE quest_template_addon SET PrevQuestID = 0 WHERE ID = 910020;
+INSERT INTO conditions (SourceTypeOrReferenceId, SourceGroup, SourceEntry, SourceId, ElseGroup, ConditionTypeOrReference, ConditionTarget, ConditionValue1, ConditionValue2, ConditionValue3, NegativeCondition, ErrorType, ErrorTextId, ScriptName, Comment) VALUES (19, 0, 910020, 0, 0, 8, 0, 910018, 0, 0, 0, 0, 0, '', 'Sol''Azeroth v3 : D20 demande D18');
+INSERT INTO conditions (SourceTypeOrReferenceId, SourceGroup, SourceEntry, SourceId, ElseGroup, ConditionTypeOrReference, ConditionTarget, ConditionValue1, ConditionValue2, ConditionValue3, NegativeCondition, ErrorType, ErrorTextId, ScriptName, Comment) VALUES (19, 0, 910020, 0, 0, 8, 0, 910019, 0, 0, 0, 0, 0, '', 'Sol''Azeroth v3 : D20 demande D19');
+UPDATE quest_template SET QuestDescription = REPLACE(QuestDescription, 'Les péons ont raison d''avoir peur. Ceux qui reviennent du Convent parlent de démons, et ils ne mentent pas : de petits démons, mais des démons quand même.', 'Les péons ont raison d''avoir peur. Ce que tu as vu là-bas, ce sont des démons. De petits démons, mais des démons quand même.') WHERE ID = 910005;
+UPDATE quest_template SET QuestDescription = REPLACE(QuestDescription, 'Le moment approche. Zalazane tient sa force du crâne de Minshina : reprends-le, et ses gardes ne verront plus nos éclaireurs, nos guerriers retrouveront l''esprit clair.', 'Le moment est venu. Zalazane a perdu le crâne, ses gardes ne voient plus nos éclaireurs, et nos guerriers ont l''esprit clair.') WHERE ID = 910020;

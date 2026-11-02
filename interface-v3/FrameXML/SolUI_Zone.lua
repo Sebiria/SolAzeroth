@@ -84,6 +84,9 @@ S.Message("SOLZONE", function(champs)
         recu.reliques[tonumber(champs[2])] = champs[3] == "1"
     elseif genre == "CARTE" then
         recu.carte = champs[2] == "1"
+    elseif genre == "SECRETS" then   -- lot 6b : rares secrets (v3_rares_secrets.cpp), seuls les vaincus sont nommés
+        recu.secrets = { vaincus = tonumber(champs[2]) or 0, total = tonumber(champs[3]) or 0, noms = {} }
+        for n in string.gmatch(champs[4] or "", "[^,]+") do table.insert(recu.secrets.noms, n) end
     elseif genre == "FINZONE" then
         progres = recu
         S.progresZone = progres   -- reliques sur les cartes (SolUI_Quetes.lua)
@@ -279,6 +282,16 @@ function MajObjectifs()
             end
         end
     end
+    if progres and progres.secrets then
+        local secrets = progres.secrets
+        y = y + 10
+        Ecrire(string.format("Rares secrets (%d / %d)", secrets.vaincus, secrets.total), "ni prime, ni carte", nil,
+            "ambreClair", true)
+        for _, nomRare in ipairs(secrets.noms) do Ecrire(nomRare, "vaincu", nil, "vertClair") end
+        if secrets.vaincus < secrets.total then
+            Ecrire("?", nil, "On murmure qu'ils attendent les aventuriers les mieux équipés, aux confins de la zone.", "gris")
+        end
+    end
     for i = n + 1, #lignes do
         lignes[i].titre:Hide()
         lignes[i].valeur:Hide()
@@ -286,6 +299,13 @@ function MajObjectifs()
     end
     page:SetHeight(math.max(10, y))
     S.Montrer(acheterCarte, progres and not progres.carte)
+    if progres then   -- lot 6b : la carte se vend après 8 reliques trouvées (v3_annexes.cpp)
+        local trouvees = 0
+        for _, t in pairs(progres.reliques) do if t then trouvees = trouvees + 1 end end
+        acheterCarte.texte:SetText(trouvees >= 8 and "Carte des reliques (30 Marques, 2 po)"
+            or ("Carte des reliques : " .. trouvees .. " / 8 trouvées"))
+        acheterCarte:SetAlpha(trouvees >= 8 and 1 or 0.5)
+    end
 end
 objectifs:SetScript("OnShow", function() MajObjectifs() end)
 

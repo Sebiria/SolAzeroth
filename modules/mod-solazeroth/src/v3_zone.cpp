@@ -20,8 +20,9 @@
 // « POURCENT;total;histoire;exploration;annexes », « EXPLO;faites;total », « LIEU;lieu;nom;tués;requis;part;nettoyé;quête »
 // pour chaque lieu (le chef renforcé compte dans « requis » ; « quête » : titre de la quête du journal qui retient le chef
 // renforcé, vide sinon), « ANNEXE;quête;état;médaille;payé aujourd'hui » (état : 0 à prendre,
-// 1 en cours, 2 à rendre, 3 rendue), « RELIQUE;objet;trouvée », « CARTE;0|1 » (carte des reliques achetée), puis
-// « FINZONE ». Les annexes du pourcentage regroupent les genres 3 à 5. Hors de ces zones : « POURCENT;-1 ».
+// 1 en cours, 2 à rendre, 3 rendue), « RELIQUE;objet;trouvée », « CARTE;0|1 » (carte des reliques achetée),
+// « SECRETS;vaincus;total;noms » (lot 6b, rares secrets), puis « FINZONE ». Les annexes du pourcentage regroupent
+// les genres 3 à 5. Hors de ces zones : « POURCENT;-1 ».
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -232,6 +233,8 @@ namespace
                 sommes[part.genre] += part.part;
         }
         lieux.push_back(Acore::StringFormat("CARTE;{}", SolAzeroth::CarteReliques(player) ? 1 : 0));
+        if (std::string secrets = SolAzeroth::RaresSecrets(player, it->first); !secrets.empty())
+            lieux.push_back(secrets);   // lot 6b : rares secrets (v3_rares_secrets.cpp)
         uint32 annexes = sommes[LIEU] + sommes[ANNEXE] + sommes[RELIQUE];
         std::string pourcent = Acore::StringFormat("POURCENT;{};{};{};{}", sommes[QUETE] + sommes[EXPLORATION] + annexes,
             sommes[QUETE], sommes[EXPLORATION], annexes);

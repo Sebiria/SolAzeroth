@@ -64,6 +64,7 @@ EQUIPEMENT = [
 
 # Mécanique des quêtes. tuer : (créature, nombre, zone) ; go : (objet du monde, nombre, zone, texte) ;
 # objets : (objet, nombre, zone). prev : quêtes à avoir rendues (toutes). marques : nombre de Marques.
+# Lot 6b (02/11/2026) : D05, D07, D12, D17 et D20 se prennent avec la quête du même lieu (migration 119).
 Q = {
     1: dict(de=10176, a=3143, p=1, prev=[], marques=1, resume="Parle à Gornek, dans L'Antre."),
     2: dict(de=3143, a=3143, p=1, prev=[1], tuer=[(3098, 10, (-493, -4299))],
@@ -74,11 +75,11 @@ Q = {
             objets=[(16332, 1, (-88, -4275))],
             resume="Réveille 5 Péons fainéants avec la Matraque du contremaître et rapporte la Pioche de Thazz'ril, "
                    "au Convent de la Lame ardente."),
-    5: dict(de=3145, a=3145, p=3, prev=[2, 4], tuer=[(3101, 8, (-95, -4285)), (3102, 6, (-95, -4285))],
+    5: dict(de=3145, a=3145, p=3, prev=[2], tuer=[(3101, 8, (-95, -4285)), (3102, 6, (-95, -4285))],
             resume="Tue 8 Vils quasits et 6 Traqueurs gangrenés au Convent de la Lame ardente."),
     6: dict(de=3287, a=3287, p=3, prev=[2], objets=[(4905, 1, (-547, -4104))],
             resume="Tue Sarkoth, au nord-ouest de la Vallée, et rapporte sa pince à Hana'zua."),
-    7: dict(de=3145, a=3145, p=3, prev=[5], objets=[(4859, 1, (-58, -4221))],
+    7: dict(de=3145, a=3145, p=3, prev=[2], objets=[(4859, 1, (-58, -4221))],
             resume="Tue Yarrog Plaie-d'ombre, au fond du Convent, et rapporte le Médaillon de la Lame ardente."),
     8: dict(de=3143, a=3142, p=3, prev=[6, 7], marques=1, depart=4859,
             resume="Apporte le Médaillon de la Lame ardente à Orgnil Marque-l'âme, à Tranchecolline."),
@@ -88,7 +89,7 @@ Q = {
              resume="Rapporte 3 Outils gnomes, sur la Côte des naufrages, à Furl Morguefront."),
     11: dict(de=3293, a=3293, p=6, prev=[8], objets=[(4918, 5, (790, -4570))],
              resume="Rapporte 5 Sacs de ravitaillement du Canyon de Tranchevent à Rezlak."),
-    12: dict(de=3139, a=3139, p=6, prev=[9], objets=[(4883, 1, (-246, -5120))],
+    12: dict(de=3139, a=3139, p=6, prev=[8], objets=[(4883, 1, (-246, -5120))],
              resume="Tue le Lieutenant Benedict, au Donjon de Tiragarde, et rapporte les Ordres de l'amiral Portvaillant."),
     13: dict(de=3336, a=3336, p=6, prev=[8], tuer=[(3111, 8, (75, -4480)), (3112, 8, (75, -4480))],
              resume="Tue 8 Hurans et 8 Éclaireurs Tranchecrins dans les Terres des Tranchecrins."),
@@ -100,13 +101,13 @@ Q = {
                  (3190, 1, (-918, -4482), "Plan d'attaque : Village de Sen'jin lu"),
                  (3192, 1, (-974, -4407), "Plan d'attaque : Orgrimmar lu")],
              resume="Lis les trois Plans d'attaque des Kolkar, à la Combe des Kolkar."),
-    17: dict(de=3140, a=3140, p=9, prev=[16], marques=3, tuer=[(5808, 1, (-919, -4494))],
+    17: dict(de=3140, a=3140, p=9, prev=[14], marques=3, tuer=[(5808, 1, (-919, -4494))],
              resume="Tue le Seigneur de guerre Kolkanis, à la Combe des Kolkar."),
     18: dict(de=3194, a=3194, p=8, prev=[14], objets=[(4892, 4, (-1163, -5368))],
              resume="Rapporte 4 Fourrures de tigre de Durotar, prises sur les îles de l'Écho, à Vel'rin Croc."),
     19: dict(de=3188, a=3188, p=9, prev=[15], objets=[(4864, 1, (-1287, -5528))],
              resume="Reprends le Crâne de Minshina, auprès des Sombrelances emprisonnés de l'île de l'Écho."),
-    20: dict(de=3188, a=3188, p=10, prev=[18, 19],
+    20: dict(de=3188, a=3188, p=10, prev=[15],
              tuer=[(3206, 8, (-1190, -5530)), (3207, 8, (-1190, -5530))], objets=[(4866, 1, (-1287, -5534))],
              resume="Tue 8 Trolls vaudou et 8 Trolls maléficiés, puis abats Zalazane et rapporte sa tête."),
     21: dict(de=3193, a=3193, p=10, prev=[20], marques=4, objets=[(4891, 1, (281, -3848))],
@@ -373,12 +374,15 @@ def item_dbc():
                 ligne[1], ligne[2] = 7, 11
             table.enregistrements.append(ligne)
     # Annexes (migration 084) : Insigne, objets de quête, reliques (classe, sous-classe et emplacement changés), pièces ;
-    # pierres taillées de la joaillerie (migration 085) ; Braise et pièces bleues du Gouffre (migration 101).
+    # pierres taillées de la joaillerie (migration 085) ; Braise et pièces bleues du Gouffre (migration 101) ;
+    # bijou et bague des rares secrets (migration 121).
     import annexes_durotar
     import equipement_gouffre_v3
     import joaillerie_v3
+    import rares_secrets_v3
     existants = {e[0] for e in table.enregistrements}
-    for e, source, genre in annexes_durotar.lignes_dbc() + joaillerie_v3.lignes_dbc() +             equipement_gouffre_v3.lignes_dbc():
+    for e, source, genre in annexes_durotar.lignes_dbc() + joaillerie_v3.lignes_dbc() +             equipement_gouffre_v3.lignes_dbc() + \
+            rares_secrets_v3.lignes_dbc():
         if e not in existants:
             ligne = list(table.chercher(source))
             ligne[0] = e

@@ -371,6 +371,12 @@ void SolAzeroth::ObjectifArtisan(Player* player, unsigned int cle)
     Gagner(player, Compter(player, ARTISAN, cle, 0), avant);
 }
 
+// Lot 6b : la monture d'un rare secret (v3_rares_secrets.cpp).
+void SolAzeroth::AjouterMontureCompte(Player* player, unsigned int sort)
+{
+    AjouterMonture(player, sort);
+}
+
 class solazeroth_v3_aventurier_joueur : public PlayerScript
 {
 public:

@@ -24,6 +24,23 @@ etiquette:SetBackdropBorderColor(0.416, 0.435, 0.471)
 etiquette.texte = S.Texte(etiquette, "Bold", 11, "texte")
 etiquette.texte:SetPoint("CENTER", 0, 0)
 
+-- Lot 6b (02/11/2026, demande de l'utilisateur : « leur cadre doit être spécial, différent des rares ») : un rare
+-- secret (outils\rares_secrets_v3.py) a un liseré violet autour du cadre, l'étiquette « SECRET » pleine et le nom violet.
+local RARES_SECRETS = { [910040] = true, [910041] = true, [910042] = true }
+local VIOLET = { 0.639, 0.208, 0.933 }
+local lisere = CreateFrame("Frame", nil, cible)
+lisere:SetPoint("TOPLEFT", cible, "TOPLEFT", -4, 4)
+lisere:SetPoint("BOTTOMRIGHT", cible, "BOTTOMRIGHT", 4, -4)
+lisere:SetBackdrop({ edgeFile = S.BLANC, edgeSize = 2 })
+lisere:SetBackdropBorderColor(VIOLET[1], VIOLET[2], VIOLET[3], 0.9)
+lisere:Hide()
+-- Entrée de la créature, lue dans son GUID (0xF130, puis l'entrée sur 6 chiffres hexadécimaux).
+local function Entree(unite)
+    local guid = UnitGUID(unite)
+    if not guid or guid:sub(3, 6):upper() ~= "F130" then return nil end
+    return tonumber(guid:sub(7, 12), 16)
+end
+
 local nom = S.Texte(cible, "Bold", 22, "clair")
 nom:SetJustifyH("LEFT")
 local puissance = S.Texte(cible, "Regular", 13, "gris")
@@ -221,8 +238,18 @@ end
 
 local function MajEntete()
     local classement = UnitClassification("target")
-    local texte = (classement == "worldboss" and "BOSS") or ((classement == "elite" or classement == "rareelite") and "ÉLITE")
-        or (classement == "rare" and "RARE") or nil
+    local secret = RARES_SECRETS[Entree("target") or 0]
+    local texte = (secret and "SECRET") or (classement == "worldboss" and "BOSS")
+        or ((classement == "elite" or classement == "rareelite") and "ÉLITE") or (classement == "rare" and "RARE") or nil
+    S.Montrer(lisere, secret)
+    if secret then
+        etiquette:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1 })
+        etiquette:SetBackdropColor(VIOLET[1], VIOLET[2], VIOLET[3], 0.85)
+        etiquette:SetBackdropBorderColor(VIOLET[1], VIOLET[2], VIOLET[3])
+    else
+        etiquette:SetBackdrop({ edgeFile = S.BLANC, edgeSize = 1 })
+        etiquette:SetBackdropBorderColor(0.416, 0.435, 0.471)
+    end
     -- Le nom se place depuis le cadre lui-même (une ancre sur l'étiquette cachée le faisait disparaître).
     local decalage = 0
     nom:ClearAllPoints()
@@ -236,7 +263,11 @@ local function MajEntete()
     end
     nom:SetPoint("TOPLEFT", cible, "TOPLEFT", MARGE + decalage, -16)
     nom:SetText(UnitName("target") or "")
-    nom:SetTextColor(S.Couleur(UnitIsEnemy("player", "target") and "clair" or "texte"))
+    if secret then
+        nom:SetTextColor(0.80, 0.55, 1)
+    else
+        nom:SetTextColor(S.Couleur(UnitIsEnemy("player", "target") and "clair" or "texte"))
+    end
 end
 
 -- Puissance de la cible et malus du joueur contre elle (v3_combat.cpp), seulement pour un monstre.

@@ -16,7 +16,8 @@
 // étourdissement) ; T15 sang gangrené des bêtes corrompues (flaque de feu 6 s à leur mort) ; T17 orage de Féplouf
 // pendant le défi A29 (une zone marquée toutes les 8 s, la foudre y tombe 2,5 s après). Leurs dégâts sont en part de
 // la vie du joueur : à calibrer en jeu. Raptors des œufs (A22) et trolls des monceaux (A24) pendant leur contrat.
-// Commande : .annexes carte (30 Insignes et 2 po) dévoile dans la fenêtre des objectifs la place des reliques.
+// Commande : .annexes carte (30 Insignes et 2 po) dévoile dans la fenêtre des objectifs la place des reliques ; lot 6b
+// (02/11/2026, choix de l'utilisateur) : seulement après 8 reliques trouvées.
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -51,6 +52,7 @@ namespace
     uint32 const OEUFS = 3240, RAPTOR = 3122, MONCEAU = 102986, TROLL = 3207;
     uint32 const BOUCLIER_FOUDRE = 20545, ECLAIR = 403, CONSECRATION = 26573;
     uint32 const PRIX_CARTE_MARQUES = 30, PRIX_CARTE_CUIVRE = 2 * GOLD;
+    uint32 const RELIQUES_POUR_CARTE = 8;   // lot 6b : la carte sert à finir, pas à commencer
     uint32 const TICK = 500;
 
     struct Annexe
@@ -781,6 +783,15 @@ public:
         {
             handler->SendSysMessage("Tu as déjà la carte des reliques.");
             return true;
+        }
+        uint32 trouvees = 0;
+        for (auto const& [objetMonde, r] : reliques)
+            trouvees += SolAzeroth::NombreEnCollection(player, r.objet) ? 1 : 0;
+        if (trouvees < RELIQUES_POUR_CARTE)
+        {
+            handler->SendErrorMessage("La carte des reliques se vend à qui en a déjà trouvé {} ({} / {}).",
+                RELIQUES_POUR_CARTE, trouvees, RELIQUES_POUR_CARTE);
+            return false;
         }
         if (SolAzeroth::Marques(player) < PRIX_CARTE_MARQUES || player->GetMoney() < PRIX_CARTE_CUIVRE)
         {

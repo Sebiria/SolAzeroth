@@ -149,7 +149,7 @@ S.LEXIQUE = {
           .. "• 5 Marques, un composant et une part de zone.\n"
           .. "• Une famille complète : un bonus (pièce, or).\n\n"
           .. T("Carte des reliques")
-          .. "• 30 Marques et 2 po (Aventure › Zone) : un coffre sur chaque relique manquante, son indice au survol." },
+          .. "• Dès 8 reliques trouvées, 30 Marques et 2 po (Aventure › Zone) : un coffre sur chaque relique manquante, son indice au survol." },
         { "modes", "Modes de zone",
           "Dès 60 % d'une zone, elle peut se jouer plus dure, pour plus d'éclats.",
           T("Choisir")

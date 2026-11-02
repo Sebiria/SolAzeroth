@@ -200,7 +200,6 @@ SolUI.MONTURES = {
     { 66906, "Destrier d'Argent", 130, 780 },
     { 68187, "Cheval de guerre blanc de croisé", 130, 780 },
     { 68188, "Cheval de guerre noir de croisé", 130, 780 },
-    { 24242, "Raptor razzashi rapide", 135, 900 },
     { 24252, "Tigre zulien rapide", 135, 900 },
     { 46628, "Faucon-pérégrin blanc rapide", 135, 900 },
     { 41252, "Seigneur corbeau", 135, 900 },
