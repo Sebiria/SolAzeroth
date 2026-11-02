@@ -9,7 +9,7 @@
 -- - Lot 6b (02/11/2026, C8) : scènes au rendu des quêtes clés (« SCENE;quête », préfixe SOLPAROLE, v3_paroles.cpp).
 --   Une réplique peut changer d'orateur : { PNJ, nom, texte }. Accord au genre du joueur : « {masculin|féminin} ».
 -- - Lot D5 (02/11/2026) : une réplique propre à la classe s'écrit { WARRIOR = texte, WARLOCK = texte } (le guerrier
---   par défaut).
+--   par défaut). Lot V5 : ROGUE aussi.
 
 local S = SolUI
 
@@ -30,15 +30,18 @@ local LECONS = {
     { "regles", 3143, "Gornek", { "regles", "rempart" }, {
         "Pas mal, pour un premier combat. Écoute bien, je ne le répéterai pas.",
         { WARRIOR = "Ni rage ni mana : tes techniques n'ont qu'un temps de recharge. Et elles exigent ton bouclier, garde-le au bras.",
-          WARLOCK = "Ni rage ni mana : tes sorts n'ont qu'un temps de recharge. Incante à l'arrêt ; les sorts instantanés, eux, se lancent en courant." },
+          WARLOCK = "Ni rage ni mana : tes sorts n'ont qu'un temps de recharge. Incante à l'arrêt ; les sorts instantanés, eux, se lancent en courant.",
+          ROGUE = "Ni énergie ni points de combo : tes techniques n'ont qu'un temps de recharge. Et elles exigent tes deux dagues, une dans chaque main." },
         "Ici, tout coup porte : ni raté, ni esquive, ni parade. L'armure retire un montant fixe à chaque coup, alors les petits coups ne passent presque plus.",
         { WARRIOR = "Ton Rempart verse une part de chaque coup encaissé dans un bouclier qui absorbe les suivants. Riposte du rempart et Second souffle le dépensent.",
-          WARLOCK = "Ta Moisson te rend en vie une part des dégâts de tes maléfices. Et ton arme ne frappe pas : ses dégâts nourrissent la puissance de tes sorts." },
+          WARLOCK = "Ta Moisson te rend en vie une part des dégâts de tes maléfices. Et ton arme ne frappe pas : ses dégâts nourrissent la puissance de tes sorts.",
+          ROGUE = "Tes Toxines empoisonnent la cible coup après coup ; chaque cumul l'affaiblit. Envenimer les consomme d'un coup : attends-en cinq." },
         "À droite de tes techniques : ta potion, ton feu de camp et ta pierre de foyer. La potion, c'est en combat qu'elle sert, n'attends pas d'être à terre.",
     } },
     { "survie", 3145, "Zureetha Mireloin", { "regeneration", "camp", "potion" }, {
         { WARRIOR = "Tu saignes, {jeune guerrier|jeune guerrière}. Hors combat, ta vie remonte seule : 2 % par seconde. Ni nourriture, ni bandages.",
-          WARLOCK = "Tu saignes, jeune démoniste. Hors combat, ta vie remonte seule : 2 % par seconde. Ni nourriture, ni bandages." },
+          WARLOCK = "Tu saignes, jeune démoniste. Hors combat, ta vie remonte seule : 2 % par seconde. Ni nourriture, ni bandages.",
+          ROGUE = "Tu saignes, {jeune voleur|jeune voleuse}. Hors combat, ta vie remonte seule : 2 % par seconde. Ni nourriture, ni bandages." },
         "En combat, ta potion rend 30 % de ta vie. Une seule charge au départ : elle revient au Repos au coin du feu, en auberge ou en ville.",
         "Après une rude bataille, pose ton feu de camp et assieds-toi. Une minute assis, et tu repars avec le Repos au coin du feu : plus de vie, et toutes tes charges.",
     } },

@@ -81,6 +81,8 @@ namespace SolAzeroth
     unsigned char CaracteristiquePrincipale(Player* player);
     // v3 : arme de mêlée que la spécialisation peut équiper (v3_kit.cpp ; règle appliquée par v3_armures.cpp).
     bool ArmePermise(Player* player, ItemTemplate const* modele);
+    // v3 : la version d'une pièce du monde pour la classe du joueur, ou la pièce elle-même (v3_armures.cpp).
+    unsigned int VersionDe(Player* player, unsigned int entree);
     // Ligue Destin (défi choisi au niveau 1, lua_scripts/defis.lua) : ni sorts ni talents d'une autre classe (formation.cpp).
     bool EstDestin(Player* player);
     // Ligue Remix (ligues.cpp) : monde à ton niveau imposé (echelle.cpp).
@@ -254,6 +256,7 @@ void AddSC_solazeroth_v3_paroles();
 void AddSC_solazeroth_v3_rares_secrets();
 void AddSC_solazeroth_v3_filons();
 void AddSC_solazeroth_v3_demoniste();
+void AddSC_solazeroth_v3_voleur();
 void AddSC_solazeroth_v3_armures();
 void AddSC_solazeroth_v3_journal();
 void AddSC_solazeroth_v3_mort();

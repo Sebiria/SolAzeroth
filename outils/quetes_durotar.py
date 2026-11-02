@@ -380,12 +380,13 @@ def item_dbc():
     import annexes_durotar
     import equipement_gouffre_v3
     import joaillerie_v3
+    import batons_v3
     import orbes_v3
     import rares_secrets_v3
     import tissu_v3
     existants = {e[0] for e in table.enregistrements}
     for e, source, genre in annexes_durotar.lignes_dbc() + joaillerie_v3.lignes_dbc() +             equipement_gouffre_v3.lignes_dbc() + \
-            rares_secrets_v3.lignes_dbc() + tissu_v3.lignes_dbc() + orbes_v3.lignes_dbc():
+            rares_secrets_v3.lignes_dbc() + tissu_v3.lignes_dbc() + orbes_v3.lignes_dbc() + batons_v3.lignes_dbc():
         if e not in existants:
             ligne = list(table.chercher(source))
             ligne[0] = e

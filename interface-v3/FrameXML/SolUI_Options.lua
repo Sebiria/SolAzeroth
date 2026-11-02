@@ -107,11 +107,12 @@ local SPES = {
             .. "pas : elle nourrit ta puissance d'attaque ; les démons sont des invocations de quelques secondes.\nTu "
             .. "commences "
             .. "avec 3 emplacements de techniques ; d'autres s'ouvrent au fil de l'histoire (Techniques équipées)." },
-    -- Lot V1 : la spécialisation existe, son kit arrive au lot V2.
     ROGUE = { id = 3, cle = "assassinat", nom = "Voleur — Assassinat", icone = "Interface\\Icons\\Ability_Rogue_Eviscerate",
-        texte = "Deux dagues, une dans chaque main : aucune autre arme. Tes coups empoisonnent ; chaque cumul de "
-            .. "poison affaiblit les coups de ta cible.\nEn construction : passif Toxines et techniques arrivent au "
-            .. "prochain lot." },
+        texte = "Passif Toxines : chaque coup de mêlée a 50 % de chances de poser un cumul de Poison mortel (5 au "
+            .. "plus) ; chaque cumul retire 8 % aux dégâts de ta cible. Envenimer consomme les cumuls pour frapper "
+            .. "fort. Deux dagues, une dans chaque main (la gauche frappe à moitié) : aucune autre arme.\nTu "
+            .. "commences avec 3 emplacements de techniques ; d'autres s'ouvrent au fil de l'histoire (Techniques "
+            .. "équipées)." },
 }
 -- La classe est lue à l'affichage : au chargement de l'interface, elle peut ne pas être connue.
 local function MaSpe() return SPES[select(2, UnitClass("player"))] or SPES.WARRIOR end

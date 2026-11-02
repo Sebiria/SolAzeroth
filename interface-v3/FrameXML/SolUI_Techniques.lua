@@ -11,6 +11,8 @@ local RIPOSTE = 100014   -- Riposte du rempart : mise en avant quand le Rempart 
 local SEUIL_RIPOSTE = 0.5
 local HEURT = 100019     -- Heurt de bouclier : mis en avant quand la cible incante un sort qu'on peut interrompre (lot 3b)
 local TRAIT, TRANSE = 100201, 100223   -- Trait de l'ombre : mis en avant sous la Transe de l'ombre (lot D4)
+-- Lot V5 : Envenimer mis en avant quand la cible porte 5 cumuls de ton Poison mortel ; Coup de pied comme le Heurt.
+local ENVENIMER, POISON, CUMULS_MAX, COUP_DE_PIED = 100304, 100301, 5, 100305
 
 local function CibleInterruptible()
     if not UnitCanAttack("player", "target") then return false end
@@ -18,11 +20,18 @@ local function CibleInterruptible()
     if not nom then nom, _, _, _, _, _, _, protege = UnitChannelInfo("target") end
     return nom ~= nil and not protege
 end
--- Passif d'identité de chaque spécialisation (lot D2) : Rempart du guerrier tank, Moisson du démoniste Affliction.
+-- Passif d'identité de chaque spécialisation (lot D2) : Rempart du guerrier tank, Moisson du démoniste Affliction,
+-- Toxines du voleur Assassinat (lot V5).
 -- Retour de l'utilisateur (02/11/2026) : la taille est bonne, mais le losange manquait de lisibilité. Symbole plus
 -- grand et plus épais, fond sombre presque opaque, une couleur par passif.
 local PASSIFS = { [1] = { sort = 100009, icone = "Bouclier", couleur = "ambreClair" },
-    [2] = { sort = 100200, icone = "Moisson", couleur = "vertClair" } }
+    [2] = { sort = 100200, icone = "Moisson", couleur = "vertClair" },
+    [3] = { sort = 100300, icone = "Toxines", couleur = "rougeClair" } }
+
+local function CumulsDePoison()
+    local _, _, _, nombre = UnitDebuff("target", GetSpellInfo(POISON) or "", nil, "PLAYER")
+    return nombre or 0
+end
 
 local groupe = CreateFrame("Frame", "SolUITechniques", S.racine)
 groupe:SetSize(26 + 18 + 4 * TAILLE + 3 * ECART + 18 + 26, 2 * TAILLE + ECART)
@@ -190,6 +199,8 @@ local function Etat(b)
     local enAvant = not enRecharge and (((sort == RIPOSTE or nom == GetSpellInfo(RIPOSTE))
         and S.etat.rempart and S.etat.plafond > 0 and S.etat.rempart >= SEUIL_RIPOSTE * S.etat.plafond)
         or ((sort == HEURT or nom == GetSpellInfo(HEURT)) and CibleInterruptible())
+        or ((sort == COUP_DE_PIED or nom == GetSpellInfo(COUP_DE_PIED)) and CibleInterruptible())
+        or ((sort == ENVENIMER or nom == GetSpellInfo(ENVENIMER)) and CumulsDePoison() >= CUMULS_MAX)
         or ((sort == TRAIT or nom == GetSpellInfo(TRAIT)) and UnitBuff("player", GetSpellInfo(TRANSE) or "") ~= nil))
     if enAvant then
         b.halo:Show()

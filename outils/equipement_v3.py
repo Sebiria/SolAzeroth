@@ -104,16 +104,18 @@ def droite(points):
 
 
 def baremes():
+    # Objets de Blizzard seulement (entry < 900000, 02/11/2026) : sinon les pièces générées entrent dans le barème, et
+    # chaque régénération dérive.
     armures = {}
     for sous_classe, emplacement, niveau, armure in sql(
-            "SELECT subclass, InventoryType, ItemLevel, armor FROM acore_world.item_template WHERE class = 4 "
+            "SELECT subclass, InventoryType, ItemLevel, armor FROM acore_world.item_template WHERE entry < 900000 AND class = 4 "
             "AND Quality = 2 AND ItemLevel BETWEEN 5 AND 30 AND armor > 0 AND subclass IN (1, 2, 3, 6)"):
         emplacement = 5 if emplacement == "20" else int(emplacement)
         armures.setdefault((int(sous_classe), emplacement), []).append((int(niveau), int(armure)))
     armures = {k: droite(v) for k, v in armures.items() if len(v) >= 3}
     armes = {}
     for emplacement, niveau, bas, haut, cadence in sql(
-            "SELECT InventoryType, ItemLevel, dmg_min1, dmg_max1, delay FROM acore_world.item_template WHERE class = 2 "
+            "SELECT InventoryType, ItemLevel, dmg_min1, dmg_max1, delay FROM acore_world.item_template WHERE entry < 900000 AND class = 2 "
             "AND Quality = 2 AND ItemLevel BETWEEN 5 AND 30 AND delay > 0 AND dmg_max1 > 0 "
             "AND InventoryType IN (13, 17, 21, 22)"):
         deux_mains = emplacement == "17"

@@ -51,6 +51,7 @@ namespace
     uint8 const SPE_VOLEUR_ASSASSINAT = 3;
     uint32 const PASSIF_REMPART = 100009;
     uint32 const PASSIF_MOISSON = 100200;
+    uint32 const PASSIF_TOXINES = 100300;
     uint32 const SORT_EPEES_1M = 201;          // Épées à une main
     uint32 const EPEE_DE_DEPART = 25;          // Épée courte usée
     uint32 const BOUCLIER_DE_DEPART = 2362;    // Vieux bouclier en bois
@@ -118,8 +119,27 @@ namespace
         { 100217, "Affliction instable", PLUS_TARD, 0, nullptr, false },         // zone 7
     };
 
-    // Voleur Assassinat : ses techniques viennent au lot V2.
-    std::vector<Technique> const ORDRE_ASSASSINAT = { };
+    // Voleur Assassinat (lot V2, v3_voleur.cpp) : mêmes étapes du récit, maîtres du voleur (Rwag dans la Vallée, Kaplak à
+    // Razor Hill). Rupture vient à Sen'jin : la proposition la plaçait avant Évasion, sans étape libre entre les deux.
+    std::vector<Technique> const ORDRE_ASSASSINAT =
+    {
+        { 100302, "Estropier", 0, 0, nullptr, false },
+        { 100304, "Envenimer", 0, 0, nullptr, false },
+        { 100305, "Coup de pied", 910002, 0, "Rwag", false },                    // Les crocs de la Vallée
+        { 100307, "Évasion", 910005, 0, "Rwag", true },                          // Les vils quasits, avant Yarrog
+        { 100308, "Camouflage", 910008, 0, "Kaplak", false },                    // Un rapport à Orgnil (Tranchecolline)
+        { 100311, "Coup bas", 0, 2, "Kaplak", true },                            // chef renforcé de Tranchecolline
+        { 100306, "Rupture", 910019, 0, "Kaplak", false },                       // Le crâne de Minshina (Sen'jin)
+        { 100312, "Poison affaiblissant", PLUS_TARD, 0, nullptr, true },         // zone 2
+        { 100313, "Lancer de couteau", PLUS_TARD, 0, nullptr, false },           // zone 2
+        { 100314, "Sprint", PLUS_TARD, 0, nullptr, false },                      // zone 3
+        { 100318, "Feinte", PLUS_TARD, 0, nullptr, false },                      // zone 3
+        { 100316, "Éventail de couteaux", PLUS_TARD, 0, nullptr, true },         // zone 4
+        { 100315, "Disparition", PLUS_TARD, 0, nullptr, false },                 // zone 5
+        { 100320, "Aiguillon perfide", PLUS_TARD, 0, nullptr, false },           // zone 5
+        { 100317, "Cape d'ombre", PLUS_TARD, 0, nullptr, true },                 // zone 6
+        { 100319, "Vendetta", PLUS_TARD, 0, nullptr, false },                    // zone 7
+    };
 
     struct Specialisation
     {
@@ -152,7 +172,8 @@ namespace
           { ITEM_SUBCLASS_WEAPON_DAGGER, ITEM_SUBCLASS_WEAPON_STAFF } },
         // Lot V1 (« Voleur — proposition.md ») : deux dagues obligatoires, aucune autre arme. Kit et passif Toxines au
         // lot V2.
-        { SPE_VOLEUR_ASSASSINAT, CLASS_ROGUE, "assassinat", "voleur Assassinat", SPELLFAMILY_ROGUE, 0, STAT_AGILITY,
+        { SPE_VOLEUR_ASSASSINAT, CLASS_ROGUE, "assassinat", "voleur Assassinat", SPELLFAMILY_ROGUE, PASSIF_TOXINES,
+          STAT_AGILITY,
           &ORDRE_ASSASSINAT, { SORT_DAGUES, SORT_AMBIDEXTRIE },
           { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART }, { EQUIPMENT_SLOT_OFFHAND, DAGUE_DE_DEPART } },
           { ITEM_SUBCLASS_WEAPON_DAGGER } },
@@ -475,10 +496,18 @@ unsigned char SolAzeroth::CaracteristiquePrincipale(Player* player)
 }
 
 // Arme de mêlée que la spécialisation peut équiper (v3_armures.cpp) ; sans spécialisation, toutes. Les armes à distance,
-// cannes à pêche et outils ne sont pas concernés.
+// cannes à pêche et outils ne sont pas concernés. Une spécialisation ambidextre (voleur) tient une arme dans chaque
+// main : ni bouclier ni objet de main gauche (orbe).
 bool SolAzeroth::ArmePermise(Player* player, ItemTemplate const* modele)
 {
-    if (!modele || modele->Class != ITEM_CLASS_WEAPON)
+    if (!modele)
+        return true;
+    Specialisation const* s = SpeParId(KitDe(player)->spe);
+    if (!s || s->classe != player->getClass())
+        return true;
+    if (modele->InventoryType == INVTYPE_HOLDABLE || modele->InventoryType == INVTYPE_SHIELD)
+        return std::find(s->competences.begin(), s->competences.end(), SORT_AMBIDEXTRIE) == s->competences.end();
+    if (modele->Class != ITEM_CLASS_WEAPON)
         return true;
     switch (modele->SubClass)
     {
@@ -491,8 +520,7 @@ bool SolAzeroth::ArmePermise(Player* player, ItemTemplate const* modele)
         default:
             return true;
     }
-    Specialisation const* s = SpeParId(KitDe(player)->spe);
-    if (!s || s->classe != player->getClass() || s->permises.empty())
+    if (s->permises.empty())
         return true;
     return std::find(s->permises.begin(), s->permises.end(), modele->SubClass) != s->permises.end();
 }
@@ -849,7 +877,7 @@ public:
         Appliquer(player);
         handler->PSendSysMessage("|cff40c0ffSpécialisation choisie : {}. {} et tes premières techniques sont prêts.|r",
             choisie->nom, choisie->id == SPE_GUERRIER_TANK ? "Le Rempart"
-                : choisie->id == SPE_DEMONISTE_AFFLICTION ? "La Moisson" : "Tes deux dagues");
+                : choisie->id == SPE_DEMONISTE_AFFLICTION ? "La Moisson" : "Les Toxines");
         return true;
     }
 

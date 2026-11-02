@@ -2,10 +2,13 @@
 // - Règle de l'utilisateur : le guerrier ne porte que de la maille (plus tard, de la plaque à partir de la puissance
 //   40), le démoniste que du tissu. Les capes, en tissu, vont à tous ; boucliers, orbes, bijoux et armes ne sont pas
 //   concernés (les compétences d'armes et de bouclier de la classe s'appliquent, v3_kit.cpp).
-// - Une pièce du monde reçue dans le mauvais type (récompense de quête ou d'annexe, butin) devient sa version de même
-//   puissance et de même rang (table solazeroth_v3_conversions, outils\tissu_v3.py, migration 124) : la maille en
-//   tissu, le bouclier en orbe, et l'inverse. L'échange attend la mise à jour suivante du joueur, car celui qui range
-//   la pièce s'en sert encore juste après.
+// - Une pièce du monde faite pour une autre classe devient sa version de même puissance et de même rang (table
+//   solazeroth_v3_versions, une ligne par pièce et par classe, outils\tissu_v3.py, migration 130) : pour le démoniste
+//   la maille en tissu, le bouclier en orbe, l'arme en dague ; pour le voleur la maille en cuir, le bouclier et l'arme
+//   en dague. Récompense de quête : échangée dès qu'elle est donnée (le moteur ne sert plus de la pièce ensuite) ;
+//   annexes : la version est donnée directement (SolAzeroth::VersionDe, v3_annexes.cpp).
+// - Lot V3 (02/11/2026) : remplace la table solazeroth_v3_conversions (une seule version par pièce, échange à la mise à
+//   jour suivante du joueur).
 
 #include "SolAzeroth.h"
 #include "DatabaseEnv.h"
@@ -13,17 +16,11 @@
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
-#include <unordered_map>
-#include <vector>
+#include <map>
 
 namespace
 {
-    std::unordered_map<uint32, uint32> conversions;   // pièce -> sa version dans l'autre type
-
-    struct AConvertir : public DataMap::Base
-    {
-        std::vector<ObjectGuid> pieces;
-    };
+    std::map<std::pair<uint32, uint8>, uint32> versions;   // (pièce, classe) -> sa version pour la classe
 
     // Seul type d'armure que porte la classe (0 : aucune règle pour l'instant).
     uint32 TypeDe(Player const* player)
@@ -64,17 +61,15 @@ namespace
             && (!modele->GetSkill() || player->GetSkillValue(modele->GetSkill()));
     }
 
-    // Une pièce qu'il ne peut pas porter, et dont la version, elle, lui va (maille et tissu ; bouclier et orbe).
-    uint32 VersionPour(Player const* player, Item const* piece)
+    // La version de la pièce pour sa classe, si la pièce ne lui va pas et que la version, elle, lui va ; sinon 0.
+    uint32 VersionPour(Player* player, uint32 entree)
     {
-        auto it = conversions.find(piece->GetEntry());
-        if (it == conversions.end())
+        auto it = versions.find({ entree, player->getClass() });
+        if (it == versions.end())
             return 0;
-        ItemTemplate const* avant = piece->GetTemplate();
+        ItemTemplate const* avant = sObjectMgr->GetItemTemplate(entree);
         ItemTemplate const* apres = sObjectMgr->GetItemTemplate(it->second);
-        if (!apres)
-            return 0;
-        return !Va(player, avant) && Va(player, apres) ? it->second : 0;
+        return avant && apres && !Va(player, avant) && Va(player, apres) ? it->second : 0;
     }
 }
 
@@ -85,12 +80,12 @@ public:
 
     void OnStartup() override
     {
-        conversions.clear();
-        if (QueryResult r = WorldDatabase.Query("SELECT origine, version FROM solazeroth_v3_conversions"))
+        versions.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT origine, classe, version FROM solazeroth_v3_versions"))
             do
-                conversions[(*r)[0].Get<uint32>()] = (*r)[1].Get<uint32>();
+                versions[{ (*r)[0].Get<uint32>(), (*r)[1].Get<uint8>() }] = (*r)[2].Get<uint32>();
             while (r->NextRow());
-        LOG_INFO("module", "Sol'Azeroth v3 : {} pièces converties selon la classe", conversions.size());
+        LOG_INFO("module", "Sol'Azeroth v3 : {} versions de pièces selon la classe", versions.size());
     }
 };
 
@@ -98,7 +93,7 @@ class solazeroth_v3_armures_joueur : public PlayerScript
 {
 public:
     solazeroth_v3_armures_joueur() : PlayerScript("solazeroth_v3_armures_joueur", {
-        PLAYERHOOK_CAN_USE_ITEM, PLAYERHOOK_ON_STORE_NEW_ITEM, PLAYERHOOK_ON_UPDATE }) { }
+        PLAYERHOOK_CAN_USE_ITEM, PLAYERHOOK_ON_QUEST_REWARD_ITEM }) { }
 
     bool OnPlayerCanUseItem(Player* player, ItemTemplate const* modele, InventoryResult& resultat) override
     {
@@ -108,33 +103,23 @@ public:
         return false;
     }
 
-    void OnPlayerStoreNewItem(Player* player, Item* piece, uint32 /*nombre*/) override
+    // Le moteur a rangé la récompense et l'a annoncée ; il ne s'en sert plus ensuite. Retirée d'abord : sa place dans
+    // les sacs accueille la version. La fenêtre de quête montrait déjà la version (SolUI_Versions.lua).
+    void OnPlayerQuestRewardItem(Player* player, Item* piece, uint32 nombre) override
     {
-        if (piece && VersionPour(player, piece))
-            player->CustomData.GetDefault<AConvertir>("solazeroth_v3_conversions")->pieces.push_back(piece->GetGUID());
-    }
-
-    void OnPlayerUpdate(Player* player, uint32 /*diff*/) override
-    {
-        AConvertir* a = player->CustomData.Get<AConvertir>("solazeroth_v3_conversions");
-        if (!a || a->pieces.empty())
+        uint32 version = piece ? VersionPour(player, piece->GetEntry()) : 0;
+        if (!version)
             return;
-        std::vector<ObjectGuid> pieces;
-        pieces.swap(a->pieces);
-        for (ObjectGuid guid : pieces)
-        {
-            Item* piece = player->GetItemByGuid(guid);
-            uint32 version = piece ? VersionPour(player, piece) : 0;
-            if (!version)
-                continue;
-            uint32 nombre = piece->GetCount();
-            // Retirée d'abord : sa place dans les sacs accueille la version. Sans message : la fenêtre de quête montrait
-            // déjà la version (SolUI_Versions.lua).
-            player->DestroyItem(piece->GetBagSlot(), piece->GetSlot(), true);
-            player->AddItem(version, nombre);
-        }
+        player->DestroyItem(piece->GetBagSlot(), piece->GetSlot(), true);
+        player->AddItem(version, nombre);
     }
 };
+
+uint32 SolAzeroth::VersionDe(Player* player, uint32 entree)
+{
+    uint32 version = VersionPour(player, entree);
+    return version ? version : entree;
+}
 
 void AddSC_solazeroth_v3_armures()
 {

@@ -31,7 +31,7 @@ FRAMEXML = os.path.join(FICHIERS, "Interface", "FrameXML")
 CODE = ["SolUI_Base.lua", "SolUI_Cacher.lua", "SolUI_Perso.lua", "SolUI_Techniques.lua", "SolUI_Cible.lua", "SolUI_Plaques.lua",
         "SolUI_Zone.lua", "SolUI_Cartes.lua", "SolUI_Puissances.lua", "SolUI_Versions.lua", "SolUI_Quetes.lua", "SolUI_Dialogue.lua",
         "SolUI_Discussion.lua", "SolUI_Camp.lua", "SolUI_Bivouac.lua", "SolUI_Raccourcis.lua",
-        "SolUI_Catalogue.lua", "SolUI_Annexes.lua", "SolUI_Joaillerie.lua", "SolUI_Collection.lua", "SolUI_Inventaire.lua", "SolUI_Recettes.lua", "SolUI_RecettesGouffre.lua", "SolUI_RecettesOrbes.lua", "SolUI_RecettesSurplus.lua", "SolUI_Cuisine.lua",
+        "SolUI_Catalogue.lua", "SolUI_Annexes.lua", "SolUI_Joaillerie.lua", "SolUI_Collection.lua", "SolUI_Inventaire.lua", "SolUI_Recettes.lua", "SolUI_RecettesGouffre.lua", "SolUI_RecettesOrbes.lua", "SolUI_RecettesBatons.lua", "SolUI_RecettesSurplus.lua", "SolUI_Cuisine.lua",
         "SolUI_Enchantements.lua", "SolUI_Equipement.lua", "SolUI_AventurierDonnees.lua", "SolUI_Aventurier.lua", "SolUI_PassifsDonnees.lua", "SolUI_Passifs.lua", "SolUI_Lexique.lua", "SolUI_Paroles.lua", "SolUI_Carnets.lua", "SolUI_Barre.lua", "SolUI_Soldes.lua", "SolUI_Signalement.lua",
         "SolUI_Reglages.lua", "SolUI_Options.lua", "SolUI_Fiche.lua"]
 GENERES = {"SolUI_Cartes.lua"}   # écrits par ce script, pas copiés de interface-v3\FrameXML
@@ -156,6 +156,18 @@ def faucille(nom, taille, epaisseur):
     enregistrer(image, nom, taille, taille)
 
 
+def goutte(nom, taille, epaisseur):
+    """Petite goutte au trait (losange du passif Toxines du voleur, lot V5) : pointe en haut, ventre rond."""
+    image = blanc(taille, taille)
+    dessin = ImageDraw.Draw(image)
+    k = taille * SUR / 12.0
+    largeur = int(epaisseur * SUR)
+    dessin.arc((3 * k, 4.6 * k, 9 * k, 10.6 * k), -30, 210, fill="white", width=largeur)   # ventre
+    dessin.line([(6 * k, 1.2 * k), (3.4 * k, 6.1 * k)], fill="white", width=largeur)        # flanc gauche
+    dessin.line([(6 * k, 1.2 * k), (8.6 * k, 6.1 * k)], fill="white", width=largeur)        # flanc droit
+    enregistrer(image, nom, taille, taille)
+
+
 def epingle(nom, retrait=0.0, flou=0):
     """Épingle de la mini-carte (maquette « Épingle », 01/11/2026) dans une texture de 64 x 64 : rond en haut, pointe en
     bas au centre (le point visé). Rond de rayon 23 centré en (32, 25,6), pointe en (32, 61,4). « retrait » rétrécit la
@@ -199,6 +211,7 @@ def textures():
     losange("LosangePlein", 64, 3, plein=True)   # fond du losange du passif (02/11/2026)
     bouclier("Bouclier", 64, 1.8)   # trait plus épais : losange du passif plus lisible (02/11/2026)
     faucille("Moisson", 64, 1.8)
+    goutte("Toxines", 64, 1.8)
     epingle("Epingle")
     epingle("EpingleCreux", 4)
     epingle("EpingleOmbre", 0, 2)

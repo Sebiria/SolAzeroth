@@ -190,6 +190,19 @@ S.LEXIQUE = {
           .. "• Diablotin (15 s) : traits de feu sur ta cible, sans attirer les monstres.\n"
           .. "• Marcheur du Vide (10 s) : attire les monstres proches et encaisse.\n"
           .. "• Peur : 6 s de fuite, brisée quand le monstre a perdu 15 % de sa vie." },
+        { "toxines", "Toxines et dagues",
+          "Le voleur Assassinat : deux dagues, un poison qui affaiblit, et des coups qui le consomment.",
+          T("Les dagues")
+          .. "• Une dague dans chaque main, aucune autre arme ; ses techniques l'exigent.\n"
+          .. "• La main gauche frappe à moitié. Temps de recharge global de 0,75 s.\n\n"
+          .. T("Le poison")
+          .. "• Toxines : chaque coup de mêlée a 50 % de chances de poser un cumul de Poison mortel, 5 au plus.\n"
+          .. "• Chaque cumul fait des dégâts de Nature et retire 8 % aux dégâts de la cible (40 % à 5 cumuls).\n"
+          .. "• Envenimer consomme les cumuls : plus il y en a, plus il frappe fort. Son bouton s'éclaire à 5.\n\n"
+          .. T("Survivre")
+          .. "• Évasion : dégâts subis réduits de moitié pendant 6 s.\n"
+          .. "• Coup bas étourdit, Coup de pied interrompt ; le Camouflage ouvre par un Garrot.\n"
+          .. "• Le cuir protège moins que la maille : le voleur gagne en tuant vite, seul contre un." },
         { "techniques", "Techniques",
           "Ni rage ni mana : deux techniques à recharge au départ, d'autres apprises au fil du récit, et le passif de ta spécialisation.",
           T("Techniques")
@@ -199,7 +212,8 @@ S.LEXIQUE = {
           .. T("Combat")
           .. "• Pas de menace : les monstres n'ont que toi à frapper.\n"
           .. "• Guerrier tank : Rempart, une part des coups reçus devient un bouclier.\n"
-          .. "• Démoniste Affliction : Moisson, une part des dégâts sur la durée te revient en vie." },
+          .. "• Démoniste Affliction : Moisson, une part des dégâts sur la durée te revient en vie.\n"
+          .. "• Voleur Assassinat : Toxines, tes coups empoisonnent et affaiblissent ta cible." },
     } },
     { "Survie", {
         { "regeneration", "Vie et régénération",

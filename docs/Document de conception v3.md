@@ -945,7 +945,24 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - les armes de quête (trois épées, une masse) ont leur version en dague de même puissance et de mêmes rangs, que reçoivent le démoniste et le voleur (`tissu_v3.py`, migration 127, `SolUI_Versions.lua`). Les armes du Gouffre se fabriquent : chacun fabrique la sienne.
 - **Voleur Assassinat** (`Voleur — proposition.md`, décisions du 02/11/2026 : toutes les recommandations acceptées) :
   - **lot V1, fondations** : spécialisation (`.kit spe assassinat`, Agilité, cuir), ouverte à la création (orc et troll ; masque des classes 1270), deux Dagues usées en main, Ambidextrie, anciens sorts du voleur retirés, carte de spécialisation ;
-  - à venir : V2 kit (passif Toxines, Estropier, Envenimer, techniques et maîtres), V3 versions en cuir et boucliers en dague, V4 simulation contre le guerrier, V5 interface et guide d'essai.
+  - **lot V2, kit** (`outils\voleur_v3.py`, migration 129, `v3_voleur.cpp`, ordre dans `v3_kit.cpp`) :
+    - **Toxines** (passif) : chaque coup de mêlée a 50 % de chances de poser un cumul de Poison mortel (5 au plus, 12 s) ; chaque cumul fait des dégâts de Nature et retire 8 % aux dégâts de la cible. Le moteur pose le poison (déclenchement écrit dans Spell.dbc) ;
+    - au départ Estropier (les deux dagues, 300 % de chaque arme, pose un cumul) et Envenimer (180 % de l'arme par cumul consommé ; refusé sans cumul) ;
+    - maîtres : Coup de pied et Évasion (Rwag), Camouflage, Coup bas et Rupture (Kaplak) ; le reste du panel plus tard (Poison affaiblissant, Lancer de couteau, Sprint, Disparition, Éventail de couteaux, Cape d'ombre, Feinte…) ;
+    - Camouflage : le premier coup qui le brise est un Garrot (saignement et silence 3 s) ; l'annuler soi-même ne donne rien ;
+    - techniques : deux dagues exigées, temps de recharge global 0,75 s.
+  - **lot V3, équipement** : table `solazeroth_v3_versions (origine, classe, version)` (migration 130, `tissu_v3.py`), qui remplace `solazeroth_v3_conversions` : une ligne par pièce et par classe. Démoniste : maille en tissu, bouclier en orbe, arme en dague ; voleur : maille en cuir (modèles de cuir), bouclier et arme en dague. Récompense de quête échangée dès qu'elle est donnée (`OnPlayerQuestRewardItem`), annexes données directement dans la bonne version (`SolAzeroth::VersionDe`). La fenêtre de quête montre la version (`SolUI_Versions.lua`, WARLOCK et ROGUE).
+  - **Bâtons du démoniste** (demande de l'utilisateur, « bâton tout de suite ») : Bâton grossier de malachite (puissance 4), Bâton de malachite (9), Bâton ardent du Gouffre (14, bleu, compte pour 2 pièces dans la panoplie du Gouffre). Valeur d'une dague et d'un orbe réunis, recette des deux (`batons_v3.py`, migration 128, `SolUI_RecettesBatons.lua`).
+  - **Barèmes** : `equipement_v3.py` et `equipement_gouffre_v3.py` ne lisent plus que les objets de Blizzard (entrée < 900 000) ; les objets générés entraient dans leur propre barème.
+  - **lot V4, simulation et calibrage** (`outils\simulation_voleur.py`, comparé au guerrier sur les mêmes pièces en versions du voleur) :
+    - leviers essayés : parts des techniques, affaiblissement par cumul (3 à 10 %), recharge d'Estropier, chance des Toxines (30 à 100 %), recharge d'Évasion (20 à 60 s). La chance des Toxines est le levier qui compte : le poison affaiblit plus tôt ;
+    - retenu : Toxines 50 %, affaiblissement 8 % par cumul, Estropier 300 % toutes les 4 s, Envenimer 180 % par cumul, Poison 10 % de la PA par tic et par cumul, Rupture et Garrot 18 % par tic ;
+    - contre sa puissance (±2) : 99,7 % de victoires, 7,5 s, 63 % de vie (guerrier 100 %, 10,7 s, 80 %). Fin de Durotar : il gagne tout jusqu'à la puissance 11, en 5 à 11 s ;
+    - faiblesses : fin de vallée, il perd contre plus fort que lui (Sanglier redoutable P7 : 29 %, guerrier 100 %) ; deux monstres en fin de Durotar : 12 % (guerrier 100 %). Cuir, sans Rempart et sans dégâts de zone avant les zones suivantes ;
+    - forces : Gouffre gagné à toutes les difficultés, même sans rang ; rares secrets bien plus faciles qu'au guerrier (62 à 70 % sans bonus, contre 0 %) ;
+    - Évasion plus fréquente n'aide presque pas les combats à deux monstres : gardée à 60 s.
+  - **lot V5, interface** : carte de spécialisation (Toxines, cumuls, dagues), losange du passif (goutte rouge clair), page du lexique « Toxines et dagues », répliques de Gornek et Zureetha pour le voleur, bouton d'Envenimer éclairé à 5 cumuls et Coup de pied quand la cible incante ; les cumuls se lisent déjà sur le cadre de la cible. Guide d'essai : `Guide d'essai — voleur.md`.
+  - **Pas encore vérifié en jeu.**
 
 ## 5. Questions pour les prochaines séries
 

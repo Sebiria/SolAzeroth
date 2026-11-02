@@ -96,8 +96,9 @@ def portable(o):
 
 def demoniste(objets, guid, nom="démoniste", repas=0, vie_enchant=0, armure_enchant=0):
     """Démoniste portant l'équipement du personnage, ces pièces à la place, tout en version tissu (table
-    solazeroth_v3_conversions)."""
-    versions = dict((int(a), int(b)) for a, b in sim.sql("SELECT origine, version FROM acore_world.solazeroth_v3_conversions"))
+    solazeroth_v3_versions)."""
+    versions = dict((int(a), int(b)) for a, b in sim.sql(
+        "SELECT origine, version FROM acore_world.solazeroth_v3_versions WHERE classe = 9"))
     portes = dict(sim.porte(guid))
     for e in objets:
         portes[sim.objet(e)["emplacement"]] = e

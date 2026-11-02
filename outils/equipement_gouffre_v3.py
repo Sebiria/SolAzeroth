@@ -70,11 +70,11 @@ CATEGORIES = [("maille", "Gouffre : maille", True), ("cuir", "Gouffre : cuir", F
 
 def baremes():
     """Barème des pièces vertes ; les emplacements sans objet vert de niveau 5 à 30 (casque et épaules en maille) se
-    lisent jusqu'au niveau 45."""
+    lisent jusqu'au niveau 45. Objets de Blizzard seulement, comme equipement_v3.baremes."""
     armures, armes = e3.baremes()
     larges = {}
     for sous_classe, emplacement, niveau, armure in sql(
-            "SELECT subclass, InventoryType, ItemLevel, armor FROM acore_world.item_template WHERE class = 4 "
+            "SELECT subclass, InventoryType, ItemLevel, armor FROM acore_world.item_template WHERE entry < 900000 AND class = 4 "
             "AND Quality = 2 AND ItemLevel BETWEEN 5 AND 45 AND armor > 0 AND subclass IN (1, 2, 3, 6)"):
         emplacement = 5 if emplacement == "20" else int(emplacement)
         larges.setdefault((int(sous_classe), emplacement), []).append((int(niveau), int(armure)))

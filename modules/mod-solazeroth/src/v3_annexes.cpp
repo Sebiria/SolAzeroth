@@ -222,7 +222,7 @@ namespace
             texte += Acore::StringFormat(" Temps {} : médaille {}.", Duree(temps), NOMS[medaille]);
             auto& meilleure = j->medailles[quete];
             if (medaille == 3 && meilleure.first < 3 && a.objetOr)
-                player->AddItem(a.objetOr, 1);
+                player->AddItem(SolAzeroth::VersionDe(player, a.objetOr), 1);
             if (medaille > meilleure.first || (medaille == meilleure.first && temps < meilleure.second))
             {
                 meilleure = { medaille, temps };
@@ -461,14 +461,14 @@ void RamasserRelique(Player* player, GameObject* go)
     {
         // Bonus de famille : Lame ardente, bouclier ; Kul Tiras, 3 po et 2 Œil ténébreux ; Sombrelances, bottes.
         if (r.famille == 0)
-            player->AddItem(910131, 1);
+            player->AddItem(SolAzeroth::VersionDe(player, 910131), 1);
         else if (r.famille == 1)
         {
             player->ModifyMoney(3 * GOLD);
             SolAzeroth::AjouterACollection(player, 1210, 2);
         }
         else
-            player->AddItem(910132, 1);
+            player->AddItem(SolAzeroth::VersionDe(player, 910132), 1);
         Alerte(player, "Famille de reliques complète : bonus reçu !");
     }
 }
