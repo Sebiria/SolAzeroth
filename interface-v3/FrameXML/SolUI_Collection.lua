@@ -117,8 +117,6 @@ jauge:SetBackdropColor(S.Couleur("creux"))
 local plein = S.Texture(jauge, "ARTWORK", nil, S.Couleur("ambre"))
 plein:SetPoint("TOPLEFT")
 plein:SetPoint("BOTTOMLEFT")
-local total = S.Texte(f.barre, "Regular", 12, "gris")
-total:SetPoint("LEFT", jauge, "RIGHT", 10, 0)
 
 local champ = CreateFrame("EditBox", "SolUICollectionRecherche", f.barre)
 champ:SetSize(200, 32)   -- 260 mordait sur « 0 / 76 » sous le titre long du carnet (signalement 28)
@@ -283,7 +281,6 @@ function Maj()
         onglets[i].compte:SetText(possedes .. " / " .. #c.objets)
         onglets[i]:Choisir(i == categorie)
     end
-    total:SetText(trouves .. " / " .. tous .. " objets possédés")
     plein:SetWidth(math.max(1, 160 * trouves / math.max(1, tous)))
     for i, b in ipairs(filtres) do b:Choisir(i == filtre) end
 
