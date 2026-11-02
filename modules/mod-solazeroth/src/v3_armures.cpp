@@ -8,7 +8,6 @@
 //   la pièce s'en sert encore juste après.
 
 #include "SolAzeroth.h"
-#include "Chat.h"
 #include "DatabaseEnv.h"
 #include "Item.h"
 #include "ObjectMgr.h"
@@ -123,13 +122,11 @@ public:
             uint32 version = piece ? VersionPour(player, piece) : 0;
             if (!version)
                 continue;
-            std::string avant = piece->GetTemplate()->Name1;
             uint32 nombre = piece->GetCount();
-            // Retirée d'abord : sa place dans les sacs accueille la version.
+            // Retirée d'abord : sa place dans les sacs accueille la version. Sans message : la fenêtre de quête montrait
+            // déjà la version (SolUI_Versions.lua).
             player->DestroyItem(piece->GetBagSlot(), piece->GetSlot(), true);
-            if (player->AddItem(version, nombre))
-                ChatHandler(player->GetSession()).PSendSysMessage("|cff40c0ff{} : version à ta mesure ({}).|r", avant,
-                    sObjectMgr->GetItemTemplate(version)->Name1);
+            player->AddItem(version, nombre);
         }
     }
 };

@@ -134,6 +134,8 @@ end
 local choix = 0
 local function Objet(genre, numero, colonne)
     local nom, icone, nombre, qualite = GetQuestItemInfo(genre, numero)
+    local _, nomVersion, iconeVersion = S.VersionObjet(GetQuestItemLink(genre, numero))
+    nom, icone = nomVersion or nom, iconeVersion or icone
     utilises.objets = utilises.objets + 1
     local b = objets[utilises.objets]
     if not b then
@@ -155,7 +157,8 @@ local function Objet(genre, numero, colonne)
         b.nom:SetJustifyH("LEFT")
         b:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetQuestItem(self.genre, self.numero)
+            S.InfobulleObjet(GetQuestItemLink(self.genre, self.numero),
+                function() GameTooltip:SetQuestItem(self.genre, self.numero) end)
         end)
         b:SetScript("OnLeave", function() GameTooltip:Hide() end)
         objets[utilises.objets] = b

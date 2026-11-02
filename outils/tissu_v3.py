@@ -14,7 +14,8 @@ du tissu ; les capes, en tissu, vont à tous (v3_armures.cpp).
 - Mêmes rangs 1 à 5 (solazeroth_v3_rangs) ; la table solazeroth_v3_conversions apparie chaque pièce (et chaque rang)
   à sa version, dans les deux sens. Le serveur échange la pièce reçue (v3_armures.cpp).
 
-Écrit la migration 124 ; quetes_durotar.item_dbc() ajoute les nouvelles lignes à l'Item.dbc du patch.
+Écrit la migration 124 et SolUI_Versions.lua (la fenêtre de quête montre au démoniste la version qu'il recevra) ;
+quetes_durotar.item_dbc() ajoute les nouvelles lignes à l'Item.dbc du patch.
 """
 import os
 import sys
@@ -24,6 +25,7 @@ from quetes_durotar import s, sql
 import equipement_v3 as e3
 
 MIGRATION = r"C:\SolAzeroth\sql\migrations\124_v3_tissu"
+VERSIONS_LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Versions.lua"
 
 MAILLE, BOUCLIER = 3, 6
 MAIN_GAUCHE = 23
@@ -108,6 +110,13 @@ def main():
     for suffixe, lignes in ((".up.sql", up), (".down.sql", down)):
         with open(MIGRATION + suffixe, "w", encoding="utf-8", newline="\n") as f:
             f.write("\n".join(lignes) + "\n")
+    lua = ["-- Généré par outils\\tissu_v3.py : ne pas modifier à la main.",
+           "-- Classe -> pièce du monde -> { sa version que la classe reçoit, son nom } (v3_armures.cpp).",
+           "SolUI.VERSIONS = {", "    WARLOCK = {"]
+    lua += ['        [%d] = { %d, "%s" },' % (origine, n, nom) for origine, n, nom, _, _ in liste]
+    lua += ["    },", "}"]
+    with open(VERSIONS_LUA, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lua) + "\n")
     import quetes_durotar
     quetes_durotar.item_dbc()
     for origine, n, nom, modele, p in liste:

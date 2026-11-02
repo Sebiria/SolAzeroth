@@ -16,6 +16,20 @@ S.DISPOSITION.quetes = { point = "TOPRIGHT", x = -20, y = -192, echelle = 1, sou
 
 local LARGEUR_SUIVI = 260
 
+-- Lot D3 : une récompense que la classe ne porte pas (maille, bouclier pour le démoniste) se montre dans la version que
+-- le serveur donne à la place (SolUI_Versions.lua, v3_armures.cpp). Renvoie l'entrée, le nom et l'icône, ou rien.
+function S.VersionObjet(lien)
+    local id = lien and tonumber(lien:match("item:(%d+)"))
+    local v = id and (S.VERSIONS[select(2, UnitClass("player"))] or {})[id]
+    if v then return v[1], v[2], GetItemIcon(v[1]) end
+end
+
+-- Infobulle d'une récompense : celle de sa version s'il y en a une.
+function S.InfobulleObjet(lien, sinon)
+    local version = S.VersionObjet(lien)
+    if version then GameTooltip:SetHyperlink("item:" .. version) else sinon() end
+end
+
 ------------------------------------------------------------------------
 -- Données du journal
 ------------------------------------------------------------------------
@@ -362,7 +376,8 @@ local function Recompense(n)
     b.nom:SetJustifyH("LEFT")
     b:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetQuestLogItem(self.genre, self.numero)
+        S.InfobulleObjet(GetQuestLogItemLink(self.genre, self.numero),
+            function() GameTooltip:SetQuestLogItem(self.genre, self.numero) end)
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
     recompenses[n] = b
@@ -419,6 +434,8 @@ local function MajDetail(q)
     local n = 0
     local function Ajouter(genre, numero, nom, icone, nombre)
         n = n + 1
+        local _, nomVersion, iconeVersion = S.VersionObjet(GetQuestLogItemLink(genre, numero))
+        nom, icone = nomVersion or nom, iconeVersion or icone
         local b = Recompense(n)
         b.genre, b.numero = genre, numero
         b.icone:SetTexture(icone)

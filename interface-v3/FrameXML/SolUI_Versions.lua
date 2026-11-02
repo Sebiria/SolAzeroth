@@ -1,0 +1,30 @@
+-- Généré par outils\tissu_v3.py : ne pas modifier à la main.
+-- Classe -> pièce du monde -> { sa version que la classe reçoit, son nom } (v3_armures.cpp).
+SolUI.VERSIONS = {
+    WARLOCK = {
+        [910101] = { 910401, "Bottes de la Vallée" },
+        [910102] = { 910402, "Gants du contremaître" },
+        [910103] = { 910403, "Ceinture de Zureetha" },
+        [910104] = { 910404, "Brassards de Hana'zua" },
+        [910105] = { 910405, "Plastron de la recrue" },
+        [910106] = { 910406, "Jambières des forges de Tranchecolline" },
+        [910109] = { 910407, "Plastron d'éclaireur" },
+        [910110] = { 910408, "Gants de Lar" },
+        [910111] = { 910409, "Bottes de grève" },
+        [910112] = { 910410, "Ceinture du père de Gadrin" },
+        [910114] = { 910411, "Brassards ignifugés" },
+        [910115] = { 910412, "Jambières de l'orage" },
+        [910116] = { 910413, "Orbe de Margoz" },
+        [910117] = { 910414, "Ceinture en cuir de trogg" },
+        [910118] = { 910415, "Jambières de la Lame brûlante" },
+        [910122] = { 910416, "Orbe de la garde de Tiragarde" },
+        [910123] = { 910417, "Ceinture en peau de requin" },
+        [910126] = { 910418, "Gantelets en chitine d'écorcheur" },
+        [910127] = { 910419, "Brassards de Rhinag" },
+        [910128] = { 910420, "Bottes des remparts" },
+        [910129] = { 910421, "Jambières de l'épreuve" },
+        [910130] = { 910422, "Cuirasse de la purge" },
+        [910131] = { 910423, "Orbe de cendre" },
+        [910132] = { 910424, "Sandales de Sen'jin" },
+    },
+}
