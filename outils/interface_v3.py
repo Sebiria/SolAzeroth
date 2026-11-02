@@ -294,6 +294,11 @@ CREATION = [
 ]
 
 
+# Compte local de l'installation des joueurs (scripts\installer.ps1) : nom et mot de passe publics, sans valeur, car
+# le serveur n'écoute que sur 127.0.0.1.
+COMPTE_LOCAL = ("SOLAZEROTH", "solazeroth")
+
+
 def creation():
     """CharacterCreate.lua du client, limité à ce qui est prêt."""
     texte = du_client("Interface\\GlueXML\\CharacterCreate.lua").replace("\r\n", "\n")
@@ -323,6 +328,17 @@ def creation():
         "\t\tif ( index ) then SetSelectedClass(index); end",
         "\tend",
         "end",
+        "",
+        "-- Version publique (02/11/2026) : l'installation des joueurs crée un compte local unique (serveur sur 127.0.0.1",
+        "-- seulement) et le lanceur l'écrit dans Config.wtf ; on s'y connecte tout seul. Maj enfoncée : pas de connexion.",
+        "local solConnexion = CreateFrame(\"Frame\");",
+        "solConnexion:SetScript(\"OnUpdate\", function(self)",
+        "\tif ( not AccountLogin:IsShown() ) then return; end",
+        "\tself:Hide();",
+        "\tif ( strupper(GetCVar(\"accountName\") or \"\") == \"%s\" and not IsShiftKeyDown() ) then" % COMPTE_LOCAL[0],
+        "\t\tDefaultServerLogin(\"%s\", \"%s\");" % COMPTE_LOCAL,
+        "\tend",
+        "end);",
         ""])
     dossier = os.path.join(FICHIERS, "Interface", "GlueXML")
     os.makedirs(dossier, exist_ok=True)

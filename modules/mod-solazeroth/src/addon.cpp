@@ -31,6 +31,18 @@ void SolAzeroth::EnvoyerAddon(Player* player, std::string const& prefixe, std::s
     player->GetSession()->SendPacket(&data);
 }
 
+std::string SolAzeroth::DossierRacine()
+{
+    char const* racine = std::getenv("SOLAZEROTH_RACINE");
+    std::string dossier = racine && *racine ? racine : "C:/SolAzeroth";
+    for (char& c : dossier)
+        if (c == '\\')
+            c = '/';
+    while (!dossier.empty() && dossier.back() == '/')
+        dossier.pop_back();
+    return dossier;
+}
+
 // Monstres encore utiles aux quêtes du journal : « .solcibles » répond « DEBUT », des « nom;nom… », puis « FIN »
 // (préfixe SolAzerothCibles). Ceux à tuer (crédit de mort compris) tant que le compteur n'est pas plein, et ceux
 // qui lâchent un objet de quête qui manque encore. Les plaques de nom les marquent (SolAzerothPlaques).

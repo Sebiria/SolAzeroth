@@ -1,15 +1,19 @@
 ﻿# Applique les réglages Sol'Azeroth aux fichiers .conf du serveur (à relancer sans risque, il ne change que ces lignes).
 # Un fichier .conf absent est d'abord créé depuis son .conf.dist. Les accès à la base (DatabaseInfo) ne sont pas touchés.
-param([string]$Dossier = 'C:\SolAzeroth\build\bin\RelWithDebInfo\configs')
+# Version publique (02/11/2026) : chemins pris dans le dossier de l'installation ; l'installation portable des joueurs
+# reçoit aussi ses accès à la base (MySQL portable, config\mysql-acore.cnf créé par installer.ps1).
+param([string]$Dossier)
 $ErrorActionPreference = 'Stop'
+. "$PSScriptRoot\commun.ps1"
 
-$configs = $Dossier
+$configs = if ($Dossier) { $Dossier } else { "$bin\configs" }
+$r = $racine -replace '\\', '/'
 
 $reglages = [ordered]@{
     'worldserver.conf' = [ordered]@{
         'BindIP'                          = '"127.0.0.1"'
-        'DataDir'                         = '"C:/SolAzeroth/data"'
-        'LogsDir'                         = '"C:/SolAzeroth/logs"'
+        'DataDir'                         = "`"$r/data`""
+        'LogsDir'                         = "`"$r/logs`""
         'Logger.ALE'                      = '4,Console Server'
         'SocketTimeOutTime'               = '86400000'
         'PreventAFKLogout'                = '2'
@@ -43,7 +47,7 @@ $reglages = [ordered]@{
     }
     'authserver.conf' = [ordered]@{
         'BindIP'  = '"127.0.0.1"'
-        'LogsDir' = '"C:/SolAzeroth/logs"'
+        'LogsDir' = "`"$r/logs`""
     }
     'modules\AutoBalance.conf' = [ordered]@{
         # v3 (31/10/2026) : la force des monstres vient de leur puissance (Sol'Azeroth), plus de cet équilibrage
@@ -78,8 +82,20 @@ $reglages = [ordered]@{
     # Calibrage final : pas de choix du taux d'XP (.xp set retiré)
     'modules\individual_xp.conf'   = [ordered]@{ 'IndividualXp.Enabled' = 'false' }
     'modules\transmog.conf'        = [ordered]@{ 'Transmogrification.ScaledCostModifier' = '2.0' }
-    'modules\mod_ale.conf'         = [ordered]@{ 'ALE.ScriptPath' = '"C:/SolAzeroth/lua_scripts"' }
+    'modules\mod_ale.conf'         = [ordered]@{ 'ALE.ScriptPath' = "`"$r/lua_scripts`"" }
     'modules\mod_solazeroth.conf'  = [ordered]@{}
+}
+
+if ($portable) {
+    # La base est livrée à jour : pas de mises à jour SQL d'AzerothCore au démarrage (leurs sources ne sont pas livrées).
+    $mdp = (Get-Content $identifiants | Where-Object { $_ -match '^password=' } | Select-Object -First 1) -replace '^password=', ''
+    $acces = "127.0.0.1;$portMysql;acore;$mdp"
+    $reglages['worldserver.conf']['LoginDatabaseInfo'] = "`"$acces;acore_auth`""
+    $reglages['worldserver.conf']['WorldDatabaseInfo'] = "`"$acces;acore_world`""
+    $reglages['worldserver.conf']['CharacterDatabaseInfo'] = "`"$acces;acore_characters`""
+    $reglages['worldserver.conf']['Updates.EnableDatabases'] = '0'
+    $reglages['authserver.conf']['LoginDatabaseInfo'] = "`"$acces;acore_auth`""
+    $reglages['authserver.conf']['Updates.EnableDatabases'] = '0'
 }
 
 foreach ($fichier in $reglages.Keys) {

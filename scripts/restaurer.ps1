@@ -4,9 +4,7 @@
 param([string]$Dossier)
 $ErrorActionPreference = 'Stop'
 
-$racine = 'C:\SolAzeroth'
-$mysql = 'C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe'
-$identifiants = "$racine\config\mysql-acore.cnf"
+. "$PSScriptRoot\commun.ps1"
 
 if (Get-Process worldserver, authserver -ErrorAction SilentlyContinue) {
     throw "Le serveur tourne encore. Ferme le jeu et attends l'arrêt du serveur avant de restaurer."
@@ -21,13 +19,13 @@ if (-not $Dossier) {
 $fichiers = Get-ChildItem $Dossier -Filter *.sql
 if (-not $fichiers) { throw "Aucun fichier .sql dans $Dossier" }
 
+DemarrerMysql
 Write-Output "Restauration de : $Dossier"
 Write-Output "Copie de sécurité de l'état actuel avant de restaurer..."
 & "$PSScriptRoot\sauvegarde.ps1" -Type avant-restauration
 
 foreach ($f in $fichiers) {
     Write-Output "  $($f.Name)..."
-    & cmd.exe /c "`"$mysql`" `"--defaults-extra-file=$identifiants`" --default-character-set=utf8mb4 < `"$($f.FullName)`""
-    if ($LASTEXITCODE -ne 0) { throw "Échec de la restauration de $($f.Name) (code $LASTEXITCODE)" }
+    SqlFichier $f.FullName
 }
 Write-Output "Restauration terminée."

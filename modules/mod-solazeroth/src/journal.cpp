@@ -27,7 +27,7 @@
 
 namespace
 {
-    std::string const DOSSIER = "C:/SolAzeroth/journaux";
+    std::string const DOSSIER = SolAzeroth::DossierRacine() + "/journaux";
     uint32 const SPHERE_INSTABLE = 900100;   // affixe Explosif (affixes_mecanique.cpp)
 
     struct Sort

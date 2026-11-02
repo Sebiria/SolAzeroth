@@ -15,6 +15,8 @@ namespace SolAzeroth
 {
     // Message pour un addon Sol'Azeroth (addon.cpp)
     void EnvoyerAddon(Player* player, std::string const& prefixe, std::string const& message);
+    // Dossier de l'installation (variable SOLAZEROTH_RACINE posée par le lanceur, sinon C:/SolAzeroth ; addon.cpp).
+    std::string DossierRacine();
     // v3 : pourcentage d'une zone, en centièmes de % (v3_zone.cpp).
     unsigned int PourcentZone(Player* player, unsigned int zone);
     // v3 : objectifs de zone acquis, (zone, genre, clé) aux genres de solazeroth_v3_zone_parts, et zones qui ont des

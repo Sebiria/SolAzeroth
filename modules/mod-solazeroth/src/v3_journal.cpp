@@ -26,7 +26,7 @@
 
 namespace
 {
-    std::string const DOSSIER = "C:/SolAzeroth/journaux/combat";
+    std::string const DOSSIER = SolAzeroth::DossierRacine() + "/journaux/combat";
     uint32 const REMPART = 100010;
 
     bool actif = true;

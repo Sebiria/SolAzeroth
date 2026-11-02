@@ -1,16 +1,15 @@
 ﻿# Lanceur Sol'Azeroth : MySQL -> authserver -> worldserver -> WoW, puis arrêt propre et sauvegarde.
 # Pendant le jeu : sauvegarde automatique à l'intervalle choisi (.sauvegarder 5/10/15/30/60)
 # et sauvegarde manuelle (.sauvegarder ou bouton du menu Echap).
-param([switch]$SansJeu)  # -SansJeu : démarre le serveur sans lancer WoW (tests) ; arrêt en créant runtime\stop.flag
+# -SansJeu : démarre le serveur sans lancer WoW (tests) ; arrêt en créant runtime\stop.flag
+# -GarderMysql : laisse tourner le MySQL portable à la fin (le menu s'en sert encore, il l'arrête en se fermant)
+param([switch]$SansJeu, [switch]$GarderMysql)
 $ErrorActionPreference = 'Stop'
 
-$racine = 'C:\SolAzeroth'
-$bin = "$racine\build\bin\RelWithDebInfo"
+. "$PSScriptRoot\commun.ps1"
 # Dossier du client WoW 3.3.5a : une ligne dans config\client.txt (propre à chaque machine).
 $client = (Get-Content "$racine\config\client.txt" -TotalCount 1 -ErrorAction SilentlyContinue)
 if (-not $client -or -not (Test-Path "$client\Wow.exe")) { throw "Indique le dossier du client WoW (celui de Wow.exe) dans $racine\config\client.txt" }
-$runtime = "$racine\runtime"
-$logs = "$racine\logs"
 $consoleLog = "$logs\worldserver-console.log"
 $demande = "$runtime\save_request.flag"
 $fichierIntervalle = "$runtime\save_interval.txt"
@@ -38,19 +37,16 @@ function Intervalle {
     return 15
 }
 
-New-Item -ItemType Directory -Force $runtime, $logs | Out-Null
+New-Item -ItemType Directory -Force $runtime, $logs, "$racine\archives" | Out-Null
 Remove-Item $demande -ErrorAction SilentlyContinue
 
 if (Get-Process worldserver, authserver -ErrorAction SilentlyContinue) {
     throw "Un serveur tourne déjà. Ferme-le avant de relancer."
 }
 
-# 1. MySQL
-$service = Get-Service MySQL84
-if ($service.Status -ne 'Running') {
-    Info 'Démarrage de MySQL...'
-    Start-Service MySQL84
-}
+# 1. MySQL (service, ou MySQL portable de l'installation des joueurs)
+Info 'Démarrage de MySQL...'
+DemarrerMysql
 
 # Migrations SQL en attente (sauvegarde avant-maj automatique s'il y en a)
 & "$PSScriptRoot\migrer.ps1" | ForEach-Object { Info $_ }
@@ -58,6 +54,10 @@ if ($service.Status -ne 'Running') {
 # 2. Realmlist et addon dans le client
 Set-Content "$client\Data\frFR\realmlist.wtf" 'set realmlist 127.0.0.1' -Encoding ASCII
 $configWtf = "$client\WTF\Config.wtf"
+if ($portable -and -not (Test-Path $configWtf)) {
+    New-Item -ItemType Directory -Force "$client\WTF" | Out-Null
+    Set-Content $configWtf @() -Encoding ASCII
+}
 if (Test-Path $configWtf) {
     # Réglages imposés à chaque lancement : mode fenêtré agrandi (le plein écran donne un écran noir au changement de fenêtre),
     # curseur matériel et images par seconde plafonnées (sinon l'écran de connexion se fige quand la souris bouge).
@@ -69,6 +69,8 @@ if (Test-Path $configWtf) {
         maxFPS     = '120'
         maxFPSBk   = '30'
     }
+    # Installation des joueurs : le compte local, auquel l'écran de connexion se connecte tout seul.
+    if ($portable) { $imposes['accountName'] = $compteLocal }
     $lignes = @(Get-Content $configWtf | Where-Object { $_ -notmatch ('^SET (' + ($imposes.Keys -join '|') + ') ') })
     $lignes += $imposes.Keys | ForEach-Object { "SET $_ `"$($imposes[$_])`"" }
     $lignes | Set-Content $configWtf -Encoding ASCII
@@ -120,6 +122,13 @@ while (-not (Test-Path $consoleLog) -or -not (Select-String -Path $consoleLog -P
 }
 Info 'Serveur prêt.'
 
+# Installation des joueurs : le compte local est créé au premier lancement (simple joueur, sans droits de MJ).
+if ($portable -and -not (Sql "SELECT 1 FROM acore_auth.account WHERE username = '$compteLocal'")) {
+    Info 'Création du compte de jeu...'
+    $script:world.StandardInput.WriteLine("account create $compteLocal $motCompteLocal")
+    Start-Sleep -Seconds 3
+}
+
 # 5. Le jeu
 $jeu = $null
 if (-not $SansJeu) {
@@ -138,6 +147,13 @@ while ($true) {
     if (Test-Path $demande) {
         Remove-Item $demande -ErrorAction SilentlyContinue
         Sauvegarder 'manuelle'
+    }
+
+    # Bouton Exporter de la fenêtre de signalement (v3_signalement.cpp) : « Enregistrer sous » par-dessus le jeu.
+    if (Test-Path "$runtime\signalements_export.flag") {
+        Remove-Item "$runtime\signalements_export.flag" -ErrorAction SilentlyContinue
+        try { & "$PSScriptRoot\signalements.ps1" -Exporter | ForEach-Object { Info $_ } }
+        catch { Info "ERREUR (signalements) : $_" }
     }
 
     $nouvelIntervalle = Intervalle
@@ -159,10 +175,11 @@ if (-not $script:world.HasExited) {
     $script:world.StandardInput.WriteLine('server shutdown 1')
     if (-not $script:world.WaitForExit(120000)) {
         Info "Le serveur ne s'arrête pas, arrêt forcé."
-        Get-Process worldserver -ErrorAction SilentlyContinue | Stop-Process -Force
+        Get-Process worldserver -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$bin\*" } | Stop-Process -Force
     }
 }
 if (-not $auth.HasExited) { Stop-Process $auth.Id -Force }
 $script:world = $null
 Sauvegarder 'fermeture'
+if (-not $GarderMysql) { ArreterMysql }
 Info 'Terminé.'

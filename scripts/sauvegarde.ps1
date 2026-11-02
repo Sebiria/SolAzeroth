@@ -8,9 +8,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$racine = 'C:\SolAzeroth'
-$mysqldump = 'C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqldump.exe'
-$identifiants = "$racine\config\mysql-acore.cnf"
+. "$PSScriptRoot\commun.ps1"
+$mysqldump = "$mysqlBin\mysqldump.exe"
+DemarrerMysql
 
 $bases = @('acore_characters', 'acore_auth')
 $dossierType = 'courantes'

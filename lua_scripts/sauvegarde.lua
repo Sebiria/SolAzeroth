@@ -4,7 +4,8 @@
 -- .sauvegarder ?        -> affiche l'intervalle actuel
 -- Le lanceur lit les fichiers du dossier runtime et fait la sauvegarde.
 
-local RUNTIME = "C:/SolAzeroth/runtime/"
+-- Dossier de l'installation : variable SOLAZEROTH_RACINE posée par le lanceur (version publique, 02/11/2026).
+local RUNTIME = (string.gsub(os.getenv("SOLAZEROTH_RACINE") or "C:/SolAzeroth", "\\", "/")) .. "/runtime/"
 local FICHIER_DEMANDE = RUNTIME .. "save_request.flag"
 local FICHIER_INTERVALLE = RUNTIME .. "save_interval.txt"
 local FICHIER_RESULTAT = RUNTIME .. "save_done.txt"

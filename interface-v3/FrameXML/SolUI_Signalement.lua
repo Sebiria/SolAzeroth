@@ -2,6 +2,8 @@
 -- La touche « ! » (réglable dans Techniques et raccourcis, ou /bug) fait noter au serveur la position du personnage et
 -- sa cible à cet instant (.signaler debut, v3_signalement.cpp), puis ouvre une fenêtre pour décrire le problème.
 -- Envoyer (ou Entrée) transmet le texte par morceaux (une ligne de discussion fait 255 caractères au plus).
+-- Version publique (02/11/2026) : « Exporter » fait écrire au lanceur un fichier .txt des signalements en attente,
+-- à envoyer au développeur (fenêtre Windows « Enregistrer sous ») ; /bug liste les montre. Nombre : message SOLSIGNAL.
 
 local S = SolUI
 
@@ -38,13 +40,28 @@ indice:SetPoint("TOPLEFT", 12, -10)
 indice:SetText("Ce qui ne va pas, ce que tu faisais…")
 
 local aide = S.Texte(f, "Regular", 12, "gris")
-aide:SetPoint("BOTTOMLEFT", 24, 34)
+aide:SetPoint("BOTTOMLEFT", 24, 60)
 aide:SetText("Entrée : envoyer.  Échap : annuler.")
 
 local envoyer = S.BoutonPlat(f, "Envoyer", 140, 36)
 envoyer:SetPoint("BOTTOMRIGHT", -24, 22)
 local annuler = S.BoutonPlat(f, "Annuler", 120, 36)
 annuler:SetPoint("RIGHT", envoyer, "LEFT", -10, 0)
+local exporter = S.BoutonPlat(f, "Exporter", 170, 36)
+exporter:SetPoint("BOTTOMLEFT", 24, 22)
+
+local enAttente = 0
+local function MajAttente()
+    exporter.texte:SetText(enAttente > 0 and ("Exporter (" .. enAttente .. ")") or "Exporter")
+    S.Montrer(exporter, enAttente > 0)
+end
+MajAttente()
+S.Message("SOLSIGNAL", function(champs)
+    if champs[1] == "N" then
+        enAttente = tonumber(champs[2]) or 0
+        MajAttente()
+    end
+end)
 
 local function Envoyer()
     local texte = (champ:GetText() or ""):gsub("|", "/"):gsub("[\r\n]+", " / "):gsub("%s+", " "):match("^%s*(.-)%s*$")
@@ -68,6 +85,10 @@ champ:SetScript("OnEscapePressed", function() f:Hide() end)
 champ:SetScript("OnTextChanged", function(self) S.Montrer(indice, (self:GetText() or "") == "") end)
 envoyer:SetScript("OnClick", Envoyer)
 annuler:SetScript("OnClick", function() f:Hide() end)
+exporter:SetScript("OnClick", function()
+    SendChatMessage(".signaler exporter", "SAY")
+    f:Hide()
+end)
 f:HookScript("OnHide", function() champ:ClearFocus() end)
 
 -- La touche qui ouvre la fenêtre arrive aussi comme caractère dans le champ : effacé à l'image suivante.
@@ -105,7 +126,16 @@ bouton:EnableMouse(false)
 bouton:SetScript("OnClick", function() S.Signaler() end)
 
 SLASH_SOLUISIGNALER1 = "/bug"
-SlashCmdList.SOLUISIGNALER = function() S.Signaler() end
+SlashCmdList.SOLUISIGNALER = function(argument)
+    argument = (argument or ""):lower():match("^%s*(.-)%s*$")
+    if argument == "liste" then
+        SendChatMessage(".signaler liste", "SAY")
+    elseif argument == "exporter" then
+        SendChatMessage(".signaler exporter", "SAY")
+    else
+        S.Signaler()
+    end
+end
 
 -- Première connexion : « ! » signale un bug, si la touche est libre.
 local fait = false
