@@ -3,7 +3,8 @@
 //   .mode normal|difficile|cauchemar|aucun. Gardé dans acore_characters.solazeroth_v3_modes (migration 091).
 //   Le difficile s'ouvre au palier 5 du rang d'aventurier, le cauchemar au palier 9 (v3_aventurier.cpp).
 // - Quand un monstre de la zone engage le joueur, il est remis à la puissance du mode : la puissance de base du joueur
-//   (moyenne des niveaux d'objet, sans les rangs : les rangs restent un vrai gain, outils\simulation_modes.py), plus
+//   (moyenne des niveaux d'objet, sans les rangs : les rangs restent un vrai gain, outils\simulation_modes.py ; la plus
+//   haute atteinte depuis le lot 4a, pour qu'une maille de bas niveau ne garde pas les monstres faibles), plus
 //   l'écart du mode. Un monstre plus fort la garde. Vie, dégâts d'arme, puissance d'attaque et armure suivent les
 //   statistiques de base du moteur à la nouvelle puissance (rapport nouvelle / ancienne, pour garder les modificateurs).
 //   - normal : écart 0 ;
@@ -243,7 +244,7 @@ namespace
         Regle const& regle = REGLES[mode];
         etat->mode = mode;
         uint8 ancienne = SolAzeroth::PuissanceCreature(creature);
-        uint8 visee = uint8(std::clamp<int32>(int32(std::floor(SolAzeroth::PuissanceDeBase(player))) + regle.ecart, 1, 79));
+        uint8 visee = uint8(std::clamp<int32>(int32(std::floor(SolAzeroth::PuissanceDeBaseMax(player))) + regle.ecart, 1, 79));
         float facteurVie = regle.facteur;
         uint32 rang = creature->GetCreatureTemplate()->rank;
         if (mode == CAUCHEMAR && (rang == CREATURE_ELITE_RARE || rang == CREATURE_ELITE_RAREELITE))

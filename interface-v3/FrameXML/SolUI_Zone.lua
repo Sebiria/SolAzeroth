@@ -78,7 +78,8 @@ S.Message("SOLZONE", function(champs)
         table.insert(recu.lieux, { nom = champs[3], tues = tonumber(champs[4]), requis = tonumber(champs[5]),
             part = tonumber(champs[6]), fait = champs[7] == "1", attente = champs[8] ~= "" and champs[8] or nil })
     elseif genre == "ANNEXE" then
-        recu.quetes[tonumber(champs[2])] = { etat = tonumber(champs[3]), medaille = tonumber(champs[4]) }
+        recu.quetes[tonumber(champs[2])] = { etat = tonumber(champs[3]), medaille = tonumber(champs[4]),
+            paye = champs[5] == "1" }   -- lot 4a : défi répétable déjà payé plein tarif aujourd'hui
     elseif genre == "RELIQUE" then
         recu.reliques[tonumber(champs[2])] = champs[3] == "1"
     elseif genre == "CARTE" then
@@ -213,7 +214,7 @@ function MajObjectifs()
         end
         for _, famille in ipairs(FAMILLES) do
             y = y + 10
-            Ecrire(famille, nil, nil, "ambreClair", true)
+            Ecrire(famille, famille == "Défis" and "plein tarif une fois par jour et par défi" or nil, nil, "ambreClair", true)
             local liste = {}
             for quete, a in pairs(S.ANNEXES or {}) do
                 if a.famille == famille and progres.quetes[quete] then table.insert(liste, quete) end
@@ -223,7 +224,12 @@ function MajObjectifs()
                 local a, e = S.ANNEXES[quete], progres.quetes[quete]
                 local valeur = string.format("puissance %d · %s · %s", a.puissance, Pour(a.part), ETATS[e.etat] or "")
                 if e.medaille and e.medaille > 0 then valeur = valeur .. " · " .. MEDAILLES[e.medaille] end
-                Ecrire(a.cle .. " — " .. a.titre, valeur, a.resume, e.etat == 3 and "vertClair" or "texte")
+                local note = a.resume
+                if e.paye then
+                    note = "Payé aujourd'hui : chrono et record seulement, 1 Marque. Plein tarif demain."
+                        .. (a.resume and ("  " .. a.resume) or "")
+                end
+                Ecrire(a.cle .. " — " .. a.titre, valeur, note, e.etat == 3 and "vertClair" or "texte")
             end
         end
         y = y + 10

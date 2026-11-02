@@ -831,6 +831,11 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - Simulateur (`simulation_sorts.py`) : interruption par le Heurt de bouclier (puis silence 3 s), renforts appelés en combat, zones au sol (Pluie de feu) quittées au bout de 3 s, vie des monstres réglable.
   - Laissés tels quels ou hors cible : le Requin du sable (imbattable, danger du décor) ; la Matriarche des scorpides (élite de puissance 4), encore à 91 % de vie perdue et 73 % de victoires au plus bas des réglages.
   - `tests_equilibrage.py` relit les journaux d'avant avec la table solazeroth_v3_calibre_3c_origine : il passe.
+- **Audit du jeu, lot 4a : économie du risque, première partie** (02/11/2026, C4 du consensus ; choix de l'utilisateur : défis plein tarif une fois par jour, transfert de rang à un rang de moins plus une Braise, panoplie du Gouffre seulement sur les pièces bleues à composant de donjon) : construit, pas encore vérifié en jeu. Lot 4 découpé en 4a (économie du risque), 4b (rangs et fabrication), 4c (choix, panoplie du Gouffre).
+  - Défis répétables (`v3_annexes.cpp`, table solazeroth_v3_annexes_jour, migration 112) : plein tarif une fois par jour et par défi. Ensuite, le chrono et le record seulement, 1 Marque, et l'or de la quête est repris. La fenêtre des objectifs affiche la règle (famille Défis) et « payé aujourd'hui » sur le défi.
+  - Éclats cadavériques selon l'écart de puissance (`v3_collection.cpp`), comme le contour de la cible : plein jusqu'à 2 points de moins, puis ×0,8, ×0,6, ×0,45, et ×0,25 pour un monstre gris (6 points de moins ou davantage). Avant, un sanglier de puissance 1 rapportait autant qu'un monstre de puissance 9.
+  - Modes de zone calés sur la puissance de base la plus haute atteinte (`v3_combat.cpp`, table solazeroth_v3_puissance_max) : porter une maille de bas niveau ne garde plus les monstres faibles.
+  - Pas encore faits : le fournisseur de matériaux de Razor Hill (son prix, « 3 à 5 fois la valeur du farm », demande le rythme de farm en or par heure, pas encore mesuré) et la boucle de la semaine (objectif et affixe du Gouffre). À trancher avec l'utilisateur.
 
 ## 5. Questions pour les prochaines séries
 

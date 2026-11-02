@@ -103,6 +103,7 @@ namespace
     struct Joueur : DataMap::Base
     {
         std::unordered_map<uint32, std::pair<uint8, uint32>> medailles;   // quête -> (médaille, meilleur temps)
+        std::unordered_map<uint32, uint32> payes;                         // défi répétable -> jour du plein tarif
         std::unordered_map<uint32, Chrono> chronos;
         bool carte = false;
         uint8 recordVague = 0;
@@ -183,16 +184,35 @@ namespace
             j->chronos.erase(quete);
             SolAzeroth::EnvoyerAddon(player, "SOLZONE", "CHRONO;-");
         }
+        // Lot 4a (02/11/2026, C4 du consensus, choix de l'utilisateur) : un défi répétable paie plein tarif une fois par
+        // jour. Ensuite, le chrono et le record seulement, et 1 Marque ; l'or de la quête est repris.
+        bool reduit = quest->IsRepeatable() && j->payes[quete] == Aujourdhui();
+        if (quest->IsRepeatable() && !reduit)
+        {
+            j->payes[quete] = Aujourdhui();
+            CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_annexes_jour (guid, quete, jour) VALUES ({}, {}, {})",
+                player->GetGUID().GetCounter(), quete, Aujourdhui());
+        }
         float facteur = medaille == 3 ? 2.0f : medaille == 2 ? 1.5f : 1.0f;
-        SolAzeroth::DonnerMarques(player, GainMarques(player, uint32(a.insignes * facteur)), a.cle);
-        if (a.eclats)
-            SolAzeroth::AjouterACollection(player, ECLAT, uint32(a.eclats * facteur));
-        for (auto const& [objet, nombre] : a.composants)
-            SolAzeroth::AjouterACollection(player, objet, uint32(nombre * facteur + 0.5f));
-        if (facteur > 1.0f && quest->GetRewOrReqMoney() > 0)
-            player->ModifyMoney(int32(quest->GetRewOrReqMoney() * (facteur - 1.0f)));
-        std::string texte = Acore::StringFormat("{} : {} éclats rangés dans la Collection.", a.cle,
-            uint32(a.eclats * facteur));
+        std::string texte;
+        if (reduit)
+        {
+            if (quest->GetRewOrReqMoney() > 0)
+                player->ModifyMoney(-std::min<int32>(int32(player->GetMoney()), quest->GetRewOrReqMoney()));
+            SolAzeroth::DonnerMarques(player, 1, a.cle);
+            texte = Acore::StringFormat("{} : déjà payé aujourd'hui, 1 Marque seulement (plein tarif demain).", a.cle);
+        }
+        else
+        {
+            SolAzeroth::DonnerMarques(player, GainMarques(player, uint32(a.insignes * facteur)), a.cle);
+            if (a.eclats)
+                SolAzeroth::AjouterACollection(player, ECLAT, uint32(a.eclats * facteur));
+            for (auto const& [objet, nombre] : a.composants)
+                SolAzeroth::AjouterACollection(player, objet, uint32(nombre * facteur + 0.5f));
+            if (facteur > 1.0f && quest->GetRewOrReqMoney() > 0)
+                player->ModifyMoney(int32(quest->GetRewOrReqMoney() * (facteur - 1.0f)));
+            texte = Acore::StringFormat("{} : {} éclats rangés dans la Collection.", a.cle, uint32(a.eclats * facteur));
+        }
         if (!a.depart.empty())
         {
             static char const* const NOMS[] = { "sans médaille", "bronze", "argent", "or" };
@@ -387,6 +407,14 @@ namespace
     }
 }
 
+// Lot 4a : défi répétable déjà payé plein tarif aujourd'hui (fenêtre des objectifs, v3_zone.cpp).
+bool SolAzeroth::DefiPayeAujourdhui(Player* player, unsigned int quete)
+{
+    Joueur* j = JoueurDe(player);
+    auto it = j->payes.find(quete);
+    return it != j->payes.end() && it->second == Aujourdhui();
+}
+
 unsigned char SolAzeroth::MedailleDefi(Player* player, unsigned int quete)
 {
     Joueur* j = JoueurDe(player);
@@ -498,6 +526,13 @@ public:
                 j->medailles[(*r)[0].Get<uint32>()] = { (*r)[1].Get<uint8>(), (*r)[2].Get<uint32>() };
             while (r->NextRow());
         }
+        if (QueryResult r = CharacterDatabase.Query("SELECT quete, jour FROM solazeroth_v3_annexes_jour WHERE guid = {}",
+            guid))
+        {
+            do
+                j->payes[(*r)[0].Get<uint32>()] = (*r)[1].Get<uint32>();
+            while (r->NextRow());
+        }
         if (QueryResult r = CharacterDatabase.Query("SELECT carte, vague, temps, jour FROM solazeroth_v3_annexes_joueur "
             "WHERE guid = {}", guid))
         {
@@ -606,6 +641,7 @@ public:
     {
         CharacterDatabase.Execute("DELETE FROM solazeroth_v3_annexes_medailles WHERE guid = {}", guid.GetCounter());
         CharacterDatabase.Execute("DELETE FROM solazeroth_v3_annexes_joueur WHERE guid = {}", guid.GetCounter());
+        CharacterDatabase.Execute("DELETE FROM solazeroth_v3_annexes_jour WHERE guid = {}", guid.GetCounter());
     }
 };
 

@@ -58,7 +58,16 @@ namespace
     uint32 const ECLAT = 910120;
     uint32 const CHEF_RENFORCE_PREMIER = 910010, CHEF_RENFORCE_DERNIER = 910014;   // migration 075
 
-    uint32 Eclats(Creature* creature)
+    // Lot 4a (02/11/2026, C4 du consensus) : les éclats suivent l'écart de puissance, comme le contour de la cible
+    // (SolUI_Cible.lua) : plein à 2 points de moins au plus, puis 0,8, 0,6, 0,45, et ×0,25 pour un monstre gris (6
+    // points de moins ou davantage). Avant, un sanglier de puissance 1 rapportait autant qu'un monstre de puissance 9.
+    float FacteurEcart(Creature* creature, Player* player)
+    {
+        float ecart = float(SolAzeroth::PuissanceCreature(creature)) - SolAzeroth::PuissanceJoueur(player);
+        return ecart >= -2.0f ? 1.0f : std::max(0.25f, 1.0f + (ecart + 2.0f) * 0.1875f);
+    }
+
+    uint32 Eclats(Creature* creature, Player* player)
     {
         CreatureTemplate const* modele = creature->GetCreatureTemplate();
         if (modele->type == CREATURE_TYPE_CRITTER)
@@ -76,7 +85,8 @@ namespace
         // F9 : puissance du monstre (rehaussée par le mode de zone) et éclats du mode (v3_modes.cpp).
         nombre *= 1.0f + std::max(0, int32(SolAzeroth::PuissanceCreature(creature)) - 12) / 12.0f;
         nombre *= SolAzeroth::FacteurEclatsMode(creature);
-        return uint32(nombre + 0.5f);
+        nombre *= FacteurEcart(creature, player);
+        return uint32(nombre + frand(0.0f, 1.0f));   // tirage : un monstre gris donne encore, mais rarement
     }
 
     // F6 : le butin des monstres et des chefs ne garde que les composants (objets à collectionner), les objets de quête
@@ -249,7 +259,7 @@ public:
         if (auto it = depecage.find(creature->GetEntry()); it != depecage.end())
             LootTemplates_Skinning.GetLootFor(it->second)->Process(creature->loot, LootTemplates_Skinning,
                 creature->GetLootMode(), player);
-        uint32 nombre = Eclats(creature);
+        uint32 nombre = Eclats(creature, player);
         // Passifs (v3_passifs.cpp) : Charognard, + 25 % en donjon ; Éclats d'aventure, + 10 % hors des instances.
         if (SolAzeroth::PassifActif(player, SolAzeroth::CHAROGNARD))
             nombre = uint32(nombre * 1.25f + frand(0.0f, 1.0f));

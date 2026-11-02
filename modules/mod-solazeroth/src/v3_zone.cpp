@@ -19,7 +19,7 @@
 // Interface (SolUI_Zone.lua, préfixe SOLZONE), quand ça change et qu'on est dans une zone qui a des parts :
 // « POURCENT;total;histoire;exploration;annexes », « EXPLO;faites;total », « LIEU;lieu;nom;tués;requis;part;nettoyé;quête »
 // pour chaque lieu (le chef renforcé compte dans « requis » ; « quête » : titre de la quête du journal qui retient le chef
-// renforcé, vide sinon), « ANNEXE;quête;état;médaille » (état : 0 à prendre,
+// renforcé, vide sinon), « ANNEXE;quête;état;médaille;payé aujourd'hui » (état : 0 à prendre,
 // 1 en cours, 2 à rendre, 3 rendue), « RELIQUE;objet;trouvée », « CARTE;0|1 » (carte des reliques achetée), puis
 // « FINZONE ». Les annexes du pourcentage regroupent les genres 3 à 5. Hors de ces zones : « POURCENT;-1 ».
 
@@ -223,8 +223,8 @@ namespace
             {
                 QuestStatus statut = player->GetQuestStatus(part.cle);
                 uint8 etat = acquis ? 3 : statut == QUEST_STATUS_COMPLETE ? 2 : statut == QUEST_STATUS_INCOMPLETE ? 1 : 0;
-                lieux.push_back(Acore::StringFormat("ANNEXE;{};{};{}", part.cle, etat,
-                    SolAzeroth::MedailleDefi(player, part.cle)));
+                lieux.push_back(Acore::StringFormat("ANNEXE;{};{};{};{}", part.cle, etat,
+                    SolAzeroth::MedailleDefi(player, part.cle), SolAzeroth::DefiPayeAujourdhui(player, part.cle) ? 1 : 0));
             }
             else if (part.genre == RELIQUE)
                 lieux.push_back(Acore::StringFormat("RELIQUE;{};{}", part.cle, acquis ? 1 : 0));

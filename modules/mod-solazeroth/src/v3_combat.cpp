@@ -68,6 +68,7 @@ namespace
     struct Puissance : DataMap::Base
     {
         float valeur = 0.0f;
+        float baseMax = -1.0f;   // lot 4a : puissance de base la plus haute atteinte (-1 : pas encore lue)
         uint32 attente = TICK_PUISSANCE;
         uint8 renvoi = 0;
         std::string affiche;
@@ -226,6 +227,29 @@ float SolAzeroth::PuissanceDeBase(Player* player)
     return CalculerPuissance(player, false);
 }
 
+// Lot 4a (02/11/2026, C4 du consensus) : puissance de base la plus haute atteinte, gardée dans
+// solazeroth_v3_puissance_max (migration 112). Les modes de zone s'y calent (v3_modes.cpp) : porter de la maille de bas
+// niveau ne garde plus les monstres faibles.
+float SolAzeroth::PuissanceDeBaseMax(Player* player)
+{
+    Puissance* p = PuissanceDe(player);
+    if (p->baseMax < 0.0f)
+    {
+        p->baseMax = 0.0f;
+        if (QueryResult r = CharacterDatabase.Query("SELECT maximum FROM solazeroth_v3_puissance_max WHERE guid = {}",
+            player->GetGUID().GetCounter()))
+            p->baseMax = (*r)[0].Get<float>();
+    }
+    float base = CalculerPuissance(player, false);
+    if (base > p->baseMax + 0.05f)
+    {
+        p->baseMax = base;
+        CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_puissance_max (guid, maximum) VALUES ({}, {})",
+            player->GetGUID().GetCounter(), base);
+    }
+    return std::max(p->baseMax, base);
+}
+
 float SolAzeroth::PuissanceJoueur(Player* player)
 {
     return PuissanceDe(player)->valeur;
@@ -371,7 +395,13 @@ public:
 class solazeroth_v3_combat_joueur : public PlayerScript
 {
 public:
-    solazeroth_v3_combat_joueur() : PlayerScript("solazeroth_v3_combat_joueur", { PLAYERHOOK_ON_UPDATE }) { }
+    solazeroth_v3_combat_joueur() : PlayerScript("solazeroth_v3_combat_joueur", { PLAYERHOOK_ON_UPDATE,
+        PLAYERHOOK_ON_DELETE }) { }
+
+    void OnPlayerDelete(ObjectGuid guid, uint32 /*compte*/) override
+    {
+        CharacterDatabase.Execute("DELETE FROM solazeroth_v3_puissance_max WHERE guid = {}", guid.GetCounter());
+    }
 
     void OnPlayerUpdate(Player* player, uint32 diff) override
     {
@@ -396,6 +426,7 @@ public:
             return;
         p->attente = 0;
         p->valeur = CalculerPuissance(player);
+        SolAzeroth::PuissanceDeBaseMax(player);   // tient le maximum à jour
         // Renvoi complet toutes les 10 s : l'interface v3 (F4) retrouve son état après un /reload.
         if (++p->renvoi >= 5)
         {

@@ -50,6 +50,8 @@ namespace SolAzeroth
     bool LieuClos(Player* player, unsigned int lieu);
     // v3 : meilleure médaille d'un défi (0 aucune, 1 bronze, 2 argent, 3 or) et carte des reliques achetée (v3_annexes.cpp).
     unsigned char MedailleDefi(Player* player, unsigned int quete);
+    // Lot 4a : défi répétable déjà payé plein tarif aujourd'hui (v3_annexes.cpp).
+    bool DefiPayeAujourdhui(Player* player, unsigned int quete);
     bool CarteReliques(Player* player);
     // v3 : objets rangés dans la Collection, et retrait (v3_collection.cpp).
     unsigned int NombreEnCollection(Player* player, unsigned int objet);
@@ -75,6 +77,8 @@ namespace SolAzeroth
     // v3 : puissance du personnage, moyenne de ses objets équipés (v3_combat.cpp) ; de base : sans les rangs.
     float PuissanceJoueur(Player* player);
     float PuissanceDeBase(Player* player);
+    // Lot 4a : la plus haute atteinte, sur laquelle les modes de zone se calent (v3_combat.cpp).
+    float PuissanceDeBaseMax(Player* player);
     // v3, F9 : change la puissance d'une créature (v3_niveau.cpp) ; éclats du mode de zone et rare appelé par le
     // cauchemar (v3_modes.cpp).
     void FixerPuissanceCreature(Creature* creature, unsigned char puissance);
