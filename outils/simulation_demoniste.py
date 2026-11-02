@@ -19,10 +19,12 @@ Règles reprises du serveur (v3_demoniste.cpp, demoniste_v3.py, v3_combat.cpp) e
 - Peur (6 s) : brisée quand le monstre a perdu SEUIL_PEUR de sa vie maximale depuis qu'il fuit (v3_demoniste.cpp ;
   le moteur prenait 1/4,75 de la vie d'un guerrier du niveau du lanceur, 80 : jamais atteint) ; le monstre revient en
   RETOUR_PEUR × le temps de fuite (il fuit en zigzag, pas en ligne droite : supposé).
+- potion (lot D5) : comme simulation_combat.py, bue sous SEUIL_POTION de la vie, rang 2 avec son soin sur la durée.
 Le cas « je recule en posant Corruption et Agonie » n'est pas simulé : il est lent, et la référence est le combat où
 l'on s'arrête pour incanter.
 
 py simulation_demoniste.py      (rapport : démoniste et guerrier côte à côte, seul puis en groupe)
+py simulation_demoniste.py --gouffre   (lot D5 : Gouffre de Ragefeu par difficulté, puis rares secrets en bleu)
 """
 import os
 import random
@@ -51,6 +53,7 @@ PART_MOISSON = 0.25                  # v3_demoniste.cpp
 RECHARGES = {"marcheur": 60.0, "diablotin": 30.0, "peur": 20.0, "drain": 10.0}
 DUREES = {"marcheur": 10.0, "diablotin": 15.0}
 DUREE_MAX = 180.0
+CHARGE = 51756                      # rares_secrets_v3.py
 ENTRE = 20.0                        # entre deux combats (butin, marche) : les recharges continuent
 
 # Kits : techniques apprises (ordre de v3_kit.cpp).
@@ -120,7 +123,7 @@ def vitesse(entree):
     return float(sim.sql("SELECT speed_run FROM acore_world.creature_template WHERE entry = %d" % entree)[0][0]) * VITESSE_COURSE
 
 
-def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None):
+def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None, potion=None):
     """Un combat contre des monstres arrivés ensemble ; renvoie (victoire, durée, vie restante, infligés, subis).
     recharges : temps restant de chaque recharge au début du combat, mis à jour pour le combat suivant."""
     p = p or parts()
@@ -145,6 +148,16 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None)
     drain = None                              # (cible, tics restants, prochain tic, intervalle)
     incantation = None                        # (sort, cible, fin, retards)
     inflige = subi = 0
+    charges, potion_prete, soins, soin = (potion[0] if potion else 0), 0.0, 0, None
+
+    def boire():
+        nonlocal vie, charges, potion_prete, soins, soin
+        if charges and t >= potion_prete and vie < j.vie * sim.SEUIL_POTION:
+            vie = min(j.vie, vie + round(j.vie * potion[1] / 100.0))
+            charges -= 1
+            potion_prete = t + sim.RECHARGE_POTION
+            if potion[2]:
+                soins, soin = potion[3], t + 1.0
 
     def vivants():
         return [i for i in range(n) if vies[i] > 0]
@@ -190,6 +203,8 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None)
             evenements.append((drain[2], "drain"))
         if feu is not None:
             evenements.append((feu, "feu"))
+        if soin is not None:
+            evenements.append((soin, "soin"))
         for i in cibles:
             evenements.append((coup_m[i], ("coup", i)))
             if corruption[i]:
@@ -219,6 +234,7 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None)
             subi += dg
             if vie <= 0:
                 return terminer(False, t, 0, inflige, subi)
+            boire()
             # Le coup retarde l'incantation ou écourte la canalisation.
             if incantation and incantation[3] < RETARDS_MAX:
                 s, ci, fin, r = incantation
@@ -237,6 +253,11 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None)
             soigner(round(frapper(i, part, False) * PART_MOISSON))
             if alea.random() < CHANCE_TRANSE:
                 transe = True
+            continue
+        if quoi == "soin":
+            soigner(round(j.vie * potion[2] / 100.0))
+            soins -= 1
+            soin = t + 1.0 if soins > 0 else None
             continue
         if quoi == "feu":
             frapper(c, p["feu"], True)
@@ -376,5 +397,72 @@ def rapport(kits=None):
     return resultats
 
 
+def renforce(dm, rangs=0, repos=True):
+    """Le démoniste avec des rangs d'objet (+10 % par rang, comme simulation_modes.rangs) et le Repos du feu (vie
+    +5 %, dégâts +10 % ; les 5 d'Intelligence sont donnés par demoniste(repas=5))."""
+    f = 1 + 0.1 * rangs
+    vie, pa = round(dm.vie * f), dm.pa * f
+    if repos:
+        vie, pa = round(vie * 1.05), pa * 1.10
+    return Demoniste(dm.nom, vie, round(dm.armure * f), pa, dm.puissance * f)
+
+
+def gouffre():
+    """Lot D5 : le Gouffre de Ragefeu (élite et dernier boss, difficultés 1 à 5, potion F7, Repos) et les rares
+    secrets (tout en bleu du Gouffre), démoniste contre guerrier aux mêmes pièces."""
+    import simulation_camp as camp
+    import simulation_donjons as donjons
+    import simulation_modes as modes
+    import rares_secrets_v3 as rares
+    fiches = (sim.au_present(c) for chemin in list(reversed(te.journaux())) + [te.REFERENCE]
+              for c in reversed(sim.lire_journal(chemin)) if c["joueur"])
+    guerrier = next(fiches)
+    guid = int(sim.sql("SELECT guid FROM acore_characters.characters WHERE name = '%s'" % guerrier.nom)[0][0])
+    n = donjons.N
+    for titre, objets in (("fin de Durotar (quêtes)", te.PANOPLIES["fin de Durotar (quêtes)"]),
+                          ("tout en bleu du Gouffre", rares.GOUFFRE)):
+        g0 = sim.equiper(guerrier, objets, guid)
+        d0 = demoniste(objets, guid, repas=5)
+        print("\nGouffre, %s : victoires (%%) démoniste / guerrier, contre le Massacreur (élite) puis Taragaman (boss)"
+              % titre)
+        print("   %-18s %s" % ("", "   ".join("diff. %d        " % d for d in range(1, 6))))
+        for r in (0, 2, 4):
+            g, dm = camp.repos(modes.rangs(g0, r), 5), renforce(d0, r)
+            cases = []
+            for diff in range(1, 6):
+                paire = []
+                for entree in (donjons.ELITE, donjons.BOSS):
+                    if diff == 1:
+                        m = sim.monstre_depuis_base(entree)
+                    else:
+                        ecart, facteur, techniques = donjons.DIFFICULTES[diff]
+                        m = modes.renforcer(sim.monstre_depuis_base(entree, modes.puissance_visee(g0, ecart, entree)),
+                                            facteur, 1 + donjons.TECHNIQUE * techniques)
+                    m.course = vitesse(entree)
+                    rd = simuler(dm, [m], n, potion=donjons.POTION_F7)
+                    rg = sim.simuler(g, m, n, potion=donjons.POTION_F7)
+                    paire.append("%3.0f/%3.0f" % (rd["victoire"], rg["victoire"]))
+                cases.append(" ".join(paire))
+            print("   %-18s %s" % ("+ %d rangs d'objet" % r, "   ".join(cases)))
+    import simulation_lot4c as lot4c
+    g, b = rares.fiche()
+    dm = renforce(demoniste(rares.GOUFFRE, guid, repas=5))
+    # Bonus du défi (repas, consommables, critique), approchés pour le démoniste : vie et armure sur la fiche, dégâts
+    # subis sur la vie, dégâts infligés, critique (×1,5) et hâte sur la PA ; le vol de vie est ignoré (Moisson).
+    db = Demoniste(dm.nom, round(dm.vie * b.get("vie", 1.0) / b.get("subis", 1.0)), round(dm.armure * b.get("armure", 1.0)),
+                   dm.pa * b.get("inflige", 1.0) * (1 + b.get("critique", 0.0) * 0.5 / 100) * (1 + b.get("hate", 0.0)),
+                   dm.puissance)
+    print("\nRares secrets (réglés en jeu, puissance %d), tout en bleu du Gouffre, Repos, potion F7 : victoires (%%) "
+          "sans / avec les autres bonus" % rares.PUISSANCE_RARE)
+    for entree, origine, nom, _, _, _, _, techniques, *_ in rares.RARES:
+        m = sim.monstre_depuis_base(entree, rares.PUISSANCE_RARE)
+        # Une Charge à l'entrée en combat (Hurlevague) le met au contact tout de suite.
+        m.course = 1000.0 if any(e == 4 and sort == CHARGE for e, _, _, sort, *_ in techniques) else vitesse(entree)
+        print("   %-24s vie %5d | démoniste %5.1f / %5.1f | guerrier %5.1f / %5.1f"
+              % (nom, m.vie, simuler(dm, [m], n, potion=donjons.POTION_F7)["victoire"],
+                 simuler(db, [m], n, potion=donjons.POTION_F7)["victoire"],
+                 sim.simuler(g, m, n, potion=donjons.POTION_F7)["victoire"], lot4c.essai(g, m, b)))
+
+
 if __name__ == "__main__":
-    rapport()
+    gouffre() if "--gouffre" in sys.argv else rapport()

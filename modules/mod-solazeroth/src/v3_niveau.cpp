@@ -19,6 +19,7 @@
 #include "Config.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "DBCStores.h"
 #include "Item.h"
 #include "Log.h"
 #include "ObjectMgr.h"
@@ -43,6 +44,7 @@ namespace
     struct ArmePortee : DataMap::Base
     {
         uint32 entree = 0;
+        uint32 enchantement = 0;
     };
 
     struct Regen : DataMap::Base
@@ -185,20 +187,28 @@ public:
         if (!modele || !modele->Delay)
             return 0.0f;
         float moyenne = (modele->Damage[0].DamageMin + modele->Damage[0].DamageMax) / 2.0f;
+        // Lot D5 : les enchantements de dégâts de l'arme (Frappe, Impact) comptent aussi.
+        if (SpellItemEnchantmentEntry const* e = sSpellItemEnchantmentStore.LookupEntry(
+                arme->GetEnchantmentId(PERM_ENCHANTMENT_SLOT)))
+            for (uint8 i = 0; i < MAX_SPELL_ITEM_ENCHANTMENT_EFFECTS; ++i)
+                if (e->type[i] == ITEM_ENCHANTMENT_TYPE_DAMAGE)
+                    moyenne += e->amount[i];
         return moyenne / (modele->Delay / 1000.0f) * 14.0f;
     }
 
     void OnPlayerUpdate(Player* player, uint32 diff) override
     {
-        // Arme changée : la puissance d'attaque du lanceur de sorts suit (l'équipement ne la recalcule pas toujours).
+        // Arme ou son enchantement changés : la puissance d'attaque du lanceur de sorts suit (l'équipement ne la recalcule pas toujours).
         if (SolAzeroth::CaracteristiquePrincipale(player) == STAT_INTELLECT)
         {
             Item* arme = player->GetWeaponForAttack(BASE_ATTACK, true);
             ArmePortee* a = player->CustomData.GetDefault<ArmePortee>("solazeroth_v3_arme_portee");
             uint32 entree = arme ? arme->GetEntry() : 0;
-            if (entree != a->entree)
+            uint32 enchantement = arme ? arme->GetEnchantmentId(PERM_ENCHANTMENT_SLOT) : 0;
+            if (entree != a->entree || enchantement != a->enchantement)
             {
                 a->entree = entree;
+                a->enchantement = enchantement;
                 player->UpdateAttackPowerAndDamage();
             }
         }

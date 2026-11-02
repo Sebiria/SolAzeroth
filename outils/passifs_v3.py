@@ -59,7 +59,7 @@ DONJON = [
     (14, "Cuirasse", "+ 6 % d'armure."),
     (15, "Pied sûr", "− 30 % de dégâts des pluies de feu, explosions et sorts de zone."),
     (16, "Fin de combat", "À la fin de chaque combat, rend 10 % de la vie."),
-    (17, "Contre-attaque", "Quand on vous frappe, 20 % de chances de rendre une attaque."),
+    (17, "Contre-attaque", "Quand on vous frappe, 20 % de chances de rendre une attaque (un Trait de l'ombre instantané pour un lanceur de sorts)."),
     (18, "Tenace", "− 25 % de durée des étourdissements, immobilisations et ralentissements."),
     (19, "Dernier rempart", "Une fois par donjon, une mort est évitée : vous restez à 30 % de vie."),
     (20, "Charognard", "+ 25 % d'éclats dans le donjon."),

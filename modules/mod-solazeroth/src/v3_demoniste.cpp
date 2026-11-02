@@ -241,7 +241,7 @@ class spell_solazeroth_v3_trait : public SpellScript
 
     void Consommer()
     {
-        if (GetSpell()->GetCastTime() == 0)
+        if (GetSpell()->GetCastTime() == 0 && !GetSpell()->IsTriggered())
             if (Unit* lanceur = GetCaster())
                 lanceur->RemoveAurasDueToSpell(TRANSE);
     }

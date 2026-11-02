@@ -121,9 +121,9 @@ namespace
         float reduction = 100.0f * armure / std::max(1.0f, armure + sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureK", 100.0f)
             * (sConfigMgr->GetOption<float>("SolAzeroth.V3.ArmureC", 3.0f) + puissance));
         j->fichier << Acore::StringFormat("  Joueur {} : puissance {:.1f}, vie {}/{}, armure {} (-{:.0f} % contre sa puissance), force {:.0f}, "
-            "endurance {:.0f}, puissance d'attaque {:.0f}, arme {:.1f}-{:.1f} toutes les {:.2f} s, critique {:.1f} %, Rempart {}\n",
+            "intelligence {:.0f}, endurance {:.0f}, puissance d'attaque {:.0f}, arme {:.1f}-{:.1f} toutes les {:.2f} s, critique {:.1f} %, Rempart {}\n",
             p->GetName(), puissance, p->GetHealth(), p->GetMaxHealth(), p->GetArmor(), reduction,
-            p->GetStat(STAT_STRENGTH), p->GetStat(STAT_STAMINA), p->GetTotalAttackPowerValue(BASE_ATTACK),
+            p->GetStat(STAT_STRENGTH), p->GetStat(STAT_INTELLECT), p->GetStat(STAT_STAMINA), p->GetTotalAttackPowerValue(BASE_ATTACK),
             p->GetFloatValue(UNIT_FIELD_MINDAMAGE), p->GetFloatValue(UNIT_FIELD_MAXDAMAGE), p->GetAttackTime(BASE_ATTACK) / 1000.0f,
             p->GetFloatValue(PLAYER_CRIT_PERCENTAGE), Rempart(p));
     }

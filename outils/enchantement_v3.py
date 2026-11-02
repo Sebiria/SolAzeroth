@@ -24,7 +24,7 @@ LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Enchantements.lua"
 
 POUSSIERE, ESSENCE = 10940, 10938
 OR_PAR_COMPOSANT = 10   # cuivre
-PLASTRON, BRASSARDS, CAPE, BOUCLIER, ARME_1M, ARME_2M = [5, 20], [9], [16], [14], [13, 21, 22], [17]
+PLASTRON, BRASSARDS, CAPE, BOUCLIER, ARME_1M, ARME_2M, MAIN_GAUCHE = [5, 20], [9], [16], [14], [13, 21, 22], [17], [23]
 
 # (identifiant, nom, effet, enchantement de SpellItemEnchantment.dbc, InventoryType, composants)
 ENCHANTEMENTS = [
@@ -35,6 +35,10 @@ ENCHANTEMENTS = [
     (5, "Protection mineure", "+10 armure", 783, BOUCLIER, {POUSSIERE: 2, ESSENCE: 1}),
     (6, "Frappe mineure", "+1 aux dégâts de l'arme", 250, ARME_1M, {POUSSIERE: 3, ESSENCE: 2}),
     (7, "Impact mineur", "+2 aux dégâts de l'arme", 241, ARME_2M, {POUSSIERE: 4, ESSENCE: 2}),
+    # Lot D5 (02/11/2026) : la caractéristique des lanceurs de sorts, sur les brassards et l'orbe (qui remplace le
+    # bouclier du guerrier et son enchantement de Protection).
+    (8, "Intelligence mineure", "+1 Intelligence", 79, BRASSARDS, {POUSSIERE: 3, ESSENCE: 1}),
+    (9, "Intelligence mineure", "+1 Intelligence", 79, MAIN_GAUCHE, {POUSSIERE: 2, ESSENCE: 1}),
 ]
 
 # Table de désenchantement d'une pièce verte : (armure, arme) par tranche de niveau d'objet.

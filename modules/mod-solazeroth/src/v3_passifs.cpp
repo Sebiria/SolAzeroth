@@ -51,6 +51,7 @@ namespace
     uint32 const AURA_CARRURE = 100040, AURA_CUIRASSE = 100041, AURA_PAS_LEGER = 100042, AURA_FUITE = 100043,
         AURA_RODEUR = 100044;
     uint32 const PIERRE_DE_FOYER = 8690;
+    uint32 const TRAIT_DE_L_OMBRE = 100201;                                       // v3_demoniste.cpp
     uint32 const FISSURE = 900101, SPHERE = 900100;                                // v3_modes.cpp
     uint32 const CHEF_RENFORCE_PREMIER = 910010, CHEF_RENFORCE_DERNIER = 910014;   // migration 075
     uint32 const TICK = 1000;
@@ -291,7 +292,10 @@ public:
                 return;
             if (epines)
                 Unit::DealDamage(player, creature, epines, nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
-            if (contre && creature->IsAlive() && player->IsWithinMeleeRange(creature))
+            // Lot D5 : un lanceur de sorts ne frappe pas avec son arme ; il rend un Trait de l'ombre instantané.
+            if (contre && creature->IsAlive() && SolAzeroth::CaracteristiquePrincipale(player) == STAT_INTELLECT)
+                player->CastSpell(creature, TRAIT_DE_L_OMBRE, true);
+            else if (contre && creature->IsAlive() && player->IsWithinMeleeRange(creature))
                 player->AttackerStateUpdate(creature, BASE_ATTACK, true);
         }, 1ms);
     }

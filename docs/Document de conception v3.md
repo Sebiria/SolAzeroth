@@ -920,6 +920,15 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - **Transe de l'ombre** (idée de l'utilisateur) : chaque tic de Corruption ou d'Agonie a 10 % de chances de rendre le prochain Trait de l'ombre instantané, donc lançable en courant. Aura visible (10 s), bouton du Trait mis en avant, texte du passif, du choix de spécialisation et du lexique. Simulation : peu de dégâts en plus, surtout de la mobilité ; elle ne compenserait pas l'arme à elle seule.
   - **Recalibrage** : parts de PA × 0,4 de plus (0,64 × le premier jet : Trait 16 %, Corruption 65 % en 15 s, Agonie 96 % en 24 s, Drain de vie 16 % par seconde, Trait de feu 10 %…). Fin de Durotar : 12 à 15 s, 75 à 88 % de vie contre sa puissance (guerrier : 10 à 20 s, 49 à 80 %) ; deux monstres gagnés 99,8 fois sur 100 (guerrier 100). Fin de vallée : verdict « ok » contre sa puissance, mais il bat moins bien les monstres plus forts que lui que le guerrier, et gagne 69 % des combats contre deux Vils quasits (guerrier 100 %) : les maléfices demandent du temps dans des combats courts, et le Marcheur n'arrive qu'à Tranchecolline.
   - **Interface** : carte de spécialisation et lexique (page « Moisson et démons ») à jour.
+- **Lot D5 (02/11/2026) : le démoniste sur toutes les fonctionnalités de Durotar** (audit demandé par l'utilisateur : « autant que le guerrier »).
+  - **Enchantements** : « Intelligence mineure » (+1 Intelligence, SpellItemEnchantment 79) sur les brassards et sur l'orbe, qui remplace le bouclier et son enchantement de Protection (`enchantement_v3.py`, migration 081). Les enchantements de dégâts de l'arme (Frappe, Impact) comptent dans la puissance d'attaque d'un lanceur de sorts, comme les dégâts de l'arme (`v3_niveau.cpp`).
+  - **Contre-attaque** (passif de donjon) : un lanceur de sorts ne frappe pas avec son arme ; il rend un Trait de l'ombre instantané, qui ne consomme pas la Transe (`v3_passifs.cpp`, texte du passif).
+  - **Journal de combat** : la fiche du joueur donne aussi l'Intelligence (les sorts y étaient déjà nommés).
+  - **Rempart** : l'interface ne le montre qu'au guerrier tank, et le serveur ne l'envoie qu'à lui ; rien à changer.
+  - **Gouffre de Ragefeu** (`simulation_demoniste.py --gouffre`, potion F7 et Repos, mêmes pièces) : démoniste et guerrier gagnent 98 à 100 % contre le Massacreur et Taragaman, difficultés 1 à 5, en fin de Durotar comme tout en bleu (démoniste 92 % en difficulté 5 tout en bleu, guerrier 100 %).
+  - **Rares secrets** (tout en bleu, tous les bonus du défi, approchés pour le démoniste) : démoniste 64, 59 et 33 % (Zal'mara, Gardien cendré, Hurlevague), guerrier 43, 50 et 56 % ; en moyenne 52 contre 50. Profils différents : les maléfices, le Marcheur et la Moisson gagnent les longs combats, la Charge de Hurlevague annule la distance d'ouverture du démoniste. Les autres techniques des rares ne sont pas simulées.
+  - **Interruption** : le kit de Durotar n'en a pas (la Peur en tient lieu) ; non simulé, comme pour le guerrier.
+  - **Check-list d'intégration d'une classe ou d'une spécialisation** : `Check-list — intégrer une classe.md`.
 
 ## 5. Questions pour les prochaines séries
 
