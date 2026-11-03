@@ -47,6 +47,8 @@ Rien à installer à côté : le téléchargement contient le serveur, un MySQL 
 | --- | --- |
 | **Durotar** (puissance 1 à 11) | Une histoire réécrite de 30 quêtes, de la Vallée des épreuves à Tranchecolline, Sen'jin, les Îles de l'Écho et la Lame ardente. Primes, contrats journaliers, lieux à nettoyer, défis contre la montre à médailles, épreuve de vagues, 16 reliques cachées, 3 rares secrets. Testé en jeu. |
 | **Gouffre de Ragefeu** | Ouvert à 60 % de Durotar : difficultés 1 à 5, un composant de donjon et 31 pièces bleues à fabriquer. |
+| **Les Tarides** (puissance 14 à 30) | Construites, à tester en jeu. 30 quêtes en quatre actes, de la Croisée au Camp Taurajo ; primes, contrats, défis, épreuve de vagues, lieux nettoyés payés une fois, 16 reliques, 5 rares secrets, techniques de monstres nouvelles ; tête et épaules, étain, 96 pièces vertes en trois paliers. |
+| **Cavernes des Lamentations** (30 à 32) | Construites, à tester en jeu. Ouvertes à 60 % des Tarides : difficultés 1 à 5, la Graine de cauchemar, 32 pièces bleues et leur panoplie, l'escorte du disciple en solo. |
 | **Guerrier Protection** (orc, troll) | Kit complet : le passif **Rempart** (une part de chaque coup reçu devient un bouclier que les techniques dépensent). Testé en jeu. |
 | **Démoniste Affliction** (orc, troll) | Kit complet, tissu, dagues et bâtons, seulement des invocations temporaires (pas de familier permanent). Construit et simulé ; essais en jeu en cours. |
 | **Voleur Assassinat** (orc, troll) | Kit complet, cuir, deux dagues, poisons, Éventail de couteaux qui devient Assommer en Camouflage. Construit et simulé ; **pas encore testé en jeu**. |

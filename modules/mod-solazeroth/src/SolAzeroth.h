@@ -88,6 +88,8 @@ namespace SolAzeroth
     // terminé par le compte (la Braise tant qu'aucun).
     unsigned int ComposantTransfert(unsigned char puissance);
     unsigned int ComposantDernierDonjon(Player* player);
+    // Lot T10 des Tarides : une pierre taillée du dernier donjon terminé (celles de Durotar tant qu'aucun).
+    unsigned int PierreDernierDonjon(Player* player);
     // v3 : objets rangés dans la Collection, et retrait (v3_collection.cpp).
     unsigned int NombreEnCollection(Player* player, unsigned int objet);
     void RetirerDeCollection(Player* player, unsigned int objet, unsigned int nombre);

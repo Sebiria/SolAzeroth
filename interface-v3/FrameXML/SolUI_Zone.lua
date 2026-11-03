@@ -185,14 +185,14 @@ local MEDAILLES = { "bronze", "argent", "or" }
 local FAMILLES = { "Primes", "Contrats", "Défis" }
 
 -- Lot 4a (02/11/2026) : boucle de la semaine (v3_semaine.cpp), « SEMAINE;affixe;objectif;progrès;but;payé;composant »
--- (lot T7 des Tarides : composant du dernier donjon terminé).
+-- (lot T7 des Tarides : composant du dernier donjon terminé ; lot T10 : la pierre taillée aussi).
 local SEMAINE
 local OBJECTIFS_SEMAINE = { "Termine un donjon (son dernier boss)", "Termine des défis plein tarif",
     "Abats des élites ou des rares de ta puissance" }
 S.Message("SOLSEMAINE", function(champs)
     if champs[1] ~= "SEMAINE" then return end
     SEMAINE = { affixe = tonumber(champs[2]) or 0, objectif = tonumber(champs[3]) or 0, progres = tonumber(champs[4]) or 0,
-        but = tonumber(champs[5]) or 0, paye = champs[6] == "1", composant = tonumber(champs[7]) or 910190 }
+        but = tonumber(champs[5]) or 0, paye = champs[6] == "1", composant = tonumber(champs[7]) or S.ZONES[1].donjon.composant }
     MajObjectifs()
 end)
 
@@ -231,7 +231,7 @@ function MajObjectifs()
         Ecrire(OBJECTIFS_SEMAINE[SEMAINE.objectif] or "Objectif de la semaine",
             SEMAINE.paye and "rempli" or string.format("%d / %d", SEMAINE.progres, SEMAINE.but),
             "Au compte : 1 " .. (GetItemInfo(SEMAINE.composant) or "composant du dernier donjon terminé")
-                .. ", 1 pierre taillée et 60 points de rang d'aventurier.",
+                .. ", 1 pierre taillée du même donjon et 60 points de rang d'aventurier.",
             SEMAINE.paye and "vertClair" or "texte")
         Ecrire("Affixe des donjons", nil, affixe .. " — même en difficulté 1.", "texte")
         y = y + 10

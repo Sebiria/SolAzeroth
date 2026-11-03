@@ -75,6 +75,7 @@ local LECONS = {
 local GORNEK, ZUREETHA, GARTHOK, ORGNIL, RUGA = { 3143, "Gornek" }, { 3145, "Zureetha Mireloin" }, { 3139, "Gar'Thok" },
     { 3142, "Orgnil Marque-l'âme" }, { 910001, "Ruga Brise-cendre" }
 local THORK, TONGA, FEEGLY = { 3429, "Thork" }, { 3448, "Tonga Totem-runique" }, { 3421, "Feegly l'Exilé" }
+local KARGAL = { 3337, "Kargal Balafre-glorieuse" }
 local function R(qui, texte) return { qui[1], qui[2], texte } end
 local SCENES = {
     [910007] = { "scene_yarrog", ZUREETHA[1], ZUREETHA[2], {}, {
@@ -92,6 +93,15 @@ local SCENES = {
         R(ORGNIL, "Le Gouffre est purgé. Mais une lame brisée se reforge : ceux-là n'étaient qu'une branche."),
         R(RUGA, "La faille est calme, pour la première fois depuis des lunes. Je garderai l'entrée. Toi, tu as mieux à faire."),
         R(ORGNIL, "Durotar te doit beaucoup. Quand tu seras {prêt|prête}, d'autres terres auront besoin de toi."),
+    } },
+    -- Lot T10 des Tarides (point 11.4 du comparatif) : la leçon d'arrivée, au rendu de D31 chez Kargal. Ce qui change
+    -- en quittant Durotar ; les pages du Lexique gardent le détail.
+    [910031] = { "scene_arrivee_tarides", KARGAL[1], KARGAL[2], {}, {
+        R(KARGAL, "Orgnil t'envoie ? Bien. Ici, la savane est plus large que Durotar, et ses bêtes frappent plus fort."),
+        R(KARGAL, "Tu porteras plus de pièces : des épaules et une tête. Elles se forgent avec l'étain et l'argent d'ici, ou s'achètent à la Croisée et au Camp Taurajo."),
+        R(KARGAL, "Hraq, ici même, vend les matériaux. Son prix suit ta puissance : plus tu es fort, plus il demande, ici comme en Durotar."),
+        R(KARGAL, "Les primes s'affichent ici et au Camp Taurajo. Et un camp nettoyé jusqu'au dernier te paie, une fois."),
+        R(KARGAL, "La zone est grande : les coursiers du vent relient la Croisée, le Camp Taurajo et Cabestan. Au sud-ouest, les Cavernes des Lamentations attendent ceux qui ont fait leurs preuves."),
     } },
     -- Les Tarides (lot T2, 03/11/2026) : T08 Sarilus, T27 la Larme des lunes, T36 la savane guérie (quête du lot T5).
     [910048] = { "scene_sarilus", THORK[1], THORK[2], {}, {

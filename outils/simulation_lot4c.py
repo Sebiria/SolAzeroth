@@ -2,7 +2,7 @@
 simulation_donjons.py (la fiche la plus forte des journaux, contre un fouette-queue réglé à environ 50 % de victoires).
 - Variantes par emplacement (choix à la fabrication) : Critique, Hâte et Vol de vie doivent se valoir ; on les compare
   sur 8 pièces de la même variante.
-- Panoplie du Gouffre : paliers 2, 4 et 6 pièces, cumulés.
+- Panoplie de donjon (la même pour chaque donjon, lot T10) : paliers 2, 4 et 6 pièces, cumulés.
 - Plats : chacun garde la caractéristique ; son bonus propre est plus fort pour l'ingrédient le plus rare.
 - Consommables du surplus : pierre à aiguiser et nécessaire d'armure, 1 h.
 Repère : « + 5 % de puissance » (+ 5 % de dégâts infligés et − 5 % de dégâts subis).
@@ -13,6 +13,7 @@ panoplie et aux variantes. On mesure les cumuls contre le même monstre, puis co
 Lot T7 des Tarides (03/11/2026, point 13.7 du comparatif) : --tarides refait la mesure des plats et des consommables sur
 la fiche des Tarides à 60 % (guerrier P26, fiches_zones.joueurs), contre un Kolkar des Tarides (3240) réglé de même ;
 bonus des plats lus dans cuisine_v3.BONUS (plats_tarides), consommables du palier des Tarides (artisanat_tarides.py).
+Lot T10 : la panoplie des Lamentations s'y mesure aussi (mêmes paliers que celle du Gouffre).
 
 py simulation_lot4c.py [--tarides]
 """
@@ -29,7 +30,7 @@ import simulation_modes as modes
 PIECES = 8
 # Par pièce (v3_equipement.cpp) : Critique en points de %, Hâte en %, Vol de vie en part des dégâts.
 VARIANTES = {"Critique": 1.0, "Hâte": 2.0, "Vol de vie": 0.005}   # Hâte à 1 % : + 18 contre + 26, d'où 2 %
-# Panoplie du Gouffre, cumulée : 2 pièces + 3 % de dégâts, 4 pièces − 5 % de dégâts subis, 6 pièces 3 % de vol de vie.
+# Panoplie de donjon (la même pour chaque donjon), cumulée : 2 pièces + 3 % de dégâts, 4 pièces − 5 % de dégâts subis, 6 pièces 3 % de vol de vie.
 PANOPLIE = [(2, {"inflige": 1.03}), (4, {"inflige": 1.03, "subis": 0.95}),
             (6, {"inflige": 1.03, "subis": 0.95, "vol": 0.03})]
 # Plats de Durotar (cuisine_v3.py), du plus commun au plus rare : bonus propre.
@@ -98,7 +99,7 @@ def main():
     ligne("Critique (+ %.1f %% par pièce)" % VARIANTES["Critique"], {"critique": VARIANTES["Critique"] * PIECES})
     ligne("Hâte (+ %.1f %% par pièce)" % VARIANTES["Hâte"], {"hate": VARIANTES["Hâte"] * PIECES / 100})
     ligne("Vol de vie (%.1f %% par pièce)" % (VARIANTES["Vol de vie"] * 100), {"vol": VARIANTES["Vol de vie"] * PIECES})
-    print("Panoplie du Gouffre")
+    print("Panoplie de donjon (Gouffre)")
     for n, bonus in PANOPLIE:
         ligne("%d pièces" % n, bonus)
     print("Plats (bonus propre, en plus de la caractéristique)")
@@ -164,6 +165,9 @@ def tarides():
 
     print("Repère")
     ligne("+ 5 % de puissance", {"inflige": 1.05, "subis": 0.95})
+    print("Panoplie de donjon (Lamentations)")
+    for n, bonus in PANOPLIE:
+        ligne("%d pièces" % n, bonus)
     print("Plats des Tarides (bonus propre, en plus de la caractéristique)")
     for p in c.plats_tarides():
         aura, _, valeur, texte = c.BONUS[p["objet"]]

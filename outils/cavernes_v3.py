@@ -616,8 +616,8 @@ def main():
          "-- sources : " + " ".join("%d=%d" % (e, src) for e, _, _, _, _, src, _ in bleues) + " "
          + " ".join("%d=%d" % kv for kv in sorted(src_rec.items()))]
     for cle, nom, forge in CATEGORIES:
-        l.append("table.insert(SolUI.RECETTES, { nom = %s, niveau = %s, forge = %s, gouffre = true, recettes = {"
-                 % (lua(nom), lua(NIVEAU_MENU), "true" if forge else "false"))
+        l.append("table.insert(SolUI.RECETTES, { nom = %s, zone = %s, forge = %s, donjon = true, recettes = {"
+                 % (lua(nom), lua(at.ZONE_MENU), "true" if forge else "false"))
         for e, cat, n, prix, c, src, _ in bleues:
             if cat == cle:
                 l.append("    { %d, %s, %d, %d, %d, { %s }, %s }," % (e, lua(n), BLEUES, REQUISE, prix,

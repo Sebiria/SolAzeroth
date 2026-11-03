@@ -201,7 +201,7 @@ def main():
          "-- Pièces bleues du Gouffre de Ragefeu, après les recettes vertes (même format que SolUI_Recettes.lua) ;",
          "-- la Braise du Gouffre dans la catégorie Divers de la Collection."]
     for cle, nom, f in CATEGORIES:
-        l.append("table.insert(SolUI.RECETTES, { nom = %s, forge = %s, gouffre = true, recettes = {"
+        l.append("table.insert(SolUI.RECETTES, { nom = %s, forge = %s, donjon = true, recettes = {"
                  % (lua(nom), "true" if f else "false"))
         for e, n, src, cat, m, nb in PIECES:
             if cat == cle:

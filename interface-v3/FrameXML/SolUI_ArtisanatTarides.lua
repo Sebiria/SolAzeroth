@@ -1,7 +1,7 @@
 -- Généré par outils\artisanat_tarides.py : ne pas modifier à la main.
--- Lot T8 des Tarides : recettes vertes (niveau « Les Tarides » du menu de fabrication), joaillerie, pierres des
+-- Lot T8 des Tarides : recettes vertes (zone « Les Tarides » du menu de fabrication), joaillerie, pierres des
 -- rangs 4 et 5 selon la puissance de la pièce, enchantements inférieurs et consommables du palier suivant.
-table.insert(SolUI.RECETTES, { nom = "Les Tarides : maille", niveau = "Les Tarides", forge = true, recettes = {
+table.insert(SolUI.RECETTES, { nom = "Les Tarides : maille", zone = "Les Tarides", forge = true, recettes = {
     { 910500, "Heaume de la Croisée", 17, 15, 170, { { 2770, 4 }, { 2771, 6 }, { 2835, 2 } }, "Maille" },
     { 910501, "Spallières de la Croisée", 17, 15, 170, { { 2770, 4 }, { 2771, 5 }, { 2835, 2 } }, "Maille" },
     { 910502, "Haubert de la Croisée", 18, 16, 180, { { 2770, 6 }, { 2771, 10 }, { 2835, 4 } }, "Maille" },
@@ -27,7 +27,7 @@ table.insert(SolUI.RECETTES, { nom = "Les Tarides : maille", niveau = "Les Tarid
     { 910570, "Cuissards de Taurajo", 29, 27, 290, { { 2771, 10 }, { 2770, 3 }, { 2775, 2 }, { 2836, 3 } }, "Maille" },
     { 910571, "Solerets de Taurajo", 28, 26, 280, { { 2771, 8 }, { 2770, 3 }, { 2775, 1 }, { 2836, 2 } }, "Maille" },
 } })
-table.insert(SolUI.RECETTES, { nom = "Les Tarides : cuir", niveau = "Les Tarides", forge = false, recettes = {
+table.insert(SolUI.RECETTES, { nom = "Les Tarides : cuir", zone = "Les Tarides", forge = false, recettes = {
     { 910508, "Capuche de la Croisée", 17, 15, 170, { { 2318, 8 }, { 2934, 2 }, { 783, 1 } }, "Cuir" },
     { 910509, "Épaulettes de la Croisée", 17, 15, 170, { { 2318, 7 }, { 2934, 2 }, { 783, 1 } }, "Cuir" },
     { 910510, "Tunique de la Croisée", 18, 16, 180, { { 2318, 10 }, { 2934, 4 }, { 783, 2 } }, "Cuir" },
@@ -53,7 +53,7 @@ table.insert(SolUI.RECETTES, { nom = "Les Tarides : cuir", niveau = "Les Tarides
     { 910578, "Jambières de Taurajo", 29, 27, 290, { { 2319, 11 }, { 4232, 1 }, { 5082, 1 } }, "Cuir" },
     { 910579, "Bottes de Taurajo", 28, 26, 280, { { 2319, 7 }, { 2318, 3 } }, "Cuir" },
 } })
-table.insert(SolUI.RECETTES, { nom = "Les Tarides : tissu", niveau = "Les Tarides", forge = false, recettes = {
+table.insert(SolUI.RECETTES, { nom = "Les Tarides : tissu", zone = "Les Tarides", forge = false, recettes = {
     { 910516, "Capuchon de la Croisée", 17, 15, 170, { { 2589, 7 } }, "Tissu" },
     { 910517, "Mantelet de la Croisée", 17, 15, 170, { { 2589, 6 } }, "Tissu" },
     { 910518, "Robe de la Croisée", 18, 16, 180, { { 2589, 12 } }, "Tissu" },
@@ -79,7 +79,7 @@ table.insert(SolUI.RECETTES, { nom = "Les Tarides : tissu", niveau = "Les Taride
     { 910586, "Pantalon de Taurajo", 29, 27, 290, { { 2592, 7 }, { 4306, 3 }, { 2589, 3 } }, "Tissu" },
     { 910587, "Sandales de Taurajo", 28, 26, 280, { { 2592, 4 }, { 4306, 1 }, { 2589, 2 }, { 2319, 2 } }, "Tissu" },
 } })
-table.insert(SolUI.RECETTES, { nom = "Les Tarides : armes", niveau = "Les Tarides", forge = true, recettes = {
+table.insert(SolUI.RECETTES, { nom = "Les Tarides : armes", zone = "Les Tarides", forge = true, recettes = {
     { 910525, "Rempart de la Croisée", 17, 15, 170, { { 2770, 4 }, { 2771, 6 }, { 2835, 3 } }, "Armes et boucliers" },
     { 910527, "Lame de la Croisée", 17, 15, 170, { { 2770, 3 }, { 2771, 5 }, { 2835, 2 }, { 2318, 2 } }, "Armes et boucliers" },
     { 910528, "Hache de la Croisée", 17, 15, 170, { { 2770, 3 }, { 2771, 5 }, { 2835, 2 }, { 2318, 2 } }, "Armes et boucliers" },
@@ -99,7 +99,7 @@ table.insert(SolUI.RECETTES, { nom = "Les Tarides : armes", niveau = "Les Taride
     { 910594, "Dague de Taurajo", 29, 27, 290, { { 2771, 7 }, { 2775, 2 }, { 2836, 2 }, { 2319, 2 } }, "Armes et boucliers" },
     { 910595, "Bâton de Taurajo", 29, 27, 290, { { 2771, 11 }, { 2775, 4 }, { 2319, 2 }, { 910185, 1 } }, "Armes et boucliers" },
 } })
-table.insert(SolUI.RECETTES, { nom = "Les Tarides : cape et orbe", niveau = "Les Tarides", forge = false, recettes = {
+table.insert(SolUI.RECETTES, { nom = "Les Tarides : cape et orbe", zone = "Les Tarides", forge = false, recettes = {
     { 910524, "Cape de la Croisée", 17, 15, 170, { { 2589, 4 }, { 2318, 4 }, { 2934, 2 } }, "Tissu" },
     { 910526, "Orbe de la Croisée", 17, 15, 170, { { 910183, 1 }, { 2771, 4 } }, "Armes et boucliers" },
     { 910556, "Cape des oasis", 23, 21, 230, { { 2592, 4 }, { 2319, 4 } }, "Tissu" },
@@ -107,7 +107,7 @@ table.insert(SolUI.RECETTES, { nom = "Les Tarides : cape et orbe", niveau = "Les
     { 910588, "Cape de Taurajo", 29, 27, 290, { { 2592, 4 }, { 4306, 2 }, { 2319, 4 } }, "Tissu" },
     { 910590, "Orbe de Taurajo", 29, 27, 290, { { 910185, 1 }, { 2775, 2 }, { 2771, 4 } }, "Armes et boucliers" },
 } })
-table.insert(SolUI.RECETTES, { nom = "Consommables", surplus = true, recettes = {
+table.insert(SolUI.RECETTES, { nom = "Consommables", zone = "Les Tarides", surplus = true, recettes = {
     { 2863, "Pierre à aiguiser grossière", 0, 0, 10, { { 2836, 2 } }, "Consommables" },
     { 2313, "Renfort d'armure moyen", 0, 0, 20, { { 2319, 2 }, { 2318, 1 } }, "Consommables" },
     { 20746, "Huile de sorcier inférieure", 0, 0, 10, { { 2450, 2 }, { 10940, 1 } }, "Consommables" },
@@ -115,7 +115,7 @@ table.insert(SolUI.RECETTES, { nom = "Consommables", surplus = true, recettes = 
 -- Joaillerie : une prospection de plus, les tailles, et les pierres des rangs à partir de la puissance 15.
 local J = SolUI.JOAILLERIE
 J.prospections = J.prospections or { { minerai = J.minerai, parProspection = J.parProspection, chances = J.chances } }
-table.insert(J.prospections, { minerai = 2771, parProspection = 3, chances = { { 1529, 52 }, { 1206, 33 }, { 1705, 15 } } })
+table.insert(J.prospections, { zone = "Les Tarides", minerai = 2771, parProspection = 3, chances = { { 1529, 52 }, { 1206, 33 }, { 1705, 15 } } })
 table.insert(J.tailles, { 910183, "Agate mousse taillée", 1206, 2 })
 table.insert(J.tailles, { 910184, "Jade taillé", 1529, 2 })
 table.insert(J.tailles, { 910185, "Pierre de lune taillée", 1705, 2 })
@@ -129,14 +129,14 @@ for _, c in ipairs(SolUI.CATALOGUE or {}) do
     end
 end
 -- Enchantements inférieurs (même format que SolUI_Enchantements.lua) et butin des tables de désenchantement.
-table.insert(SolUI.ENCHANTEMENTS, { 10, "Force inférieure", "+3 Force", 823, { 9, 10 }, { { 10940, 4 }, { 10998, 1 } }, 50 })
-table.insert(SolUI.ENCHANTEMENTS, { 11, "Agilité inférieure", "+3 Agilité", 849, { 9, 10 }, { { 10940, 4 }, { 10998, 1 } }, 50 })
-table.insert(SolUI.ENCHANTEMENTS, { 12, "Intelligence inférieure", "+3 Intelligence", 723, { 9, 10, 23 }, { { 10940, 4 }, { 10998, 1 } }, 50 })
-table.insert(SolUI.ENCHANTEMENTS, { 13, "Santé inférieure", "+15 points de vie", 242, { 5, 20 }, { { 10940, 4 }, { 10939, 1 } }, 50 })
-table.insert(SolUI.ENCHANTEMENTS, { 14, "Protection inférieure", "+20 armure", 744, { 16 }, { { 10940, 3 }, { 10939, 1 } }, 40 })
-table.insert(SolUI.ENCHANTEMENTS, { 15, "Bouclier renforcé", "+30 armure", 848, { 14 }, { { 10940, 4 }, { 10998, 1 } }, 50 })
-table.insert(SolUI.ENCHANTEMENTS, { 16, "Frappe inférieure", "+2 aux dégâts de l'arme", 241, { 13, 21, 22 }, { { 10940, 4 }, { 10998, 1 }, { 10978, 1 } }, 60 })
-table.insert(SolUI.ENCHANTEMENTS, { 17, "Impact inférieur", "+3 aux dégâts de l'arme", 943, { 17 }, { { 10940, 6 }, { 10998, 2 }, { 10978, 1 } }, 90 })
+table.insert(SolUI.ENCHANTEMENTS, { 10, "Force inférieure", "+3 Force", 823, { 9, 10 }, { { 10940, 4 }, { 10998, 1 } }, 50, "Les Tarides" })
+table.insert(SolUI.ENCHANTEMENTS, { 11, "Agilité inférieure", "+3 Agilité", 849, { 9, 10 }, { { 10940, 4 }, { 10998, 1 } }, 50, "Les Tarides" })
+table.insert(SolUI.ENCHANTEMENTS, { 12, "Intelligence inférieure", "+3 Intelligence", 723, { 9, 10, 23 }, { { 10940, 4 }, { 10998, 1 } }, 50, "Les Tarides" })
+table.insert(SolUI.ENCHANTEMENTS, { 13, "Santé inférieure", "+15 points de vie", 242, { 5, 20 }, { { 10940, 4 }, { 10939, 1 } }, 50, "Les Tarides" })
+table.insert(SolUI.ENCHANTEMENTS, { 14, "Protection inférieure", "+20 armure", 744, { 16 }, { { 10940, 3 }, { 10939, 1 } }, 40, "Les Tarides" })
+table.insert(SolUI.ENCHANTEMENTS, { 15, "Bouclier renforcé", "+30 armure", 848, { 14 }, { { 10940, 4 }, { 10998, 1 } }, 50, "Les Tarides" })
+table.insert(SolUI.ENCHANTEMENTS, { 16, "Frappe inférieure", "+2 aux dégâts de l'arme", 241, { 13, 21, 22 }, { { 10940, 4 }, { 10998, 1 }, { 10978, 1 } }, 60, "Les Tarides" })
+table.insert(SolUI.ENCHANTEMENTS, { 17, "Impact inférieur", "+3 aux dégâts de l'arme", 943, { 17 }, { { 10940, 6 }, { 10998, 2 }, { 10978, 1 } }, 90, "Les Tarides" })
 SolUI.DESENCHANTEMENT[1] = SolUI.DESENCHANTEMENT[1] or "Poussière étrange ×1-2 (80 %) ou Essence de magie inférieure ×1-2 (20 %)"
 SolUI.DESENCHANTEMENT[2] = SolUI.DESENCHANTEMENT[2] or "Poussière étrange ×2-3 (75 %) ou Essence de magie supérieure ×1-2 (20 %) ou Petit éclat scintillant ×1 (5 %)"
 SolUI.DESENCHANTEMENT[3] = SolUI.DESENCHANTEMENT[3] or "Poussière étrange ×4-6 (75 %) ou Essence astrale inférieure ×1-2 (15 %) ou Petit éclat scintillant ×1 (10 %)"

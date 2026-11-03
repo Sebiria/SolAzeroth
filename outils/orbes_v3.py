@@ -123,7 +123,7 @@ def main():
     l = ["-- Généré par outils\\orbes_v3.py : ne pas modifier à la main.",
          "-- Lot D5 : orbes de joaillerie, rangés avec les boucliers de leur niveau (même format que SolUI_Recettes.lua)."]
     for e, nom, src, p, categorie, _ in ORBES:
-        drapeau = ", gouffre = true" if categorie.startswith("Gouffre") else ""
+        drapeau = ", donjon = true" if categorie.startswith("Gouffre") else ""
         l.append("table.insert(SolUI.RECETTES, { nom = %s, forge = false%s, recettes = {" % (e3.lua_texte(categorie), drapeau))
         l.append("    { %d, %s, %d, %d, %d, { %s }, %s }," % (e, e3.lua_texte(nom), p, requise(e, p),
                  prix_recette(e, p, sources[src]), ", ".join("{ %d, %d }" % cn for cn in composants(e, sources[src])),

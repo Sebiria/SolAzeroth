@@ -28,7 +28,7 @@ TEXTURES = os.path.join(FICHIERS, "Interface", "SolAzeroth", "Textures")
 FRAMEXML = os.path.join(FICHIERS, "Interface", "FrameXML")
 
 # Ordre de chargement de notre code dans FrameXML.toc.
-CODE = ["SolUI_Base.lua", "SolUI_Rarete.lua", "SolUI_Cacher.lua", "SolUI_Perso.lua", "SolUI_Techniques.lua", "SolUI_Cible.lua", "SolUI_Plaques.lua",
+CODE = ["SolUI_Base.lua", "SolUI_Zones.lua", "SolUI_Rarete.lua", "SolUI_Cacher.lua", "SolUI_Perso.lua", "SolUI_Techniques.lua", "SolUI_Cible.lua", "SolUI_Plaques.lua",
         "SolUI_Zone.lua", "SolUI_Cartes.lua", "SolUI_Puissances.lua", "SolUI_Versions.lua", "SolUI_Quetes.lua", "SolUI_Dialogue.lua",
         "SolUI_Discussion.lua", "SolUI_Camp.lua", "SolUI_Bivouac.lua", "SolUI_Raccourcis.lua",
         "SolUI_Catalogue.lua", "SolUI_Annexes.lua", "SolUI_Joaillerie.lua", "SolUI_Collection.lua", "SolUI_Inventaire.lua", "SolUI_Recettes.lua", "SolUI_RecettesGouffre.lua", "SolUI_RecettesOrbes.lua", "SolUI_RecettesBatons.lua", "SolUI_RecettesSurplus.lua", "SolUI_Cuisine.lua",

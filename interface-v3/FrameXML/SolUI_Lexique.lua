@@ -8,11 +8,21 @@
 --   compte (S.VUS, gardé avec la disposition par l'addon SolAzeroth : SolUI_Reglages.lua).
 -- - Lot 6a (02/11/2026, C9) : pages Règles du combat, Rempart, Cuisine, Pierre de foyer, Montures et Mots du jeu ;
 --   les leçons des PNJ (SolUI_Paroles.lua) remplacent les explications des moments qu'elles couvrent ; vie à 80 %.
+-- - Lot T10 des Tarides (03/11/2026) : les mécanismes des Tarides (lieux payés, techniques des monstres, panoplies,
+--   fournisseurs, rares secrets, voyage) ; ce qui vaut pour chaque donjon (composant, panoplie) se lit dans
+--   SolUI_Zones.lua, plus rien du Gouffre en dur.
 
 local S = SolUI
 
 local A, G, F = "|cfff6c27a", "|cffb4b8bf", "|r"
 local function T(titre) return A .. titre .. F .. "\n" end
+-- Une ligne par donjon (SolUI_Zones.lua), dans l'ordre des zones.
+local function ParDonjon(f, sep)
+    local morceaux = {}
+    for _, z in ipairs(S.ZONES or {}) do table.insert(morceaux, f(z)) end
+    return table.concat(morceaux, sep or ", ")
+end
+local COMPOSANTS = ParDonjon(function(z) return z.donjon.nomComposant .. " (" .. z.donjon.nom .. ")" end)
 
 -- { nom du thème, { { clé, nom, résumé de la fenêtre d'explication, texte de la page }, … } }
 S.LEXIQUE = {
@@ -26,11 +36,12 @@ S.LEXIQUE = {
           .. T("Dépenser")
           .. "• Rangs d'objet : 15, 30, 60, 105 puis 180 éclats (plus pour les pièces puissantes).\n"
           .. "• Âme : 4 éclats par point, en auberge ou en ville.\n"
-          .. "• Améliorations du camp, pièces bleues du Gouffre (40, 80 pour une arme)." },
+          .. "• Améliorations du camp, pièces bleues des donjons (Gouffre : 40, 80 pour une arme ; Cavernes : 80, 160 à 240 pour une arme)." },
         { "marques", "Marques du voyageur",
           "La monnaie de l'effort, à côté de l'or et des éclats : un jeton qui ne prend pas de place dans le sac. Elle paie le camp, la carte des reliques, les passifs et les montures.",
           T("Obtenir")
-          .. "• Quêtes de l'histoire : 1 à 5 pour certaines.\n"
+          .. "• Quêtes de l'histoire : 1 à 5 pour certaines à Durotar, 5 à 10 aux Tarides.\n"
+          .. "• Lieux nettoyés, aux Tarides : 20 à 60, une fois par lieu.\n"
           .. "• Primes, contrats et défis : 5 à 30 (médaille d'argent ×1,5, d'or ×2).\n"
           .. "• Chaque relique : 5.\n"
           .. "• Épreuve du jour : 1 par vague tenue, une fois par jour.\n"
@@ -38,16 +49,16 @@ S.LEXIQUE = {
           .. "• Paliers 12, 20, 30 et 38 du rang d'aventurier : 50 à 200.\n\n"
           .. T("Dépenser")
           .. "• Améliorations du feu et de la potion (Camp).\n"
-          .. "• Carte des reliques : 30 Marques et 2 po.\n"
+          .. "• Carte des reliques : 30 Marques et 2 po à Durotar, 45 Marques et 3 po 65 pa aux Tarides.\n"
           .. "• Emplacements de passifs extérieurs : 25 à 400. Montures." },
         { "or", "Or",
           "L'or vient des quêtes et des annexes ; il paie la fabrication, les rangs, le camp et les réparations.",
           T("Obtenir")
           .. "• Quêtes, primes, contrats et défis (médaille d'argent +50 %, d'or +100 %).\n"
-          .. "• Certaines familles de reliques complètes.\n\n"
+          .. "• Certaines familles de reliques complètes ; aux Tarides, les lieux nettoyés.\n\n"
           .. T("Dépenser")
           .. "• Fabrication, enchantement et rangs d'objet.\n"
-          .. "• Potion et feu (Camp), carte des reliques (2 po).\n"
+          .. "• Potion et feu (Camp), carte des reliques, matériaux des fournisseurs.\n"
           .. "• Réparations (×1,5). La mort n'use pas l'équipement." },
     } },
     { "Équipement", {
@@ -55,7 +66,8 @@ S.LEXIQUE = {
           "Pas de niveau ici : ta force est ta puissance, la moyenne des niveaux d'objet de ce que tu portes.",
           T("Calcul")
           .. "• Moyenne des niveaux d'objet des pièces portées (chemise et tabard exceptés), +10 % par rang d'amélioration.\n"
-          .. "• Chaque monstre a la sienne (survol de la cible).\n\n"
+          .. "• Chaque monstre a la sienne (survol de la cible).\n"
+          .. "• Durotar habille cinq emplacements ; les Tarides ajoutent la tête et les épaules.\n\n"
           .. T("Face à plus fort")
           .. "• −2 % de dégâts par point de puissance manquant, jusqu'à −75 %.\n\n"
           .. T("Combat")
@@ -67,30 +79,35 @@ S.LEXIQUE = {
           .. "• Puissance requise : celle de la pièce moins 2.\n"
           .. "• Maille, boucliers et armes : près d'une enclume ou d'une forge.\n"
           .. "• 10 s immobile : bouger annule.\n\n"
-          .. T("Paliers")
-          .. "• Rudimentaire : zones de départ, sans forge.\n"
-          .. "• Inhabituel : les pièces vertes.\n"
-          .. "• Gouffre : les pièces bleues, avec la Braise du Gouffre." },
+          .. T("Le menu")
+          .. "• Par zone (bouton du haut, la tienne d'abord), puis par palier, puis par genre.\n"
+          .. "• Durotar : Rudimentaire (zones de départ, sans forge), Inhabituel (les vertes), Gouffre (les bleues).\n"
+          .. "• Les Tarides : la Croisée, les oasis et Taurajo (vertes de 15 à 30), Cavernes (les bleues).\n"
+          .. "• Chaque zone a aussi ses consommables et sa cuisine.\n\n"
+          .. T("Pièces bleues")
+          .. "• Un composant du donjon de leur zone : " .. COMPOSANTS .. "." },
         { "rangs", "Rangs d'objet",
           "Chaque pièce monte du rang 1 au rang 5 : +10 % de caractéristiques et de puissance par rang.",
           T("Améliorer")
           .. "• Artisanat › Amélioration, hors combat.\n"
           .. "• Coût : 15, 30, 60, 105 puis 180 éclats, et de l'or ; plus pour les pièces puissantes.\n"
-          .. "• Rangs 4 et 5 : une pierre taillée en plus (Joaillerie).\n"
+          .. "• Rangs 4 et 5 : des pierres taillées en plus (Joaillerie) ; une pièce de puissance 15 ou plus prend celles des Tarides.\n"
           .. "• L'enchantement est gardé.\n"
-          .. "• Transférer : une pièce de rang 2 ou plus donne son rang, moins un, à une pièce du même emplacement (5 de puissance d'écart au plus), et revient au rang 0. Coût : un composant du donjon de sa zone (la Braise du Gouffre à Durotar)." },
+          .. "• Transférer : une pièce de rang 2 ou plus donne son rang, moins un, à une pièce du même emplacement (5 de puissance d'écart au plus), et revient au rang 0. Coût : un composant du donjon de la zone de la pièce qui reçoit : " .. COMPOSANTS .. "." },
         { "enchantement", "Désenchantement et enchantement",
           "Une pièce dont tu n'as plus besoin se désenchante en composants d'enchantement.",
           T("Désenchanter")
           .. "• Une pièce verte, bleue ou épique du sac ; les composants vont dans la Collection.\n\n"
           .. T("Enchanter")
-          .. "• Remplace l'enchantement de la pièce, payé en composants et en or." },
+          .. "• Remplace l'enchantement de la pièce, payé en composants et en or.\n"
+          .. "• Deux paliers : les mineurs de Durotar, les inférieurs des Tarides. La liste les range par zone." },
         { "joaillerie", "Joaillerie",
-          "Les pierres taillées servent aux rangs 4 et 5 et aux pièces du Gouffre.",
+          "Les pierres taillées servent aux rangs 4 et 5 et aux pièces bleues des donjons.",
           T("Pierres")
-          .. "• Prospecter : 5 Minerais de cuivre donnent une gemme brute au hasard.\n"
+          .. "• Prospecter : 5 Minerais de cuivre (Durotar) ou 3 Minerais d'étain (les Tarides) donnent une gemme brute au hasard.\n"
           .. "• Tailler : 2 gemmes brutes donnent une pierre taillée.\n"
-          .. "• En donjon, dès la difficulté 3, le dernier boss peut en donner une." },
+          .. "• Chaque zone a ses pierres ; la page se range par zone (bouton du haut).\n"
+          .. "• En donjon, dès la difficulté 3, le dernier boss peut en donner une, de sa zone." },
         { "recolte", "Récolte",
           "Aucun métier à apprendre : plantes, filons et cuir se récoltent d'office et vont dans la Collection.",
           T("Récolter")
@@ -99,6 +116,21 @@ S.LEXIQUE = {
           .. "• Chaque zone a ses plantes et ses filons.\n\n"
           .. T("Usage")
           .. "• Fabrication, cuisine, listes de courses du camp, joaillerie." },
+        { "fournisseurs", "Fournisseurs de matériaux",
+          "Mogra (Razor Hill) et Hraq (la Croisée) vendent des matériaux, quand la récolte ne suffit pas.",
+          T("Acheter")
+          .. "• 20 de chaque matériau par jour, en tout, chez tous les fournisseurs.\n"
+          .. "• Le prix suit ta puissance, pas la zone : le même partout.\n"
+          .. "• Les listes de courses donnent le prix et le fournisseur de ta zone.\n\n"
+          .. G .. "Ni éclats, ni composants de donjon, ni pierres taillées." .. F },
+        { "panoplies", "Panoplies de donjon",
+          "Les pièces bleues d'un donjon forment sa panoplie : plus tu en portes, plus le bonus monte.",
+          T("Paliers")
+          .. "• 2 pièces : + 3 % de dégâts. 4 : − 5 % de dégâts subis. 6 : 3 % de vol de vie.\n"
+          .. "• Une arme à deux mains compte double.\n\n"
+          .. T("Une seule à la fois")
+          .. "• Les panoplies ne se cumulent pas : seule compte celle dont tu portes le plus de pièces.\n"
+          .. "• " .. ParDonjon(function(z) return z.donjon.panoplie .. " : les pièces « " .. z.donjon.suffixe:gsub("^ ", "") .. " »" end, ".\n• ") .. "." },
         { "collection", "Collection et sac",
           "La Collection range sans limite tous les composants, même sac plein : carnet Collection (touche B).",
           T("Collection")
@@ -115,11 +147,14 @@ S.LEXIQUE = {
           .. "• Survol du suivi de zone : le détail. Clic : les objectifs.\n\n"
           .. T("Paliers")
           .. "• 60 % : le donjon et les modes de zone.\n"
-          .. "• 100 % : l'équipement pour entrer serein dans le donjon." },
+          .. "• 100 % : l'équipement pour entrer serein dans le donjon.\n\n"
+          .. T("Secteurs")
+          .. "• Une zone monte par secteurs : chacun a la puissance de ses monstres (survol de la cible).\n"
+          .. "• La puissance conseillée de la zone est sous le suivi de zone." },
         { "primes", "Primes",
           "Une prime désigne un monstre rare ou un chef : sa tête de mort est sur la carte tant qu'elle est à faire.",
           T("Prendre")
-          .. "• Tableaux des primes de Tranchecolline et de Sen'jin.\n\n"
+          .. "• Tableaux des primes : Tranchecolline et Sen'jin à Durotar ; la Croisée et le Camp Taurajo aux Tarides.\n\n"
           .. T("Récompense")
           .. "• Marques, éclats, or, une pièce d'équipement et une part de zone.\n\n"
           .. G .. "Les primes sont dures : viens avec la puissance annoncée, le Repos et la potion." .. F },
@@ -136,21 +171,26 @@ S.LEXIQUE = {
           .. "• Argent ×1,5, or ×2, et une pièce au premier or.\n\n"
           .. T("Sans potion")
           .. "• Boire en combat contre la cible fait échouer.\n\n"
-          .. T("Épreuve de Zun'jala")
-          .. "• 10 vagues. Mourir ou s'éloigner (60 m) l'arrête.\n"
+          .. T("Épreuves de vagues")
+          .. "• Les esprits de Zun'jala à Durotar, la contre-attaque de la Colline aux Tarides : 10 vagues.\n"
+          .. "• Mourir ou s'éloigner (60 m) l'arrête.\n"
           .. "• Épreuve du jour : 1 Marque par vague tenue." },
         { "lieux", "Lieux à nettoyer",
           "Un lieu se nettoie en tuant toute sa troupe ; il compte dans le pourcentage de zone.",
           T("Nettoyer")
           .. "• Les monstres tués pour une quête comptent aussi.\n"
-          .. "• Certains lieux ont un chef renforcé : il paraît quand la troupe est tombée (alerte), et sa mort clôt le lieu." },
+          .. "• Certains lieux ont un chef renforcé : il paraît quand la troupe est tombée (alerte), et sa mort clôt le lieu.\n\n"
+          .. T("Aux Tarides")
+          .. "• Seuls les monstres du lieu comptent, et 60 au plus ; les créatures invoquées ne comptent pas.\n"
+          .. "• La fermeture d'un lieu paie une fois : Marques, éclats, or et composants." },
         { "reliques", "Reliques",
-          "16 reliques sont cachées à Durotar. On les ramasse en passant ou d'un clic.",
+          "16 reliques sont cachées dans chaque zone. On les ramasse en passant ou d'un clic.",
           T("Récompense")
           .. "• 5 Marques, un composant et une part de zone.\n"
           .. "• Une famille complète : un bonus (pièce, or).\n\n"
           .. T("Carte des reliques")
-          .. "• Dès 8 reliques trouvées, 30 Marques et 2 po (Aventure › Zone) : un coffre sur chaque relique manquante, son indice au survol." },
+          .. "• Dès 8 reliques trouvées dans la zone (Aventure › Zone) : 30 Marques et 2 po à Durotar, 45 Marques et 3 po 65 pa aux Tarides. Un coffre sur chaque relique manquante, son indice au survol.\n"
+          .. "• La Collection range les reliques par zone." },
         { "modes", "Modes de zone",
           "Dès 60 % d'une zone, elle peut se jouer plus dure, pour plus d'éclats.",
           T("Choisir")
@@ -159,6 +199,22 @@ S.LEXIQUE = {
           .. "• Difficile : vie et dégâts ×1,25, une technique de monstre, éclats ×2.\n"
           .. "• Cauchemar : ×1,5, deux techniques, éclats ×3, des événements.\n"
           .. "• Ils s'ouvrent avec le rang d'aventurier (paliers 5 et 9)." },
+        { "secrets", "Rares secrets",
+          "Chaque zone cache quelques rares plus forts que tout le reste, sans quête ni épingle.",
+          T("Les trouver")
+          .. "• 3 à Durotar, 5 aux Tarides. Le suivi de zone compte ceux que tu as vaincus (2 / 5) ; seuls ceux-là sont nommés.\n"
+          .. "• Un cadre violet sur la cible.\n\n"
+          .. T("Les vaincre")
+          .. "• Ils se battent en bleu de la zone, au plus haut : potion, Repos, repas et consommables.\n"
+          .. "• Leurs objets (bijoux, collier, bague, une monture) ne comptent pas dans les références de difficulté.\n"
+          .. "• Ils ne comptent pas dans le pourcentage, et le cauchemar ne les appelle pas." },
+        { "voyage", "Voyager",
+          "Les zones sont grandes : les coursiers du vent relient leurs pôles, et ce qui n'est pas encore remanié reste fermé.",
+          T("Vol")
+          .. "• Aux Tarides : la Croisée, le Camp Taurajo et Cabestan, au prix habituel.\n\n"
+          .. T("Fermé")
+          .. "• Le Kraal de Tranchebauge, les Souilles de Tranchebauge et le bateau de Cabestan : leurs zones ne sont pas encore prêtes.\n"
+          .. "• Une garde refuse le passage." },
     } },
     { "Combat", {
         { "regles", "Règles du combat",
@@ -217,6 +273,18 @@ S.LEXIQUE = {
           .. "• Guerrier tank : Rempart, une part des coups reçus devient un bouclier.\n"
           .. "• Démoniste Affliction : Moisson, une part des dégâts sur la durée te revient en vie.\n"
           .. "• Voleur Assassinat : Toxines, tes coups empoisonnent et affaiblissent ta cible." },
+        { "techniques_monstres", "Techniques des monstres",
+          "Les chefs des annexes ont chacun une technique ; la quête la décrit, et la parade est toujours possible.",
+          T("Aux Tarides")
+          .. "• Zone marquée : le sol se marque sous toi ; sors du cercle avant l'impact.\n"
+          .. "• Frères d'armes : à moins de 10 m l'un de l'autre, ils encaissent moitié moins. Sépare-les.\n"
+          .. "• Peau de piquants : une part de tes coups de mêlée te revient.\n"
+          .. "• Rage : chaque allié qui tombe près du chef le rend plus fort (+ 10 %, 5 fois, 1 min). Tue-le d'abord, ou loin des siens.\n"
+          .. "• Mur protecteur : toutes les 30 s, 6 s de protection. Patiente.\n"
+          .. "• Sable grouillant : une larve sort du sable toutes les 10 s.\n\n"
+          .. T("Partout")
+          .. "• Totems guérisseurs : brise-les et les soins s'arrêtent.\n"
+          .. "• Renforts : certains chefs appellent de l'aide en combat." },
     } },
     { "Survie", {
         { "regeneration", "Vie et régénération",
@@ -234,18 +302,21 @@ S.LEXIQUE = {
           .. "• Repos au coin du feu, 30 min : vie maximale +5 %, +1 %/s hors combat.\n"
           .. "• Toutes les charges de potion reviennent.\n\n"
           .. T("Améliorer")
-          .. "• Carnet Camp (touche N) : listes de courses en Marques, éclats, or et composants." },
+          .. "• Carnet Camp (touche N) : listes de courses en Marques, éclats, or et composants.\n"
+          .. "• Aux Tarides, deux rangs de plus : +10 à la caractéristique au Repos, puis vie maximale +8 %." },
         { "potion", "Potion",
           "Une seule potion, qui s'améliore : 1 charge de 30 % de la vie au départ.",
           T("Usage")
           .. "• Recharge 30 s. Les charges reviennent au Repos, ou en auberge et en ville.\n\n"
           .. T("Améliorer")
-          .. "• Carnet Camp : 2 charges à 35 %, puis un soin sur la durée." },
+          .. "• Carnet Camp : 2 charges à 35 %, puis un soin sur la durée.\n"
+          .. "• Aux Tarides : 40 % de la vie, puis 3 charges." },
         { "cuisine", "Cuisine",
           "Près d'un feu, ton Feu de camp compris, les ingrédients de la zone deviennent des repas de 30 minutes.",
           T("Cuisiner")
           .. "• Artisanat › Fabrication, catégorie Cuisine, près d'un feu ; 5 s.\n"
-          .. "• Un ingrédient des bêtes de la zone, une herbe et un assaisonnement de marchand.\n\n"
+          .. "• Un ingrédient des bêtes de la zone, une herbe et un assaisonnement de marchand.\n"
+          .. "• 5 plats à Durotar, 10 aux Tarides, rangés par zone.\n\n"
           .. T("Le repas")
           .. "• 30 min : ta caractéristique principale, et le bonus propre du plat (vie, armure, critique, dégâts, hâte).\n"
           .. "• Un seul repas à la fois ; il s'ajoute au Repos et aux consommables." },
@@ -281,14 +352,22 @@ S.LEXIQUE = {
           .. "• Chaque vitesse, de 65 à 150 %, s'ouvre avec un palier.\n\n"
           .. T("La boutique")
           .. "• Aventure › Montures, en Marques du voyageur ; les montures sont au compte.\n"
+          .. "• Certaines ne se vendent pas : un rare secret les garde.\n"
           .. "• Les montures volantes ne se lancent pas." },
         { "donjons", "Donjons",
           "La difficulté du donjon (1 à 5) se choisit avant le premier combat, puis se verrouille.",
           T("Difficulté")
           .. "• Plus haute : des techniques de monstre et plus de butin.\n"
-          .. "• Dernier boss : des Marques, et dès la difficulté 3 une chance de pierre taillée.\n"
-          .. "• Les boss donnent la Braise du Gouffre, pour les pièces bleues.\n"
-          .. "• Terminer le donjon (son dernier boss) dans une difficulté ouvre la suivante, pour le compte." },
+          .. "• Dernier boss : des Marques, et dès la difficulté 3 une chance de pierre taillée de sa zone.\n"
+          .. "• Les boss donnent le composant du donjon, pour ses pièces bleues : " .. COMPOSANTS .. ".\n"
+          .. "• Terminer le donjon (son dernier boss) dans une difficulté ouvre la suivante, pour le compte.\n\n"
+          .. T("Entrer")
+          .. "• À 60 % de la zone, après la quête qui y mène, son gardien t'y descend : Ruga Brise-cendre (Gouffre), Ebru (Cavernes). L'entrée à pied est refusée avant.\n\n"
+          .. T("Semaine")
+          .. "• L'objectif de la semaine rempli donne 1 composant et 1 pierre taillée du dernier donjon terminé (le Gouffre tant qu'aucun).\n\n"
+          .. T("Escorte des Cavernes")
+          .. "• Le disciple de Naralex ne meurt pas. Les monstres viennent par deux.\n"
+          .. "• Si tu tombes, parle-lui : il reprend au dernier point atteint (5, 12 ou 20)." },
         { "passifs", "Réputation et passifs",
           "Chaque donjon nourrit une réputation commune ; elle ouvre des passifs à choisir avant d'entrer.",
           T("Donjons")

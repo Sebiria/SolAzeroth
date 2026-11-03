@@ -6,6 +6,6 @@ table.insert(SolUI.RECETTES, { nom = "Rudimentaire", forge = false, recettes = {
 table.insert(SolUI.RECETTES, { nom = "Joaillerie", forge = false, recettes = {
     { 910236, "Orbe de malachite", 9, 7, 45, { { 910180, 1 }, { 2770, 4 } }, "Armes et boucliers" },
 } })
-table.insert(SolUI.RECETTES, { nom = "Gouffre : joaillerie", forge = false, gouffre = true, recettes = {
+table.insert(SolUI.RECETTES, { nom = "Gouffre : joaillerie", forge = false, donjon = true, recettes = {
     { 910272, "Orbe ardent du Gouffre", 14, 10, 5000, { { 910190, 1 }, { 910181, 1 }, { 910120, 40 }, { 2770, 4 } }, "Armes et boucliers" },
 } })

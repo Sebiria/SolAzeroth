@@ -41,6 +41,8 @@ The download contains the compiled server, a portable MySQL (it runs only while 
 | --- | --- |
 | **Durotar** (power 1 to 11) | A rewritten story of 30 quests, from the Valley of Trials to Razor Hill, Sen'jin, the Echo Isles and the Burning Blade. Bounties, daily contracts, places to clear, timed challenges with medals, a wave trial, 16 hidden relics, 3 secret rares. Tested in game. |
 | **Ragefire Chasm** | Open at 60 % of Durotar: difficulties 1 to 5, a dungeon component and 31 blue pieces to craft. |
+| **The Barrens** (power 14 to 30) | Built, to be tested in game. 30 quests in four acts, from the Crossroads to Camp Taurajo; bounties, contracts, challenges, a wave trial, cleared places paid once, 16 relics, 5 secret rares, new monster techniques; head and shoulders, tin, 96 green pieces in three tiers. |
+| **Wailing Caverns** (30 to 32) | Built, to be tested in game. Open at 60 % of the Barrens: difficulties 1 to 5, the Nightmare Seed, 32 blue pieces and their set, the disciple's escort played solo. |
 | **Warrior — Protection** (orc, troll) | Full kit: the **Bulwark** passive (part of every hit taken becomes a shield that techniques spend). Tested in game. |
 | **Warlock — Affliction** (orc, troll) | Full kit, cloth gear, daggers and staves, temporary summons only (no permanent pet). Built and simulated; in-game testing in progress. |
 | **Rogue — Assassination** (orc, troll) | Full kit, leather gear, two daggers, poisons, Fan of Knives that becomes Sap in Stealth. Built and simulated; **not yet tested in game**. |

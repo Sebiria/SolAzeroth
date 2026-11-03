@@ -229,6 +229,31 @@ Le détail est dans « Les Tarides — Histoire et quêtes (brouillon).md » (§
   - **Courbe des monstres** (point 19 du brouillon, choix de l'utilisateur du 03/11/2026) : au-delà de 14, la pente des monstres de Blizzard dépasse celle des pièces (sans elle, le guerrier perdait 45 % de vie à 14 et 100 % dès 25). Règle : un monstre dont la puissance vient d'un secteur ou d'une table de donjon a sa vie (et ses soins) et ses dégâts (mêlée, sorts, dégâts sur la durée) multipliés par la ligne de sa puissance dans `solazeroth_v3_courbe_puissance` (1 jusqu'à 14 ; au-delà de la dernière ligne, la dernière), puis par la correction de son entrée dans `solazeroth_v3_courbe_entrees` (cas isolés). Fixés à l'apparition. Durotar, le Gouffre, les classes et les pièces ne bougent pas. Réglée par `courbe_monstres.py` contre le guerrier de la fiche de chaque point : même vie perdue qu'à Durotar au même point de la zone (bornée à 15-30 %) et même durée (bornée à 12-18 s). Courbe (vie / dégâts) : 15 : 0,60 / 0,42 ; 16 : 0,59 / 0,40 ; 18 : 0,52 / 0,43 ; 20 : 0,50 / 0,50 ; 22 : 0,50 / 0,47 ; 25 : 0,41 / 0,57 ; 27 : 0,35 / 0,53 ; 30 : 0,41 / 0,51. 71 entrées corrigées (monstre seul 15-30 %, élites et rares 30-60 %).
   - Vérifié (`courbe_monstres.py --verifier`) : contre un monstre de sa puissance, guerrier 16 à 29 %, démoniste 12 à 20 %, voleur 13 à 25 % (hors Tueur déviant), de 12 à 20 s pour le guerrier. À Durotar, le démoniste et le voleur perdaient aussi moins que le guerrier.
 - **Lot T6, rares secrets des Tarides (construit le 03/11/2026, migration 147, `rares_secrets_v3.py tarides`)** : l'outil des rares secrets est par zone ; cinq rares (910043 à 910047, puissance 35), techniques en SmartAI avec des sorts de Blizzard ; collier, bague et deux bijoux à 38 (910302 à 910305), hors des références ; Zhévra rapide retiré de la boutique (60 %, monture de Bras-de-pierre) ; apparitions d'origine de Bras-de-pierre et du Requin du sable retirées (table de retour) ; l'événement du cauchemar n'appelle plus aucun rare secret (Durotar compris). Réglés sur le guerrier (48 à 53 %) ; démoniste 44 à 62 % ; voleur 93 à 99 %, comme à Durotar. Pas encore vérifié en jeu.
+- **Lot T10, interface et textes (construit le 03/11/2026, sans migration)** : `zones_interface.py` écrit `SolUI_Zones.lua` (une ligne par zone : marchands, paliers, donjon, composant, panoplie), relu dans la base ; la fenêtre Équipement, l'Aventure et le lexique le lisent, plus rien du Gouffre en dur. Artisanat à deux niveaux par zone puis par palier (bouton de zone ; la zone où l'on est, sinon celle de sa puissance), joaillerie et enchantements rangés par zone ; Durotar garde son menu. Champs `donjon` et `zone` des catégories (au lieu de `gouffre` et `niveau`). La pierre de la semaine vient du dernier donjon terminé (`PierreDernierDonjon`, C++). Scène d'arrivée chez Kargal ; maîtres des techniques des Tarides, du démoniste et du voleur dans l'onglet des étapes ; lexique : fournisseurs, panoplies, rares secrets, voyage, techniques des monstres, chiffres des Tarides. « Guide de test — Les Tarides.md » et « Check-list — intégrer une zone.md ». Pas encore vérifié en jeu.
+
+### Bilan des Tarides (03/11/2026)
+
+Les onze lots T0 à T10 sont construits en une journée : migrations 135 à 147, 31 quêtes d'histoire, 36 annexes, 6 quêtes des Cavernes, 128 pièces (96 vertes, 32 bleues), 5 rares secrets. Ce qui valait pour Durotar seul est passé en tables par zone (lieux, annexes, reliques, épreuves, seuils et composants de donjon, panoplies, rangs du camp, pierres des rangs, fournisseurs) ; Durotar et le Gouffre restent identiques dans toutes les simulations et dans le gabarit. Rien n'a encore été vu en jeu : le guide de test suit les lots dans l'ordre. La check-list « intégrer une zone » reprend ce que la zone 3 demandera.
+
+### Reste pour le calibrage final
+
+Repris du §5.2 du brouillon des Tarides et du suivi des lots :
+
+- **Renforts des primes** (choix 48) : le guerrier perd contre Sœur Rathtalon, Humar, Hagg, le Moissonneur et le capitaine Gerogg, renforts à pleine puissance.
+- **Voleur contre les rares secrets** (choix 86) : 93 à 99 % avec les bonus, aux Tarides comme à Durotar ; le remède touche la classe ou Durotar.
+- **Payer les lieux de Durotar** (choix 29) : pas fait, pour garder Durotar identique.
+- **Saut 22 → 25 au rang 2** : 31,7 % de vie perdue pour 26,7 % à la fiche (44,4 % au rang 0) ; la main gauche de T19 n'est pas comptée.
+- **Élites lentes** : Rochelance, Gesharahan, Takk, Brontus à 21 à 32 s, leur vie étant au plancher de la courbe.
+- **Tir au contact** : à Durotar, l'Éclaireur Tranchecrin et l'Estafette kolkar sont plus faciles que la cible ; le démoniste à 30 m serait touché par le Tir.
+- **Démoniste et voleur sans les sorts des monstres** : partout, ils sont simulés en mêlée seule ; un monstre corrigé pour un sort fort leur paraît trop facile.
+- **Or par heure** : 3 po × facteur, à mesurer en jeu.
+- **Gemmes** : 3,2 rangs moyens aux Tarides au lieu de 3,6, l'étain étant la limite (§4.7.5 du brouillon).
+- **Techniques en C++** (choix 81) : Plongée sous le sable, annonce du Piétinement, Surchauffe du prototype.
+- **Points de reprise de l'escorte en mémoire** (choix 60) : un redémarrage les oublie.
+- **Sertissage** reporté (choix 71).
+- **PNJ d'ambiance** des Tarides et **cris des boss des Cavernes** : pas écrits (choix 103 et 104 du brouillon).
+- **Sarilus** (faction 118, entrée fixe 16) à régler avec sa quête ; T02, T03 et T05 un point au-dessus du brouillon.
+- **Boucliers des monstres** hors de la courbe ; invocations des monstres gardées ; patrouille retirée à revoir en jeu.
 
 ## 6. Plan technique des fondations (proposé le 31/10/2026, à valider)
 

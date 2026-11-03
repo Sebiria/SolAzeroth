@@ -350,6 +350,24 @@ local ETAPES = {
     [100015] = "Gar'Thok, Tranchecolline",
     [100014] = "Gar'Thok, chef de Tranchecolline",
     [100016] = "Maître Gadrin, Sen'jin",
+    -- Lot T10 des Tarides : les étapes des Tarides (T08, T19), et les maîtres du démoniste et du voleur à Durotar
+    -- (point 4.3 du comparatif ; leurs techniques verrouillées affichaient « Zones suivantes »).
+    [100020] = "Thork, la Croisée",
+    [100018] = "Ruga Totem-de-rage, Camp Taurajo",
+    [100203] = "Nartok, Vallée des Épreuves",
+    [100205] = "Nartok, avant Yarrog",
+    [100206] = "Dhugru Gorelust, Tranchecolline",
+    [100207] = "Dhugru Gorelust, chef de Tranchecolline",
+    [100204] = "Dhugru Gorelust, après Sen'jin",
+    [100208] = "Gazrog, la Croisée",
+    [100209] = "Takar le Prophète, Camp Taurajo",
+    [100305] = "Rwag, Vallée des Épreuves",
+    [100307] = "Rwag, avant Yarrog",
+    [100308] = "Kaplak, Tranchecolline",
+    [100311] = "Kaplak, chef de Tranchecolline",
+    [100316] = "Kaplak, après Sen'jin",
+    [100312] = "Darsok Vivedague, la Croisée",
+    [100313] = "Tatternack Forgacier, Camp Taurajo",
 }
 local function Emplacements() return S.etat.emplacements or 3 end
 

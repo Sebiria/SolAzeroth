@@ -34,7 +34,7 @@ BROUILLON = os.path.join(os.path.expanduser("~"), "Documents", "Claude", "Sol'Az
                          "Les Tarides — Histoire et quêtes (brouillon).md")
 MIGRATION = os.path.join(ICI, "..", "sql", "migrations", "141_v3_tarides_artisanat")
 LUA = os.path.join(ICI, "..", "interface-v3", "FrameXML", "SolUI_ArtisanatTarides.lua")
-NIVEAU_MENU = "Les Tarides"            # niveau du menu de fabrication (SolUI_Equipement.lua, champ niveau)
+ZONE_MENU = "Les Tarides"              # zone des recettes (SolUI_Zones.lua ; menu par zone puis par palier)
 
 PREMIERE = 910500                      # 910500 à 910595, rangs 925000 à 925955
 PALIERS = [18, 24, 30]
@@ -406,17 +406,18 @@ def main():
             f.write("\n".join(lignes))
 
     l = ["-- Généré par outils\\artisanat_tarides.py : ne pas modifier à la main.",
-         "-- Lot T8 des Tarides : recettes vertes (niveau « %s » du menu de fabrication), joaillerie, pierres des" % NIVEAU_MENU,
+         "-- Lot T8 des Tarides : recettes vertes (zone « %s » du menu de fabrication), joaillerie, pierres des" % ZONE_MENU,
          "-- rangs 4 et 5 selon la puissance de la pièce, enchantements inférieurs et consommables du palier suivant."]
     for cle, nom, forge in CATEGORIES:
-        l.append("table.insert(SolUI.RECETTES, { nom = %s, niveau = %s, forge = %s, recettes = {"
-                 % (lua(nom), lua(NIVEAU_MENU), "true" if forge else "false"))
+        l.append("table.insert(SolUI.RECETTES, { nom = %s, zone = %s, forge = %s, recettes = {"
+                 % (lua(nom), lua(ZONE_MENU), "true" if forge else "false"))
         for e, palier, famille, n, p, requise, prix, c, gemme, src, _ in liste:
             if famille == cle:
                 l.append("    { %d, %s, %d, %d, %d, { %s }, %s }," % (e, lua(n), p, requise, prix,
                          ", ".join("{ %d, %d }" % oc for oc in c), lua(genre_menu(sources[src]))))
         l.append("} })")
-    l.append('table.insert(SolUI.RECETTES, { nom = "Consommables", surplus = true, recettes = {')
+    l.append('table.insert(SolUI.RECETTES, { nom = "Consommables", zone = %s, surplus = true, recettes = {'
+             % lua(ZONE_MENU))
     for objet, nom, sort, prix, c, *_ in CONSOMMABLES:
         l.append('    { %d, %s, 0, 0, %d, { %s }, "Consommables" },'
                  % (objet, lua(nom), prix, ", ".join("{ %d, %d }" % oc for oc in c)))
@@ -426,8 +427,8 @@ def main():
     l.append("local J = SolUI.JOAILLERIE")
     l.append("J.prospections = J.prospections or { { minerai = J.minerai, parProspection = J.parProspection, "
              "chances = J.chances } }")
-    l.append("table.insert(J.prospections, { minerai = %d, parProspection = %d, chances = { %s } })"
-             % (ETAIN, PAR_PROSPECTION, ", ".join("{ %d, %d }" % gc for gc in CHANCES)))
+    l.append("table.insert(J.prospections, { zone = %s, minerai = %d, parProspection = %d, chances = { %s } })"
+             % (lua(ZONE_MENU), ETAIN, PAR_PROSPECTION, ", ".join("{ %d, %d }" % gc for gc in CHANCES)))
     for e, nom, b, n in TAILLES:
         l.append("table.insert(J.tailles, { %d, %s, %d, %d })" % (e, lua(nom), b, n))
     l.append("J.paliers = J.paliers or {}")
@@ -440,9 +441,10 @@ def main():
     l.append("end")
     l.append("-- Enchantements inférieurs (même format que SolUI_Enchantements.lua) et butin des tables de désenchantement.")
     for i, nom, effet, e, types, c in en.ENCHANTEMENTS_TARIDES:
-        l.append("table.insert(SolUI.ENCHANTEMENTS, { %d, %s, %s, %d, { %s }, { %s }, %d })" % (
+        l.append("table.insert(SolUI.ENCHANTEMENTS, { %d, %s, %s, %d, { %s }, { %s }, %d, %s })" % (
             i, lua(nom), lua(effet), e, ", ".join(map(str, types)),
-            ", ".join("{ %d, %d }" % (o, n) for o, n in c.items()), en.OR_PAR_COMPOSANT * sum(c.values())))
+            ", ".join("{ %d, %d }" % (o, n) for o, n in c.items()), en.OR_PAR_COMPOSANT * sum(c.values()),
+            lua(ZONE_MENU)))
     tables = sorted({t for _, a, b in en.TABLES for t in (a, b)})
     for t, texte in en.descriptions(tables).items():
         l.append("SolUI.DESENCHANTEMENT[%d] = SolUI.DESENCHANTEMENT[%d] or %s" % (t, t, lua(texte)))

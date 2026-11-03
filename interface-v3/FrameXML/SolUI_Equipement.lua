@@ -18,6 +18,11 @@
 -- peut nommer son niveau du menu (champ niveau : « Les Tarides ») ; plusieurs prospections (J.prospections : cuivre,
 -- étain) ; les pierres des rangs 4 et 5 dépendent de la puissance de la pièce (J.paliers : à partir de 15, celles des
 -- Tarides ; en dessous, J.rangs, celles de Durotar).
+-- Lot T10 des Tarides (03/11/2026, décision de l'utilisateur : tous les métiers prennent le menu à deux niveaux de
+-- l'armure, par zone puis par palier) : les zones et leurs donjons viennent de SolUI_Zones.lua (outils\zones_interface.py).
+-- Fabrication, Joaillerie et Enchantement se rangent par zone (par défaut, celle où l'on est, sinon celle de sa
+-- puissance : les zones dépassées restent repliées). Le niveau du donjon (Gouffre, Cavernes…), la panoplie, le
+-- composant du transfert et sa provenance, les marchands des pièces : tout est lu par zone, plus rien en dur.
 
 local S = SolUI
 
@@ -47,8 +52,12 @@ local function Demander() SendChatMessage(".equipement", "SAY") end
 -- (« Heaume du Gouffre +3 ») ; une arme à deux mains compte double, comme sur le serveur.
 -- Lot T5 des Tarides : une panoplie par donjon (solazeroth_v3_panoplies), reconnue au suffixe du nom. Elles ne se
 -- cumulent pas : seule compte celle qui a le plus de pièces portées (la première de la liste à égalité).
-local PANOPLIE = { { 2, "+ 3 % de dégâts" }, { 4, "− 5 % de dégâts subis" }, { 6, "3 % de vol de vie" } }
-local PANOPLIES = { { " du Gouffre", "Panoplie du Gouffre" }, { " des Lamentations", "Panoplie des Lamentations" } }
+-- Lot T10 : suffixe, nom et paliers de chaque panoplie lus dans SolUI.ZONES, dans l'ordre des zones (celui du serveur).
+local ZONES = S.ZONES
+local PANOPLIES = {}
+for _, z in ipairs(ZONES) do
+    table.insert(PANOPLIES, { z.donjon.suffixe, z.donjon.panoplie, z.donjon.bonus })
+end
 local function PanoplieDe(nom)
     for i, p in ipairs(PANOPLIES) do
         if nom and nom:find(p[1], 1, true) then return i end
@@ -80,7 +89,7 @@ local function LignesPanoplie(i)
     local n, active = PiecesPanoplies()
     local portees = n[i]
     local lignes = { { PANOPLIES[i][2] .. " (" .. portees .. "/6)", 1, 0.82, 0 } }
-    for _, p in ipairs(PANOPLIE) do
+    for _, p in ipairs(PANOPLIES[i][3]) do
         local r, g, b = 0.5, 0.5, 0.5
         if i == active and portees >= p[1] then r, g, b = 0.55, 0.77, 0.65 end
         table.insert(lignes, { "(" .. p[1] .. ") Panoplie : " .. p[2], r, g, b })
@@ -147,12 +156,12 @@ S.Message("SOLFOURN", function(champs)
 end)
 
 -- « (Mogra, Hraq : 8 pa) » pour un matériau qu'un fournisseur vend, s'il en manque ; vide sinon.
-local function ChezMogra(objet, manque)
+local function ChezFournisseur(objet, manque)
     local f = S.FOURNISSEUR[objet]
     if not f or manque <= 0 then return "" end
     return "  |cffb4b8bf(" .. f.noms .. " : " .. S.Argent(f.prix) .. ")|r"   -- l'unité
 end
-S.ChezMogra = ChezMogra
+S.ChezFournisseur = ChezFournisseur
 
 S.Message("SOLEQUIP", function(champs)
     if champs[1] == "FABRIQUE" then
@@ -265,28 +274,88 @@ local etatForge = S.Texte(f, "Regular", 13, "gris")
 etatForge:SetPoint("TOPRIGHT", -56, -22)
 
 ------------------------------------------------------------------------
+-- Zones (lot T10 des Tarides) : celle des pages Fabrication, Joaillerie et Enchantement
+------------------------------------------------------------------------
+-- Index dans SolUI.ZONES d'un nom de zone (champ zone d'une catégorie, 7e champ d'un plat) ; sans nom, la première.
+local function IndexZone(nom)
+    for i, z in ipairs(ZONES) do
+        if z.nom == nom then return i end
+    end
+    return 1
+end
+-- La zone d'une puissance : la dernière dont la plage commence en dessous (les rangs 4 et 5, la joaillerie).
+local function ZoneDeLaPuissance(p)
+    local choix = 1
+    for i, z in ipairs(ZONES) do
+        if p + 0.05 >= z.debut then choix = i end
+    end
+    return choix
+end
+-- Zone affichée : celle que le joueur a choisie, sinon celle où il est (ou son donjon), sinon celle de sa puissance.
+-- Un changement de zone revient au choix par défaut.
+local zoneChoisie
+local function ZoneCourante()
+    if zoneChoisie then return zoneChoisie end
+    local ici = GetRealZoneText()
+    for i, z in ipairs(ZONES) do
+        if z.nom == ici or z.donjon.nom == ici then return i end
+    end
+    return ZoneDeLaPuissance(S.etat.puissance or 0)
+end
+S.Ecouter("ZONE_CHANGED_NEW_AREA", function() zoneChoisie = nil end)
+-- Bouton « Zone : … » et sa liste déroulante.
+local deroulantZones = CreateFrame("Frame", "SolUIZonesMenu", UIParent, "UIDropDownMenuTemplate")
+local boutonsZone = {}
+local function BoutonZone(parent)
+    local b = S.BoutonPlat(parent, "", 180, 30, 12)
+    b:SetScript("OnClick", function(self)
+        local menu = { { text = "Recettes de la zone", isTitle = true, notCheckable = true } }
+        for i, z in ipairs(ZONES) do
+            table.insert(menu, { text = z.nom, checked = i == ZoneCourante(),
+                func = function() zoneChoisie = i; Maj() end })
+        end
+        EasyMenu(menu, deroulantZones, self, 0, 0, "MENU")
+    end)
+    table.insert(boutonsZone, b)
+    return b
+end
+
+------------------------------------------------------------------------
 -- Page 1 : fabrication
 ------------------------------------------------------------------------
--- Menu à deux niveaux (01/11/2026, demande de l'utilisateur : la liste allait trop s'allonger) : Rudimentaire (zones
--- de départ), Inhabituel (les vertes), Gouffre (les bleues), puis Cuisine ; dans chacune, sous-catégories tissu, cuir,
--- maille, plaque, armes et boucliers (genre de la recette, 7e champ), les vides cachées. Seul le niveau choisi s'ouvre.
+-- Menu à deux niveaux (01/11/2026, demande de l'utilisateur : la liste allait trop s'allonger) ; dans chaque niveau,
+-- sous-catégories tissu, cuir, maille, plaque, armes et boucliers (genre de la recette, 7e champ), les vides cachées.
+-- Seul le niveau choisi s'ouvre. Lot T10 : un menu par zone (bouton du haut). Ses niveaux : les paliers de la zone
+-- (selon la puissance de la pièce : Rudimentaire et Inhabituel à Durotar ; la Croisée, les oasis et Taurajo aux
+-- Tarides), son donjon (pièces bleues : Gouffre, Cavernes), puis ses consommables et sa cuisine. Durotar garde
+-- exactement son menu d'avant les Tarides.
 local p1 = pages[1]
 local LIGNES_RECETTES = 9   -- lignes visibles ; la liste défile au-delà
 local GENRES = { "Tissu", "Cuir", "Maille", "Plaque", "Armes et boucliers" }
-local niveaux, categorieDe = {}, {}   -- { nom, sous = { { nom, recettes } } } ; recette -> sa catégorie de S.RECETTES
+local categorieDe = {}   -- recette -> sa catégorie de S.RECETTES
+local menus = {}         -- par zone : { { nom, sous = { { nom, recettes } } }, … }
+local function NomNiveau(c, r, z)
+    if c.feu or c.surplus then return c.nom end
+    if c.donjon then return z.donjon.court end
+    for _, p in ipairs(z.paliers) do
+        if r[3] <= p[1] then return p[2] end
+    end
+    return z.paliers[#z.paliers][2]
+end
 do
     local index = {}
+    for i in ipairs(ZONES) do menus[i], index[i] = {}, {} end
     for _, c in ipairs(S.RECETTES) do
-        local nom = c.niveau or (c.feu or c.surplus) and c.nom or c.gouffre and "Gouffre" or c.nom == "Rudimentaire"
-            and c.nom or "Inhabituel"
-        local niveau = index[nom]
-        if not niveau then
-            niveau = { nom = nom, sous = {}, parGenre = {} }
-            index[nom] = niveau
-            table.insert(niveaux, niveau)
-        end
         for _, r in ipairs(c.recettes) do
             categorieDe[r] = c
+            local zi = IndexZone(c.feu and r[7] or c.zone)
+            local nom = NomNiveau(c, r, ZONES[zi])
+            local niveau = index[zi][nom]
+            if not niveau then
+                niveau = { nom = nom, sous = {}, parGenre = {} }
+                index[zi][nom] = niveau
+                table.insert(menus[zi], niveau)
+            end
             local genre = c.feu and c.nom or r[7]
             local sous = niveau.parGenre[genre]
             if not sous then
@@ -299,15 +368,30 @@ do
     end
     local rang = {}
     for i, g in ipairs(GENRES) do rang[g] = i end
-    for _, niveau in ipairs(niveaux) do
-        table.sort(niveau.sous, function(a, b) return (rang[a.nom] or 0) < (rang[b.nom] or 0) end)
+    for zi, niveaux in ipairs(menus) do
+        for _, niveau in ipairs(niveaux) do
+            table.sort(niveau.sous, function(a, b) return (rang[a.nom] or 0) < (rang[b.nom] or 0) end)
+        end
+        -- Paliers dans leur ordre, puis le donjon, les consommables, la cuisine, puis le reste dans l'ordre d'arrivée.
+        local ordre = {}
+        for k, p in ipairs(ZONES[zi].paliers) do ordre[p[2]] = k end
+        ordre[ZONES[zi].donjon.court] = #ZONES[zi].paliers + 1
+        ordre["Consommables"], ordre["Cuisine"] = #ZONES[zi].paliers + 2, #ZONES[zi].paliers + 3
+        for k, niveau in ipairs(niveaux) do niveau.ordre = ordre[niveau.nom] or (100 + k) end
+        table.sort(niveaux, function(a, b) return a.ordre < b.ordre end)
     end
 end
+S.MENUS_ARTISANAT = menus   -- pour les contrôles (outils)
 local niveauChoisi, sousChoisie, choisie = 1, 1, nil
+local zoneMenu   -- zone du menu affiché : en changer revient au premier niveau
 
+local zoneFabrication = BoutonZone(p1)
+zoneFabrication:SetPoint("TOPLEFT", 16, -16)
 local boutonsNiveaux, boutonsSous = {}, {}
-for i, niveau in ipairs(niveaux) do
-    local b = S.BoutonPlat(p1, niveau.nom, 180, 40)
+local plusDeNiveaux = 0
+for _, niveaux in ipairs(menus) do plusDeNiveaux = math.max(plusDeNiveaux, #niveaux) end
+for i = 1, plusDeNiveaux do
+    local b = S.BoutonPlat(p1, "", 180, 40)
     b:SetScript("OnClick", function() niveauChoisi, sousChoisie, choisie = i, 1, nil; Maj() end)
     boutonsNiveaux[i] = b
 end
@@ -355,12 +439,11 @@ titreComposants:SetPoint("TOPLEFT", conditions, "BOTTOMLEFT", 0, -18)
 titreComposants:SetText("COMPOSANTS")
 -- Survol d'un composant (03/11/2026, demande de l'utilisateur) : son infobulle, et où le trouver quand ce n'est pas
 -- évident.
-local PROVENANCES = {
-    [910190] = "Se trouve sur les boss du Gouffre de Ragefeu : 15 % de chances par boss, et une de plus sur le "
-        .. "dernier boss tué.",
-    [910191] = "Se trouve sur les boss des Cavernes des Lamentations : 10 % de chances par boss, et une de plus sur "
-        .. "le dernier boss tué.",
-}
+local PROVENANCES = {}   -- lot T10 : le composant de chaque donjon (SolUI_Zones.lua)
+for _, z in ipairs(ZONES) do
+    PROVENANCES[z.donjon.composant] = "Se trouve sur les boss " .. z.donjon.de .. " : " .. z.donjon.taux
+        .. " % de chances par boss, et une de plus sur le dernier boss tué."
+end
 local composants = {}
 for n = 1, 4 do
     local c = S.Texte(detail, "Regular", 13, "texte")
@@ -413,18 +496,24 @@ local achat = S.Texte(detail, "Regular", 12, "gris")
 achat:SetPoint("BOTTOMLEFT", fabriquer, "TOPLEFT", 0, 14)
 achat:SetWidth(370)
 achat:SetJustifyH("LEFT")
-achat:SetText("Ces pièces s'achètent aussi, plus cher, chez les marchands de Razor Hill.")
 progression:SetParent(detail)
 progression:SetPoint("BOTTOMLEFT", fabriquer, "TOPLEFT", 0, 10)
 progression:SetPoint("RIGHT", detail, "RIGHT")
 
 local function MajFabrication()
-    local niveau = niveaux[niveauChoisi]
-    local y = -16
+    local zi = ZoneCourante()
+    if zi ~= zoneMenu then zoneMenu, niveauChoisi, sousChoisie, choisie = zi, 1, 1, nil end
+    local niveaux = menus[zi]
+    niveauChoisi = math.min(niveauChoisi, math.max(1, #niveaux))
+    local niveau = niveaux[niveauChoisi] or { sous = {} }
+    zoneFabrication.texte:SetText("Zone : " .. ZONES[zi].nom)
+    local y = -56
     for i, b in ipairs(boutonsNiveaux) do
+        S.Montrer(b, niveaux[i])
+        if niveaux[i] then b.texte:SetText(niveaux[i].nom) end
         b:SetPoint("TOPLEFT", 16, y)
         b:Choisir(i == niveauChoisi)
-        y = y - 46
+        y = y - (niveaux[i] and 46 or 0)
         if i == niveauChoisi and #niveau.sous > 1 then
             for n, sb in ipairs(boutonsSous) do
                 local sous = niveau.sous[n]
@@ -449,7 +538,7 @@ local function MajFabrication()
         S.Montrer(l, r)
         if r then
             l.recette = r
-            Poser(l.icone, r[1], nil, (categorieDe[r].gouffre or r[2]:find("du Gouffre")) and 3 or 2)
+            Poser(l.icone, r[1], nil, categorieDe[r].donjon and 3 or 2)
             l.texte:SetText(r[2])
             l.info:SetText(categorieDe[r].surplus and "Consommable, 1 h" or ("Puissance " .. r[3]))
             l:Choisir(choisie == r)
@@ -458,7 +547,7 @@ local function MajFabrication()
     S.Montrer(detail, choisie)
     if not choisie then return end
     local r, c = choisie, categorieDe[choisie]
-    local qualiteDefaut = (c.gouffre or r[2]:find("du Gouffre")) and 3 or 2
+    local qualiteDefaut = c.donjon and 3 or 2
     Poser(grande, r[1], nil, qualiteDefaut)
     detailNom:SetText(r[2])
     detailNom:SetTextColor(select(2, NomObjet(r[1], r[2], qualiteDefaut)))
@@ -491,7 +580,8 @@ local function MajFabrication()
     end
     conditions:SetText(table.concat(lignes, "\n"))
     local tout = okPuissance and (forge or not c.forge) and (feu or not c.feu)
-    S.Montrer(achat, not c.feu and not c.gouffre and not c.surplus and not progression:IsShown())   -- les bleues ne se vendent pas
+    S.Montrer(achat, not c.feu and not c.donjon and not c.surplus and not progression:IsShown())   -- les bleues ne se vendent pas
+    achat:SetText("Ces pièces s'achètent aussi, plus cher, chez les marchands " .. ZONES[IndexZone(c.zone)].marchands .. ".")
     -- Lot 4b : recette haute, un composant de plus sans son plan.
     local haute = not c.feu and S.HAUTES[r[1]]
     local liste = r[6]
@@ -508,7 +598,7 @@ local function MajFabrication()
     elseif haute then
         table.insert(lignes, "|cff8cc4a6Plan appris : pas de composant de plus.|r")
     end
-    if c.gouffre and PanoplieDe(r[2]) then
+    if c.donjon and PanoplieDe(r[2]) then
         table.insert(lignes, " ")
         for _, l in ipairs(LignesPanoplie(PanoplieDe(r[2]))) do
             table.insert(lignes, format("|cff%02x%02x%02x%s|r", l[2] * 255, l[3] * 255, l[4] * 255, l[1]))
@@ -524,7 +614,7 @@ local function MajFabrication()
             local a = S.NombreCollection(comp[1])
             tout = tout and a >= comp[2]
             ligne:SetText(S.NomCollection(comp[1]) .. "   " .. hex(a >= comp[2]) .. a .. " / " .. comp[2] .. "|r"
-                .. ChezMogra(comp[1], comp[2] - a))
+                .. ChezFournisseur(comp[1], comp[2] - a))
         end
     end
     local okOr = GetMoney() >= r[5]
@@ -539,8 +629,12 @@ end
 local p2 = pages[2]
 local transfert = nil   -- lot 4b : transfert de rang en attente de confirmation
 -- Lot T7 des Tarides : le transfert coûte le composant de donjon de la zone de la nouvelle pièce, d'après sa puissance
--- (comme solazeroth_v3_donjons_composants : puissance minimale, composant). Le lot T5 ajoute les Cavernes.
-local COMPOSANTS_TRANSFERT = { { 1, 910190, "Braise du Gouffre" }, { 15, 910191, "Graine de cauchemar" } }
+-- (comme solazeroth_v3_donjons_composants : puissance minimale, composant). Lot T10 : lus dans SolUI_Zones.lua.
+local COMPOSANTS_TRANSFERT = {}
+for _, z in ipairs(ZONES) do
+    table.insert(COMPOSANTS_TRANSFERT, { z.donjon.puissanceMin, z.donjon.composant, z.donjon.nomComposant })
+end
+table.sort(COMPOSANTS_TRANSFERT, function(a, b) return a[1] < b[1] end)
 local function ComposantTransfert(id)
     local niveau, choix = select(4, GetItemInfo(id)) or 0, COMPOSANTS_TRANSFERT[1]
     for _, c in ipairs(COMPOSANTS_TRANSFERT) do
@@ -748,7 +842,7 @@ local function Courses(p, cible)
     for _, m in ipairs(ordreMinerais) do
         local possede = S.NombreCollection(m)
         table.insert(lignes, "   à prospecter : environ " .. minerais[m] .. " " .. S.NomCollection(m)
-            .. " (tu en as " .. possede .. ")" .. ChezMogra(m, minerais[m] - possede))
+            .. " (tu en as " .. possede .. ")" .. ChezFournisseur(m, minerais[m] - possede))
     end
     return lignes
 end
@@ -910,14 +1004,29 @@ for _, l in ipairs(p4.lignes) do
         local piece = self.ligne.piece
         if not piece then return end
         local menu = { { text = NomObjet(piece.id), isTitle = true, notCheckable = true } }
-        for _, e in ipairs(EnchantementsDe(piece.type)) do
-            local enPlace = piece.enchantement == e[4]
-            local cout, ok = Cout(e)
-            table.insert(menu, { text = e[3] .. "  ·  " .. e[2] .. (enPlace and "  (en place)" or "  —  " .. cout),
-                notCheckable = true, disabled = enPlace or not ok,
-                func = function()
-                    SendChatMessage(".equipement enchanter " .. piece.sac .. " " .. piece.case .. " " .. e[1], "SAY")
-                end })
+        -- Lot T10 : rangés par zone (8e champ de l'enchantement, la première zone sinon), la zone affichée d'abord.
+        local courante = ZoneCourante()
+        local ordre = { courante }
+        for zi in ipairs(ZONES) do
+            if zi ~= courante then table.insert(ordre, zi) end
+        end
+        for _, zi in ipairs(ordre) do
+            local titre = false
+            for _, e in ipairs(EnchantementsDe(piece.type)) do
+                if IndexZone(e[8]) == zi then
+                    if not titre then
+                        titre = true
+                        table.insert(menu, { text = ZONES[zi].nom, isTitle = true, notCheckable = true })
+                    end
+                    local enPlace = piece.enchantement == e[4]
+                    local cout, ok = Cout(e)
+                    table.insert(menu, { text = e[3] .. "  ·  " .. e[2] .. (enPlace and "  (en place)" or "  —  " .. cout),
+                        notCheckable = true, disabled = enPlace or not ok,
+                        func = function()
+                            SendChatMessage(".equipement enchanter " .. piece.sac .. " " .. piece.case .. " " .. e[1], "SAY")
+                        end })
+                end
+            end
         end
         EasyMenu(menu, deroulantEnchantements, self, 0, 0, "MENU")
     end)
@@ -954,9 +1063,29 @@ introJ:SetJustifyH("LEFT")
 introJ:SetText("Prospecte le minerai pour en tirer des gemmes brutes, puis taille-les. Les pierres taillées servent aux "
     .. "rangs 4 et 5 de l'équipement. Tout se fait partout et se range dans la Collection.")
 
+-- Lot T10 des Tarides : par zone (bouton du haut) : ses prospections (champ zone, la première zone sinon), les tailles
+-- des gemmes qu'elles donnent et les pierres des rangs 4 et 5 de ses pièces (selon leur puissance). Durotar garde sa
+-- page d'avant les Tarides.
+local zoneJoaillerie = BoutonZone(p5)
+zoneJoaillerie:SetPoint("TOPRIGHT", -24, -12)
+introJ:SetWidth(740)
 local PROSPECTIONS = Prospections()
--- Lot T8 des Tarides : lignes plus serrées quand il y en a plus de 6 (deux prospections, six tailles).
-local PAS_J = #PROSPECTIONS + #J.tailles > 6 and 58 or 64
+local function ZoneDeLaTaille(t)
+    for _, pr in ipairs(PROSPECTIONS) do
+        for _, gc in ipairs(pr.chances) do
+            if gc[1] == t[3] then return IndexZone(pr.zone) end
+        end
+    end
+    return 1
+end
+local parZone = {}
+for zi in ipairs(ZONES) do parZone[zi] = { prospections = {}, tailles = {} } end
+for _, pr in ipairs(PROSPECTIONS) do table.insert(parZone[IndexZone(pr.zone)].prospections, pr) end
+for _, t in ipairs(J.tailles) do table.insert(parZone[ZoneDeLaTaille(t)].tailles, t) end
+local plusDeLignes = 0
+for _, z in ipairs(parZone) do plusDeLignes = math.max(plusDeLignes, #z.prospections + #z.tailles) end
+-- Lot T8 des Tarides : lignes plus serrées quand il y en a plus de 6.
+local PAS_J = plusDeLignes > 6 and 58 or 64
 local function LigneJ(n)
     local l = CreateFrame("Frame", nil, p5)
     l:SetSize(950, PAS_J - 8)
@@ -979,50 +1108,52 @@ local function LigneJ(n)
     return l
 end
 
-local lignesProspection = {}
-for n, pr in ipairs(PROSPECTIONS) do
+local lignesJ = {}
+for n = 1, plusDeLignes do
     local l = LigneJ(n)
-    l.bouton.texte:SetText("Prospecter")
-    l.bouton:SetScript("OnClick", function() SendChatMessage(".equipement prospecter " .. pr.minerai, "SAY") end)
-    l.prospection = pr
-    lignesProspection[n] = l
-end
-local lignesTaille = {}
-for n, t in ipairs(J.tailles) do
-    local l = LigneJ(n + #PROSPECTIONS)
-    l.bouton.texte:SetText("Tailler")
-    l.bouton:SetScript("OnClick", function() SendChatMessage(".equipement tailler " .. t[1], "SAY") end)
-    l.taille = t
-    lignesTaille[n] = l
+    l.bouton:SetScript("OnClick", function()
+        if l.prospection then SendChatMessage(".equipement prospecter " .. l.prospection.minerai, "SAY")
+        elseif l.taille then SendChatMessage(".equipement tailler " .. l.taille[1], "SAY") end
+    end)
+    lignesJ[n] = l
 end
 local rangsJ = S.Texte(p5, "Regular", 13, "texte")
-rangsJ:SetPoint("TOPLEFT", 24, -60 - (#J.tailles + #PROSPECTIONS) * PAS_J - 8)
 rangsJ:SetWidth(950)
 rangsJ:SetJustifyH("LEFT")
 
 local function MajJoaillerie()
     local hex = function(ok) return ok and "|cff8cc4a6" or "|cfff0918a" end
-    for _, l in ipairs(lignesProspection) do
-        local pr = l.prospection
-        local minerai = S.NombreCollection(pr.minerai)
-        Poser(l.icone, pr.minerai)
-        l.nom:SetText("Prospection : " .. pr.parProspection .. " " .. S.NomCollection(pr.minerai) .. "   "
-            .. hex(minerai >= pr.parProspection) .. "(tu en as " .. minerai .. ")|r")
-        local chances = {}
-        for _, gc in ipairs(pr.chances) do
-            table.insert(chances, S.NomCollection(gc[1]) .. " " .. gc[2] .. " % (" .. S.NombreCollection(gc[1]) .. ")")
+    local zi = ZoneCourante()
+    local z = parZone[zi]
+    zoneJoaillerie.texte:SetText("Zone : " .. ZONES[zi].nom)
+    for n, l in ipairs(lignesJ) do
+        local pr = z.prospections[n]
+        local t = not pr and z.tailles[n - #z.prospections]
+        l.prospection, l.taille = pr, t
+        S.Montrer(l, pr or t)
+        if pr then
+            local minerai = S.NombreCollection(pr.minerai)
+            Poser(l.icone, pr.minerai)
+            l.bouton.texte:SetText("Prospecter")
+            l.nom:SetText("Prospection : " .. pr.parProspection .. " " .. S.NomCollection(pr.minerai) .. "   "
+                .. hex(minerai >= pr.parProspection) .. "(tu en as " .. minerai .. ")|r")
+            local chances = {}
+            for _, gc in ipairs(pr.chances) do
+                table.insert(chances, S.NomCollection(gc[1]) .. " " .. gc[2] .. " % (" .. S.NombreCollection(gc[1]) .. ")")
+            end
+            l.info:SetText("Une gemme brute : " .. table.concat(chances, "  ·  "))
+            l.bouton:SetAlpha(minerai >= pr.parProspection and 1 or 0.5)
+        elseif t then
+            local brutes = S.NombreCollection(t[3])
+            Poser(l.icone, t[1], GetItemIcon(t[1]) or GetItemIcon(t[3]))
+            l.bouton.texte:SetText("Tailler")
+            l.nom:SetText(t[2] .. "   |cffb4b8bf(tu en as " .. S.NombreCollection(t[1]) .. ")|r")
+            l.info:SetText("Demande " .. hex(brutes >= t[4]) .. t[4] .. " " .. S.NomCollection(t[3]) .. " (tu en as " .. brutes .. ")|r")
+            l.bouton:SetAlpha(brutes >= t[4] and 1 or 0.5)
         end
-        l.info:SetText("Une gemme brute : " .. table.concat(chances, "  ·  "))
-        l.bouton:SetAlpha(minerai >= pr.parProspection and 1 or 0.5)
     end
-    for _, l in ipairs(lignesTaille) do
-        local t = l.taille
-        local brutes = S.NombreCollection(t[3])
-        Poser(l.icone, t[1], GetItemIcon(t[1]) or GetItemIcon(t[3]))
-        l.nom:SetText(t[2] .. "   |cffb4b8bf(tu en as " .. S.NombreCollection(t[1]) .. ")|r")
-        l.info:SetText("Demande " .. hex(brutes >= t[4]) .. t[4] .. " " .. S.NomCollection(t[3]) .. " (tu en as " .. brutes .. ")|r")
-        l.bouton:SetAlpha(brutes >= t[4] and 1 or 0.5)
-    end
+    rangsJ:ClearAllPoints()
+    rangsJ:SetPoint("TOPLEFT", 24, -60 - (#z.prospections + #z.tailles) * PAS_J - 8)
     local function Rangs(rangs)
         local morceaux = {}
         for _, r in ipairs({ 4, 5 }) do
@@ -1032,11 +1163,16 @@ local function MajJoaillerie()
         end
         return table.concat(morceaux, "   ·   ")
     end
-    local texte = "En plus des éclats et de l'or :  " .. Rangs(J.rangs)
+    -- Les pierres de base (J.rangs) sont celles de la première zone ; un palier va à la zone de sa puissance.
+    local lignes = {}
+    if zi == 1 then table.insert(lignes, "En plus des éclats et de l'or :  " .. Rangs(J.rangs)) end
     for _, palier in ipairs(J.paliers or {}) do
-        texte = texte .. "\nPièces de puissance " .. palier.puissance .. " ou plus :  " .. Rangs(palier.rangs)
+        if ZoneDeLaPuissance(palier.puissance) == zi then
+            table.insert(lignes, "En plus des éclats et de l'or, pièces de puissance " .. palier.puissance
+                .. " ou plus :  " .. Rangs(palier.rangs))
+        end
     end
-    rangsJ:SetText(texte)
+    rangsJ:SetText(table.concat(lignes, "\n"))
 end
 
 
@@ -1061,8 +1197,10 @@ end
 -- Carnets (SolUI_Carnets.lua) : page, et catégorie de recettes (la Cuisine du carnet Camp).
 function S.PageEquipement(n, nomCategorie)
     onglet = n
-    for i, niveau in ipairs(niveaux) do
-        if niveau.nom == nomCategorie then niveauChoisi, sousChoisie, choisie = i, 1, nil end
+    -- Lot T10 : le niveau de ce nom dans le menu de la zone affichée (la Cuisine existe dans chaque zone).
+    local zi = ZoneCourante()
+    for i, niveau in ipairs(menus[zi]) do
+        if niveau.nom == nomCategorie then zoneMenu, niveauChoisi, sousChoisie, choisie = zi, i, 1, nil end
     end
     if f:IsShown() then Maj() end
 end

@@ -129,7 +129,7 @@ def main():
     l = ["-- Généré par outils\\batons_v3.py : ne pas modifier à la main.",
          "-- Bâtons du démoniste, rangés avec les armes de leur niveau (même format que SolUI_Recettes.lua)."]
     for e, nom, src, p, categorie, forge, _ in BATONS:
-        drapeau = ", gouffre = true" if categorie.startswith("Gouffre") else ""
+        drapeau = ", donjon = true" if categorie.startswith("Gouffre") else ""
         l.append("table.insert(SolUI.RECETTES, { nom = %s, forge = %s%s, recettes = {"
                  % (e3.lua_texte(categorie), "true" if forge else "false", drapeau))
         l.append("    { %d, %s, %d, %d, %d, { %s }, %s }," % (e, e3.lua_texte(nom), p, REQUISE[e],

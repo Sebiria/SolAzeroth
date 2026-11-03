@@ -26,8 +26,9 @@ local SOURCES = { [1] = "Quêtes d'histoire", [2] = "Sous-zones explorées", [3]
     [5] = "Reliques", [6] = "Médailles d'or", [7] = "Donjons terminés", [8] = "Zones à 60 %", [9] = "Zones à 100 %",
     [11] = "Difficultés de donjon réussies", [12] = "Objectifs de la semaine", [13] = "Zones maîtrisées en difficile",
     [14] = "Zones maîtrisées en cauchemar", [15] = "Objectifs d'artisan" }
-local NOMS_DONJONS = { [389] = "Gouffre de Ragefeu" }
-local NOMS_ZONES = { [14] = "Durotar" }
+-- Lot T10 des Tarides : registre des zones et des donjons lu dans SolUI_Zones.lua (outils\zones_interface.py).
+local NOMS_ZONES = {}
+for _, z in ipairs(S.ZONES) do NOMS_ZONES[z.id] = z.nom end
 local Maj
 
 local resume = S.Texte(f, "SemiBold", 14, "clair")
@@ -163,9 +164,9 @@ local function MajRegistre()
                 or (s.faits .. " faits")) .. "  ·  " .. S.Nombre(s.points) .. " points", fini and "vertClair" or "texte" })
         end
     end
-    for carte, nom in pairs(NOMS_DONJONS) do
-        local d = etat.donjons[carte] or 0
-        table.insert(entrees, { "INV_Misc_Key_03", nom, d == 0 and "Pas encore terminé : difficulté 1"
+    for _, z in ipairs(S.ZONES) do
+        local d = etat.donjons[z.donjon.carte] or 0
+        table.insert(entrees, { "INV_Misc_Key_03", z.donjon.nom, d == 0 and "Pas encore terminé : difficulté 1"
             or ("Difficulté " .. d .. " réussie" .. (d < 5 and (", " .. (d + 1) .. " ouverte") or ", toutes réussies")),
             d >= 5 and "vertClair" or "texte" })
     end

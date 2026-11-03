@@ -85,6 +85,14 @@ namespace
     uint32 const CHANCE_COMPOSANT = 15;                 // % par difficulté, à chaque boss (sans colonne taux)
     uint8 const AVENTURIER_DONJON = 7;                  // genre « donjon terminé » de v3_aventurier.cpp
 
+    // Une pierre taillée de ce donjon (solazeroth_v3_donjons_pierres), celles de Durotar sans ligne.
+    uint32 PierreDuDonjon(uint32 carte)
+    {
+        auto p = pierresParCarte.find(carte);
+        return p == pierresParCarte.end() || p->second.empty() ? PIERRES_TAILLEES[urand(0, 2)]
+            : p->second[urand(0, p->second.size() - 1)];
+    }
+
     struct Destination
     {
         float x, y, z, o;
@@ -265,6 +273,15 @@ unsigned int SolAzeroth::ComposantDernierDonjon(Player* player)
     return c == composants.end() ? BRAISE : c->second;
 }
 
+// Lot T10 des Tarides : la pierre taillée de la semaine vient du même donjon que le composant (celles de Durotar tant
+// qu'aucun n'est terminé).
+unsigned int SolAzeroth::PierreDernierDonjon(Player* player)
+{
+    ComposantDernierDonjon(player);   // lit le dernier donjon du compte s'il n'est pas encore connu
+    auto it = derniers.find(player->GetSession()->GetAccountId());
+    return PierreDuDonjon(it == derniers.end() ? 0 : it->second);
+}
+
 unsigned char SolAzeroth::DifficulteDonjon(Map* map)
 {
     if (!AvecDifficulte(map))
@@ -348,10 +365,7 @@ public:
         SolAzeroth::DonnerMarques(player, 2 * (difficulte - 1), Acore::StringFormat("difficulté {}", uint32(difficulte)));
         if (difficulte >= 3 && urand(1, 100) <= 25u * (difficulte - 2))
         {
-            auto p = pierresParCarte.find(map->GetId());
-            uint32 pierre = p == pierresParCarte.end() || p->second.empty() ? PIERRES_TAILLEES[urand(0, 2)]
-                : p->second[urand(0, p->second.size() - 1)];
-            SolAzeroth::AjouterACollection(player, pierre, 1);
+            SolAzeroth::AjouterACollection(player, PierreDuDonjon(map->GetId()), 1);
             ChatHandler(player->GetSession()).SendSysMessage("|cffffd100Une pierre taillée est rangée dans la Collection.|r");
         }
     }
