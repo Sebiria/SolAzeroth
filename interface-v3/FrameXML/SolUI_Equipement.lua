@@ -38,6 +38,47 @@ local armures, armuresRecues = {}, {}
 
 local function Demander() SendChatMessage(".equipement", "SAY") end
 
+-- Panoplie du Gouffre (lot 4c, v3_equipement.cpp ; 03/11/2026, demande de l'utilisateur : un bonus par ligne, dans la
+-- fabrication et dans l'infobulle de chaque pièce). Les pièces bleues se reconnaissent à leur nom, rangs compris
+-- (« Heaume du Gouffre +3 ») ; une arme à deux mains compte double, comme sur le serveur.
+local PANOPLIE = { { 2, "+ 3 % de dégâts" }, { 4, "− 5 % de dégâts subis" }, { 6, "3 % de vol de vie" } }
+local function DuGouffre(lien)
+    local nom, _, _, _, _, _, _, _, emplacement = GetItemInfo(lien)
+    return nom ~= nil and emplacement ~= "" and nom:find(" du Gouffre") ~= nil, emplacement
+end
+local function PiecesGouffre()
+    local n = 0
+    for slot = 1, 19 do
+        local lien = GetInventoryItemLink("player", slot)
+        if lien then
+            local gouffre, emplacement = DuGouffre(lien)
+            if gouffre then n = n + (emplacement == "INVTYPE_2HWEAPON" and 2 or 1) end
+        end
+    end
+    return n
+end
+-- Titre puis un palier par ligne : vert si atteint, gris sinon.
+local function LignesPanoplie()
+    local portees = PiecesGouffre()
+    local lignes = { { "Panoplie du Gouffre (" .. portees .. "/6)", 1, 0.82, 0 } }
+    for _, p in ipairs(PANOPLIE) do
+        local r, g, b = 0.5, 0.5, 0.5
+        if portees >= p[1] then r, g, b = 0.55, 0.77, 0.65 end
+        table.insert(lignes, { "(" .. p[1] .. ") Panoplie : " .. p[2], r, g, b })
+    end
+    return lignes
+end
+local function InfobullePanoplie(self)
+    local _, lien = self:GetItem()
+    if not lien or not DuGouffre(lien) then return end
+    self:AddLine(" ")
+    for _, l in ipairs(LignesPanoplie()) do self:AddLine(l[1], l[2], l[3], l[4]) end
+    self:Show()
+end
+for _, bulle in ipairs({ GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2 }) do
+    bulle:HookScript("OnTooltipSetItem", InfobullePanoplie)
+end
+
 -- Barre de fabrication : « FABRIQUE;objet;secondes », puis « FINI » ou « ANNULE ». Placée dans la fiche plus bas.
 local progression = CreateFrame("StatusBar", nil, f)
 progression:SetHeight(30)
@@ -413,8 +454,10 @@ local function MajFabrication()
         table.insert(lignes, "|cff8cc4a6Plan appris : pas de composant de plus.|r")
     end
     if c.gouffre then
-        table.insert(lignes, "|cffffd100Panoplie du Gouffre :|r |cffb4b8bf2 pièces + 3 % de dégâts ; 4 pièces − 5 % de "
-            .. "dégâts subis ; 6 pièces 3 % de vol de vie.|r")
+        table.insert(lignes, " ")
+        for _, l in ipairs(LignesPanoplie()) do
+            table.insert(lignes, format("|cff%02x%02x%02x%s|r", l[2] * 255, l[3] * 255, l[4] * 255, l[1]))
+        end
     end
     conditions:SetText(table.concat(lignes, "\n"))
     for n, ligne in ipairs(composants) do
