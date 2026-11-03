@@ -284,7 +284,6 @@ namespace
     // Lot 4b : recettes hautes et plans.
     struct Haute { uint32 composant = 0, nombre = 0, plan = 0; };
     std::unordered_map<uint32, Haute> hautes;
-    uint32 const BRAISE = 910190;
     int32 const ECART_TRANSFERT = 5;    // puissance d'écart au plus entre les deux pièces d'un transfert de rang
 
     // Lot 4c : variantes et panoplie du Gouffre (outils\bonus_v3.py).
@@ -882,7 +881,8 @@ public:
     }
 
     // Lot 4b : .equipement transferer <sac> <case> <sac> <case> : le rang de la première pièce, moins un, passe sur la
-    // seconde (même emplacement) ; la première revient au rang 0. Coût : une Braise du Gouffre.
+    // seconde (même emplacement) ; la première revient au rang 0. Coût : une Braise du Gouffre (lot T7 des Tarides :
+    // le composant de donjon de la zone de la nouvelle pièce, d'après sa puissance, SolAzeroth::ComposantTransfert).
     static bool HandleTransferer(ChatHandler* handler, int32 sacSource, uint32 caseSource, int32 sacCible, uint32 caseCible)
     {
         Player* player = handler->GetPlayer();
@@ -925,9 +925,11 @@ public:
             handler->SendErrorMessage("Pas pendant un combat.");
             return false;
         }
-        if (Possede(player, BRAISE) < 1)
+        uint32 composant = SolAzeroth::ComposantTransfert(uint8(std::min<uint32>(cible->GetTemplate()->ItemLevel, 255)));
+        if (Possede(player, composant) < 1)
         {
-            handler->SendErrorMessage("Il faut une Braise du Gouffre.");
+            ItemTemplate const* objet = sObjectMgr->GetItemTemplate(composant);
+            handler->SendErrorMessage("Il faut : {}.", objet ? objet->Name1 : "un composant de donjon");
             return false;
         }
         uint32 versionCible = Version(ic->second.base, rang), versionSource = Version(is->second.base, 0);
@@ -937,7 +939,7 @@ public:
             handler->SendErrorMessage("Impossible de porter la nouvelle version.");
             return false;
         }
-        Prendre(player, BRAISE, 1);
+        Prendre(player, composant, 1);
         SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_TRANSFERT);
         Remplacer(player, bagC, slotC, cible, versionCible);
         Remplacer(player, bagS, slotS, source, versionSource);

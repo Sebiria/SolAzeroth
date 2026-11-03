@@ -241,6 +241,18 @@ void SolAzeroth::FixerPuissanceCreature(Creature* creature, unsigned char puissa
     creature->CustomData.GetDefault<Puissance>("solazeroth_puissance")->valeur = puissance;
 }
 
+// Lot T4 des Tarides : puissance imposée aux invocations (vagues, renforts, larves), le temps de l'appel. Les monstres
+// sont créés pendant SummonCreature, sur le même fil : la valeur ne sert qu'à eux.
+namespace
+{
+    thread_local uint8 puissanceImposee = 0;
+}
+
+void SolAzeroth::ImposerPuissance(unsigned char puissance)
+{
+    puissanceImposee = puissance;
+}
+
 class solazeroth_v3_niveau_creatures : public AllCreatureScript
 {
 public:
@@ -252,6 +264,14 @@ public:
         if (creature->IsPet() || creature->HasUnitTypeMask(UNIT_MASK_MINION))
             return;
         bool secteur = false;
+        // Lot T4 des Tarides : puissance imposée à l'invocation (épreuve de vagues, renforts, sable grouillant). Elle
+        // passe pour une puissance de secteur : la courbe des monstres s'y applique.
+        if (puissanceImposee && !creature->GetSpawnId())
+        {
+            niveau = puissanceImposee;
+            creature->CustomData.GetDefault<Puissance>("solazeroth_puissance")->secteur = true;
+            return;
+        }
         auto entree = plagesEntrees.find(creature->GetEntry());
         auto apparition = plagesApparitions.find(creature->GetSpawnId());
         if (entree != plagesEntrees.end() && entree->second.fixe)

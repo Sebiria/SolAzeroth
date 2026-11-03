@@ -10,7 +10,11 @@ Cumuls (02/11/2026, demande de l'utilisateur) : un seul repas à la fois, mais i
 panoplie et aux variantes. On mesure les cumuls contre le même monstre, puis contre un monstre plus dur (vie et dégâts
 × 1,08 : environ 5 % de victoires sans bonus), où l'on voit encore la différence.
 
-py simulation_lot4c.py
+Lot T7 des Tarides (03/11/2026, point 13.7 du comparatif) : --tarides refait la mesure des plats et des consommables sur
+la fiche des Tarides à 60 % (guerrier P26, fiches_zones.joueurs), contre un Kolkar des Tarides (3240) réglé de même ;
+bonus des plats lus dans cuisine_v3.BONUS (plats_tarides), consommables du palier des Tarides (artisanat_tarides.py).
+
+py simulation_lot4c.py [--tarides]
 """
 import math
 import os
@@ -127,5 +131,51 @@ def main():
         print("   %-52s %3.0f %% (%+3.0f)          %3.0f %% (%+3.0f)" % (nom, v, v - t, v_dur, v_dur - t_dur))
 
 
+def regler(j, entree, niveau):
+    """Monstre réglé à environ 50 % de victoires contre j (vie et dégâts × k), et son taux."""
+    bas, haut = 0.2, 5.0
+    for _ in range(14):
+        k = (bas + haut) / 2
+        t = donjons.taux(j, modes.renforcer(sim.monstre_depuis_base(entree, niveau), k, 1.0))
+        if 45 <= t <= 55:
+            break
+        if t > 55:
+            bas = k
+        else:
+            haut = k
+    m = modes.renforcer(sim.monstre_depuis_base(entree, niveau), k, 1.0)
+    return m, donjons.taux(j, m)
+
+
+def tarides():
+    import cuisine_v3 as c
+    import fiches_zones as fz
+    cles = {c.VIE_POURCENT: ("vie", lambda v: 1 + v / 100), c.ARMURE_POURCENT: ("armure", lambda v: 1 + v / 100),
+            c.CRIT_POURCENT: ("critique", float), c.DEGATS_INFLIGES: ("inflige", lambda v: 1 + v / 100),
+            c.HATE_MELEE_DISTANCE: ("hate", lambda v: v / 100)}
+    j = fz.joueurs(26)[0]
+    m, t = regler(j, 3240, 26)
+    print("Tarides : guerrier P26 (fiche à 60 %%), %s réglé à %.0f %% de victoires (vie %d, coups %d-%d)\n"
+          % (m.nom, t, m.vie, m.bas, m.haut))
+
+    def ligne(nom, bonus):
+        v = essai(j, m, bonus)
+        print("   %-52s %3.0f %%  (%+.0f)" % (nom, v, v - t))
+
+    print("Repère")
+    ligne("+ 5 % de puissance", {"inflige": 1.05, "subis": 0.95})
+    print("Plats des Tarides (bonus propre, en plus de la caractéristique)")
+    for p in c.plats_tarides():
+        aura, _, valeur, texte = c.BONUS[p["objet"]]
+        cle, conversion = cles[aura]
+        ligne("%s : %s" % (p["nom"], texte), {cle: conversion(valeur)})
+    print("Consommables des Tarides")
+    ligne("Pierre à aiguiser grossière : + 5 % de dégâts", {"inflige": 1.05})
+    ligne("Renfort d'armure moyen : + 12 % d'armure", {"armure": 1.12})
+
+
 if __name__ == "__main__":
-    main()
+    if "--tarides" in sys.argv:
+        tarides()
+    else:
+        main()

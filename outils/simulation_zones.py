@@ -16,10 +16,16 @@ et 5 en pierres des Tarides (solazeroth_v3_rangs_pierres, puissance 15 : 2 Agate
 puis 2 Jades taillés et 1 Pierre de lune taillée), tirées de l'étain (3 Minerais d'étain par prospection : Agate
 mousse 33 %, Jade 52 %, Pierre de lune inférieure 15 %). Aux Tarides, 138 des 200 filons sont d'étain ou d'argent
 (304 Minerais d'étain sur 138 filons, soit 2,2 par filon, brouillon §4.7.5) et les autres de cuivre ; Durotar ne change pas.
+Lot T7 des Tarides (03/11/2026) : les vraies bornes des secteurs (lot T0) ; le donjon ne compte pas dans le
+pourcentage de zone (il vaut 0 %), ses éclats ne sont donc pas dans ce revenu. Bilan de fin (bilan()) pour chaque zone
+construite : Marques gagnées et dépensées dans la zone (relues en base : annexes tous paliers, reliques, lieux ; camp,
+carte des reliques), et or du modèle de zone comparé à l'or de référence, 3 po par heure × le facteur de puissance
+(décision 5 du brouillon des Tarides, fournisseur_v3.OR_PAR_HEURE).
 Lancé avec py simulation_zones.py [--filons 0 1 2].
 """
 import argparse
 
+import fournisseur_v3
 import gabarit_zone
 from simulation_rangs import (BRUTES_PAR_PIERRE, CHANCE_GEMME_FILON, MINERAI_PAR_FILON, MINERAI_PAR_PROSPECTION, PIECES,
                               PIERRES_PAR_RANG, PROSPECTION, cout)
@@ -101,6 +107,42 @@ def simuler(zones, filons_par_pourcent, transfert, rang_max=5):
     return resultats
 
 
+MARQUES_RELIQUE, NOEUD_FEU_1 = 5, 15     # v3_annexes.cpp (par relique), v3_bivouac.cpp (feu 1, à Durotar)
+
+
+def bilan():
+    """Marques et or de chaque zone construite (zone_parts en base)."""
+    sql = gabarit_zone.sql
+    print("Bilan des Marques et de l'or (zones construites ; Marques sans le facteur de puissance)")
+    for zone in gabarit_zone.ZONES:
+        z = zone["zone"]
+        if z is None or not sql(f"SELECT 1 FROM solazeroth_v3_zone_parts WHERE zone = {z} LIMIT 1"):
+            continue
+        annexes = int(sql(f"SELECT COALESCE(SUM(insignes), 0) FROM solazeroth_v3_annexes WHERE zone = {z}")[0][0])
+        reliques = MARQUES_RELIQUE * int(sql(f"SELECT COUNT(*) FROM solazeroth_v3_reliques WHERE zone = {z}")[0][0])
+        lieux = int(sql(f"SELECT COALESCE(SUM(r.marques), 0) FROM solazeroth_v3_lieux_recompenses r JOIN "
+                        f"solazeroth_v3_zone_parts p ON p.genre = 3 AND p.cle = r.lieu WHERE p.zone = {z}")[0][0])
+        camp = int(sql(f"SELECT COALESCE(SUM(c.nombre), 0) FROM solazeroth_v3_camp_couts c JOIN solazeroth_v3_camp_rangs r "
+                       f"ON r.genre = c.genre AND r.rang = c.rang WHERE r.zone = {z} AND c.objet = 37711")[0][0])
+        camp += NOEUD_FEU_1 if sql(f"SELECT 1 FROM solazeroth_v3_camp_rangs WHERE zone = {z} AND genre = 2 AND rang = 1") else 0
+        carte = sql(f"SELECT marques FROM solazeroth_v3_reliques_cartes WHERE zone = {z}")
+        carte = int(carte[0][0]) if carte else 0
+        gagne = annexes + reliques + lieux
+        print(f"  {zone['nom']} : {gagne} Marques gagnées (annexes {annexes}, reliques {reliques}, lieux {lieux}), "
+              f"{camp + carte} dépensées dans la zone (camp {camp}, carte des reliques {carte}) ; reste {gagne - camp - carte} "
+              f"pour les montures et les passifs")
+        eco = zone["economie"]
+        modele = reference = heures = 0.0
+        for _, debut, fin, (pa, pb), _ in zone["secteurs"]:
+            f = gabarit_zone.facteur((pa + pb) / 2)
+            modele += eco["or_par_pourcent"] * eco["taille"] * f * (fin - debut)
+            h = eco["eclats_par_pourcent"] * eco["taille"] / ECLATS_PAR_HEURE * (fin - debut)
+            heures += h
+            reference += fournisseur_v3.OR_PAR_HEURE * f * h
+        print(f"    or : modèle de zone {modele / 10000:.0f} po en {heures:.0f} h, référence (3 po par heure × facteur) "
+              f"{reference / 10000:.0f} po")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Économie des éclats sur trois zones")
     parser.add_argument("--filons", type=float, nargs="*", default=[0.0, 1.0, 2.0],
@@ -115,6 +157,7 @@ def main():
                       f"({100 * depense / gagne:.0f} %), rangs moyens en fin de zone {moyen:.1f}")
                 print("\n".join(lignes))
             print()
+    bilan()
 
 
 if __name__ == "__main__":

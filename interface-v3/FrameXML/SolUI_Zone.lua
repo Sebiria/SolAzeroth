@@ -82,8 +82,12 @@ S.Message("SOLZONE", function(champs)
             paye = champs[5] == "1" }   -- lot 4a : défi répétable déjà payé plein tarif aujourd'hui
     elseif genre == "RELIQUE" then
         recu.reliques[tonumber(champs[2])] = champs[3] == "1"
-    elseif genre == "CARTE" then
+    elseif genre == "CARTE" then   -- lot T4 des Tarides : carte de la zone, avec son prix et son seuil
         recu.carte = champs[2] == "1"
+        recu.carteVendue = true
+        recu.carteMarques = tonumber(champs[3]) or 0
+        recu.carteCuivre = tonumber(champs[4]) or 0
+        recu.carteSeuil = tonumber(champs[5]) or 0
     elseif genre == "SECRETS" then   -- lot 6b : rares secrets (v3_rares_secrets.cpp), seuls les vaincus sont nommés
         recu.secrets = { vaincus = tonumber(champs[2]) or 0, total = tonumber(champs[3]) or 0, noms = {} }
         for n in string.gmatch(champs[4] or "", "[^,]+") do table.insert(recu.secrets.noms, n) end
@@ -152,7 +156,7 @@ defile:SetScript("OnMouseWheel", function(self, sens)
 end)
 
 -- 300 de large : les quatre boutons de mode commencent à 346 du bord gauche (01/11/2026 : « Aucun » le chevauchait).
-local acheterCarte = S.BoutonPlat(objectifs, "Carte des reliques (30 Marques, 2 po)", 300, 32, 12)
+local acheterCarte = S.BoutonPlat(objectifs, "Carte des reliques", 300, 32, 12)
 acheterCarte:SetPoint("BOTTOMLEFT", objectifs, "BOTTOMLEFT", 28, 18)
 acheterCarte:SetScript("OnClick", function() SendChatMessage(".annexes carte", "SAY") end)
 
@@ -180,14 +184,15 @@ local ETATS = { [0] = "à prendre", "en cours", "à rendre", "rendue" }
 local MEDAILLES = { "bronze", "argent", "or" }
 local FAMILLES = { "Primes", "Contrats", "Défis" }
 
--- Lot 4a (02/11/2026) : boucle de la semaine (v3_semaine.cpp), « SEMAINE;affixe;objectif;progrès;but;payé ».
+-- Lot 4a (02/11/2026) : boucle de la semaine (v3_semaine.cpp), « SEMAINE;affixe;objectif;progrès;but;payé;composant »
+-- (lot T7 des Tarides : composant du dernier donjon terminé).
 local SEMAINE
 local OBJECTIFS_SEMAINE = { "Termine un donjon (son dernier boss)", "Termine des défis plein tarif",
     "Abats des élites ou des rares de ta puissance" }
 S.Message("SOLSEMAINE", function(champs)
     if champs[1] ~= "SEMAINE" then return end
     SEMAINE = { affixe = tonumber(champs[2]) or 0, objectif = tonumber(champs[3]) or 0, progres = tonumber(champs[4]) or 0,
-        but = tonumber(champs[5]) or 0, paye = champs[6] == "1" }
+        but = tonumber(champs[5]) or 0, paye = champs[6] == "1", composant = tonumber(champs[7]) or 910190 }
     MajObjectifs()
 end)
 
@@ -225,7 +230,8 @@ function MajObjectifs()
         Ecrire("Cette semaine", "remise à zéro le lundi", nil, "ambreClair", true)
         Ecrire(OBJECTIFS_SEMAINE[SEMAINE.objectif] or "Objectif de la semaine",
             SEMAINE.paye and "rempli" or string.format("%d / %d", SEMAINE.progres, SEMAINE.but),
-            "Au compte : 1 Braise du Gouffre, 1 pierre taillée et 60 points de rang d'aventurier.",
+            "Au compte : 1 " .. (GetItemInfo(SEMAINE.composant) or "composant du dernier donjon terminé")
+                .. ", 1 pierre taillée et 60 points de rang d'aventurier.",
             SEMAINE.paye and "vertClair" or "texte")
         Ecrire("Affixe des donjons", nil, affixe .. " — même en difficulté 1.", "texte")
         y = y + 10
@@ -261,17 +267,21 @@ function MajObjectifs()
         end
         y = y + 10
         Ecrire("Reliques cachées", nil, nil, "ambreClair", true)
+        -- Lot T4 des Tarides : seulement les reliques de la zone (le serveur n'envoie que les siennes).
         for f, famille in ipairs(S.FAMILLES_RELIQUES or {}) do
             local trouvees, total = 0, 0
             for _, r in ipairs(S.RELIQUES) do
-                if r.famille == f then
+                if r.famille == f and progres.reliques[r.objet] ~= nil then
                     total = total + 1
                     if progres.reliques[r.objet] then trouvees = trouvees + 1 end
                 end
             end
-            Ecrire(famille.nom .. string.format(" (%d / %d)", trouvees, total), "complète : " .. famille.bonus, nil, "gris")
+            if total > 0 then
+                Ecrire(famille.nom .. string.format(" (%d / %d)", trouvees, total), "complète : " .. famille.bonus, nil,
+                    "gris")
+            end
             for _, r in ipairs(S.RELIQUES) do
-                if r.famille == f then
+                if r.famille == f and progres.reliques[r.objet] ~= nil then
                     local trouvee = progres.reliques[r.objet]
                     local note = "« " .. r.indice .. " »"
                     if progres.carte and not trouvee then note = note .. string.format("  ·  vers (%d, %d)", r.x, r.y) end
@@ -298,13 +308,17 @@ function MajObjectifs()
         lignes[i].note:Hide()
     end
     page:SetHeight(math.max(10, y))
-    S.Montrer(acheterCarte, progres and not progres.carte)
-    if progres then   -- lot 6b : la carte se vend après 8 reliques trouvées (v3_annexes.cpp)
+    S.Montrer(acheterCarte, progres and progres.carteVendue and not progres.carte)
+    if progres and progres.carteVendue then   -- lot 6b : la carte se vend après 8 reliques trouvées (v3_annexes.cpp)
         local trouvees = 0
         for _, t in pairs(progres.reliques) do if t then trouvees = trouvees + 1 end end
-        acheterCarte.texte:SetText(trouvees >= 8 and "Carte des reliques (30 Marques, 2 po)"
-            or ("Carte des reliques : " .. trouvees .. " / 8 trouvées"))
-        acheterCarte:SetAlpha(trouvees >= 8 and 1 or 0.5)
+        -- Lot T4 des Tarides : prix et seuil de la zone (solazeroth_v3_reliques_cartes).
+        local po, pa = math.floor(progres.carteCuivre / 10000), math.floor(progres.carteCuivre % 10000 / 100)
+        local prix = (po > 0 and (po .. " po") or "") .. (po > 0 and pa > 0 and " " or "") .. (pa > 0 and (pa .. " pa") or "")
+        acheterCarte.texte:SetText(trouvees >= progres.carteSeuil
+            and string.format("Carte des reliques (%d Marques, %s)", progres.carteMarques, prix)
+            or string.format("Carte des reliques : %d / %d trouvées", trouvees, progres.carteSeuil))
+        acheterCarte:SetAlpha(trouvees >= progres.carteSeuil and 1 or 0.5)
     end
 end
 objectifs:SetScript("OnShow", function() MajObjectifs() end)

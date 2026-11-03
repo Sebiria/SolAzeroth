@@ -18,6 +18,9 @@
 //   - Arbre du camp (.camp acheter) : nœud 2, Repos 100033, 100035 ou 100036 (vie +5 %, dégâts +10 %, +5 Force, Agilité ou Intelligence selon la
 //     spécialisation) et 2 % de la vie par
 //     seconde hors combat ; nœud 3, le même Repos pendant 40 minutes.
+// - Lot T7 des Tarides (03/11/2026) : potion 3 (40 % de la vie) et 4 (3 charges), feu 4 (Repos 100037 à 100039 :
+//   +10 à la caractéristique) et 5 (100045 à 100047 : vie +8 %), listes de courses dans la migration 145
+//   (outils\economie_tarides.py, bivouac_v3.py). Messages d'achat dans solazeroth_v3_camp_rangs.
 // L'interface reçoit « ETAT;charges;max;secondes avant le Repos;rang du feu;plat;rang de la potion » (préfixe SOLBIV) :
 // compte à rebours du feu, arbre du camp, et plat du bouton de repas (31/10/2026, demande de l'utilisateur : gardé
 // d'une session à l'autre, .camp repas <plat>, migration 082).
@@ -51,9 +54,13 @@ namespace
     uint32 const REPOS_BRAISES = 100033;    // nœuds 2 et 3 : vie, dégâts, Force (Agilité, Intelligence : les deux suivants)
     uint32 const REPOS_BRAISES_AGILITE = 100035;
     uint32 const REPOS_BRAISES_INTELLIGENCE = 100036;
-    uint32 const TOUS_LES_REPOS[] = { REPOS, REPOS_FLAMME, REPOS_BRAISES, REPOS_BRAISES_AGILITE, REPOS_BRAISES_INTELLIGENCE };
+    // Lot T7 : Repos du feu 4 et du feu 5, par caractéristique (Force, Agilité, Intelligence).
+    uint32 const REPOS_SAVANE[] = { 100037, 100038, 100039 };
+    uint32 const REPOS_FOYER[] = { 100045, 100046, 100047 };
+    uint32 const TOUS_LES_REPOS[] = { REPOS, REPOS_FLAMME, REPOS_BRAISES, REPOS_BRAISES_AGILITE, REPOS_BRAISES_INTELLIGENCE,
+        REPOS_SAVANE[0], REPOS_SAVANE[1], REPOS_SAVANE[2], REPOS_FOYER[0], REPOS_FOYER[1], REPOS_FOYER[2] };
     uint32 const REVIGORANTE = 100034;      // potion de rang 2 : 1 % de la vie par seconde pendant 10 s
-    uint8 const RANG_POTION_MAX = 2, RANG_FEU_MAX = 3;
+    uint8 const RANG_POTION_MAX = 4, RANG_FEU_MAX = 5;   // lot T7 : 2 et 3 à Durotar, 4 et 5 aux Tarides
     int32 const DUREE_REPOS_BIVOUAC = 40 * MINUTE * IN_MILLISECONDS;   // nœud 3
     uint32 const NOEUD_FEU_1 = 15;          // Marques
     uint32 const FEU_DOUILLET = 7353;       // aura du piège lié au feu de Blizzard
@@ -90,9 +97,10 @@ namespace
     // Passif Gorgée de plus (v3_passifs.cpp) : une charge de plus.
     uint8 Charges(Player* player, Bivouac const* b)
     {
-        return (b->rangPotion >= 1 ? 2 : 1) + (SolAzeroth::PassifActif(player, SolAzeroth::GORGEE_DE_PLUS) ? 1 : 0);
+        return (b->rangPotion >= 4 ? 3 : b->rangPotion >= 1 ? 2 : 1)
+            + (SolAzeroth::PassifActif(player, SolAzeroth::GORGEE_DE_PLUS) ? 1 : 0);
     }
-    float SoinPotion(Bivouac const* b) { return b->rangPotion >= 1 ? 35.0f : 30.0f; }
+    float SoinPotion(Bivouac const* b) { return b->rangPotion >= 3 ? 40.0f : b->rangPotion >= 1 ? 35.0f : 30.0f; }
     bool EnRepos(Player* player)
     {
         for (uint32 repos : TOUS_LES_REPOS)
@@ -101,21 +109,36 @@ namespace
         return false;
     }
 
-    float RegenRepos(Player* player)   // % par seconde
+    float RegenRepos(Player* player)   // % par seconde : 2 dès le nœud 2 (les trois premiers Repos n'en donnent qu'un)
     {
-        return player->HasAura(REPOS_BRAISES) || player->HasAura(REPOS_BRAISES_AGILITE)
-            || player->HasAura(REPOS_BRAISES_INTELLIGENCE) ? 2.0f : 1.0f;
+        return player->HasAura(REPOS) || player->HasAura(REPOS_FLAMME) ? 1.0f : 2.0f;
     }
 
-    // Repos des nœuds 2 et 3 : celui de la caractéristique principale de la spécialisation (v3_kit.cpp).
-    uint32 ReposBraises(Player* player)
+    // Repos des nœuds 2 et plus : celui de la caractéristique principale de la spécialisation (v3_kit.cpp).
+    uint32 ReposBraises(Player* player, uint8 rangFeu)
     {
+        uint8 i = 0;
         switch (SolAzeroth::CaracteristiquePrincipale(player))
         {
-            case STAT_AGILITY: return REPOS_BRAISES_AGILITE;
-            case STAT_INTELLECT: return REPOS_BRAISES_INTELLIGENCE;
-            default: return REPOS_BRAISES;
+            case STAT_AGILITY: i = 1; break;
+            case STAT_INTELLECT: i = 2; break;
+            default: break;
         }
+        if (rangFeu >= 5)
+            return REPOS_FOYER[i];
+        if (rangFeu >= 4)
+            return REPOS_SAVANE[i];
+        uint32 const braises[] = { REPOS_BRAISES, REPOS_BRAISES_AGILITE, REPOS_BRAISES_INTELLIGENCE };
+        return braises[i];
+    }
+
+    // Lot T7 : message d'achat du rang (solazeroth_v3_camp_rangs ; genre 1 potion, 2 feu).
+    std::string MessageRang(uint8 genre, uint8 rang)
+    {
+        if (QueryResult r = WorldDatabase.Query("SELECT message FROM solazeroth_v3_camp_rangs WHERE genre = {} AND rang = {}",
+            genre, rang))
+            return (*r)[0].Get<std::string>();
+        return "Camp : rang acquis.";
     }
 
     void Sauver(Player* player)
@@ -309,7 +332,7 @@ public:
             {
                 for (uint32 repos : TOUS_LES_REPOS)
                     player->RemoveAurasDueToSpell(repos);
-                uint32 repos = b->rangFeu >= 2 ? ReposBraises(player) : b->rangFeu >= 1 ? REPOS_FLAMME : REPOS;
+                uint32 repos = b->rangFeu >= 2 ? ReposBraises(player, b->rangFeu) : b->rangFeu >= 1 ? REPOS_FLAMME : REPOS;
                 player->CastSpell(player, repos, true);
                 if (Aura* aura = player->GetAura(repos))
                 {
@@ -432,8 +455,7 @@ public:
         b->charges = Charges(player, b);
         Sauver(player);
         Envoyer(player, true);
-        handler->SendSysMessage(b->rangPotion == 1 ? "Potion de Durotar : 2 charges, 35 % de la vie."
-            : "Potion revigorante : en plus, 1 % de la vie par seconde pendant 10 s.");
+        handler->SendSysMessage(MessageRang(1, b->rangPotion));
         return true;
     }
 
@@ -454,8 +476,7 @@ public:
             ++b->rangFeu;
             Sauver(player);
             Envoyer(player, true);
-            handler->SendSysMessage(b->rangFeu == 2 ? "Braises tenaces : le Repos donne +5 Force et rend 2 % de la vie par "
-                "seconde, au prochain feu." : "Feu de bivouac : le Repos dure 40 minutes, au prochain feu.");
+            handler->SendSysMessage(MessageRang(2, b->rangFeu));
             return true;
         }
         if (SolAzeroth::Marques(player) < NOEUD_FEU_1 || !SolAzeroth::RetirerMarques(player, NOEUD_FEU_1))
@@ -467,7 +488,7 @@ public:
         b->rangFeu = 1;
         Sauver(player);
         Envoyer(player, true);
-        handler->SendSysMessage("Camp : le Repos au coin du feu donne maintenant aussi +10 % de dégâts.");
+        handler->SendSysMessage(MessageRang(2, 1));
         return true;
     }
 };

@@ -519,7 +519,17 @@ end
 -- Page 2 : amélioration
 ------------------------------------------------------------------------
 local p2 = pages[2]
-local BRAISE, transfert = 910190, nil   -- lot 4b : transfert de rang en attente de confirmation
+local transfert = nil   -- lot 4b : transfert de rang en attente de confirmation
+-- Lot T7 des Tarides : le transfert coûte le composant de donjon de la zone de la nouvelle pièce, d'après sa puissance
+-- (comme solazeroth_v3_donjons_composants : puissance minimale, composant). Le lot T5 ajoute les Cavernes.
+local COMPOSANTS_TRANSFERT = { { 1, 910190, "Braise du Gouffre" } }
+local function ComposantTransfert(id)
+    local niveau, choix = select(4, GetItemInfo(id)) or 0, COMPOSANTS_TRANSFERT[1]
+    for _, c in ipairs(COMPOSANTS_TRANSFERT) do
+        if niveau >= c[1] then choix = c end
+    end
+    return choix[2], choix[3]
+end
 local intro = S.Texte(p2, "Regular", 13, "gris")
 intro:SetPoint("TOPLEFT", 24, -16)
 intro:SetWidth(950)
@@ -564,9 +574,11 @@ for n = 1, LIGNES do
         if not p or not source then return end
         local nomS, nomC = (NomObjet(source.id)), (NomObjet(p.id))
         transfert = { source = source, cible = p }
+        local composant, nomComposant = ComposantTransfert(p.id)
         StaticPopupDialogs["SOLUI_TRANSFERT_RANG"].text = "Transférer le rang de " .. nomS .. " (rang " .. source.rang
             .. ") sur " .. nomC .. " ?\n\n" .. nomC .. " passe au rang " .. (source.rang - 1) .. " ; " .. nomS
-            .. " revient au rang 0.\nCoût : 1 Braise du Gouffre (tu en as " .. S.NombreCollection(BRAISE) .. ")."
+            .. " revient au rang 0.\nCoût : 1 " .. (NomObjet(composant, nomComposant)) .. " (tu en as "
+            .. S.NombreCollection(composant) .. ")."
         StaticPopup_Show("SOLUI_TRANSFERT_RANG")
     end)
     lignesPieces[n] = l
@@ -576,7 +588,7 @@ local vide = S.Texte(p2, "Regular", 14, "gris")
 vide:SetPoint("TOP", 0, -140)
 vide:SetText("Aucune pièce améliorable : seules nos pièces (quêtes, fabrication, marchands) ont des rangs.")
 
--- Lot 4b : transfert de rang (un rang de moins, une Braise du Gouffre), avec aperçu avant confirmation.
+-- Lot 4b : transfert de rang (un rang de moins, un composant de donjon), avec aperçu avant confirmation.
 StaticPopupDialogs["SOLUI_TRANSFERT_RANG"] = {
     text = "",
     button1 = "Transférer",
@@ -644,7 +656,7 @@ local function MajAmelioration()
                 .. (NOMS_VARIANTES[p.variante] and ("  ·  " .. NOMS_VARIANTES[p.variante]) or ""))
             l.source = SourceDuTransfert(p)
             S.Montrer(l.transfert, l.source)
-            if l.source then l.transfert:SetAlpha(S.NombreCollection(BRAISE) >= 1 and 1 or 0.5) end
+            if l.source then l.transfert:SetAlpha(S.NombreCollection((ComposantTransfert(p.id))) >= 1 and 1 or 0.5) end
             if p.rang >= 5 then
                 l.rang:SetText("Rang 5 (maximum)")
                 l.cout:SetText("")

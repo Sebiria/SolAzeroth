@@ -202,18 +202,28 @@ def puissance(n):
 
 # --- Pièces et versions -------------------------------------------------------------------------------------------
 
-def modeles():
-    return e3.objets({m for *_, m in RECOMPENSES} | set(TISSU.values()) | set(CUIR.values()) | {tissu_v3.DAGUE})
+# Lot T4 des Tarides : les fonctions de pièces servent à plusieurs jeux de pièces. Un jeu : ses pièces (entrée,
+# puissance, nom, objet d'origine), les premiers numéros de ses versions (tissu, dague, cuir, dague de main gauche) et
+# le genre de chaque pièce. Sans jeu, celui des quêtes d'histoire (lot T2), à l'identique.
+def jeu_histoire():
+    return dict(recompenses=[(e, puissance(q), nom, source) for e, q, nom, source in RECOMPENSES],
+                premieres=(PREMIERE_TISSU, PREMIERE_DAGUE, PREMIERE_CUIR, PREMIERE_DAGUE_MG), genres=GENRES)
 
 
-def versions_par_piece(sources):
+def modeles(jeu=None):
+    jeu = jeu or jeu_histoire()
+    return e3.objets({m for *_, m in jeu["recompenses"]} | set(TISSU.values()) | set(CUIR.values()) | {tissu_v3.DAGUE})
+
+
+def versions_par_piece(sources, jeu=None):
     """(classe, origine, version, nom, modèle, puissance) : le démoniste reçoit le tissu, l'orbe ou la dague ; le voleur
     le cuir, la dague de main gauche ou la dague. La cape (tissu) va à tous."""
-    lignes, n_tissu, n_dague, n_cuir, n_mg = [], PREMIERE_TISSU, PREMIERE_DAGUE, PREMIERE_CUIR, PREMIERE_DAGUE_MG
-    for e, q, nom, source in RECOMPENSES:
+    jeu = jeu or jeu_histoire()
+    lignes = []
+    n_tissu, n_dague, n_cuir, n_mg = jeu["premieres"]
+    for e, p, nom, source in jeu["recompenses"]:
         m = sources[source]
         classe, sc, emplacement = int(m["class"]), int(m["subclass"]), int(m["InventoryType"])
-        p = puissance(q)
         if classe == 2:
             lignes.append((DEMONISTE, e, n_dague, nom, tissu_v3.DAGUE, p))
             lignes.append((VOLEUR, e, n_dague, nom, tissu_v3.DAGUE, p))
@@ -231,32 +241,35 @@ def versions_par_piece(sources):
     return lignes
 
 
-def pieces():
+def pieces(jeu=None):
     """Toutes les pièces à écrire : (entrée, nom, modèle, puissance, vendable), récompenses puis versions (sans les
     doublons : une dague sert au démoniste et au voleur)."""
-    sources = modeles()
-    liste = [(e, nom, source, puissance(q), True) for e, q, nom, source in RECOMPENSES]
+    jeu = jeu or jeu_histoire()
+    sources = modeles(jeu)
+    liste = [(e, nom, source, p, True) for e, p, nom, source in jeu["recompenses"]]
     vues = set()
-    for _, _, v, nom, modele, p in versions_par_piece(sources):
+    for _, _, v, nom, modele, p in versions_par_piece(sources, jeu):
         if v not in vues:
             vues.add(v)
             liste.append((v, nom, modele, p, False))
     return liste
 
 
-def versions():
+def versions(jeu=None):
     """(classe, origine, version, nom), pour SolUI_Versions.lua (tissu_v3.ecrire_versions_lua)."""
-    return [(c, o, v, nom) for c, o, v, nom, _, _ in versions_par_piece(modeles())]
+    jeu = jeu or jeu_histoire()
+    return [(c, o, v, nom) for c, o, v, nom, _, _ in versions_par_piece(modeles(jeu), jeu)]
 
 
-def lignes_dbc():
+def lignes_dbc(jeu=None):
     """Item.dbc : (entrée, entrée dont on copie la ligne, genre), la base avant ses rangs. Sans lecture de la base :
     les versions se numérotent dans l'ordre des récompenses, comme versions_par_piece."""
+    jeu = jeu or jeu_histoire()
     lignes, vues = [], set()
-    n_tissu, n_dague, n_cuir, n_mg = PREMIERE_TISSU, PREMIERE_DAGUE, PREMIERE_CUIR, PREMIERE_DAGUE_MG
-    for e, q, nom, source in RECOMPENSES:
+    n_tissu, n_dague, n_cuir, n_mg = jeu["premieres"]
+    for e, _, nom, source in jeu["recompenses"]:
         lignes.append((e, source))
-        genre = GENRES[e]
+        genre = jeu["genres"][e]
         if genre == "arme":
             lignes.append((n_dague, tissu_v3.DAGUE))
             n_dague += 1
@@ -284,12 +297,13 @@ GENRES = {910701: 8, 910702: 10, 910703: 7, 910704: 9, 910705: "arme", 910706: "
           910716: 8, 910717: 1, 910718: 5, 910719: 6, 910720: "main gauche", 910721: "arme"}
 
 
-def pieces_sql():
+def pieces_sql(jeu=None):
     """Pièces aux rangs 0 à 5, au barème (equipement_v3.caracteristiques ; orbes : tissu_v3.caracteristiques), rangs
     et versions. Bouclier : le blocage de son objet d'origine, +10 % par rang, comme Durotar."""
+    jeu = jeu or jeu_histoire()
     armures, armes = e3.baremes()
-    sources = modeles()
-    liste = pieces()
+    sources = modeles(jeu)
+    liste = pieces(jeu)
     toutes = [e3.entree_rang(e, r) if r else e for e, *_ in liste for r in range(e3.RANGS + 1)]
     up = ["DELETE FROM item_template WHERE entry IN (%s);" % ", ".join(map(str, toutes))]
     for e, nom, source, p, vendable in liste:
@@ -312,11 +326,11 @@ def pieces_sql():
     up.append("INSERT INTO solazeroth_v3_rangs VALUES %s;" % ", ".join(
         "(%d, %d, %d)" % (e3.entree_rang(e, r) if r else e, e, r) for e in bases for r in range(e3.RANGS + 1)))
     lignes = []
-    for classe, o, v, *_ in versions_par_piece(sources):
+    for classe, o, v, *_ in versions_par_piece(sources, jeu):
         for r in range(e3.RANGS + 1):
             lignes.append("(%d, %d, %d)" % ((e3.entree_rang(o, r), classe, e3.entree_rang(v, r)) if r else (o, classe, v)))
     up.append("INSERT INTO solazeroth_v3_versions VALUES %s;" % ", ".join(lignes))
-    origines = [e for e, *_ in RECOMPENSES]
+    origines = [e for e, *_ in jeu["recompenses"]]
     toutes_origines = [e3.entree_rang(o, r) if r else o for o in origines for r in range(e3.RANGS + 1)]
     down = ["DELETE FROM solazeroth_v3_versions WHERE origine IN (%s);" % ", ".join(map(str, toutes_origines)),
             "DELETE FROM solazeroth_v3_rangs WHERE base IN (%s);" % ", ".join(map(str, bases)),

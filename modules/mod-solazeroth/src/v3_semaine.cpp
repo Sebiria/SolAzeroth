@@ -5,14 +5,16 @@
 //   puissance des monstres (v3_donjons.cpp, v3_modes.cpp). Les difficultés au-dessus en ajoutent d'autres.
 // - Objectif de la semaine, au compte (table solazeroth_v3_semaine, migration 114), à tour de rôle : terminer un donjon
 //   (son dernier boss), payer 3 défis plein tarif, abattre 5 élites ou rares de ta puissance (2 de moins au plus).
-//   Récompense une fois par semaine et par compte : 1 Braise du Gouffre et 1 pierre taillée dans la Collection, et
-//   60 points de rang d'aventurier (v3_aventurier.cpp).
-// - Interface (préfixe SOLSEMAINE, fenêtre des objectifs) : « SEMAINE;affixe;objectif;progrès;but;payé ».
+//   Récompense une fois par semaine et par compte : 1 composant de donjon (lot T7 des Tarides : celui du dernier donjon
+//   terminé, la Braise du Gouffre tant qu'aucun) et 1 pierre taillée dans la Collection, et 60 points de rang
+//   d'aventurier (v3_aventurier.cpp).
+// - Interface (préfixe SOLSEMAINE, fenêtre des objectifs) : « SEMAINE;affixe;objectif;progrès;but;payé;composant ».
 
 #include "SolAzeroth.h"
 #include "Chat.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "ObjectMgr.h"
 #include "Player.h"
 #include "Random.h"
 #include "ScriptMgr.h"
@@ -25,7 +27,6 @@ namespace
     char const* const PREFIXE = "SOLSEMAINE";
     uint8 const AFFIXES[] = { 1, 2, 4, 8 };      // Enragé, Renforçant, Volcanique, Explosif (v3_modes.cpp)
     uint32 const BUTS[] = { 0, 1, 3, 5 };          // indexés par SolAzeroth::ObjectifSemaine
-    uint32 const BRAISE = 910190;
     uint32 const PIERRES_TAILLEES[] = { 910180, 910181, 910182 };
 
     struct Progres
@@ -66,7 +67,8 @@ namespace
         Progres const& p = ProgresDe(player);
         uint8 objectif = ObjectifDe(p.semaine);
         SolAzeroth::EnvoyerAddon(player, PREFIXE, Acore::StringFormat("SEMAINE;{};{};{};{};{}", uint32(SolAzeroth::AffixeSemaine()),
-            uint32(objectif), p.progres, BUTS[objectif], p.paye ? 1 : 0));
+            uint32(objectif), p.progres, BUTS[objectif], p.paye ? 1 : 0) + Acore::StringFormat(";{}",
+            SolAzeroth::ComposantDernierDonjon(player)));
     }
 }
 
@@ -84,10 +86,12 @@ void SolAzeroth::ProgresSemaine(Player* player, unsigned char objectif)
     if (p.progres >= BUTS[objectif])
     {
         p.paye = true;
-        AjouterACollection(player, BRAISE, 1);
+        uint32 composant = ComposantDernierDonjon(player);
+        AjouterACollection(player, composant, 1);
         AjouterACollection(player, PIERRES_TAILLEES[urand(0, 2)], 1);
-        ChatHandler(player->GetSession()).SendSysMessage("|cffffd100Objectif de la semaine rempli : une Braise du Gouffre et "
-            "une pierre taillée sont rangées dans la Collection.|r");
+        ItemTemplate const* objet = sObjectMgr->GetItemTemplate(composant);
+        ChatHandler(player->GetSession()).PSendSysMessage("|cffffd100Objectif de la semaine rempli : {} et une pierre taillée "
+            "sont rangés dans la Collection.|r", objet ? objet->Name1 : "un composant de donjon");
         SolAzeroth::EnvoyerAddon(player, "SOLZONE", "ALERTE;Objectif de la semaine rempli");
         PointsSemaine(player, p.semaine);
     }

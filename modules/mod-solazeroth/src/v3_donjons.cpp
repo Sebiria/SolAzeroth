@@ -13,6 +13,10 @@
 // - Composant de donjon (01/11/2026, demande de l'utilisateur ; solazeroth_v3_donjons_composants, migration 101) :
 //   chaque boss (rencontres d'instance) en donne un avec 15 % de chances par difficulté, et le dernier des boss
 //   tués d'une instance en donne un de plus. Il sert aux pièces bleues (outils\equipement_gouffre_v3.py).
+// - Lot T7 des Tarides (03/11/2026) : colonne puissance_min de solazeroth_v3_donjons_composants (migration 145). Le
+//   transfert de rang coûte le composant de la zone de la pièce (SolAzeroth::ComposantTransfert) ; la récompense de la
+//   semaine donne celui du dernier donjon terminé (solazeroth_v3_dernier_donjon, au compte). Le lot T5 ajoute les
+//   Cavernes des Lamentations à la table.
 // - Interface (préfixe SOLDONJON) : « DONJON;difficulté;ouvertes;verrouillé;techniques » en donjon, « AUCUN » dehors.
 // - Téléportation (02/11/2026, demande de l'utilisateur, à la place de .reinitialiser) : un donjon dont le dernier
 //   boss est tombé au moins une fois (au compte, solazeroth_v3_aventurier genre 7) se rejoint de n'importe où, hors
@@ -66,6 +70,9 @@ namespace
     std::unordered_map<uint32, uint32> bosses;          // boss (rencontre d'instance) -> carte
     std::unordered_map<uint32, uint32> bossesParCarte;  // carte -> nombre de boss
     std::unordered_map<uint32, uint32> composants;      // carte -> composant de donjon
+    std::map<uint8, uint32> composantsParPuissance;     // lot T7 : puissance_min -> composant
+    std::unordered_map<uint32, uint32> derniers;        // lot T7 : compte -> carte du dernier donjon terminé
+    uint32 const BRAISE = 910190;                       // composant par défaut (Gouffre de Ragefeu)
     uint32 const CHANCE_COMPOSANT = 15;                 // % par difficulté, à chaque boss
     uint8 const AVENTURIER_DONJON = 7;                  // genre « donjon terminé » de v3_aventurier.cpp
 
@@ -226,6 +233,27 @@ namespace
     }
 }
 
+unsigned int SolAzeroth::ComposantTransfert(unsigned char puissance)
+{
+    auto it = composantsParPuissance.upper_bound(puissance);
+    return it == composantsParPuissance.begin() ? BRAISE : std::prev(it)->second;
+}
+
+unsigned int SolAzeroth::ComposantDernierDonjon(Player* player)
+{
+    uint32 compte = player->GetSession()->GetAccountId();
+    auto it = derniers.find(compte);
+    if (it == derniers.end())
+    {
+        uint32 carte = 0;
+        if (QueryResult r = CharacterDatabase.Query("SELECT carte FROM solazeroth_v3_dernier_donjon WHERE compte = {}", compte))
+            carte = (*r)[0].Get<uint32>();
+        it = derniers.emplace(compte, carte).first;
+    }
+    auto c = composants.find(it->second);
+    return c == composants.end() ? BRAISE : c->second;
+}
+
 unsigned char SolAzeroth::DifficulteDonjon(Map* map)
 {
     if (!AvecDifficulte(map))
@@ -293,6 +321,12 @@ public:
         if (final && map->IsNonRaidDungeon())
         {
             Termines(player->GetSession()->GetAccountId()).insert(map->GetId());
+            if (composants.count(map->GetId()))   // lot T7 : dernier donjon terminé, pour la récompense de la semaine
+            {
+                derniers[player->GetSession()->GetAccountId()] = map->GetId();
+                CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_dernier_donjon (compte, carte) VALUES ({}, {})",
+                    player->GetSession()->GetAccountId(), map->GetId());
+            }
             SolAzeroth::ProgresSemaine(player, SolAzeroth::SEMAINE_DONJON);
         }
         if (!final || difficulte < 2)
@@ -380,11 +414,14 @@ public:
             } while (r->NextRow());
         }
         composants.clear();
-        if (QueryResult r = WorldDatabase.Query("SELECT carte, composant FROM solazeroth_v3_donjons_composants"))
+        composantsParPuissance.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT carte, composant, puissance_min FROM solazeroth_v3_donjons_composants"))
         {
             do
+            {
                 composants[(*r)[0].Get<uint32>()] = (*r)[1].Get<uint32>();
-            while (r->NextRow());
+                composantsParPuissance[(*r)[2].Get<uint8>()] = (*r)[1].Get<uint32>();
+            } while (r->NextRow());
         }
         // Entrée de chaque donjon : la première porte (areatrigger_teleport) qui y mène.
         destinations.clear();

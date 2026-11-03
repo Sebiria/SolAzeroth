@@ -149,6 +149,9 @@ TARIDES = extrapoler(DUROTAR, "Les Tarides", 17, (14, 30), {
 TARIDES["bareme_par_point"]["tranches"] = [(16, 12000, 15), (22, 18500, 23), (29, 28500, 36), (31, 44000, 55)]
 TARIDES["economie"]["filons_actifs"] = 166   # filons_heure.py (cuivre, étain, argent de la zone 17)
 TARIDES["plats"] = 10                         # plafond des Tarides (décision de l'utilisateur du 03/11/2026)
+# Lot T4 des Tarides : barème moyen des annexes construites (éclats, Marques), par annexe à donneur, tous paliers
+# compris. Les Marques restent celles de Durotar (20 par point) ; les éclats suivent les tranches ci-dessus.
+TARIDES["bareme"] = {"primes": (42, 22), "contrats": (40, 29), "defis": (32, 17)}
 # Zone 3 : commence aux bleues des Cavernes (34) ; même largeur que les Tarides (16 points), fin à 50. Fin choisie
 # pour le gabarit, à valider par l'utilisateur.
 ZONE_3 = extrapoler(TARIDES, "Zone 3 (fictive)", None, (34, 50), {
@@ -159,7 +162,7 @@ ZONE_3 = extrapoler(TARIDES, "Zone 3 (fictive)", None, (34, 50), {
 ZONES = [DUROTAR, TARIDES, ZONE_3]
 # Lot T3 des Tarides (03/11/2026) : ce qui n'est pas encore construit dans une zone construite par lots, et le lot qui
 # le construira. Ces points ne sont pas comparés au jeu. À vider au fil des lots.
-A_CONSTRUIRE = {"Les Tarides": {"annexes": "T4", "reliques": "T4", "donjon": "T5", "plats": "T7", "camp": "T7"}}
+A_CONSTRUIRE = {"Les Tarides": {"donjon": "T5"}}   # annexes et reliques : T4 fait ; plats et camp : T7 fait
 
 
 def facteur(puissance):
@@ -311,9 +314,8 @@ def relire(zone):
     if not parts:
         return lu
     # Genres de solazeroth_v3_zone_parts : 1 quête, 2 sous-zone, 3 lieu, 4 annexe à donneur, 5 relique. Annexes et
-    # reliques : les tables n'ont pas encore de colonne de zone (tout est à Durotar ; une zone dont les annexes sont
-    # « à construire » ne les compare pas).
-    lignes = sql("SELECT cle, eclats, insignes FROM solazeroth_v3_annexes")
+    # reliques : colonne de zone depuis le lot T4 des Tarides (migration 143).
+    lignes = sql(f"SELECT cle, eclats, insignes FROM solazeroth_v3_annexes WHERE zone = {z}")
     numeros = sorted({int(c[1:]) for c, _, _ in lignes})
     bareme = {}
     for famille, (n0, n1) in {"primes": (11, 19), "contrats": (20, 24), "defis": (25, 30)}.items():
@@ -323,6 +325,13 @@ def relire(zone):
     texte = open(BIVOUAC, encoding="utf-8").read()
     feu = int(re.search(r"RANG_FEU_MAX = (\d+)", texte).group(1))
     potion = int(re.search(r"RANG_POTION_MAX = (\d+)", texte).group(1))
+    # Lot T7 des Tarides : rangs ouverts par la zone (solazeroth_v3_camp_rangs, migration 145) ; ils ne dépassent pas
+    # RANG_*_MAX de v3_bivouac.cpp.
+    rangs = {int(g): (int(a), int(b)) for g, a, b in
+             sql(f"SELECT genre, MIN(rang), MAX(rang) FROM solazeroth_v3_camp_rangs WHERE zone = {z} GROUP BY genre")}
+    tranches = [(int(h), int(c), int(e)) for h, c, e in
+                sql(f"SELECT haut, cuivre, eclats FROM solazeroth_v3_annexes_bareme WHERE zone = {z} ORDER BY haut")]
+    marques = {int(m) for (m,) in sql(f"SELECT marques FROM solazeroth_v3_annexes_bareme WHERE zone = {z}")}
     couts = {int(g): (int(a), int(b)) for g, a, b in
              sql("SELECT genre, MIN(rang), MAX(rang) FROM solazeroth_v3_camp_couts GROUP BY genre")}
     lu.update({
@@ -334,12 +343,14 @@ def relire(zone):
                              f"solazeroth_v3_zone_parts p ON p.genre = 3 AND p.cle = m.lieu WHERE p.zone = {z}")[0][0]),
             "primes": sum(11 <= n <= 19 for n in numeros), "contrats": sum(20 <= n <= 24 for n in numeros),
             "defis": sum(25 <= n <= 30 for n in numeros),
-            "reliques": int(sql("SELECT COUNT(*) FROM solazeroth_v3_reliques")[0][0]),
+            "reliques": int(sql(f"SELECT COUNT(*) FROM solazeroth_v3_reliques WHERE zone = {z}")[0][0]),
         },
         "plats": int(sql(f"SELECT COUNT(*) FROM solazeroth_v3_plats WHERE zone = {z}")[0][0]),
         # Rangs : RANG_*_MAX de v3_bivouac.cpp. Coûts : genre 1 la potion, genre 2 le feu (rang 1 du feu contre
         # des Marques, sans ligne de coût).
-        "camp": {"feu": (1, feu), "potion": (1, potion)},
+        "camp": {"feu": rangs.get(2), "potion": rangs.get(1)},
+        "rangs_max": {"feu": feu, "potion": potion},
+        "bareme_par_point": {"marques": marques.pop() if len(marques) == 1 else sorted(marques), "tranches": tranches},
         "couts": {"feu": couts.get(2), "potion": couts.get(1)},
         "bareme": bareme,
     })
@@ -395,8 +406,14 @@ def comparer(zone, lu, precedentes):
         ecarts.append(f"plats : gabarit {d['plats']}, jeu {lu['plats']}")
     if "camp" in attente:
         return ecarts
+    if lu["bareme_par_point"] != d["bareme_par_point"]:
+        ecarts.append(f"barème par point : gabarit {d['bareme_par_point']}, solazeroth_v3_annexes_bareme "
+                      f"{lu['bareme_par_point']}")
     if lu["camp"] != d["camp"]:
-        ecarts.append(f"camp : gabarit {d['camp']}, v3_bivouac.cpp {lu['camp']}")
+        ecarts.append(f"camp : gabarit {d['camp']}, solazeroth_v3_camp_rangs {lu['camp']}")
+    for g, (_, r1) in d["camp"].items():
+        if r1 > lu["rangs_max"][g]:
+            ecarts.append(f"camp : {g} {r1} au-delà de RANG_{g.upper()}_MAX = {lu['rangs_max'][g]} (v3_bivouac.cpp)")
     # Chaque rang de la zone a son coût en base (sauf le feu 1, en Marques).
     for g, (r0, r1) in d["camp"].items():
         bas = max(r0, 2) if g == "feu" else r0

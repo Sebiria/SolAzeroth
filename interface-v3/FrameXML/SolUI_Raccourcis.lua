@@ -494,7 +494,7 @@ for n, genre in ipairs({ "potion", "feu" }) do
     local titre = S.Texte(p3, "Bold", 11, "gris")
     titre:SetText(genre == "potion" and "RANGS DE LA POTION" or "ARBRE DU CAMP")
     titres[n] = titre
-    local maximum = genre == "potion" and 2 or 3
+    local maximum = #S.CAMP[genre]   -- lot T7 des Tarides : tous les rangs de SolUI_Camp.lua (potion 4, feu 5)
     for rang = 1, maximum do
         local l = CreateFrame("Frame", nil, p3)
         l:SetWidth(466)
@@ -545,8 +545,10 @@ local function MajFiches()
         c.rang:SetText(rangs[genre] == 0 and "Rang de départ" or ("Rang " .. rangs[genre] .. " · " .. actuel.nom))
         -- Effet cumulé : celui de chaque rang atteint (les nœuds du camp s'ajoutent les uns aux autres).
         local effets = {}
-        -- Potion : l'effet du rang seul ; camp : départ et Flamme, ou le Repos complet du nœud 2 et le nœud 3.
-        local debut = genre == "potion" and rangs[genre] or (rangs[genre] >= 2 and 2 or 0)
+        -- Potion : l'effet du rang seul ; camp : départ et Flamme, ou le Repos complet du nœud 2 et le nœud 3 (lot T7 :
+        -- celui du nœud 4 et le nœud 5).
+        local debut = genre == "potion" and rangs[genre]
+            or (rangs[genre] >= 4 and 4 or rangs[genre] >= 2 and 2 or 0)
         for r = debut, rangs[genre] do table.insert(effets, S.CAMP[genre][r].effet) end
         c.effet:SetText(table.concat(effets, " "))
         local y = -92 - c.effet:GetStringHeight() - 10

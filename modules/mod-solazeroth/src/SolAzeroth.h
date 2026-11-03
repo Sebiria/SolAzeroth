@@ -70,7 +70,9 @@ namespace SolAzeroth
     unsigned char MedailleDefi(Player* player, unsigned int quete);
     // Lot 4a : défi répétable déjà payé plein tarif aujourd'hui (v3_annexes.cpp).
     bool DefiPayeAujourdhui(Player* player, unsigned int quete);
-    bool CarteReliques(Player* player);
+    // Lot T4 des Tarides : la carte des reliques s'achète par zone (solazeroth_v3_reliques_cartes) ; « CARTE;achetée;
+    // Marques;cuivre;seuil » pour la fenêtre des objectifs, vide si la zone n'a pas de carte.
+    std::string CarteReliques(Player* player, unsigned int zone);
     // Lot 6b : rares secrets de la zone, « SECRETS;vaincus;total;noms » pour la fenêtre des objectifs, vide si la zone
     // n'en a pas (v3_rares_secrets.cpp) ; monture ajoutée aux montures du compte (v3_aventurier.cpp).
     std::string RaresSecrets(Player* player, unsigned int zone);
@@ -81,6 +83,11 @@ namespace SolAzeroth
     unsigned char AffixeSemaine();
     void ProgresSemaine(Player* player, unsigned char objectif);
     void PointsSemaine(Player* player, unsigned int semaine);
+    // Lot T7 des Tarides (v3_donjons.cpp) : composant de donjon d'une pièce de cette puissance (celui du donjon de plus
+    // haute puissance_min qui ne la dépasse pas : la Braise du Gouffre à Durotar), et composant du dernier donjon
+    // terminé par le compte (la Braise tant qu'aucun).
+    unsigned int ComposantTransfert(unsigned char puissance);
+    unsigned int ComposantDernierDonjon(Player* player);
     // v3 : objets rangés dans la Collection, et retrait (v3_collection.cpp).
     unsigned int NombreEnCollection(Player* player, unsigned int objet);
     void RetirerDeCollection(Player* player, unsigned int objet, unsigned int nombre);
@@ -114,6 +121,9 @@ namespace SolAzeroth
     // v3, F9 : change la puissance d'une créature (v3_niveau.cpp) ; éclats du mode de zone et rare appelé par le
     // cauchemar (v3_modes.cpp).
     void FixerPuissanceCreature(Creature* creature, unsigned char puissance);
+    // Lot T4 des Tarides : puissance imposée aux créatures invoquées tant qu'elle n'est pas remise à 0 (vagues,
+    // renforts, larves) ; elles prennent aussi la courbe des monstres (v3_niveau.cpp).
+    void ImposerPuissance(unsigned char puissance);
     // Lot T1 des Tarides : facteurs de la courbe des monstres (vie et soins, dégâts), fixés à l'apparition ; 1 hors
     // des secteurs et jusqu'à la puissance 14 (v3_niveau.cpp).
     float CourbeVie(Unit const* unite);

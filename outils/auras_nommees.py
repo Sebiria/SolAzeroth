@@ -6,6 +6,7 @@ Ajoute des sorts d'aura sans effet (aura factice), qui ne servent qu'à l'affich
 """
 import os
 import subprocess
+import sys
 
 import dbc
 import artisanat_tarides
@@ -151,10 +152,17 @@ def main():
     monstres = sorts_monstres_v3.lignes(d)   # v3 (01/11/2026) : sorts des monstres, migration 106
     bonus = bonus_v3.lignes(d)               # audit du jeu, lot 4c : migration 117
     tarides = artisanat_tarides.sorts(d)     # lot T8 des Tarides : consommables, migration 141 (écrite par artisanat_tarides.py)
+    # Lot T7 des Tarides : Repos du feu 4-5 et plats des Tarides, migration 145 (écrite par economie_tarides.py).
+    tarides += bivouac_v3.lignes_tarides(d, icones_retail.identifiants())
+    tarides += cuisine_v3.lignes(d, cuisine_v3.plats_tarides())
     d.enregistrements.extend(lignes + incantations + kit + demoniste + voleur + bivouac + cuisine + passifs + monstres + bonus
                              + tarides)
     os.makedirs(DBC_CLIENT, exist_ok=True)
     d.enregistrer(os.path.join(DBC_CLIENT, "Spell.dbc"))
+    if "--client" in sys.argv:
+        # Lot T7 des Tarides : le Spell.dbc du client seul, sans réécrire les migrations (déjà appliquées).
+        print("Spell.dbc du client écrit (", len(d.enregistrements), "sorts ) ; migrations non réécrites.")
+        return
 
     premier, dernier = AURAS[0][0], AURAS[-1][0]
     up = ["-- Auras Sol'Azeroth nommées (V7). Généré par outils\\auras_nommees.py : ne pas modifier à la main.",

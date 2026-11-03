@@ -1092,7 +1092,7 @@ local function SignesSur(nom)
     end
     if progres and progres.carte then
         for _, r in ipairs(S.RELIQUES or {}) do
-            if not progres.reliques[r.objet] then
+            if progres.reliques[r.objet] == false then   -- lot T4 des Tarides : reliques de la zone, pas trouvées
                 Ajouter(r.x, r.y, COFFRE, "Relique cachée (" .. r.cle .. ")", "ambreClair", "« " .. r.indice .. " »")
             end
         end

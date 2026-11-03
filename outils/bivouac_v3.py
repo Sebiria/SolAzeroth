@@ -18,6 +18,14 @@ avec sa liste de courses (COUTS), achetables partout et sans condition de conten
   caractéristique de la spécialisation (sort 100033, avec les +10 % de dégâts du nœud 1) ; nœud 3 : le même pendant
   40 minutes (v3_bivouac.cpp fixe la durée : pas de durée de 40 minutes dans SpellDuration.dbc).
 
+Lot T7 des Tarides (03/11/2026, point 11 du brouillon des Tarides) : les Tarides ouvrent la potion 3-4 et le feu 4-5
+(COUTS_TARIDES, listes du §4.7.6), achetables partout comme les autres :
+- potion 3 : 2 charges, soin 40 %, avec la Potion revigorante ; potion 4 : 3 charges ;
+- feu 4 : Repos de 40 minutes, vie +5 %, dégâts +10 %, +10 à la caractéristique (sorts 100037 à 100039) ; feu 5 : le
+  même avec vie +8 % (sorts 100045 à 100047).
+Ces sorts (lignes_tarides) et les listes vont dans la migration 145 (economie_tarides.py), pas dans la 067 ni la 089 ;
+RANGS donne le nom, la zone et le message d'achat de chaque rang (solazeroth_v3_camp_rangs, lu par v3_bivouac.cpp).
+
 Appelé par auras_nommees.py, qui écrit le Spell.dbc du client et la migration 067. Lancé seul (py bivouac_v3.py), il
 écrit la migration 089 (listes de courses) et SolUI_Camp.lua (les mêmes, pour l'interface).
 """
@@ -36,6 +44,10 @@ MOD_STAT, SOIN_POURCENT_PERIODIQUE = 29, 20   # SPELL_AURA_MOD_STAT, SPELL_AURA_
 # v3_bivouac.cpp choisit celui de la spécialisation.
 REPOS_BRAISES_STATS = [(REPOS_BRAISES, 0, "Force"), (100035, 1, "Agilité"), (100036, 3, "Intelligence")]
 BONUS_CARACTERISTIQUE = 5
+# Lot T7 : Repos du feu 4 et du feu 5 (même ordre de caractéristiques).
+REPOS_SAVANE_STATS = [(100037, 0, "Force"), (100038, 1, "Agilité"), (100039, 3, "Intelligence")]
+REPOS_FOYER_STATS = [(100045, 0, "Force"), (100046, 1, "Agilité"), (100047, 3, "Intelligence")]
+BONUS_CARACTERISTIQUE_TARIDES, BONUS_VIE_FOYER = 10, 8
 
 # Listes de courses (objets de la Collection ; 0 = or, en cuivre). Rang 1 du feu : 15 Marques (v3_bivouac.cpp).
 ECLAT, MARQUE = 910120, 37711   # Marques du voyageur (sacs) : plus d'Insignes depuis le 01/11/2026
@@ -48,8 +60,32 @@ COUTS = {
     ("feu", 2): {CUIVRE: 20, LIN: 16, CUIR: 12, ECLAT: 60, MARQUE: 20},
     ("feu", 3): {PIERRE: 8, CUIVRE: 20, MALACHITE_TAILLEE: 2, ECLAT: 160, MARQUE: 40, 0: 8000},
 }
+# Lot T7 : listes des Tarides (brouillon des Tarides, §4.7.6), herbes et minerais de la zone.
+EGLANTINE, MAGE_ROYAL, ETOUFFANTE, SANG_ROYAL, DOULOURANTE, ACIERITE = 2450, 785, 3820, 3356, 2453, 3355
+ETAIN, LAINE, CUIR_MOYEN, PIERRE_GROSSIERE, ARGENT = 2771, 2592, 2319, 2836, 2775
+JADE_TAILLE, PIERRE_DE_LUNE_TAILLEE = 910184, 910185
+COUTS_TARIDES = {
+    ("potion", 3): {EGLANTINE: 16, MAGE_ROYAL: 10, ETOUFFANTE: 6, ECLAT: 230, 0: 11500},
+    ("potion", 4): {SANG_ROYAL: 10, DOULOURANTE: 8, ACIERITE: 4, JADE_TAILLE: 2, ECLAT: 485, 0: 30000},
+    ("feu", 4): {ETAIN: 30, LAINE: 16, CUIR_MOYEN: 16, ECLAT: 230, MARQUE: 40, 0: 11500},
+    ("feu", 5): {PIERRE_GROSSIERE: 16, ARGENT: 6, PIERRE_DE_LUNE_TAILLEE: 2, ECLAT: 485, MARQUE: 60, 0: 24000},
+}
 NOMS = {("potion", 1): "Potion de Durotar", ("potion", 2): "Potion revigorante",
-        ("feu", 1): "Flamme du guerrier", ("feu", 2): "Braises tenaces", ("feu", 3): "Feu de bivouac"}
+        ("feu", 1): "Flamme du guerrier", ("feu", 2): "Braises tenaces", ("feu", 3): "Feu de bivouac",
+        ("potion", 3): "Potion de l'oasis", ("potion", 4): "Potion des Tarides",
+        ("feu", 4): "Feu de la savane", ("feu", 5): "Foyer des Tarides"}
+# Lot T7 : zone qui ouvre chaque rang, et message d'achat (v3_bivouac.cpp ; ceux de Durotar, mot pour mot).
+RANGS = {
+    ("potion", 1): (14, "Potion de Durotar : 2 charges, 35 % de la vie."),
+    ("potion", 2): (14, "Potion revigorante : en plus, 1 % de la vie par seconde pendant 10 s."),
+    ("potion", 3): (17, "Potion de l'oasis : 40 % de la vie."),
+    ("potion", 4): (17, "Potion des Tarides : 3 charges."),
+    ("feu", 1): (14, "Camp : le Repos au coin du feu donne maintenant aussi +10 % de dégâts."),
+    ("feu", 2): (14, "Braises tenaces : le Repos donne +5 Force et rend 2 % de la vie par seconde, au prochain feu."),
+    ("feu", 3): (14, "Feu de bivouac : le Repos dure 40 minutes, au prochain feu."),
+    ("feu", 4): (17, "Feu de la savane : le Repos donne +10 à la caractéristique principale, au prochain feu."),
+    ("feu", 5): (17, "Foyer des Tarides : le Repos donne +8 % de vie maximale, au prochain feu."),
+}
 EFFETS = {
     ("potion", 0): "1 charge, rend 30 % de la vie.",
     ("potion", 1): "2 charges, rendent 35 % de la vie.",
@@ -58,6 +94,10 @@ EFFETS = {
     ("feu", 1): "Le Repos donne aussi +10 % de dégâts.",
     ("feu", 2): "Repos : vie maximale +5 %, +10 % de dégâts, +5 à la caractéristique principale de la spécialisation, 2 % de la vie par seconde hors combat, 30 minutes.",
     ("feu", 3): "Le même Repos, pendant 40 minutes.",
+    ("potion", 3): "2 charges, rendent 40 % de la vie, puis 1 % par seconde pendant 10 s.",
+    ("potion", 4): "3 charges, rendent 40 % de la vie, puis 1 % par seconde pendant 10 s.",
+    ("feu", 4): "Repos : vie maximale +5 %, +10 % de dégâts, +10 à la caractéristique principale de la spécialisation, 2 % de la vie par seconde hors combat, 40 minutes.",
+    ("feu", 5): "Le même Repos, avec vie maximale +8 %.",
 }
 
 SCRIPTS = {POTION: "spell_solazeroth_v3_potion", FEU: "spell_solazeroth_v3_feu"}
@@ -130,6 +170,25 @@ def lignes(d, icones):
     return t
 
 
+def lignes_tarides(d, icones):
+    """Lot T7 : Repos du feu 4 et du feu 5 (migration 145)."""
+    t = []
+    for stats, vie in ((REPOS_SAVANE_STATS, BONUS_VIE), (REPOS_FOYER_STATS, BONUS_VIE_FOYER)):
+        for sort, misc, carac in stats:
+            b = BONUS_CARACTERISTIQUE_TARIDES
+            e = technique(d, 12975, sort, "Repos au coin du feu",
+                          "Vie maximale +%d %%, dégâts infligés +%d %% et %s +%d pendant 40 minutes. Hors combat, rend 2 %% "
+                          "de la vie maximale par seconde." % (vie, DEGATS_REPOS, carac, b), icones["campfire_rootflame"], 0,
+                          "Vie maximale augmentée de %d %%, dégâts infligés de %d %%, %s de %d. Hors combat, 2 %% de la vie "
+                          "maximale rendus par seconde." % (vie, DEGATS_REPOS, carac, b), duree=D30MIN)
+            e[131] = 0
+            effet(e, 0, AURA, vie, SOI, aura=VIE_POURCENT)
+            effet(e, 1, AURA, DEGATS_REPOS, SOI, aura=DEGATS_INFLIGES, misc=127)
+            effet(e, 2, AURA, b, SOI, aura=MOD_STAT, misc=misc)
+            t.append(e)
+    return t
+
+
 def lua_texte(t):
     return '"%s"' % t.replace("\\", "\\\\").replace('"', '\\"')
 
@@ -151,10 +210,11 @@ def main():
     lua = ["-- Généré par outils\\bivouac_v3.py : ne pas modifier à la main.",
            "-- F7 : rangs de la potion et nœuds de l'arbre du camp. couts : { { objet, nombre }, … } (objet 0 : or, en cuivre).",
            "SolUI.CAMP = {"]
-    for genre, maximum in (("potion", 2), ("feu", 3)):
+    toutes = {**COUTS, **COUTS_TARIDES}   # lot T7 : avec les rangs des Tarides
+    for genre, maximum in (("potion", 4), ("feu", 5)):
         lua.append("    %s = {" % genre)
         for r in range(maximum + 1):
-            couts = COUTS.get((genre, r), {})
+            couts = toutes.get((genre, r), {})
             lua.append("        [%d] = { nom = %s, effet = %s, couts = { %s } }," % (
                 r, lua_texte(NOMS.get((genre, r), "")), lua_texte(EFFETS[(genre, r)]),
                 ", ".join("{ %d, %d }" % kv for kv in couts.items())))

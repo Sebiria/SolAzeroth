@@ -20,6 +20,11 @@ Audit du jeu, lot 4c (02/11/2026, choix de l'utilisateur : la caractéristique e
 plus son effet (BONUS), plus fort pour l'ingrédient le plus rare (simulation_lot4c.py). Les auras réécrites passent par
 la migration 117 (bonus_v3.py), la 079 étant déjà appliquée.
 
+Lot T7 des Tarides (03/11/2026, décision 14 du brouillon des Tarides) : plafond de plats par zone (PLAFONDS : 5 à
+Durotar, 10 aux Tarides) et, aux Tarides, la liste retenue (CHOIX, un plat par ingrédient). Les Tarides (ZONES_SUIVANTES)
+ne passent pas par la migration 079 : plats_tarides() les donne à economie_tarides.py (migration 145). Leur repas vaut
+la puissance remise à niveau (PUISSANCES : 22, le milieu de 14-30) et non la moyenne des niveaux d'origine (15).
+
 Appelé par auras_nommees.py, qui écrit le Spell.dbc du client, la migration 079 et SolUI_Cuisine.lua.
 """
 import os
@@ -33,6 +38,11 @@ MIGRATION = r"C:\SolAzeroth\sql\migrations\079_v3_cuisine"
 LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Cuisine.lua"
 
 ZONES = [(14, "Durotar")]           # dans l'ordre du jeu
+ZONES_SUIVANTES = [(17, "Les Tarides")]   # lot T7 : migration 145 (economie_tarides.py), pas la 079
+PLAFONDS = {14: 5, 17: 10}           # plats au plus par zone
+# Lot T7 : plats retenus aux Tarides (brouillon des Tarides, §4.7.6) parmi les 15 trouvés.
+CHOIX = {17: [5477, 5479, 5474, 5476, 4592, 5478, 5525, 3726, 3727, 7676]}
+PUISSANCES = {17: 22}                # puissance du repas remise à niveau (sinon la moyenne des niveaux d'origine)
 CUISINE = 185                       # SkillLine.dbc
 CREER_OBJET, FACTICE, CARACTERISTIQUE = 24, 3, 29
 CARACTERISTIQUES = [(0, "Force"), (1, "Agilité"), (3, "Intelligence")]   # misc de l'aura, comme UnitMods
@@ -52,9 +62,23 @@ BONUS = {
     3662: (CRIT_POURCENT, 0, 3, "chances de coup critique augmentées de 3 %"),   # Steak de crocilisque
     787: (DEGATS_INFLIGES, 127, 3, "dégâts infligés augmentés de 3 %"),    # Maquereau ombré
     5095: (HATE_MELEE_DISTANCE, 0, 12, "vitesse d'attaque augmentée de 12 %"),   # Thon arc-en-ciel
+    # Lot T7, les Tarides : les cinq familles de Durotar, un cran plus fort ; le plus fort à l'ingrédient le plus rare
+    # (apparitions × chance : trotteur 13 000, lézard 9 600, kodo 2 600, Furie 245, lutjan 120 ; puis rat 1 340,
+    # ours 42, lion 34, palourde 33, chardon des pantins 17).
+    5477: (VIE_POURCENT, 0, 4, "vie maximale augmentée de 4 %"),            # Brouet de trotteur
+    5479: (ARMURE_POURCENT, 1, 10, "armure augmentée de 10 %"),            # Queue de lézard croquante
+    5474: (CRIT_POURCENT, 0, 4, "chances de coup critique augmentées de 4 %"),   # Viande de kodo rôtie
+    5476: (DEGATS_INFLIGES, 127, 4, "dégâts infligés augmentés de 4 %"),   # Filet de furie
+    4592: (HATE_MELEE_DISTANCE, 0, 15, "vitesse d'attaque augmentée de 15 %"),   # Lutjan à longue mâchoire
+    5478: (VIE_POURCENT, 0, 4, "vie maximale augmentée de 4 %"),            # Brouet de rat
+    3726: (ARMURE_POURCENT, 1, 10, "armure augmentée de 10 %"),            # Steak de grand ours
+    3727: (CRIT_POURCENT, 0, 4, "chances de coup critique augmentées de 4 %"),   # Côtelettes de lion épicées
+    5525: (DEGATS_INFLIGES, 127, 4, "dégâts infligés augmentés de 4 %"),   # Palourdes bouillies
+    7676: (HATE_MELEE_DISTANCE, 0, 15, "vitesse d'attaque augmentée de 15 %"),   # Thé de chardon
 }
-# Lot D5 (02/11/2026) : pour une spécialisation à Intelligence, la hâte de mêlée devient vitesse d'incantation.
-POUR_LES_SORTS = {HATE_MELEE_DISTANCE: (VITESSE_INCANTATION, "vitesse d'incantation augmentée de 12 %")}
+# Lot D5 (02/11/2026) : pour une spécialisation à Intelligence, la hâte de mêlée devient vitesse d'incantation (lot T7 :
+# du même pourcentage que la hâte du plat).
+POUR_LES_SORTS = {HATE_MELEE_DISTANCE: (VITESSE_INCANTATION, "vitesse d'incantation augmentée de %d %%")}
 INTELLIGENCE = 3
 
 
@@ -82,23 +106,23 @@ def recettes_de_blizzard():
     return sorted(sortie)
 
 
-def plats():
+def plats(toutes=False):
     """Plats de chaque zone de ZONES, dans l'ordre : dictionnaires (objet, nom, composants, zone, puissance, sort,
-    buffs)."""
+    buffs). toutes : avec ZONES_SUIVANTES (lot T7), dont les sorts suivent ceux de ZONES."""
     recettes = recettes_de_blizzard()
     fetes = {int(e) for (e,) in requete("SELECT entry FROM item_template WHERE HolidayId <> 0")}
     noms = {int(e): n for e, n in requete(
         "SELECT i.entry, COALESCE(NULLIF(l.Name, ''), i.name) FROM item_template i "
         "LEFT JOIN item_template_locale l ON l.ID = i.entry AND l.locale = 'frFR' WHERE i.class IN (0, 7)")}
     sortie, pris = [], set()
-    for zone, nom_zone in ZONES:
+    for zone, nom_zone in ZONES + ZONES_SUIVANTES:
         butin = {int(e) for (e,) in requete(
             "SELECT DISTINCT l.Item FROM creature c JOIN creature_template t ON t.entry = c.id "
             "JOIN creature_loot_template l ON l.Entry = t.lootid WHERE c.zoneId = %d AND l.Reference = 0 "
             "AND l.QuestRequired = 0" % zone)}
         vente = {int(e) for (e,) in requete(
             "SELECT DISTINCT v.item FROM creature c JOIN npc_vendor v ON v.entry = c.id WHERE c.zoneId = %d" % zone)}
-        puissance = puissance_moyenne(zone)
+        puissance = PUISSANCES.get(zone) or puissance_moyenne(zone)
         herbes = [int(e) for (e, _) in requete(
             "SELECT l.Item, COUNT(DISTINCT g.guid) n FROM gameobject g JOIN gameobject_template gt ON gt.entry = g.id "
             "JOIN gameobject_loot_template l ON l.Entry = gt.Data1 JOIN item_template i ON i.entry = l.Item "
@@ -111,15 +135,25 @@ def plats():
             if plat in pris or plat in fetes or not any(o in butin for o in objets) \
                     or not all(o in butin or o in vente for o in objets):
                 continue
+            ajouts = [herbes[dans_la_zone % len(herbes)], assaisonnements[dans_la_zone % len(assaisonnements)]]
+            dans_la_zone += 1   # lot T7 : la rotation compte aussi les plats écartés (composants du brouillon)
+            gardes = sum(p["zone"] == zone for p in sortie)
+            if (zone in CHOIX and plat not in CHOIX[zone]) or gardes >= PLAFONDS[zone]:
+                continue
             pris.add(plat)
             n = len(sortie)
-            ajouts = [herbes[dans_la_zone % len(herbes)], assaisonnements[dans_la_zone % len(assaisonnements)]]
             composants = composants + [(o, 1) for o in ajouts if o not in objets]
-            dans_la_zone += 1
             sortie.append({"objet": plat, "nom": noms.get(plat, str(plat)), "composants": composants, "zone": zone,
                            "nom_zone": nom_zone, "puissance": puissance, "sort": PREMIER_PLAT + n,
                            "buffs": [PREMIER_BUFF + 3 * n + k for k in range(3)]})
+    if not toutes:
+        sortie = [p for p in sortie if p["zone"] in dict(ZONES)]
     return sortie
+
+
+def plats_tarides():
+    """Lot T7 : plats des zones suivantes (migration 145)."""
+    return [p for p in plats(True) if p["zone"] in dict(ZONES_SUIVANTES)]
 
 
 def lignes(d, liste):
@@ -141,7 +175,7 @@ def lignes(d, liste):
         for buff, (misc, carac) in zip(p["buffs"], CARACTERISTIQUES):
             aura, texte = (bonus[0], bonus[3]) if bonus else (None, "")
             if bonus and misc == INTELLIGENCE and aura in POUR_LES_SORTS:
-                aura, texte = POUR_LES_SORTS[aura]
+                aura, texte = POUR_LES_SORTS[aura][0], POUR_LES_SORTS[aura][1] % bonus[2]
             e = technique(d, BIEN_NOURRI, buff, "Bien nourri", "", icone, 0,
                           "%s augmentée de %d%s." % (carac, p["puissance"], " ; " + texte if bonus else ""),
                           duree=D30MIN)
@@ -197,11 +231,17 @@ def ecrire(liste, sorts_sql):
         with open(MIGRATION + suffixe, "w", encoding="utf-8", newline="\n") as f:
             f.write("\n".join(contenu) + "\n")
 
+    ecrire_lua(liste)
+
+
+def ecrire_lua(liste):
+    """SolUI_Cuisine.lua (lot T7 : appelé aussi par economie_tarides.py, sans réécrire la 079)."""
     sortie = ["-- Généré par outils\\cuisine_v3.py (auras_nommees.py) : ne pas modifier à la main.",
               "-- Catégorie Cuisine de la fenêtre Équipement : { plat, nom, puissance du repas, puissance requise,",
               "-- prix en cuivre, { { composant, nombre }, … }, zone }. Se fabrique près d'un feu.",
               "table.insert(SolUI.RECETTES, { nom = \"Cuisine\", feu = true, recettes = {"]
-    for p in sorted(liste, key=lambda p: (p["puissance"], p["nom"])):
+    # Lot T7 : la fenêtre a aussi les plats des zones suivantes (leurs sorts : migration 145).
+    for p in sorted(liste + plats_tarides(), key=lambda p: (p["puissance"], p["nom"])):
         sortie.append("    { %d, %s, %d, 0, 0, { %s }, %s }," % (
             p["objet"], lua(p["nom"]), p["puissance"],
             ", ".join("{ %d, %d }" % (c, n) for c, n in p["composants"]), lua(p["nom_zone"])))

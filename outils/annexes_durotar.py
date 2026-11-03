@@ -15,6 +15,13 @@ annexes de Durotar qui restaient, A11 à A46 (document de Durotar, §4.1.2 à 4.
 Écrit la migration 084, interface-v3\\FrameXML\\SolUI_Annexes.lua (annexes, reliques et leurs indices, catégorie
 « Durotar » de la Collection) ; quetes_durotar.item_dbc() ajoute les nouveaux objets à l'Item.dbc du patch.
 Lit la base (lecture seule) pour la hauteur des reliques et des PNJ.
+
+Lot T4 des Tarides (03/11/2026) : paramétré par zone, sans copie du générateur.
+- py annexes_durotar.py durotar : la migration 084, à l'identique (les quêtes passent par quetes_sql, commune).
+- py annexes_durotar.py generales : la migration 143, qui met en tables ce que v3_annexes.cpp avait en dur pour
+  Durotar (épreuves, renforts, familles et carte des reliques, techniques), avec les lignes de Durotar seulement.
+- py annexes_durotar.py tarides : la migration 144, les annexes des Tarides (données : annexes_tarides.py).
+Chaque commande réécrit SolUI_Annexes.lua (les deux zones) et l'Item.dbc du patch.
 """
 import os
 import sys
@@ -311,6 +318,14 @@ def hauteur(x, y, rayon=80):
     return float(lignes[0][0])
 
 
+def lignes_dbc_tarides():
+    """Lot T4 des Tarides : reliques et pièces des annexes des Tarides (versions et rangs compris)."""
+    import annexes_tarides as at
+    import quetes_tarides
+    lignes = [(at.RELIQUE + i, r[3], (15, 0, 0)) for i, r in enumerate(at.RELIQUES)]
+    return lignes + quetes_tarides.lignes_dbc(at.JEU)
+
+
 def lignes_dbc():
     """Lignes à ajouter à Item.dbc : (entrée, entrée copiée, (classe, sous-classe, emplacement) ou None)."""
     import equipement_v3
@@ -365,6 +380,50 @@ def recompense_texte(a):
     if a.get("chrono"):
         texte += " Médaille d'argent : récompenses ×1,5 ; d'or : ×2."
     return texte
+
+
+def quetes_sql(w, liste, sort, carte):
+    """Quêtes des annexes : modèle, ajout, textes, donneurs, points de la carte (Durotar 084, les Tarides 144)."""
+    for a in liste:
+        champs = {"ID": a["q"], "QuestType": 2, "QuestLevel": -1, "MinLevel": 0, "QuestSortID": sort,
+                  "RewardMoney": a["argent"], "Flags": 4096 if a.get("journaliere") else 0,
+                  "LogTitle": s(a["titre"]), "LogDescription": s(a["resume"]), "QuestDescription": s(a["intro"]),
+                  "QuestCompletionLog": s("Retourne voir qui t'a confié cette tâche.")}
+        recompenses = [(e, 1) for e in [a.get("equip")] if e]
+        for i, (e, c) in enumerate(recompenses, 1):
+            champs["RewardItem%d" % i], champs["RewardAmount%d" % i] = e, c
+        tuer, go, objets = a.get("tuer", []), a.get("go", []), a.get("objets", [])
+        for i, (e, c, _, texte) in enumerate(tuer, 1):
+            champs["RequiredNpcOrGo%d" % i], champs["RequiredNpcOrGoCount%d" % i] = e, c
+            if texte:
+                champs["ObjectiveText%d" % i] = s(texte)
+        for i, (e, c, _, texte) in enumerate(go, len(tuer) + 1):
+            champs["RequiredNpcOrGo%d" % i], champs["RequiredNpcOrGoCount%d" % i] = -e, c
+            champs["ObjectiveText%d" % i] = s(texte)
+        for i, (e, c, _) in enumerate(objets, 1):
+            champs["RequiredItemId%d" % i], champs["RequiredItemCount%d" % i] = e, c
+        if a.get("item_drop"):   # lot T4 des Tarides : plumes des nids (A22), comme la quête 905
+            champs["ItemDrop1"], champs["ItemDropQuantity1"] = a["item_drop"]
+        w("INSERT INTO quest_template (%s) VALUES (%s);" % (", ".join(champs), ", ".join(str(v) for v in champs.values())))
+        repetable = 1 if a.get("chrono") or a.get("potion") or a["cle"] == "A27" else 0
+        w("INSERT INTO quest_template_addon (ID, PrevQuestID, SpecialFlags) VALUES (%d, %d, %d);"
+          % (a["q"], a.get("prev", 0), repetable))
+        w("INSERT INTO quest_request_items (ID, EmoteOnComplete, EmoteOnIncomplete, CompletionText) VALUES (%d, 1, 1, %s);"
+          % (a["q"], s(a["prog"])))
+        w("INSERT INTO quest_offer_reward (ID, Emote1, RewardText) VALUES (%d, 1, %s);"
+          % (a["q"], s((a["fin"] + " " + recompense_texte(a)).strip())))
+        for table, qui in (("queststarter", a["de"]), ("questender", a["a"])):
+            if isinstance(qui, tuple):
+                w("INSERT INTO gameobject_%s (id, quest) VALUES (%d, %d);" % (table, qui[1], a["q"]))
+            else:
+                w("INSERT INTO creature_%s (id, quest) VALUES (%d, %d);" % (table, qui, a["q"]))
+        zones = [(i, z) for i, (_, _, z, _) in enumerate(tuer)] + \
+            [(len(tuer) + i, z) for i, (_, _, z, _) in enumerate(go)] + [(4 + i, z) for i, (_, _, z) in enumerate(objets)]
+        for numero, (index, centre) in enumerate(zones):
+            w("INSERT INTO quest_poi (QuestID, id, ObjectiveIndex, MapID, WorldMapAreaId, Floor, Priority, Flags) "
+              "VALUES (%d, %d, %d, 1, %d, 0, 0, 1);" % (a["q"], numero, index, carte))
+            w("INSERT INTO quest_poi_points (QuestID, Idx1, Idx2, X, Y) VALUES %s;" % ", ".join(
+                "(%d, %d, %d, %d, %d)" % (a["q"], numero, k, x, y) for k, (x, y) in enumerate(octogone(centre, 60))))
 
 
 def construire():
@@ -492,44 +551,7 @@ def construire():
     w("")
 
     w("-- Quêtes des annexes.")
-    for a in A:
-        champs = {"ID": a["q"], "QuestType": 2, "QuestLevel": -1, "MinLevel": 0, "QuestSortID": DUROTAR,
-                  "RewardMoney": a["argent"], "Flags": 4096 if a.get("journaliere") else 0,
-                  "LogTitle": s(a["titre"]), "LogDescription": s(a["resume"]), "QuestDescription": s(a["intro"]),
-                  "QuestCompletionLog": s("Retourne voir qui t'a confié cette tâche.")}
-        recompenses = [(e, 1) for e in [a.get("equip")] if e]
-        for i, (e, c) in enumerate(recompenses, 1):
-            champs["RewardItem%d" % i], champs["RewardAmount%d" % i] = e, c
-        tuer, go, objets = a.get("tuer", []), a.get("go", []), a.get("objets", [])
-        for i, (e, c, _, texte) in enumerate(tuer, 1):
-            champs["RequiredNpcOrGo%d" % i], champs["RequiredNpcOrGoCount%d" % i] = e, c
-            if texte:
-                champs["ObjectiveText%d" % i] = s(texte)
-        for i, (e, c, _, texte) in enumerate(go, len(tuer) + 1):
-            champs["RequiredNpcOrGo%d" % i], champs["RequiredNpcOrGoCount%d" % i] = -e, c
-            champs["ObjectiveText%d" % i] = s(texte)
-        for i, (e, c, _) in enumerate(objets, 1):
-            champs["RequiredItemId%d" % i], champs["RequiredItemCount%d" % i] = e, c
-        w("INSERT INTO quest_template (%s) VALUES (%s);" % (", ".join(champs), ", ".join(str(v) for v in champs.values())))
-        repetable = 1 if a.get("chrono") or a.get("potion") or a["cle"] == "A27" else 0
-        w("INSERT INTO quest_template_addon (ID, PrevQuestID, SpecialFlags) VALUES (%d, %d, %d);"
-          % (a["q"], a.get("prev", 0), repetable))
-        w("INSERT INTO quest_request_items (ID, EmoteOnComplete, EmoteOnIncomplete, CompletionText) VALUES (%d, 1, 1, %s);"
-          % (a["q"], s(a["prog"])))
-        w("INSERT INTO quest_offer_reward (ID, Emote1, RewardText) VALUES (%d, 1, %s);"
-          % (a["q"], s((a["fin"] + " " + recompense_texte(a)).strip())))
-        for table, qui in (("queststarter", a["de"]), ("questender", a["a"])):
-            if isinstance(qui, tuple):
-                w("INSERT INTO gameobject_%s (id, quest) VALUES (%d, %d);" % (table, qui[1], a["q"]))
-            else:
-                w("INSERT INTO creature_%s (id, quest) VALUES (%d, %d);" % (table, qui, a["q"]))
-        zones = [(i, z) for i, (_, _, z, _) in enumerate(tuer)] + \
-            [(len(tuer) + i, z) for i, (_, _, z, _) in enumerate(go)] + [(4 + i, z) for i, (_, _, z) in enumerate(objets)]
-        for numero, (index, centre) in enumerate(zones):
-            w("INSERT INTO quest_poi (QuestID, id, ObjectiveIndex, MapID, WorldMapAreaId, Floor, Priority, Flags) "
-              "VALUES (%d, %d, %d, 1, %d, 0, 0, 1);" % (a["q"], numero, index, CARTE_DUROTAR))
-            w("INSERT INTO quest_poi_points (QuestID, Idx1, Idx2, X, Y) VALUES %s;" % ", ".join(
-                "(%d, %d, %d, %d, %d)" % (a["q"], numero, k, x, y) for k, (x, y) in enumerate(octogone(centre, 60))))
+    quetes_sql(w, A, DUROTAR, CARTE_DUROTAR)
     w("")
 
     w("-- Récompenses rangées dans la Collection, chrono, médailles, sans potion (v3_annexes.cpp).")
@@ -635,6 +657,304 @@ def construire():
           % (len(A), len(RELIQUES), len(PIECES), len(TECHNIQUES)))
 
 
+GENERALES = r"C:\SolAzeroth\sql\migrations\143_v3_annexes_generales"
+
+
+def generaliser():
+    """Migration 143 : les tables qui remplacent les constantes de Durotar de v3_annexes.cpp. Les lignes de Durotar
+    reprennent les valeurs du code (rien ne change en jeu) ; les records et la carte des joueurs y sont recopiés."""
+    up = [
+        "-- Lot T4 des Tarides (03/11/2026) : v3_annexes.cpp en tables. Lignes de Durotar seulement (valeurs du code).",
+        "-- Généré par outils\\annexes_durotar.py generales : ne pas modifier à la main.",
+        "USE acore_world;",
+        "ALTER TABLE solazeroth_v3_annexes ADD COLUMN zone INT UNSIGNED NOT NULL DEFAULT %d;" % DUROTAR,
+        "ALTER TABLE solazeroth_v3_reliques ADD COLUMN zone INT UNSIGNED NOT NULL DEFAULT %d;" % DUROTAR,
+        "ALTER TABLE solazeroth_v3_vagues ADD COLUMN epreuve INT UNSIGNED NOT NULL DEFAULT 1 FIRST, "
+        "ADD COLUMN puissance TINYINT UNSIGNED NOT NULL DEFAULT 0, DROP PRIMARY KEY, ADD PRIMARY KEY (epreuve, vague, creature);",
+        "",
+        "-- Épreuves de vagues : gardien, quêtes, crédits de mi-parcours et de fin.",
+        "CREATE TABLE solazeroth_v3_epreuves (epreuve INT UNSIGNED NOT NULL PRIMARY KEY, pnj INT UNSIGNED NOT NULL, "
+        "zone INT UNSIGNED NOT NULL, quete INT UNSIGNED NOT NULL, quete2 INT UNSIGNED NOT NULL, "
+        "credit_mi INT UNSIGNED NOT NULL, vague_mi TINYINT UNSIGNED NOT NULL, credit_fin INT UNSIGNED NOT NULL, "
+        "nom VARCHAR(64) NOT NULL, consigne VARCHAR(128) NOT NULL);",
+        "INSERT INTO solazeroth_v3_epreuves VALUES (1, %d, %d, 910227, 910327, %d, 5, %d, %s, %s);"
+        % (ZUNJALA, DUROTAR, CREDIT_VAGUE5, CREDIT_VAGUE10, s("Épreuve des esprits"), s("Ne t'éloigne pas du rocher.")),
+        "",
+        "-- Renforts des objets du monde, pendant leurs quêtes (puissance 0 : celle de l'entrée, comme avant).",
+        "CREATE TABLE solazeroth_v3_renforts (objet_monde INT UNSIGNED NOT NULL PRIMARY KEY, creature INT UNSIGNED NOT NULL, "
+        "nombre TINYINT UNSIGNED NOT NULL, quetes VARCHAR(64) NOT NULL, puissance TINYINT UNSIGNED NOT NULL);",
+        "INSERT INTO solazeroth_v3_renforts VALUES (3240, 3122, 2, '910222,910522', 0), (102986, 3207, 1, '910224,910524', 0);",
+        "",
+        "-- Bonus des familles de reliques et carte des reliques, par zone.",
+        "CREATE TABLE solazeroth_v3_reliques_familles (famille TINYINT UNSIGNED NOT NULL PRIMARY KEY, "
+        "zone INT UNSIGNED NOT NULL, nom VARCHAR(64) NOT NULL, objet INT UNSIGNED NOT NULL, cuivre INT UNSIGNED NOT NULL, "
+        "composant INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL);",
+        "INSERT INTO solazeroth_v3_reliques_familles VALUES (0, %d, %s, 910131, 0, 0, 0), (1, %d, %s, 0, 30000, %d, 2), "
+        "(2, %d, %s, 910132, 0, 0, 0);" % (DUROTAR, s(FAMILLES[0]), DUROTAR, s(FAMILLES[1]), OEIL_TENEBREUX, DUROTAR,
+                                          s(FAMILLES[2])),
+        "CREATE TABLE solazeroth_v3_reliques_cartes (zone INT UNSIGNED NOT NULL PRIMARY KEY, marques INT UNSIGNED NOT NULL, "
+        "cuivre INT UNSIGNED NOT NULL, seuil INT UNSIGNED NOT NULL);",
+        "INSERT INTO solazeroth_v3_reliques_cartes VALUES (%d, 30, 20000, 8);" % DUROTAR,
+        "",
+        "-- Techniques sans SmartAI. Genres : 1 carapace (a : % des dégâts gardés, b : ms après un étourdissement) ;",
+        "-- 2 flaque à la mort (a : dix-millièmes de vie par 500 ms, b : durée, sort) ; 3 zone marquée (quête, a : délai,",
+        "-- b : frappe après, c : dix-millièmes de vie, sort, creature2 : aura du marqueur) ; 4 frères d'armes (a : m,",
+        "-- b : % en moins, creature2) ; 5 renvoi (a : % des coups de mêlée) ; 6 rage voisine (a : m, b : % par mort,",
+        "-- c : cumul) ; 7 mur répété (a : délai, b : durée, sort) ; 8 sable grouillant (quête, a : délai, b : puissance,",
+        "-- creature2).",
+        "CREATE TABLE solazeroth_v3_techniques (creature INT UNSIGNED NOT NULL, genre TINYINT UNSIGNED NOT NULL, "
+        "quete INT UNSIGNED NOT NULL, a INT UNSIGNED NOT NULL, b INT UNSIGNED NOT NULL, c INT UNSIGNED NOT NULL, "
+        "sort INT UNSIGNED NOT NULL, creature2 INT UNSIGNED NOT NULL, PRIMARY KEY (creature, genre));",
+        "INSERT INTO solazeroth_v3_techniques VALUES (3141, 1, 0, 50, 6000, 0, 0, 0), %s, "
+        "(3203, 3, 910229, 8000, 2500, 2000, 403, 20545);"
+        % ", ".join("(%d, 2, 0, 300, 6000, 0, 26573, 0)" % e for e in (3225, 3226, 3227, 3228)),
+        "",
+        "-- Records d'épreuve et cartes achetées, par épreuve et par zone (recopiés de solazeroth_v3_annexes_joueur).",
+        "CREATE TABLE IF NOT EXISTS acore_characters.solazeroth_v3_epreuves_joueur (guid INT UNSIGNED NOT NULL, "
+        "epreuve INT UNSIGNED NOT NULL, vague TINYINT UNSIGNED NOT NULL DEFAULT 0, temps INT UNSIGNED NOT NULL DEFAULT 0, "
+        "jour INT UNSIGNED NOT NULL DEFAULT 0, PRIMARY KEY (guid, epreuve));",
+        "INSERT IGNORE INTO acore_characters.solazeroth_v3_epreuves_joueur SELECT guid, 1, vague, temps, jour "
+        "FROM acore_characters.solazeroth_v3_annexes_joueur WHERE vague > 0 OR jour > 0;",
+        "CREATE TABLE IF NOT EXISTS acore_characters.solazeroth_v3_reliques_cartes_joueur (guid INT UNSIGNED NOT NULL, "
+        "zone INT UNSIGNED NOT NULL, PRIMARY KEY (guid, zone));",
+        "INSERT IGNORE INTO acore_characters.solazeroth_v3_reliques_cartes_joueur SELECT guid, %d "
+        "FROM acore_characters.solazeroth_v3_annexes_joueur WHERE carte = 1;" % DUROTAR,
+        "",
+    ]
+    down = [
+        "-- Annule 143 : les records et la carte de Durotar reviennent dans solazeroth_v3_annexes_joueur.",
+        "USE acore_world;",
+        "INSERT INTO acore_characters.solazeroth_v3_annexes_joueur (guid, carte, vague, temps, jour) "
+        "SELECT guid, 0, vague, temps, jour FROM acore_characters.solazeroth_v3_epreuves_joueur WHERE epreuve = 1 "
+        "ON DUPLICATE KEY UPDATE vague = VALUES(vague), temps = VALUES(temps), jour = VALUES(jour);",
+        "INSERT INTO acore_characters.solazeroth_v3_annexes_joueur (guid, carte) SELECT guid, 1 "
+        "FROM acore_characters.solazeroth_v3_reliques_cartes_joueur WHERE zone = %d "
+        "ON DUPLICATE KEY UPDATE carte = 1;" % DUROTAR,
+        "DROP TABLE acore_characters.solazeroth_v3_epreuves_joueur, acore_characters.solazeroth_v3_reliques_cartes_joueur;",
+        "DROP TABLE solazeroth_v3_epreuves, solazeroth_v3_renforts, solazeroth_v3_reliques_familles, "
+        "solazeroth_v3_reliques_cartes, solazeroth_v3_techniques;",
+        "DELETE FROM solazeroth_v3_vagues WHERE epreuve <> 1;",
+        "ALTER TABLE solazeroth_v3_vagues DROP PRIMARY KEY, DROP COLUMN epreuve, DROP COLUMN puissance, "
+        "ADD PRIMARY KEY (vague, creature);",
+        "DELETE FROM solazeroth_v3_annexes WHERE zone <> %d;" % DUROTAR,
+        "DELETE FROM solazeroth_v3_reliques WHERE zone <> %d;" % DUROTAR,
+        "ALTER TABLE solazeroth_v3_annexes DROP COLUMN zone;",
+        "ALTER TABLE solazeroth_v3_reliques DROP COLUMN zone;",
+        "",
+    ]
+    for suffixe, lignes in ((".up.sql", up), (".down.sql", down)):
+        with open(GENERALES + suffixe, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lignes))
+    print("Migration 143 écrite (tables générales des annexes, lignes de Durotar).")
+
+
+# ---------------------------------------------------------------- 144 : annexes des Tarides
+
+def construire_tarides():
+    """Migration 144 : annexes A11 à A46 des Tarides (annexes_tarides.py)."""
+    import annexes_tarides as at
+    import quetes_tarides
+    import equipement_v3
+    zone = at.ZONE
+    migration = os.path.join(os.path.dirname(MIGRATION), at.MIGRATION_NUMERO)
+    up, down = [], []
+    w = up.append
+    w("-- Lot T4 des Tarides (03/11/2026) : annexes A11 à A46 des Tarides (primes, contrats, défis, reliques ; brouillon")
+    w("-- des Tarides, §4.1.2 à 4.1.6). Généré par outils\\annexes_durotar.py tarides (données : annexes_tarides.py) :")
+    w("-- ne pas modifier à la main. Scripts : v3_annexes.cpp (tables de la migration 143).")
+    w("USE acore_world;")
+    w("SET SESSION sql_mode = '';")
+    w("")
+    gos_modifies = sorted({o for o, *_ in at.RENFORTS})
+    creatures_modifiees = sorted(set(at.SANS_IA) | set(at.DONNEURS_SANS_DRAPEAU) | {at.REGTHAR})
+    fixes = [e for e, _, _ in at.FIXES]
+    w("-- Tables de retour : créatures, apparitions, puissances et objets du monde modifiés en place.")
+    w("CREATE TABLE solazeroth_v3_t4_origine_creatures SELECT entry, AIName, ScriptName, npcflag FROM creature_template "
+      "WHERE entry IN (%s);" % ", ".join(map(str, creatures_modifiees)))
+    w("CREATE TABLE solazeroth_v3_t4_origine_apparitions SELECT guid, spawntimesecs FROM creature WHERE map = 1 "
+      "AND id IN (%s);" % ", ".join(map(str, at.REAPPARITION)))
+    w("CREATE TABLE solazeroth_v3_t4_origine_puissances SELECT * FROM solazeroth_v3_puissance_entrees "
+      "WHERE entree IN (%s);" % ", ".join(map(str, fixes)))
+    w("CREATE TABLE solazeroth_v3_t4_origine_objets_monde SELECT entry, Data1, ScriptName FROM gameobject_template "
+      "WHERE entry IN (%s);" % ", ".join(map(str, gos_modifies)))
+    w("")
+
+    w("-- Reliques (objets de collection) et pièces des annexes, versions par classe et rangs 1 à 5.")
+    noms_familles = dict(at.FAMILLES)
+    for i, (cle, nom, famille, source, *_r) in enumerate(at.RELIQUES):
+        copie_objet(w, source, at.RELIQUE + i, nom, "class = 15, subclass = 0, InventoryType = 0, Quality = 3, bonding = 1, "
+                    "stackable = 1, BuyPrice = 0, SellPrice = 0, armor = 0, dmg_min1 = 0, dmg_max1 = 0, delay = 0, "
+                    "block = 0, startquest = 0, PageText = 0, PageMaterial = 0, spellid_1 = 0, spelltrigger_1 = 0, "
+                    "description = %s" % s("Relique (%s), annexe %s des Tarides." % (noms_familles[famille], cle)))
+    w("INSERT IGNORE INTO solazeroth_v3_collectionnables VALUES %s;"
+      % ", ".join("(%d)" % (at.RELIQUE + i) for i in range(len(at.RELIQUES))))
+    p_up, p_down, _ = quetes_tarides.pieces_sql(at.JEU)
+    up.extend(p_up)
+    noms_pieces = [(e, nom) for e, nom, *_ in quetes_tarides.pieces(at.JEU)]
+    w("INSERT INTO item_template_locale (ID, locale, Name, Description, VerifiedBuild) VALUES %s;" % ", ".join(
+        "(%d, 'frFR', %s, '', 0)" % (equipement_v3.entree_rang(e, r) if r else e, s("%s +%d" % (nom, r) if r else nom))
+        for e, nom in noms_pieces for r in range(equipement_v3.RANGS + 1)))
+    w("")
+
+    w("-- Crédits des vagues 5 et 10 de la contre-attaque ; Regthar devient gardien d'épreuve.")
+    for e, nom in ((at.CREDIT_VAGUE5, "Vague 5 de la contre-attaque"), (at.CREDIT_VAGUE10, "Vague 10 de la contre-attaque")):
+        copie_creature(w, 15214, e, nom, "")
+    w("UPDATE creature_template SET ScriptName = 'npc_solazeroth_v3_zunjala' WHERE entry = %d;" % at.REGTHAR)
+    w("-- Donneurs d'annexes privés du point d'exclamation au lot T2 (faux indicateurs) : le drapeau leur revient.")
+    w("UPDATE creature_template SET npcflag = npcflag | 2 WHERE entry IN (%s);"
+      % ", ".join(map(str, at.DONNEURS_SANS_DRAPEAU)))
+    w("UPDATE creature_template SET AIName = 'SmartAI' WHERE entry IN (%s);" % ", ".join(map(str, at.SANS_IA)))
+    w("")
+
+    w("-- Cibles des primes et bêtes de Jorn : puissance fixe à leur annexe, réapparition en 15 min.")
+    w("DELETE FROM solazeroth_v3_puissance_entrees WHERE entree IN (%s);" % ", ".join(map(str, fixes)))
+    origines = {int(e): (int(a), int(b)) for e, a, b in sql(
+        "SELECT entry, minlevel, maxlevel FROM acore_world.creature_template WHERE entry IN (%s)"
+        % ", ".join(map(str, fixes)))}
+    w("INSERT INTO solazeroth_v3_puissance_entrees (entree, zone, fixe, secteur, origine_min, origine_max, puissance_min, "
+      "puissance_max) VALUES %s;" % ", ".join("(%d, %d, 1, %d, %d, %d, %d, %d)" % (
+          e, zone, secteur, *origines[e], p, p) for e, p, secteur in at.FIXES))
+    w("UPDATE creature SET spawntimesecs = 900 WHERE map = 1 AND id IN (%s);" % ", ".join(map(str, at.REAPPARITION)))
+    w("")
+
+    w("-- Techniques des monstres (M1 à M3, M5 à M11, M13 à M15, M17, M21 ; les autres : solazeroth_v3_techniques).")
+    lignes, ids = [], {}
+    for creature, ev, ep, flags, action, ap, cible, (dx, dy), comment in at.TECHNIQUES:
+        n = ids[creature] = ids.get(creature, 49) + 1
+        lignes.append("(%d, 0, %d, 0, %d, 0, 100, %d, %d, %d, %d, %d, 0, 0, %d, %d, %d, %d, %d, 0, 0, %d, 0, 0, 0, 0, "
+                      "%d, %d, 0, 0, %s)" % (creature, n, ev, flags, *ep, action, *ap, cible, dx, dy, s(comment)))
+    w("DELETE FROM smart_scripts WHERE source_type = 0 AND entryorguid IN (%s) AND id >= 50;"
+      % ", ".join(map(str, sorted(ids))))
+    w("INSERT INTO smart_scripts (entryorguid, source_type, id, link, event_type, event_phase_mask, event_chance, "
+      "event_flags, event_param1, event_param2, event_param3, event_param4, event_param5, event_param6, action_type, "
+      "action_param1, action_param2, action_param3, action_param4, action_param5, action_param6, target_type, "
+      "target_param1, target_param2, target_param3, target_param4, target_x, target_y, target_z, target_o, comment) "
+      "VALUES\n" + ",\n".join(lignes) + ";")
+    w("")
+
+    w("-- Objets du monde : tableaux des primes, reliques ; renforts (seaux, valves, nids, antres). Les nids ne")
+    w("-- demandent plus la quête 905 d'origine.")
+    for e, nom, _, _ in at.TABLEAUX:
+        copie_go(w, 2713, e, nom, "")
+    for i, (cle, nom, *_r) in enumerate(at.RELIQUES):
+        copie_go(w, 106318, at.GO_RELIQUE + i, nom, ", type = 10, size = 0.6, Data0 = 0, Data1 = 0, Data2 = 0, Data3 = 0, "
+                 "Data4 = 0, Data5 = 0, Data6 = 0, Data7 = 0, Data8 = 0, Data9 = 0, Data10 = 0, "
+                 "ScriptName = 'go_solazeroth_v3_relique', AIName = ''")
+    w("UPDATE gameobject_template SET ScriptName = 'go_solazeroth_v3_renfort' WHERE entry IN (%s);"
+      % ", ".join(map(str, gos_modifies)))
+    w("UPDATE gameobject_template SET Data1 = 0 WHERE entry IN (%s);" % ", ".join(map(str, at.NIDS)))
+    places = [(e, xy, o) for e, _, xy, o in at.TABLEAUX] + [(at.GO_RELIQUE + i, r[4], 0.0) for i, r in enumerate(at.RELIQUES)]
+    w("INSERT INTO gameobject (guid, id, map, zoneId, areaId, spawnMask, phaseMask, position_x, position_y, position_z, "
+      "orientation, rotation0, rotation1, rotation2, rotation3, spawntimesecs, animprogress, state) VALUES\n" + ",\n".join(
+        "(%d, %d, 1, %d, 0, 1, 1, %d, %d, %.1f, %.1f, 0, 0, 0, 1, 60, 100, 1)"
+        % (at.GUID_GO + k, go, zone, x, y, hauteur(x, y), o) for k, (go, (x, y), o) in enumerate(places)) + ";")
+    w("")
+
+    w("-- Quêtes des annexes.")
+    quetes_sql(w, at.A, zone, at.CARTE)
+    w("")
+
+    w("-- Récompenses, chrono, médailles, sans potion ; reliques, familles, carte ; épreuve ; renforts ; techniques.")
+    valeurs = []
+    for a in at.A:
+        depart, b, ar, o = a.get("chrono", ([], 0, 0, 0))
+        valeurs.append("(%d, '%s', %d, %d, %d, %d, %d, '%s', %d, %d, %d)" % (
+            a["q"], a["cle"], a["insignes"], a["eclats"], b, ar, o, ",".join(map(str, depart)), a.get("potion", 0),
+            a.get("equip_or", 0), zone))
+    w("INSERT INTO solazeroth_v3_annexes (quete, cle, insignes, eclats, bronze, argent, `or`, depart, potion, objet_or, "
+      "zone) VALUES %s;" % ", ".join(valeurs))
+    w("INSERT INTO solazeroth_v3_annexes_composants VALUES %s;" % ", ".join(
+        "(%d, %d, %d)" % (a["q"], o, n) for a in at.A for o, n in a.get("composants", {}).items()))
+    w("INSERT INTO solazeroth_v3_reliques (objet_monde, objet, famille, composant, zone) VALUES %s;" % ", ".join(
+        "(%d, %d, %d, %d, %d)" % (at.GO_RELIQUE + i, at.RELIQUE + i, r[2], at.SECTEURS[r[7]], zone)
+        for i, r in enumerate(at.RELIQUES)))
+    w("INSERT INTO solazeroth_v3_reliques_familles VALUES %s;" % ", ".join(
+        "(%d, %d, %s, %d, %d, %d, %d)" % (f, zone, s(noms_familles[f]), objet, cuivre, composant, nombre)
+        for f, _, objet, cuivre, composant, nombre in at.BONUS_FAMILLE))
+    w("INSERT INTO solazeroth_v3_reliques_cartes VALUES (%d, %d, %d, %d);"
+      % (zone, at.CARTE_MARQUES, at.CARTE_CUIVRE, at.CARTE_SEUIL))
+    w("INSERT INTO solazeroth_v3_epreuves VALUES (%d, %d, %d, %d, %d, %d, 5, %d, %s, %s);"
+      % (at.EPREUVE, at.REGTHAR, zone, at.q(27), at.q(27, 2), at.CREDIT_VAGUE5, at.CREDIT_VAGUE10, s(at.EPREUVE_NOM),
+         s(at.EPREUVE_CONSIGNE)))
+    w("INSERT INTO solazeroth_v3_vagues (epreuve, vague, creature, nombre, puissance) VALUES %s;" % ", ".join(
+        "(%d, %d, %d, %d, %d)" % (at.EPREUVE, v, c, n, p) for v, (p, vague) in enumerate(at.VAGUES, 1) for c, n in vague))
+    w("INSERT INTO solazeroth_v3_renforts VALUES %s;" % ", ".join(
+        "(%d, %d, %d, '%s', %d)" % (o, c, n, ",".join(map(str, qs)), p) for o, c, n, qs, p in at.RENFORTS))
+    w("INSERT INTO solazeroth_v3_techniques VALUES %s;" % ", ".join(
+        "(%d, %d, %d, %d, %d, %d, %d, %d)" % t for t in at.TECHNIQUES_TABLE))
+    w("")
+
+    w("-- Parts de zone : genre 4, annexe rendue (la quête) ; genre 5, relique dans la Collection.")
+    parts = ["(%d, 4, %d, %d, %s)" % (zone, a["q"], a["part"], s("%s — %s" % (a["cle"], a["titre"]))) for a in at.A
+             if a["part"]]
+    parts += ["(%d, 5, %d, 25, %s)" % (zone, at.RELIQUE + i, s("%s — %s" % (r[0], r[1]))) for i, r in enumerate(at.RELIQUES)]
+    w("DELETE FROM solazeroth_v3_zone_parts WHERE zone = %d AND genre IN (4, 5);" % zone)
+    w("INSERT INTO solazeroth_v3_zone_parts (zone, genre, cle, part, nom) VALUES %s;" % ", ".join(parts))
+    w("")
+    total = sum(a["part"] for a in at.A) + 25 * len(at.RELIQUES)
+    assert total == 2500, total
+
+    q = ", ".join(str(a["q"]) for a in at.A)
+    reliques = ", ".join(str(at.RELIQUE + i) for i in range(len(at.RELIQUES)))
+    creatures = "%d, %d" % (at.CREDIT_VAGUE5, at.CREDIT_VAGUE10)
+    gos = ", ".join(map(str, [e for e, *_ in at.TABLEAUX] + [at.GO_RELIQUE + i for i in range(len(at.RELIQUES))]))
+    down += [
+        "-- Annule 144 : retire les annexes des Tarides. Les reliques rangées restent en Collection, sans emploi.",
+        "USE acore_world;",
+        "DELETE FROM solazeroth_v3_zone_parts WHERE zone = %d AND genre IN (4, 5);" % zone,
+        "DELETE FROM solazeroth_v3_annexes_composants WHERE quete IN (%s);" % q,
+        "DELETE FROM solazeroth_v3_annexes WHERE zone = %d;" % zone,
+        "DELETE FROM solazeroth_v3_reliques WHERE zone = %d;" % zone,
+        "DELETE FROM solazeroth_v3_reliques_familles WHERE zone = %d;" % zone,
+        "DELETE FROM solazeroth_v3_reliques_cartes WHERE zone = %d;" % zone,
+        "DELETE FROM solazeroth_v3_vagues WHERE epreuve = %d;" % at.EPREUVE,
+        "DELETE FROM solazeroth_v3_epreuves WHERE epreuve = %d;" % at.EPREUVE,
+        "DELETE FROM solazeroth_v3_renforts WHERE objet_monde IN (%s);" % ", ".join(map(str, gos_modifies)),
+        "DELETE FROM solazeroth_v3_techniques WHERE (creature, genre) IN (%s);"
+        % ", ".join("(%d, %d)" % (t[0], t[1]) for t in at.TECHNIQUES_TABLE),
+        "DELETE FROM quest_template WHERE ID IN (%s);" % q,
+        "DELETE FROM quest_template_addon WHERE ID IN (%s);" % q,
+        "DELETE FROM quest_request_items WHERE ID IN (%s);" % q,
+        "DELETE FROM quest_offer_reward WHERE ID IN (%s);" % q,
+        "DELETE FROM quest_poi WHERE QuestID IN (%s);" % q,
+        "DELETE FROM quest_poi_points WHERE QuestID IN (%s);" % q,
+        "DELETE FROM creature_queststarter WHERE quest IN (%s);" % q,
+        "DELETE FROM creature_questender WHERE quest IN (%s);" % q,
+        "DELETE FROM gameobject_queststarter WHERE quest IN (%s);" % q,
+        "DELETE FROM gameobject_questender WHERE quest IN (%s);" % q,
+        "DELETE FROM gameobject WHERE guid BETWEEN %d AND %d;" % (at.GUID_GO, at.GUID_GO + len(places) - 1),
+        "DELETE FROM gameobject_template WHERE entry IN (%s);" % gos,
+        "DELETE FROM gameobject_template_locale WHERE entry IN (%s);" % gos,
+        "UPDATE gameobject_template t JOIN solazeroth_v3_t4_origine_objets_monde o ON o.entry = t.entry "
+        "SET t.Data1 = o.Data1, t.ScriptName = o.ScriptName;",
+        "DELETE FROM smart_scripts WHERE source_type = 0 AND entryorguid IN (%s) AND id >= 50;"
+        % ", ".join(map(str, sorted(ids))),
+        "UPDATE creature c JOIN solazeroth_v3_t4_origine_apparitions o ON o.guid = c.guid "
+        "SET c.spawntimesecs = o.spawntimesecs;",
+        "DELETE FROM solazeroth_v3_puissance_entrees WHERE entree IN (%s);" % ", ".join(map(str, fixes)),
+        "INSERT INTO solazeroth_v3_puissance_entrees SELECT * FROM solazeroth_v3_t4_origine_puissances;",
+        "UPDATE creature_template t JOIN solazeroth_v3_t4_origine_creatures o ON o.entry = t.entry "
+        "SET t.AIName = o.AIName, t.ScriptName = o.ScriptName, t.npcflag = o.npcflag;",
+        "DROP TABLE solazeroth_v3_t4_origine_creatures, solazeroth_v3_t4_origine_apparitions, "
+        "solazeroth_v3_t4_origine_puissances, solazeroth_v3_t4_origine_objets_monde;",
+        "DELETE FROM creature_template WHERE entry IN (%s);" % creatures,
+        "DELETE FROM creature_template_model WHERE CreatureID IN (%s);" % creatures,
+        "DELETE FROM creature_template_locale WHERE entry IN (%s);" % creatures,
+        "DELETE FROM solazeroth_v3_collectionnables WHERE entry IN (%s);" % reliques,
+        "DELETE FROM item_template WHERE entry IN (%s);" % reliques,
+        "DELETE FROM item_template_locale WHERE ID IN (%s);" % reliques,
+    ] + p_down + [
+        "DELETE FROM item_template_locale WHERE ID IN (%s);" % ", ".join(
+            str(equipement_v3.entree_rang(e, r) if r else e) for e, _ in noms_pieces for r in range(equipement_v3.RANGS + 1)),
+        "",
+    ]
+    for suffixe, lignes in ((".up.sql", up), (".down.sql", down)):
+        with open(migration + suffixe, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lignes))
+    print("%d quêtes d'annexe, %d reliques, %d pièces, %d techniques SmartAI, %d en table : migration 144 écrite."
+          % (len(at.A), len(at.RELIQUES), len(at.PIECES), len(at.TECHNIQUES), len(at.TECHNIQUES_TABLE)))
+
+
 def lua(t):
     return '"' + t.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -642,11 +962,14 @@ def lua(t):
 def interface():
     # bleue : quête à refaire (journalière ou répétable), bleue dans le jeu ; épingle bleue sur les cartes.
     # cible : position de la cible d'une prime (x, y du jeu) ; tête de mort sur les cartes tant qu'elle est à faire.
+    # Lot T4 des Tarides : annexes et reliques des deux zones ; zone de chaque relique (la fenêtre des objectifs et la
+    # carte ne montrent que celles de la zone) ; familles des Tarides après celles de Durotar ; catégorie « Les Tarides ».
+    import annexes_tarides as at
     l = ["-- Généré par outils\\annexes_durotar.py : ne pas modifier à la main.",
-         "-- Annexes de Durotar (quête -> clé, famille, titre, puissance, résumé), reliques (objet -> clé, nom, famille,",
-         "-- indice, x, y) et catégorie « Durotar » de la Collection.",
+         "-- Annexes de Durotar et des Tarides (quête -> clé, famille, titre, puissance, résumé), reliques (objet -> clé,",
+         "-- nom, famille, indice, x, y, zone) et catégories « Durotar » et « Les Tarides » de la Collection.",
          "SolUI.ANNEXES = {"]
-    for a in A:
+    for a in A + at.A:
         l.append("    [%d] = { cle = %s, famille = %s, titre = %s, puissance = %d, resume = %s, part = %d%s }," % (
             a["q"], lua(a["cle"]), lua(a["famille"]), lua(a["titre"]), a["p"], lua(a["resume"]), a["part"],
             (", chrono = { %d, %d, %d }" % a["chrono"][1:] if a.get("chrono") else "")
@@ -654,12 +977,17 @@ def interface():
                else "")
             + (", cible = { %d, %d }" % a["tuer"][0][2] if a["famille"] == "Primes" else "")))
     l.append("}")
+    familles = [(f, BONUS_FAMILLE[i]) for i, f in enumerate(FAMILLES)] + \
+        [(nom, texte) for (_, nom), (_, texte, *_r) in zip(at.FAMILLES, at.BONUS_FAMILLE)]
     l.append("SolUI.FAMILLES_RELIQUES = { %s }" % ", ".join(
-        "{ nom = %s, bonus = %s }" % (lua(f), lua(BONUS_FAMILLE[i])) for i, f in enumerate(FAMILLES)))
+        "{ nom = %s, bonus = %s }" % (lua(f), lua(b)) for f, b in familles))
     l.append("SolUI.RELIQUES = {")
     for i, (cle, nom, famille, _, (x, y), indice, p, _) in enumerate(RELIQUES):
-        l.append("    { objet = %d, cle = %s, nom = %s, famille = %d, indice = %s, x = %d, y = %d, puissance = %d },"
-                 % (RELIQUE + i, lua(cle), lua(nom), famille + 1, lua(indice), x, y, p))
+        l.append("    { objet = %d, cle = %s, nom = %s, famille = %d, indice = %s, x = %d, y = %d, puissance = %d, zone = %d },"
+                 % (RELIQUE + i, lua(cle), lua(nom), famille + 1, lua(indice), x, y, p, DUROTAR))
+    for i, (cle, nom, famille, _, (x, y), indice, p, _) in enumerate(at.RELIQUES):
+        l.append("    { objet = %d, cle = %s, nom = %s, famille = %d, indice = %s, x = %d, y = %d, puissance = %d, zone = %d },"
+                 % (at.RELIQUE + i, lua(cle), lua(nom), famille + 1, lua(indice), x, y, p, at.ZONE))
     l.append("}")
     l.append("SolUI.PUISSANCES_QUETES = SolUI.PUISSANCES_QUETES or {}")
     l.append("for quete, a in pairs(SolUI.ANNEXES) do SolUI.PUISSANCES_QUETES[quete] = a.puissance end")
@@ -667,10 +995,27 @@ def interface():
     l.append("    table.insert(SolUI.CATALOGUE, { nom = \"Durotar\", objets = {")
     l += ["        { %d, %s, 3 }," % (RELIQUE + i, lua(r[1])) for i, r in enumerate(RELIQUES)]
     l.append("    } })")
+    l.append("    table.insert(SolUI.CATALOGUE, { nom = \"Les Tarides\", objets = {")
+    l += ["        { %d, %s, 3 }," % (at.RELIQUE + i, lua(r[1])) for i, r in enumerate(at.RELIQUES)]
+    l.append("    } })")
     l.append("end")
     with open(LUA, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(l) + "\n")
 
 
 if __name__ == "__main__":
-    construire()
+    import quetes_durotar
+    choix = sys.argv[1] if len(sys.argv) > 1 else "durotar"
+    if choix == "durotar":
+        construire()
+    elif choix == "generales":
+        generaliser()
+        interface()
+    elif choix == "tarides":
+        construire_tarides()
+        interface()
+        quetes_durotar.item_dbc()
+        import tissu_v3
+        tissu_v3.ecrire_versions_lua()
+    else:
+        raise SystemExit("py annexes_durotar.py [durotar | generales | tarides]")

@@ -14,7 +14,13 @@ dégâts subis, multipliée par sa force.
 Audit du jeu, lot 2 (02/11/2026) : écart du difficile (1 au lieu de 2), monstres calés sur la puissance avec les rangs
 et arrondi au plus proche corrigés pour suivre le serveur.
 
-py simulation_modes.py
+Lot T7 des Tarides (03/11/2026, point 13.5 du comparatif) : --tarides simule les modes sur la fiche des Tarides à 60 %
+de la zone (secteur du sud, monstres 25 à 27 : puissance 26, fiches_zones.joueurs), le guerrier contre les monstres des
+Tarides de cette tranche (tests_equilibrage.MONSTRES_TARIDES, sorts et courbe compris), avec le camp de fin de Durotar
+(potion 2, feu 3), puis celui des Tarides (potion 4 : 3 charges à 40 % ; feu 5 : vie +8 %, +10 Force), puis avec deux
+rangs d'objet de mieux.
+
+py simulation_modes.py [--tarides]
 """
 import math
 import os
@@ -69,5 +75,34 @@ def main():
             print("%-6s P%-4.1f %-13s %s" % (joueur.nom, joueur.puissance, nom, " / ".join(cases)))
 
 
+P_TARIDES = 26                          # 60 % des Tarides : secteur du sud (48,55 à 71,65 %), monstres 25 à 27
+POTION_TARIDES_4 = (3, 40, 1, 10)       # potion 4 des Tarides (bivouac_v3.py)
+
+
+def tarides():
+    import fiches_zones as fz
+    import simulation_sorts as ss
+    import tests_equilibrage as te
+    g = fz.joueurs(P_TARIDES)[0]
+    camp_tarides = lambda j: sim.enchanter(j, vie=round(j.vie * 0.03), force=5)   # feu 5 au lieu du feu 3
+    monstres = [(e, p) for e, p in te.MONSTRES_TARIDES if 25 <= p <= 27]
+    print("Tarides, guerrier P%d (fiche à 60 %%), victoires (%%) sur %d monstres ; colonnes : %s"
+          % (P_TARIDES, len(monstres), " / ".join(MODES)))
+    variantes = (("camp de Durotar", g, te.POTION_TARIDES), ("camp des Tarides", camp_tarides(g), POTION_TARIDES_4),
+                 ("Tarides + 2 rangs", camp_tarides(rangs(g, 2)), POTION_TARIDES_4))
+    for nom, j, potion in variantes:
+        cases = []
+        for mode, (ecart, facteur, techniques, force) in MODES.items():
+            tech = 1 + TECHNIQUE * techniques * force
+            ms = [renforcer(ss.monstre_avec_sorts(e, max(p, math.floor(P_TARIDES) + ecart), contact=True, courbe=True),
+                            facteur, tech) for e, p in monstres]
+            taux = sum(ss.simuler(j, m, 400, potion=potion, heurt=te.HEURT)["victoire"] for m in ms) / len(ms)
+            cases.append("%3.0f" % taux)
+        print("  %-18s %s" % (nom, " / ".join(cases)))
+
+
 if __name__ == "__main__":
-    main()
+    if "--tarides" in sys.argv:
+        tarides()
+    else:
+        main()

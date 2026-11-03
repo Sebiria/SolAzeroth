@@ -141,9 +141,10 @@ def versions():
 
 def ecrire_versions_lua():
     """SolUI_Versions.lua : versions de Durotar (ce fichier) et des zones suivantes (quetes_tarides.versions,
-    lot T2 des Tarides)."""
+    lot T2 des Tarides ; pièces des annexes des Tarides, lot T4)."""
+    import annexes_tarides
     import quetes_tarides
-    toutes = versions() + quetes_tarides.versions()
+    toutes = versions() + quetes_tarides.versions() + quetes_tarides.versions(annexes_tarides.JEU)
     lua = ["-- Généré par outils\\tissu_v3.py : ne pas modifier à la main.",
            "-- Classe -> pièce du monde -> { sa version que la classe reçoit, son nom } (v3_armures.cpp).",
            "SolUI.VERSIONS = {"]

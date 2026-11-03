@@ -285,7 +285,8 @@ namespace
             if (acquis)
                 sommes[part.genre] += part.part;
         }
-        lieux.push_back(Acore::StringFormat("CARTE;{}", SolAzeroth::CarteReliques(player) ? 1 : 0));
+        if (std::string carte = SolAzeroth::CarteReliques(player, it->first); !carte.empty())
+            lieux.push_back(carte);   // lot T4 des Tarides : une carte par zone, avec son prix
         if (std::string secrets = SolAzeroth::RaresSecrets(player, it->first); !secrets.empty())
             lieux.push_back(secrets);   // lot 6b : rares secrets (v3_rares_secrets.cpp)
         uint32 annexes = sommes[LIEU] + sommes[ANNEXE] + sommes[RELIQUE];
