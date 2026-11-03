@@ -45,38 +45,54 @@ local function Demander() SendChatMessage(".equipement", "SAY") end
 -- Panoplie du Gouffre (lot 4c, v3_equipement.cpp ; 03/11/2026, demande de l'utilisateur : un bonus par ligne, dans la
 -- fabrication et dans l'infobulle de chaque pièce). Les pièces bleues se reconnaissent à leur nom, rangs compris
 -- (« Heaume du Gouffre +3 ») ; une arme à deux mains compte double, comme sur le serveur.
+-- Lot T5 des Tarides : une panoplie par donjon (solazeroth_v3_panoplies), reconnue au suffixe du nom. Elles ne se
+-- cumulent pas : seule compte celle qui a le plus de pièces portées (la première de la liste à égalité).
 local PANOPLIE = { { 2, "+ 3 % de dégâts" }, { 4, "− 5 % de dégâts subis" }, { 6, "3 % de vol de vie" } }
-local function DuGouffre(lien)
-    local nom, _, _, _, _, _, _, _, emplacement = GetItemInfo(lien)
-    return nom ~= nil and emplacement ~= "" and nom:find(" du Gouffre") ~= nil, emplacement
+local PANOPLIES = { { " du Gouffre", "Panoplie du Gouffre" }, { " des Lamentations", "Panoplie des Lamentations" } }
+local function PanoplieDe(nom)
+    for i, p in ipairs(PANOPLIES) do
+        if nom and nom:find(p[1], 1, true) then return i end
+    end
 end
-local function PiecesGouffre()
-    local n = 0
+local function PanoplieDuLien(lien)
+    local nom, _, _, _, _, _, _, _, emplacement = GetItemInfo(lien)
+    if nom == nil or emplacement == "" then return nil, emplacement end
+    return PanoplieDe(nom), emplacement
+end
+local function PiecesPanoplies()
+    local n = {}
+    for i = 1, #PANOPLIES do n[i] = 0 end
     for slot = 1, 19 do
         local lien = GetInventoryItemLink("player", slot)
         if lien then
-            local gouffre, emplacement = DuGouffre(lien)
-            if gouffre then n = n + (emplacement == "INVTYPE_2HWEAPON" and 2 or 1) end
+            local i, emplacement = PanoplieDuLien(lien)
+            if i then n[i] = n[i] + (emplacement == "INVTYPE_2HWEAPON" and 2 or 1) end
         end
     end
-    return n
+    local active = 1
+    for i = 2, #PANOPLIES do
+        if n[i] > n[active] then active = i end
+    end
+    return n, active
 end
--- Titre puis un palier par ligne : vert si atteint, gris sinon.
-local function LignesPanoplie()
-    local portees = PiecesGouffre()
-    local lignes = { { "Panoplie du Gouffre (" .. portees .. "/6)", 1, 0.82, 0 } }
+-- Titre puis un palier par ligne : vert si atteint (et si cette panoplie est celle qui compte), gris sinon.
+local function LignesPanoplie(i)
+    local n, active = PiecesPanoplies()
+    local portees = n[i]
+    local lignes = { { PANOPLIES[i][2] .. " (" .. portees .. "/6)", 1, 0.82, 0 } }
     for _, p in ipairs(PANOPLIE) do
         local r, g, b = 0.5, 0.5, 0.5
-        if portees >= p[1] then r, g, b = 0.55, 0.77, 0.65 end
+        if i == active and portees >= p[1] then r, g, b = 0.55, 0.77, 0.65 end
         table.insert(lignes, { "(" .. p[1] .. ") Panoplie : " .. p[2], r, g, b })
     end
     return lignes
 end
 local function InfobullePanoplie(self)
     local _, lien = self:GetItem()
-    if not lien or not DuGouffre(lien) then return end
+    local i = lien and PanoplieDuLien(lien)
+    if not i then return end
     self:AddLine(" ")
-    for _, l in ipairs(LignesPanoplie()) do self:AddLine(l[1], l[2], l[3], l[4]) end
+    for _, l in ipairs(LignesPanoplie(i)) do self:AddLine(l[1], l[2], l[3], l[4]) end
     self:Show()
 end
 for _, bulle in ipairs({ GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2 }) do
@@ -342,6 +358,8 @@ titreComposants:SetText("COMPOSANTS")
 local PROVENANCES = {
     [910190] = "Se trouve sur les boss du Gouffre de Ragefeu : 15 % de chances par boss, et une de plus sur le "
         .. "dernier boss tué.",
+    [910191] = "Se trouve sur les boss des Cavernes des Lamentations : 10 % de chances par boss, et une de plus sur "
+        .. "le dernier boss tué.",
 }
 local composants = {}
 for n = 1, 4 do
@@ -490,9 +508,9 @@ local function MajFabrication()
     elseif haute then
         table.insert(lignes, "|cff8cc4a6Plan appris : pas de composant de plus.|r")
     end
-    if c.gouffre then
+    if c.gouffre and PanoplieDe(r[2]) then
         table.insert(lignes, " ")
-        for _, l in ipairs(LignesPanoplie()) do
+        for _, l in ipairs(LignesPanoplie(PanoplieDe(r[2]))) do
             table.insert(lignes, format("|cff%02x%02x%02x%s|r", l[2] * 255, l[3] * 255, l[4] * 255, l[1]))
         end
     end
@@ -522,7 +540,7 @@ local p2 = pages[2]
 local transfert = nil   -- lot 4b : transfert de rang en attente de confirmation
 -- Lot T7 des Tarides : le transfert coûte le composant de donjon de la zone de la nouvelle pièce, d'après sa puissance
 -- (comme solazeroth_v3_donjons_composants : puissance minimale, composant). Le lot T5 ajoute les Cavernes.
-local COMPOSANTS_TRANSFERT = { { 1, 910190, "Braise du Gouffre" } }
+local COMPOSANTS_TRANSFERT = { { 1, 910190, "Braise du Gouffre" }, { 15, 910191, "Graine de cauchemar" } }
 local function ComposantTransfert(id)
     local niveau, choix = select(4, GetItemInfo(id)) or 0, COMPOSANTS_TRANSFERT[1]
     for _, c in ipairs(COMPOSANTS_TRANSFERT) do

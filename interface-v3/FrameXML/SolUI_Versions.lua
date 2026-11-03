@@ -61,6 +61,9 @@ SolUI.VERSIONS = {
         [910810] = { 910828, "Cotte de Bael'dun" },
         [910811] = { 910829, "Garde du rêve" },
         [910812] = { 910830, "Bottes d'épine-de-sang" },
+        [910792] = { 910795, "Épaulières de la fleur de serpent" },
+        [910793] = { 910796, "Jambières des traîtres du Croc" },
+        [910794] = { 910799, "Lame de la savane guérie" },
     },
     ROGUE = {
         [910101] = { 910461, "Bottes de la Vallée" },
@@ -122,5 +125,8 @@ SolUI.VERSIONS = {
         [910810] = { 910857, "Cotte de Bael'dun" },
         [910811] = { 910872, "Garde du rêve" },
         [910812] = { 910858, "Bottes d'épine-de-sang" },
+        [910792] = { 910797, "Épaulières de la fleur de serpent" },
+        [910793] = { 910798, "Jambières des traîtres du Croc" },
+        [910794] = { 910799, "Lame de la savane guérie" },
     },
 }

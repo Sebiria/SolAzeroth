@@ -10,8 +10,8 @@ rang 0, sans compter les récompenses des rares » du donjon précédent. Chaque
 Les objets des rares secrets (rares_secrets_v3.EXCLUS) n'y sont jamais.
 
 - ARRIVEE_TARIDES : les bleues du Gouffre de Ragefeu (equipement_gouffre_v3, puissance 14), 11 pièces : puissance 14,0.
-- SORTIE_TARIDES : l'arrivée en zone 3, aux bleues des Cavernes des Lamentations (34). Les pièces s'écrivent au lot
-  T8 (§4.7.4 du brouillon des Tarides) ; d'ici là, seule la puissance attendue est fixée.
+- SORTIE_TARIDES : l'arrivée en zone 3, aux bleues des Cavernes des Lamentations (34), 11 pièces (lot T5,
+  cavernes_v3.py, §4.7.4 du brouillon des Tarides).
 
 Lot T1 des Tarides (03/11/2026) : fiches à une puissance P de la zone, pour les simulations des secteurs. Les pièces
 vertes et bleues suivent le même barème (equipement_v3.caracteristiques) : pieces_a(spe, P) refait les pièces
@@ -51,8 +51,19 @@ def fiche(nom, zone, precedente, pieces, puissance):
             "camp": {g: r[1] for g, r in precedente["camp"].items()}}
 
 
+# Lot T5 des Tarides : bleues des Lamentations (migration 146, cavernes_v3.py), puissance 34.
+CAPE_CAVERNES, DAGUE_CAVERNES = 910624, 910630
+CAVERNES = {
+    # Maille, cape, Lame des Lamentations (épée), Rempart des Lamentations (bouclier).
+    "guerrier_tank": list(range(910600, 910608)) + [CAPE_CAVERNES, 910627, 910625],
+    # Tissu, cape, Dague des Lamentations, Orbe des Lamentations.
+    "demoniste_affliction": list(range(910616, 910624)) + [CAPE_CAVERNES, DAGUE_CAVERNES, 910626],
+    # Cuir, cape, deux Dagues des Lamentations.
+    "voleur_assassinat": list(range(910608, 910616)) + [CAPE_CAVERNES, DAGUE_CAVERNES, DAGUE_CAVERNES],
+}
+
 ARRIVEE_TARIDES = fiche("Arrivée aux Tarides", gz.TARIDES, gz.DUROTAR, GOUFFRE, gz.DUROTAR["donjon"]["bleues"])
-SORTIE_TARIDES = fiche("Sortie des Tarides (arrivée en zone 3)", gz.ZONE_3, gz.TARIDES, None,
+SORTIE_TARIDES = fiche("Sortie des Tarides (arrivée en zone 3)", gz.ZONE_3, gz.TARIDES, CAVERNES,
                        gz.TARIDES["donjon"]["bleues"])
 FICHES = [ARRIVEE_TARIDES, SORTIE_TARIDES]
 SEBIRIA = 1                 # personnage dont on lit l'équipement (journaux de combat)

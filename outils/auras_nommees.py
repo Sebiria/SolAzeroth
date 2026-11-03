@@ -12,6 +12,7 @@ import dbc
 import artisanat_tarides
 import bivouac_v3
 import bonus_v3
+import cavernes_v3
 import cuisine_v3
 import demoniste_v3
 import icones_retail
@@ -155,6 +156,7 @@ def main():
     # Lot T7 des Tarides : Repos du feu 4-5 et plats des Tarides, migration 145 (écrite par economie_tarides.py).
     tarides += bivouac_v3.lignes_tarides(d, icones_retail.identifiants())
     tarides += cuisine_v3.lignes(d, cuisine_v3.plats_tarides())
+    tarides += cavernes_v3.sorts(d)          # lot T5 des Tarides : panoplie des Lamentations, migration 146
     d.enregistrements.extend(lignes + incantations + kit + demoniste + voleur + bivouac + cuisine + passifs + monstres + bonus
                              + tarides)
     os.makedirs(DBC_CLIENT, exist_ok=True)

@@ -3,8 +3,8 @@ v3_aventurier.cpp comme le serveur les compte, de Durotar à 100 % et du Gouffre
 que les paliers des modes de zone (5 et 9) et de la monte (10) restent atteignables sans farmer les difficultés.
 Les objectifs d'artisan et de la semaine ne comptent pas : ils s'ajoutent.
 Lot T7 des Tarides (03/11/2026, point 13.10 du comparatif) : les Tarides à 100 % s'ajoutent (puissance haute : celle de
-leurs secteurs, solazeroth_v3_puissance_secteurs, comme v3_niveau.cpp), sans leur donjon tant que le lot T5 ne l'a pas
-construit ; le cumul dit le palier atteint en fin de zone.
+leurs secteurs, solazeroth_v3_puissance_secteurs, comme v3_niveau.cpp) ; le cumul dit le palier atteint en fin de zone.
+Lot T5 : leur donjon, les Cavernes des Lamentations, s'y ajoute en difficulté 1 (puissance fixe de Mutanus, 32).
 
 py test_paliers_v3.py        (code de sortie 1 si un palier n'est plus atteignable)
 """
@@ -22,6 +22,7 @@ CNF = r"C:\SolAzeroth\config\mysql-acore.cnf"
 SOURCE = os.path.join(ICI, "..", "modules", "mod-solazeroth", "src", "v3_aventurier.cpp")
 DUROTAR, GOUFFRE = 14, 4                      # zone ; donjon LFG (instance_encounters.lastEncounterDungeon)
 TARIDES = 17
+MUTANUS = 3654                                # dernier boss des Cavernes des Lamentations (lot T5)
 QUETE, EXPLORATION, LIEU, ANNEXE, RELIQUE, MEDAILLE_OR, DONJON, ZONE_60, ZONE_100 = range(1, 10)
 VERIFIES = {5: "mode difficile", 9: "mode cauchemar", 10: "monte"}
 
@@ -80,11 +81,14 @@ def main():
         print("   palier %2d (%s) à %5d points : %s (marge %+d)" % (palier, nom, seuil, "ok" if ok else "HORS D'ATTEINTE",
                                                                     total - seuil))
     haute_t, tarides = points_zone(points, TARIDES)
-    cumul = total + tarides
+    # Lot T5 : les Cavernes des Lamentations en difficulté 1, à la puissance fixe de leur dernier boss (Mutanus).
+    boss_c = int(sql("SELECT puissance_max FROM solazeroth_v3_puissance_entrees WHERE entree = %d" % MUTANUS)[0][0])
+    cavernes = gain(points, DONJON, boss_c)
+    cumul = total + tarides + cavernes
     atteint = max(i for i, p in enumerate(montures_v3.PALIERS, 1) if cumul >= p[0])
-    print("Les Tarides (puissance haute %d) : %d points, sans leur donjon (lot T5) ; cumul %d : palier %d atteint (le "
-          "suivant à %d points)" % (haute_t, tarides, cumul, atteint,
-                                   montures_v3.PALIERS[atteint][0] if atteint < len(montures_v3.PALIERS) else 0))
+    print("Les Tarides (puissance haute %d) : %d points ; Cavernes en difficulté 1 (boss %d) : %d ; cumul %d : palier %d "
+          "atteint (le suivant à %d points)" % (haute_t, tarides, boss_c, cavernes, cumul, atteint,
+                                               montures_v3.PALIERS[atteint][0] if atteint < len(montures_v3.PALIERS) else 0))
     return 1 if erreurs else 0
 
 

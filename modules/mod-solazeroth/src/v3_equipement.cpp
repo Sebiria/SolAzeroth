@@ -42,6 +42,8 @@
 //     critique, + 2 % de hâte ou 0,5 % de vol de vie (une aura à cumuls par variante). Champ 13 de « OBJ » : la variante ;
 //   - panoplie du Gouffre (pièces bleues à Braise, rangs compris) : 2 pièces + 3 % de dégâts, 4 pièces − 5 % de dégâts
 //     subis, 6 pièces 3 % de vol de vie. Recompté chaque seconde.
+// - Lot T5 des Tarides (03/11/2026) : une panoplie par donjon (table solazeroth_v3_panoplies : Gouffre, puis Cavernes
+//   des Lamentations), mêmes paliers ; seule compte celle qui a le plus de pièces portées.
 
 #include "SolAzeroth.h"
 #include "CellImpl.h"
@@ -287,12 +289,24 @@ namespace
     int32 const ECART_TRANSFERT = 5;    // puissance d'écart au plus entre les deux pièces d'un transfert de rang
 
     // Lot 4c : variantes et panoplie du Gouffre (outils\bonus_v3.py).
-    uint32 const PANOPLIE_2 = 101600, PANOPLIE_4 = 101601, PANOPLIE_6 = 101602;
     uint32 const SORTS_VARIANTES[] = { 0, 101603, 101604, 101605 };   // Critique, Hâte, Vol de vie
     uint8 const VARIANTES = 3;
-    // 910272 : Orbe ardent du Gouffre (orbes_v3.py) ; 910273 : Bâton ardent du Gouffre (batons_v3.py).
-    uint32 const GOUFFRE_PREMIERE = 910241, GOUFFRE_DERNIERE = 910273;
     float const VOL_PAR_PIECE = 0.005f, VOL_PANOPLIE = 0.03f;
+    // Lot T5 des Tarides (03/11/2026) : une panoplie par donjon (solazeroth_v3_panoplies, outils\cavernes_v3.py) :
+    // pièces de base premiere à derniere, auras des paliers 2, 4 et 6. Une seule compte, celle qui a le plus de pièces
+    // portées (la première de la table à égalité) : elles ne se cumulent pas. Sans la table, celle du Gouffre
+    // (910241 à 910273 : 910272 Orbe ardent, orbes_v3.py ; 910273 Bâton ardent, batons_v3.py).
+    uint8 const PALIERS_PANOPLIE[] = { 2, 4, 6 };
+    struct Panoplie { uint32 premiere, derniere, sorts[3]; };
+    std::vector<Panoplie> panoplies;
+
+    Panoplie const* PanoplieDe(uint32 base)
+    {
+        for (Panoplie const& p : panoplies)
+            if (base >= p.premiere && base <= p.derniere)
+                return &p;
+        return nullptr;
+    }
     uint32 const RECOMPTE = 1000;
     std::unordered_map<uint32, uint8> variantes;   // objet (guid) -> variante
 
@@ -329,10 +343,11 @@ namespace
             aura->SetStackAmount(n);
     }
 
-    // Pièces portées : panoplie du Gouffre et variantes.
+    // Pièces portées : panoplies de donjon et variantes.
     void Recompter(Player* player)
     {
-        uint8 gouffre = 0, parVariante[VARIANTES + 1] = {};
+        uint8 parVariante[VARIANTES + 1] = {};
+        std::vector<uint8> parPanoplie(panoplies.size(), 0);
         for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
         {
             Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
@@ -341,14 +356,18 @@ namespace
                 continue;
             // Une arme à deux mains tient la place de deux pièces (arme et main gauche) : elle compte double.
             uint8 pieces = item->GetTemplate()->InventoryType == INVTYPE_2HWEAPON ? 2 : 1;
-            if (it->second.base >= GOUFFRE_PREMIERE && it->second.base <= GOUFFRE_DERNIERE)
-                gouffre += pieces;
+            if (Panoplie const* p = PanoplieDe(it->second.base))
+                parPanoplie[p - panoplies.data()] += pieces;
             parVariante[VarianteDe(item)] += pieces;
         }
         bool vivant = player->IsAlive();
-        Cumuls(player, PANOPLIE_2, vivant && gouffre >= 2 ? 1 : 0);
-        Cumuls(player, PANOPLIE_4, vivant && gouffre >= 4 ? 1 : 0);
-        Cumuls(player, PANOPLIE_6, vivant && gouffre >= 6 ? 1 : 0);
+        size_t active = 0;
+        for (size_t i = 1; i < panoplies.size(); ++i)
+            if (parPanoplie[i] > parPanoplie[active])
+                active = i;
+        for (size_t i = 0; i < panoplies.size(); ++i)
+            for (uint8 t = 0; t < 3; ++t)
+                Cumuls(player, panoplies[i].sorts[t], vivant && i == active && parPanoplie[i] >= PALIERS_PANOPLIE[t] ? 1 : 0);
         for (uint8 v = 1; v <= VARIANTES; ++v)
             Cumuls(player, SORTS_VARIANTES[v], vivant ? parVariante[v] : 0);
     }
@@ -524,7 +543,7 @@ namespace
             uint32 base = rangs.count(objet) ? rangs.at(objet).base : 0;
             if (recette.feu)
                 SolAzeroth::ObjectifArtisan(player, objet);
-            else if (base >= GOUFFRE_PREMIERE && base <= GOUFFRE_DERNIERE)
+            else if (PanoplieDe(base))
                 SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_BLEUE);
             else if (base && item->GetTemplate()->ItemLevel >= 7)
             {
@@ -565,6 +584,19 @@ public:
                 versions[uint64(f[1].Get<uint32>()) << 8 | f[2].Get<uint8>()] = f[0].Get<uint32>();
             } while (r->NextRow());
         }
+        panoplies.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT premiere, derniere, sort_2, sort_4, sort_6 FROM "
+            "solazeroth_v3_panoplies ORDER BY ordre"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                panoplies.push_back({ f[0].Get<uint32>(), f[1].Get<uint32>(),
+                    { f[2].Get<uint32>(), f[3].Get<uint32>(), f[4].Get<uint32>() } });
+            } while (r->NextRow());
+        }
+        if (panoplies.empty())
+            panoplies.push_back({ 910241, 910273, { 101600, 101601, 101602 } });
         if (QueryResult r = WorldDatabase.Query("SELECT objet, forge, puissance, prix FROM solazeroth_v3_recettes"))
         {
             do
@@ -1115,8 +1147,9 @@ public:
         float part = 0.0f;
         if (Aura const* aura = player->GetAura(SORTS_VARIANTES[3]))
             part += VOL_PAR_PIECE * aura->GetStackAmount();
-        if (player->HasAura(PANOPLIE_6))
-            part += VOL_PANOPLIE;
+        for (Panoplie const& p : panoplies)
+            if (player->HasAura(p.sorts[2]))
+                part += VOL_PANOPLIE;
         if (part > 0.0f)
             player->ModifyHealth(int32(std::min(degats, victime->GetHealth()) * part));
     }

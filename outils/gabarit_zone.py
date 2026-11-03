@@ -162,7 +162,7 @@ ZONE_3 = extrapoler(TARIDES, "Zone 3 (fictive)", None, (34, 50), {
 ZONES = [DUROTAR, TARIDES, ZONE_3]
 # Lot T3 des Tarides (03/11/2026) : ce qui n'est pas encore construit dans une zone construite par lots, et le lot qui
 # le construira. Ces points ne sont pas comparés au jeu. À vider au fil des lots.
-A_CONSTRUIRE = {"Les Tarides": {"donjon": "T5"}}   # annexes et reliques : T4 fait ; plats et camp : T7 fait
+A_CONSTRUIRE = {}   # annexes et reliques : T4 fait ; plats et camp : T7 fait ; donjon : T5 fait
 
 
 def facteur(puissance):

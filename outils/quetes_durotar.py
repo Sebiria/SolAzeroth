@@ -460,10 +460,12 @@ def item_dbc():
     import rares_secrets_v3
     import tissu_v3
     import artisanat_tarides   # lot T8 des Tarides : pièces vertes, rangs et pierres taillées
+    import cavernes_v3         # lot T5 des Tarides : Graine, bleues des Lamentations, récompenses des Cavernes
     existants = {e[0] for e in table.enregistrements}
     for e, source, genre in annexes_durotar.lignes_dbc() + joaillerie_v3.lignes_dbc() +             equipement_gouffre_v3.lignes_dbc() + \
             rares_secrets_v3.lignes_dbc() + tissu_v3.lignes_dbc() + orbes_v3.lignes_dbc() + batons_v3.lignes_dbc() + \
-            quetes_tarides.lignes_dbc() + artisanat_tarides.lignes_dbc() + annexes_durotar.lignes_dbc_tarides():
+            quetes_tarides.lignes_dbc() + artisanat_tarides.lignes_dbc() + annexes_durotar.lignes_dbc_tarides() + \
+            cavernes_v3.lignes_dbc():
         if e not in existants:
             ligne = list(table.chercher(source))
             ligne[0] = e
@@ -502,10 +504,11 @@ def puissances():
     """Puissance de chaque quête pour l'interface (SolUI_Quetes.lua). Les quêtes restent au niveau du joueur
     (QuestLevel -1) : à leur niveau d'origine, le client les jugerait trop faciles et cacherait leur « ! »."""
     import quetes_tarides
+    import cavernes_v3      # lot T5 des Tarides : T31 à T36
     lignes = ["-- Généré par outils\\quetes_durotar.py : ne pas modifier à la main.",
               "-- Quête -> puissance conseillée (documents de Durotar et des Tarides).",
               "SolUI.PUISSANCES_QUETES = {"]
-    for zone in (ZONE_DUROTAR, quetes_tarides.ZONE):
+    for zone in (ZONE_DUROTAR, quetes_tarides.ZONE, cavernes_v3.ZONE):
         lignes += ["    [%d] = %d," % (ident(zone, n), q["p"]) for n, q in sorted(zone["quetes"].items(),
                                                                           key=lambda kv: ident(zone, kv[0]))]
     lignes.append("}")

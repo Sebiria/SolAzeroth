@@ -17,6 +17,13 @@
 //   transfert de rang coûte le composant de la zone de la pièce (SolAzeroth::ComposantTransfert) ; la récompense de la
 //   semaine donne celui du dernier donjon terminé (solazeroth_v3_dernier_donjon, au compte). Le lot T5 ajoute les
 //   Cavernes des Lamentations à la table.
+// - Lot T5 des Tarides (03/11/2026, outils\cavernes_v3.py, migration 146) : rien n'est plus propre au Gouffre.
+//   - Colonne taux de solazeroth_v3_donjons_composants : chances par difficulté et par boss (15 au Gouffre, 10 aux
+//     Cavernes, qui ont 8 boss).
+//   - Boss sans apparition (Mutanus le Dévoreur, appelé par l'escorte) : table solazeroth_v3_donjons_bosses (boss,
+//     carte), comptés comme les autres. Un boss appelé compte aussi (les autres invocations ne comptent pas).
+//   - Pierres taillées du dernier boss selon le donjon (solazeroth_v3_donjons_pierres) : celles de Durotar au Gouffre,
+//     celles des Tarides aux Cavernes ; sans ligne, celles de Durotar.
 // - Interface (préfixe SOLDONJON) : « DONJON;difficulté;ouvertes;verrouillé;techniques » en donjon, « AUCUN » dehors.
 // - Téléportation (02/11/2026, demande de l'utilisateur, à la place de .reinitialiser) : un donjon dont le dernier
 //   boss est tombé au moins une fois (au compte, solazeroth_v3_aventurier genre 7) se rejoint de n'importe où, hors
@@ -70,10 +77,12 @@ namespace
     std::unordered_map<uint32, uint32> bosses;          // boss (rencontre d'instance) -> carte
     std::unordered_map<uint32, uint32> bossesParCarte;  // carte -> nombre de boss
     std::unordered_map<uint32, uint32> composants;      // carte -> composant de donjon
+    std::unordered_map<uint32, uint32> chancesComposant;   // lot T5 : carte -> % par difficulté, à chaque boss
+    std::unordered_map<uint32, std::vector<uint32>> pierresParCarte;   // lot T5 : carte -> pierres du dernier boss
     std::map<uint8, uint32> composantsParPuissance;     // lot T7 : puissance_min -> composant
     std::unordered_map<uint32, uint32> derniers;        // lot T7 : compte -> carte du dernier donjon terminé
     uint32 const BRAISE = 910190;                       // composant par défaut (Gouffre de Ragefeu)
-    uint32 const CHANCE_COMPOSANT = 15;                 // % par difficulté, à chaque boss
+    uint32 const CHANCE_COMPOSANT = 15;                 // % par difficulté, à chaque boss (sans colonne taux)
     uint8 const AVENTURIER_DONJON = 7;                  // genre « donjon terminé » de v3_aventurier.cpp
 
     struct Destination
@@ -196,7 +205,9 @@ namespace
         Instance* e = InstanceDe(player);
         if (c == composants.end() || !e)
             return;
-        uint32 nombre = urand(1, 100) <= CHANCE_COMPOSANT * difficulte ? 1 : 0;
+        auto chance = chancesComposant.find(map->GetId());
+        uint32 nombre = urand(1, 100) <= (chance == chancesComposant.end() ? CHANCE_COMPOSANT : chance->second) * difficulte
+            ? 1 : 0;
         if (e->bossTues.insert(boss).second)
         {
             CharacterDatabase.Execute("INSERT IGNORE INTO solazeroth_v3_donjons_boss (instance, boss) VALUES ({}, {})",
@@ -308,12 +319,15 @@ public:
     void OnPlayerCreatureKill(Player* player, Creature* creature) override
     {
         Map* map = player->GetMap();
-        if (!map->IsDungeon() || creature->GetCharmerOrOwnerPlayerOrPlayerItself() || creature->IsSummon())
+        if (!map->IsDungeon() || creature->GetCharmerOrOwnerPlayerOrPlayerItself())
             return;
-        uint8 difficulte = std::max<uint8>(1, SolAzeroth::DifficulteDonjon(map));
         bool final = SolAzeroth::EstBossFinal(creature->GetEntry());
         // Les boss se lisent dans les rencontres d'instance : ceux du Gouffre de Ragefeu n'ont pas le drapeau de boss.
         bool boss = bosses.count(creature->GetEntry()) > 0;
+        // Lot T5 : un boss appelé (Mutanus, par l'escorte des Cavernes) compte ; les autres invocations, non.
+        if (creature->IsSummon() && !boss && !final)
+            return;
+        uint8 difficulte = std::max<uint8>(1, SolAzeroth::DifficulteDonjon(map));
         uint32 points = final ? 100 : (boss || creature->IsDungeonBoss()) ? 10 : 1;
         Gagner(player, points * difficulte);
         if (boss)
@@ -334,7 +348,9 @@ public:
         SolAzeroth::DonnerMarques(player, 2 * (difficulte - 1), Acore::StringFormat("difficulté {}", uint32(difficulte)));
         if (difficulte >= 3 && urand(1, 100) <= 25u * (difficulte - 2))
         {
-            uint32 pierre = PIERRES_TAILLEES[urand(0, 2)];
+            auto p = pierresParCarte.find(map->GetId());
+            uint32 pierre = p == pierresParCarte.end() || p->second.empty() ? PIERRES_TAILLEES[urand(0, 2)]
+                : p->second[urand(0, p->second.size() - 1)];
             SolAzeroth::AjouterACollection(player, pierre, 1);
             ChatHandler(player->GetSession()).SendSysMessage("|cffffd100Une pierre taillée est rangée dans la Collection.|r");
         }
@@ -404,8 +420,10 @@ public:
         }
         bosses.clear();
         bossesParCarte.clear();
+        // Lot T5 : et les boss sans apparition (solazeroth_v3_donjons_bosses).
         if (QueryResult r = WorldDatabase.Query("SELECT DISTINCT e.creditEntry, c.map FROM instance_encounters e "
-            "JOIN creature c ON c.id = e.creditEntry WHERE e.creditType = 0"))
+            "JOIN creature c ON c.id = e.creditEntry WHERE e.creditType = 0 "
+            "UNION SELECT boss, carte FROM solazeroth_v3_donjons_bosses"))
         {
             do
             {
@@ -414,14 +432,23 @@ public:
             } while (r->NextRow());
         }
         composants.clear();
+        chancesComposant.clear();
         composantsParPuissance.clear();
-        if (QueryResult r = WorldDatabase.Query("SELECT carte, composant, puissance_min FROM solazeroth_v3_donjons_composants"))
+        if (QueryResult r = WorldDatabase.Query("SELECT carte, composant, puissance_min, taux FROM solazeroth_v3_donjons_composants"))
         {
             do
             {
                 composants[(*r)[0].Get<uint32>()] = (*r)[1].Get<uint32>();
                 composantsParPuissance[(*r)[2].Get<uint8>()] = (*r)[1].Get<uint32>();
+                chancesComposant[(*r)[0].Get<uint32>()] = (*r)[3].Get<uint8>();
             } while (r->NextRow());
+        }
+        pierresParCarte.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT carte, pierre FROM solazeroth_v3_donjons_pierres ORDER BY carte, pierre"))
+        {
+            do
+                pierresParCarte[(*r)[0].Get<uint32>()].push_back((*r)[1].Get<uint32>());
+            while (r->NextRow());
         }
         // Entrée de chaque donjon : la première porte (areatrigger_teleport) qui y mène.
         destinations.clear();
