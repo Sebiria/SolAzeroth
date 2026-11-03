@@ -71,6 +71,9 @@ evenements:SetScript("OnEvent", function(self, event, nom, fonction)
             SolAzerothDB.consommables = SolAzerothDB.consommables or {}
             SolUI.ReprendreConso(SolAzerothDB.consommables[cle])
             SolUI.EnregistrerConso = function(id) SolAzerothDB.consommables[cle] = id end
+            SolAzerothDB.montures = SolAzerothDB.montures or {}
+            SolUI.ReprendreMonture(SolAzerothDB.montures[cle])
+            SolUI.EnregistrerMonture = function(sort) SolAzerothDB.montures[cle] = sort end
             SolUI.MajQuetes()
         end
     elseif event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then

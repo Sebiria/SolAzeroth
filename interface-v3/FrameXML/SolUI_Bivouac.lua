@@ -8,6 +8,10 @@
 -- Consommable (demande du 03/11/2026) : un cinquième, à droite du repas. On y glisse n'importe quel objet qui s'utilise
 -- et ne s'équipe pas (élixir, parchemin, objet de quête…) ; il reste le même, grisé une fois épuisé. Gardé par l'addon
 -- SolAzeroth, par personnage (SolAzerothDB.consommables).
+-- Monture (demande du 03/11/2026) : un sixième, à droite de la pierre de foyer. Clic : monter, ou descendre si on est
+-- en selle ; clic droit : monture suivante ; on peut aussi y glisser une monture de la fenêtre des familiers. Sans
+-- monture (avant le palier 10 du rang d'aventurier, v3_aventurier.cpp), il est vide. Choix gardé comme le consommable
+-- (SolAzerothDB.montures).
 
 local S = SolUI
 
@@ -215,6 +219,87 @@ conso:SetScript("PreClick", function(self)
 end)
 conso:SetScript("PostClick", function(self) self:SetAttribute("type", "item") end)
 
+-- Monture : les montures apprises (familiers « MOUNT » du jeu), repérées par leur sort.
+local monture = NouveauBouton(nil, 3, 1, true, "SolUIBivouacMonture")
+monture.videTitre, monture.videAide = "Monture", "Tu pourras monter au palier 10 du rang d'aventurier."
+monture.objet = false
+monture:SetAttribute("type", "macro")
+monture:SetAttribute("type2", "")   -- clic droit : rien d'autre que changer de monture (PreClick)
+monture:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    if self.id then
+        GameTooltip:SetHyperlink("spell:" .. self.id)
+        GameTooltip:AddLine("Clic droit : monture suivante.", 1, 0.82, 0)
+    else
+        GameTooltip:SetText(self.videTitre)
+        GameTooltip:AddLine(self.videAide, 1, 1, 1, true)
+    end
+    GameTooltip:Show()
+end)
+
+local function Montures()
+    local liste = {}
+    for i = 1, GetNumCompanions("MOUNT") do
+        local _, _, sort = GetCompanionInfo("MOUNT", i)
+        if sort then table.insert(liste, sort) end
+    end
+    return liste
+end
+
+local function ChoisirMonture(sort, enregistrer)
+    local nom = sort and GetSpellInfo(sort)
+    monture.id, monture.nom = nom and sort or nil, nom
+    monture:SetAttribute("macrotext", nom and ("/dismount [mounted]\n/cast [nomounted] " .. nom) or nil)
+    monture.icone:SetTexture(nom and select(3, GetSpellInfo(sort)) or nil)
+    if enregistrer and nom and S.EnregistrerMonture then S.EnregistrerMonture(sort) end
+end
+function S.Monture() return monture.id end
+
+-- Monture gardée, si elle est toujours connue ; sinon la première.
+local montureVoulue
+function S.ReprendreMonture(sort) montureVoulue = type(sort) == "number" and sort or nil end
+local function MajMontures()
+    if InCombatLockdown() then return end
+    local liste = Montures()
+    local voulue = montureVoulue or monture.id
+    for _, sort in ipairs(liste) do
+        if sort == voulue then ChoisirMonture(sort); return end
+    end
+    ChoisirMonture(liste[1])
+end
+S.Ecouter("COMPANION_LEARNED", MajMontures)
+S.Ecouter("COMPANION_UPDATE", MajMontures)
+S.Ecouter("PLAYER_ENTERING_WORLD", MajMontures)
+
+local function DeposerMonture()
+    local genre, index, sorte = GetCursorInfo()
+    if genre ~= "companion" then return false end
+    if sorte == "MOUNT" then
+        local _, _, sort = GetCompanionInfo("MOUNT", index)
+        montureVoulue = sort
+        ChoisirMonture(sort, true)
+    else
+        UIErrorsFrame:AddMessage("Seules les montures vont ici.", 1, 0.3, 0.3)
+    end
+    ClearCursor()
+    return true
+end
+monture:SetScript("OnReceiveDrag", DeposerMonture)
+monture:SetScript("PreClick", function(self, bouton)
+    if DeposerMonture() then self:SetAttribute("type", nil); return end
+    if bouton == "RightButton" and not InCombatLockdown() then
+        local liste = Montures()
+        for i, sort in ipairs(liste) do
+            if sort == self.id then
+                montureVoulue = liste[i % #liste + 1]
+                ChoisirMonture(montureVoulue, true)
+                break
+            end
+        end
+    end
+end)
+monture:SetScript("PostClick", function(self) self:SetAttribute("type", "macro") end)
+
 -- Plat épuisé ou bouton vide : le premier plat des sacs.
 local function RepasDesSacs()
     if S.etat.repas and GetItemCount(S.etat.repas) > 0 then return end
@@ -231,7 +316,7 @@ S.Ecouter("PLAYER_ENTERING_WORLD", RepasDesSacs)
 
 -- Touches réglées dans la fenêtre « Techniques et raccourcis ».
 local function MajTouches()
-    for _, b in ipairs({ potion, feu, pierre, repas, conso, peche }) do
+    for _, b in ipairs({ potion, feu, pierre, repas, conso, monture, peche }) do
         b.touche:SetText(S.ToucheCourte(GetBindingKey(b.commande)))
     end
 end
@@ -272,6 +357,7 @@ potion:SetScript("OnUpdate", function(self, ecoule)
     Etat(repas, not S.etat.repas)
     conso.nombre:SetText(conso.id and GetItemCount(conso.id) or "")
     Etat(conso, not conso.id)
+    if monture.nom then Etat(monture, false) else monture.icone:SetTexture(nil) end
     Etat(peche, false)
     MajRebours()
 end)

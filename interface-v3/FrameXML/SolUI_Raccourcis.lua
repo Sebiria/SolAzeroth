@@ -53,6 +53,9 @@ table.insert(ENTREES, { place = "R", commande = "CLICK SolUIBivouacRepas:LeftBut
 table.insert(ENTREES, { place = "C", commande = "CLICK SolUIBivouacConso:LeftButton",
     nom = function() return S.Conso() and GetItemInfo(S.Conso()) or "Consommable" end,
     icone = function() return S.Conso() and GetItemIcon(S.Conso()) end })
+table.insert(ENTREES, { place = "M", commande = "CLICK SolUIBivouacMonture:LeftButton",
+    nom = function() return S.Monture() and GetSpellInfo(S.Monture()) or "Monture" end,
+    icone = function() return S.Monture() and select(3, GetSpellInfo(S.Monture())) end })
 table.insert(ENTREES, { place = "Pê", commande = "CLICK SolUIBivouacPeche:LeftButton",
     nom = function() return (GetSpellInfo(51294)) or "Pêche" end, icone = function() return select(3, GetSpellInfo(51294)) end })
 local FENETRES = {
