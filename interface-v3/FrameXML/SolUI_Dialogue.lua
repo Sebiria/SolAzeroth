@@ -99,7 +99,14 @@ local function Texte(contenu, style, ecart)
 end
 
 -- Ligne cliquable (quête ou option de discussion).
-local function Ligne(contenu, couleur, fonction)
+-- Quêtes (demande du 03/11/2026 : on distinguait mal une quête prise d'une quête à prendre) : à la place de la puce,
+-- le signe des épingles de la carte (« ! » à prendre, « ? » en cours ou à rendre), et l'état en clair à droite du titre ;
+-- une quête en cours a son titre grisé.
+local function Hex(nom)
+    local r, v, b = S.Couleur(nom)
+    return string.format("%02x%02x%02x", r * 255, v * 255, b * 255)
+end
+local function Ligne(contenu, couleur, fonction, signe, etat)
     utilises.lignes = utilises.lignes + 1
     local l = lignes[utilises.lignes]
     if not l then
@@ -111,6 +118,8 @@ local function Ligne(contenu, couleur, fonction)
         l.puce = S.Texture(l, "ARTWORK", "Rond", 1, 1, 1)
         l.puce:SetSize(7, 7)
         l.puce:SetPoint("LEFT", 8, 0)
+        l.signe = S.Texte(l, "Bold", 17, "texte")
+        l.signe:SetPoint("CENTER", l, "LEFT", 11, 0)
         l.texte = S.Texte(l, "Regular", 14, "texte")
         l.texte:SetPoint("LEFT", 24, 0)
         l.texte:SetPoint("RIGHT", -8, 0)
@@ -119,8 +128,12 @@ local function Ligne(contenu, couleur, fonction)
         l:SetScript("OnLeave", function(self) self.fond:Hide() end)
         lignes[utilises.lignes] = l
     end
-    l.texte:SetText(contenu)
+    l.texte:SetText(etat and (contenu .. "  |cff" .. Hex(couleur) .. "· " .. etat .. "|r") or contenu)
+    l.texte:SetTextColor(S.Couleur(couleur == "gris" and "gris" or "texte"))
     l.puce:SetVertexColor(S.Couleur(couleur))
+    S.Montrer(l.puce, not signe)
+    l.signe:SetText(signe or "")
+    l.signe:SetTextColor(S.Couleur(couleur))
     l:SetScript("OnClick", fonction)
     l:ClearAllPoints()
     l:SetPoint("TOPLEFT", page, "TOPLEFT", 0, y - 2)
@@ -256,11 +269,13 @@ local function PageDiscussion()
     if #actives + #proposees > 0 then Texte("QUÊTES", "rubrique", 24); y = y - 6 end
     for i = 1, #actives, 4 do
         local n = (i + 3) / 4
-        Ligne(actives[i], actives[i + 3] and "vertClair" or "gris", function() SelectGossipActiveQuest(n) end)
+        local remplie = actives[i + 3]
+        Ligne(actives[i], remplie and "vertClair" or "gris", function() SelectGossipActiveQuest(n) end, "?",
+            remplie and "à rendre" or "en cours")
     end
     for i = 1, #proposees, 5 do
         local n = (i + 4) / 5
-        Ligne(proposees[i], "ambreClair", function() SelectGossipAvailableQuest(n) end)
+        Ligne(proposees[i], "ambreClair", function() SelectGossipAvailableQuest(n) end, "!", "à prendre")
     end
     if #options > 0 then Texte(" ", "texte", 8) end
     for i = 1, #options, 2 do
@@ -278,10 +293,11 @@ local function PageAccueil()
     if actives + proposees > 0 then Texte("QUÊTES", "rubrique", 24); y = y - 6 end
     for i = 1, actives do
         local _, complete = GetActiveTitle(i)
-        Ligne(GetActiveTitle(i), complete and "vertClair" or "gris", function() SelectActiveQuest(i) end)
+        Ligne(GetActiveTitle(i), complete and "vertClair" or "gris", function() SelectActiveQuest(i) end, "?",
+            complete and "à rendre" or "en cours")
     end
     for i = 1, proposees do
-        Ligne(GetAvailableTitle(i), "ambreClair", function() SelectAvailableQuest(i) end)
+        Ligne(GetAvailableTitle(i), "ambreClair", function() SelectAvailableQuest(i) end, "!", "à prendre")
     end
     Finir()
     Boutons(nil, nil, "Au revoir", function() d:Hide() end)
