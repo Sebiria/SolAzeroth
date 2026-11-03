@@ -168,20 +168,45 @@ suivant:SetPoint("BOTTOMRIGHT", -16, 14)
 local fermer = S.BoutonPlat(h, "Fermer", 100, 28, 12)
 fermer:SetPoint("RIGHT", suivant, "LEFT", -8, 0)
 
+-- Signalement du 03/11/2026 (leçon de la forge « sans portrait ») : le client ne dessine un visage que d'un PNJ présent
+-- (npc, cible, survol), et ses modèles 3D par numéro restent blancs (signalement 30). Chaque orateur des leçons garde
+-- donc son visage dès qu'on l'a survolé, ciblé ou qu'on lui a parlé pendant la session, pour le montrer ensuite même
+-- quand il n'est plus là.
+local ORATEURS = {}
+for _, l in ipairs(LECONS) do ORATEURS[l[2]] = true end
+for _, qui in ipairs({ GORNEK, ZUREETHA, GARTHOK, ORGNIL, RUGA, THORK, TONGA, FEEGLY, KARGAL }) do ORATEURS[qui[1]] = true end
+local visages = {}   -- entrée -> texture qui garde son visage
+local function Entree(unite)
+    local guid = UnitExists(unite) and not UnitIsPlayer(unite) and UnitGUID(unite)
+    return guid and tonumber(guid:sub(7, 12), 16)
+end
+local function Retenir(unite)
+    local entree = Entree(unite)
+    if not entree or not ORATEURS[entree] then return end
+    if not visages[entree] then
+        visages[entree] = cadre:CreateTexture(nil, "OVERLAY")
+        visages[entree]:SetAllPoints(visage)
+        visages[entree]:Hide()
+    end
+    SetPortraitTexture(visages[entree], unite)
+end
+S.Ecouter("UPDATE_MOUSEOVER_UNIT", function() Retenir("mouseover") end)
+S.Ecouter("PLAYER_TARGET_CHANGED", function() Retenir("target") end)
+S.Ecouter("GOSSIP_SHOW", function() Retenir("npc") end)
+S.Ecouter("QUEST_DETAIL", function() Retenir("npc") end)
+
 local file, lecon, n = {}, nil, 1
 local orateur
 local function Orateur(entree, texte)
     nom:SetText(texte)
     -- Reconnu par son numéro de créature (dans le GUID), pas par son nom : le client peut nommer le PNJ autrement que
     -- nos répliques (signalement 44 : « Zureetha Fargaze »).
-    local unite
     for _, u in ipairs({ "npc", "target", "mouseover" }) do
-        local guid = UnitExists(u) and not UnitIsPlayer(u) and UnitGUID(u)
-        if guid and tonumber(guid:sub(7, 12), 16) == entree then unite = u; break end
+        if Entree(u) == entree then Retenir(u); break end
     end
-    if unite then SetPortraitTexture(visage, unite) end
-    S.Montrer(visage, unite ~= nil)
-    repli:SetAlpha(unite and 0 or 0.35)
+    for e, t in pairs(visages) do S.Montrer(t, e == entree) end
+    visage:Hide()
+    repli:SetAlpha(visages[entree] and 0 or 0.35)
     orateur = entree
 end
 
@@ -241,9 +266,19 @@ fermer:SetScript("OnClick", function()
 end)
 
 -- Leçon d'une clé : jouée une fois ; ses clés ne donnent plus de fenêtre « À savoir ».
+-- Signalement 49 (03/11/2026) : une leçon qui a des répliques propres à la classe (règles, survie) se joue une fois par
+-- classe du compte (« parole_regles_ROGUE ») : la voleuse n'avait rien appris, le guerrier l'avait déjà vue.
+local function ParClasse(l)
+    for _, r in ipairs(l[5]) do
+        if type(r) == "table" and not r[1] then return true end
+    end
+end
 local function Lecon(l)
-    if S.VUS["parole_" .. l[1]] then return false end
-    S.VUS["parole_" .. l[1]] = true
+    local classe = select(2, UnitClass("player"))
+    local vu = "parole_" .. l[1] .. (ParClasse(l) and ("_" .. classe) or "")
+    -- Vue avant ce changement : celle du guerrier, seule classe jouable à l'époque.
+    if S.VUS[vu] or (classe == "WARRIOR" and S.VUS["parole_" .. l[1]]) then return false end
+    S.VUS[vu] = true
     for _, cle in ipairs(l[4]) do S.VUS[cle] = true end
     if S.Enregistrer then S.Enregistrer() end
     table.insert(file, l)
@@ -254,7 +289,7 @@ end
 local Expliquer = S.Expliquer
 function S.Expliquer(cle)
     local l = PAR_CLE[cle]
-    if l and not S.VUS[cle] and Lecon(l) then return end
+    if l and Lecon(l) then return end
     Expliquer(cle)
 end
 

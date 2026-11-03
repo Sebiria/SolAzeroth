@@ -739,11 +739,32 @@ public:
     }
 
     // F5d (31/10/2026) : le personnage commence sans arme ; la première vient des quêtes de Durotar.
+    // Signalement 48 (03/11/2026) : le pantalon de départ du voleur et du guerrier est en tissu, que leur règle
+    // d'armure refuse (v3_armures.cpp) ; il restait dans le sac et le personnage apparaissait sans pantalon. Il est
+    // remplacé par un pantalon gris de leur type.
     void OnPlayerFirstLogin(Player* player) override
     {
         for (uint8 emplacement : { EQUIPMENT_SLOT_MAINHAND, EQUIPMENT_SLOT_OFFHAND, EQUIPMENT_SLOT_RANGED })
             if (player->GetItemByPos(INVENTORY_SLOT_BAG_0, emplacement))
                 player->DestroyItem(INVENTORY_SLOT_BAG_0, emplacement, true);
+
+        struct Remplacement { uint8 classe; uint32 tissu; uint32 piece; };
+        static Remplacement const PANTALONS[] = {
+            { CLASS_ROGUE, 120, 1366 },     // Pantalon de voyou -> Pantalon rapiécé en cuir
+            { CLASS_WARRIOR, 139, 2654 },   // Pantalon de bagarreur -> Pantalon en anneaux fins
+        };
+        for (Remplacement const& r : PANTALONS)
+        {
+            if (player->getClass() != r.classe || !player->HasItemCount(r.tissu, 1, true))
+                continue;
+            player->DestroyItemCount(r.tissu, 1, true);
+            uint16 destination;
+            if (!player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_LEGS)
+                && player->CanEquipNewItem(EQUIPMENT_SLOT_LEGS, destination, r.piece, false) == EQUIP_ERR_OK)
+                player->EquipNewItem(destination, r.piece, true);
+            else
+                player->AddItem(r.piece, 1);
+        }
     }
 
     void OnPlayerLogin(Player* player) override
