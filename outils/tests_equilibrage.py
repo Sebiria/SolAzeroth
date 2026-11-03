@@ -11,7 +11,13 @@ changement de chiffres (monstres, armure, équipement, kit), comme le demande l'
    des pièces de Durotar, contre des monstres de Durotar. Cibles provisoires du document : combat de 8 à 20 s contre un
    monstre de sa puissance, gagné au moins 95 fois sur 100, avec 30 à 85 % de vie restante.
 
-py tests_equilibrage.py        (code de sortie 1 si la fidélité du modèle n'est plus tenue)
+3. Lot T1 des Tarides (03/11/2026, --tarides, non bloquant) : les fiches des Tarides (fiches_zones.joueurs : pièces
+   d'arrivée refaites au barème de chaque point de la zone, Repos du feu 3, potion rang 2, Heurt) contre les monstres
+   des secteurs (puissance par secteur, migration 136), avec leurs sorts au contact. Cible du lot 3c : un monstre seul
+   de sa puissance coûte 15 à 30 % de vie (une défaite compte 100 %).
+
+py tests_equilibrage.py            (code de sortie 1 si la fidélité du modèle n'est plus tenue)
+py tests_equilibrage.py --tarides  (rapport des Tarides seul)
 """
 import glob
 import os
@@ -36,6 +42,16 @@ ENCHANTEMENTS_DUROTAR = dict(vie=5, armure=10, force=1, degats=1)
 # (entrée, niveau d'origine) : de la vallée des Épreuves au sud de Durotar.
 MONSTRES = [(3098, 2), (3124, 3), (3101, 4), (3125, 6), (3099, 7), (3122, 8), (3121, 8), (3100, 9), (3123, 10),
             (3110, 11)]
+# Lot T1 des Tarides : (entrée, puissance) du monstre le plus courant de chaque palier, de la Croisée aux abords des
+# Cavernes (puissance_tarides.monstres).
+MONSTRES_TARIDES = [(3110, 14), (3246, 15), (3242, 16), (3284, 18), (3255, 20), (3385, 22), (3240, 25), (3239, 27),
+                    (3238, 28), (3252, 29), (3376, 30), (3633, 30)]
+# Fiches des Tarides : puissance des pièces d'arrivée refaites au barème (fiches_zones.joueurs).
+PANOPLIES_TARIDES = {"arrivée (bleues du Gouffre)": 14, "fin de la Croisée": 16, "oasis": 18, "fin des oasis": 22,
+                     "sud": 25, "extrême sud": 27, "abords des Cavernes": 30}
+POTION_TARIDES = (2, 35, 1, 10)      # potion rang 2 (camp de fin de Durotar, gabarit_zone)
+HEURT = 12.0                         # recharge du Heurt de bouclier (calibre_3c.py)
+CIBLE_SEUL = (15, 30)                # vie perdue contre un monstre seul de sa puissance (lot 3c)
 # Panoplies essayées sur le personnage de la fiche, en plus de son équipement actuel.
 PANOPLIES = {
     "fin de vallée (quêtes)": [910105, 910106, 910101, 910102, 910103, 910104, 910108],
@@ -170,7 +186,38 @@ def rapport():
             print("  %-34s P%-2d %s%s" % (m.nom[:34], m.puissance, sim.rapport(j, m, r), verdict(j, m, r)))
 
 
+def perdue(r):
+    """Vie perdue attendue, en %, une défaite comptant pour 100 % (calibre_3c.perdue)."""
+    v = r["victoire"] / 100.0
+    return v * (100.0 - r["vie_restante"]) + (1 - v) * 100.0
+
+
+def verdict_perdue(joueur, monstre, p):
+    if abs(monstre.puissance - joueur.puissance) > 2:
+        return ""
+    return "  <- trop dur" if p > CIBLE_SEUL[1] else "  <- trop facile" if p < CIBLE_SEUL[0] else "  ok"
+
+
+def rapport_tarides():
+    import fiches_zones as fz
+    import simulation_sorts as ss
+    for nom, puissance in PANOPLIES_TARIDES.items():
+        g = fz.joueurs(puissance)[0]
+        print("\nTarides, %s : puissance %d, vie %d, armure %d, arme %.1f-%.1f / %.2f s" % (
+            nom, puissance, g.vie, g.armure, g.bas, g.haut, g.vitesse))
+        for e, p in MONSTRES_TARIDES:
+            if not puissance - 2 <= p <= puissance + 3:
+                continue
+            m = ss.monstre_avec_sorts(e, p, contact=True)
+            r = ss.simuler(g, m, 400, potion=POTION_TARIDES, heurt=HEURT)
+            print("  %-34s P%-2d vie perdue %5.1f %%, %3.0f %% de victoires, %4.1f s%s" % (
+                m.nom[:34], p, perdue(r), r["victoire"], r["duree"], verdict_perdue(g, m, perdue(r))))
+
+
 def main():
+    if "--tarides" in sys.argv:
+        rapport_tarides()
+        return 0
     print("Fidélité du modèle (journal de référence : %s)" % os.path.basename(REFERENCE))
     erreurs = verifier_modele()
     for e in erreurs:

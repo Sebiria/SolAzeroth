@@ -9,7 +9,23 @@ monstres de Durotar et du Gouffre de Ragefeu.
 - Chaque remplacement est une copie du sort de Blizzard (nom, icône, visuel, incantation) dont les effets changent ;
   le client lit les mêmes sorts dans patch-frFR-4.MPQ (Spell.dbc écrit par auras_nommees.py).
 
-py sorts_monstres_v3.py  (écrit la migration 106)
+Lot T1 des Tarides (03/11/2026, comparatif avec Durotar, 10.4) : même audit pour les monstres des Tarides (zones 17 et
+718) et des Cavernes des Lamentations (carte 43), 210 monstres et 142 sorts relevés.
+- Sans effet en v3, remplacés par les remplacements de Durotar : Réflexes vifs (parade) par Bouclier levé, Poussière
+  projetée (chances de toucher) par Aveuglé, Agilité diminuée (-3) par Souillure ; et ceux déjà remplacés à Durotar
+  (Déchirure du tendon, Lucioles, Fracasser armure 11971, Frénésie 8269, Assaut fulgurant, Nuage de poussière).
+- Points fixes passés en pourcentage (nouvelles copies, SORTS_TARIDES) : Frénésie des trotteurs (+25 %), Forme de
+  serpent des druides du Croc et de Boahn (+25 %), Forme de serpent de Cobrahn (+50 %) ; les dégâts subis en plus,
+  fixes (Douleur déchirante, Blessure infectée, Hurlement sanguinaire), deviennent +10 % de dégâts subis.
+- Retirés de tous ces monstres (RETIRES_TARIDES), comme à Durotar : Coup de bouclier (interruption pure), Postures,
+  Vitesse, Totem de lien terrestre, et les entraves sans dégâts (Filet, Rets) : rien à fuir en mêlée, comme la
+  Déchirure du tendon de Dent-de-l'Écho.
+- Gardés, avec un effet réel : dégâts, soins, boucliers de foudre et d'épines, Mot de pouvoir : Bouclier, Sangsue,
+  Désarmement, peurs, étourdissements, Fracasser armure 7386 (-4 % d'armure par cumul), camouflage. Les invocations
+  restent : le recalibrage du lot T1 (calibre_tarides.py) les compte.
+
+py sorts_monstres_v3.py            (écrit la migration 106)
+py sorts_monstres_v3.py --tarides  (écrit la migration 137)
 """
 import os
 import sys
@@ -20,6 +36,8 @@ from hauts_faits_natifs import DBC_SERVEUR, FRFR, MASQUE
 from quetes_durotar import sql
 
 MIGRATION = r"C:\SolAzeroth\sql\migrations\106_v3_sorts_monstres"
+MIGRATION_TARIDES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sql", "migrations",
+                                 "137_v3_sorts_tarides")
 TEXTES = [136, 153, 170, 187]       # nom, rang, description, infobulle de l'aura
 TOUS = 127                          # toutes les écoles
 AURA, A_DEGATS_SUR_DUREE = 6, 3
@@ -27,6 +45,7 @@ A_DEGATS_PCT, A_HATE, A_SUBIS_PCT, A_ARMURE_PCT, A_SOINS_PCT = 79, 138, 87, 101,
 ENNEMI, SOI = 6, 1
 # Durées (SpellDuration.dbc) : 3, 4, 6, 8, 10, 20, 30 s et 2 min.
 D3, D4, D6, D8, D10, D20, D30, D2MIN = 27, 35, 32, 31, 1, 18, 9, 4
+D15, D5MIN = 8, 5
 SCALES_WITH_CREATURE_LEVEL = 0x80000
 
 # (id, modèle, nom ou None pour garder celui du modèle, infobulle, durée, cumuls,
@@ -63,6 +82,25 @@ SORTS = [
 REMPLACE = {7289: 102000, 7272: 102001, 5426: 102002, 3248: 102003, 11971: 102004, 6950: 102005, 6818: 102006,
             6951: 102006, 5413: 102006, 3604: 102007, 702: 102008, 18267: 102009, 8269: 102010, 6268: 102011,
             3385: 102012}
+# Lot T1 des Tarides : copies dont les points fixes passent en pourcentage.
+SORTS_TARIDES = [
+    (102013, 3019, None, "Frénésie : dégâts augmentés de 25 %.", D15, 0,
+     [(0, A_DEGATS_PCT, 25, TOUS, None)]),
+    (102014, 8041, None, "Forme de serpent : dégâts augmentés de 25 %.", D10, 0,
+     [(2, A_DEGATS_PCT, 25, TOUS, None)]),
+    (102015, 7965, None, "Forme de serpent : dégâts augmentés de 50 %, vitesse d'attaque réduite de 43 %.", D5MIN, 0,
+     [(1, A_DEGATS_PCT, 50, TOUS, None)]),
+    (102016, 3247, None, "Dégâts subis augmentés de 10 %.", D15, 0,
+     [(0, A_SUBIS_PCT, 10, TOUS, None)]),
+    (102017, 3427, None, "Blessure infectée : dégâts subis augmentés de 10 %.", D30, 0,
+     [(0, A_SUBIS_PCT, 10, TOUS, None)]),
+    (102018, 3264, None, "Dégâts subis augmentés de 10 %.", D15, 0,
+     [(0, A_SUBIS_PCT, 10, TOUS, None)]),
+]
+REMPLACE_TARIDES = {**REMPLACE, **{6264: 102003, 6530: 102001, 7901: 102006, 3019: 102013, 8041: 102014,
+                                     7965: 102015, 3247: 102016, 3427: 102017, 3264: 102018}}
+# Sorts retirés de tous les monstres des Tarides et des Cavernes.
+RETIRES_TARIDES = [72, 7164, 7165, 17498, 2484, 745, 12024, 6533]
 # (monstre, sort) retirés : sans effet en v3 et sans remplacement utile.
 RETIRES = [(3192, 7164), (3192, 72), (5826, 2484), (3121, 17498)]
 # Invocations retirées partout dans la zone (marcheur du Vide, diablotin) : un renfort double le combat d'un lanceur de
@@ -71,9 +109,10 @@ INVOCATIONS = [12746, 11939]
 CAST = "(11, 85, 86, 134)"
 
 
-def lignes(d):
+def lignes(d, sorts=None):
+    """Enregistrements de Spell.dbc des remplacements (tous par défaut : Durotar et les Tarides)."""
     sortie = []
-    for ident, modele, nom, texte, duree, cumuls, effets in SORTS:
+    for ident, modele, nom, texte, duree, cumuls, effets in (SORTS + SORTS_TARIDES if sorts is None else sorts):
         e = list(d.chercher(modele))
         e[0] = ident
         e[4] &= ~SCALES_WITH_CREATURE_LEVEL
@@ -109,10 +148,59 @@ def monstres_zone():
         "acore_world.game_event_creature g WHERE g.guid = c.guid)")]
 
 
+def monstres_tarides():
+    """Monstres des Tarides (zones 17 et 718) et des Cavernes des Lamentations (hors PNJ à fonction et événements)."""
+    return [int(x[0]) for x in sql(
+        "SELECT DISTINCT c.id FROM acore_world.creature c JOIN acore_world.creature_template t ON t.entry = c.id "
+        "WHERE ((c.map = 1 AND c.zoneId IN (17, 718)) OR c.map = 43) AND t.npcflag = 0 AND NOT EXISTS (SELECT 1 FROM "
+        "acore_world.game_event_creature g WHERE g.guid = c.guid)")]
+
+
+def main_tarides():
+    import auras_nommees as an
+    d = dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "Spell.dbc"))
+    rangs = lignes(d, SORTS_TARIDES)
+    types = an.types_colonnes()
+    ids = ", ".join(str(s[0]) for s in SORTS_TARIDES)
+    # Les monstres déjà traités par la migration 106 (présents à Durotar) n'y sont pas repris.
+    liste = ", ".join(map(str, sorted(set(monstres_tarides()) - set(monstres_zone()))))
+    anciens = ", ".join(map(str, sorted(REMPLACE_TARIDES)))
+    retires = ", ".join(map(str, RETIRES_TARIDES))
+    up = ["-- Lot T1 des Tarides (03/11/2026) : sorts des monstres des Tarides et des Cavernes des Lamentations (audit du",
+          "-- comparatif, 10.4). Généré par outils\\sorts_monstres_v3.py --tarides : ne pas modifier à la main. Le client",
+          "-- lit les mêmes sorts dans patch-frFR-4.MPQ.",
+          "USE acore_world;",
+          "DELETE FROM spell_dbc WHERE ID IN (%s);" % ids]
+    up += ["INSERT INTO spell_dbc VALUES (%s);" % ", ".join(an.valeur_sql(d, t, v) for t, v in zip(types, e)) for e in rangs]
+    up += ["CREATE TABLE solazeroth_v3_sorts_tarides_origine SELECT entryorguid, source_type, id, link, action_param1 "
+           "FROM smart_scripts WHERE source_type = 0 AND entryorguid IN (%s) AND action_type IN %s AND action_param1 IN "
+           "(%s);" % (liste, CAST, anciens)]
+    for ancien, nouveau in sorted(REMPLACE_TARIDES.items()):
+        up.append("UPDATE smart_scripts SET action_param1 = %d WHERE source_type = 0 AND entryorguid IN (%s) AND "
+                  "action_type IN %s AND action_param1 = %d;" % (nouveau, liste, CAST, ancien))
+    up += ["CREATE TABLE solazeroth_v3_sorts_tarides_retires SELECT * FROM smart_scripts WHERE source_type = 0 AND "
+           "entryorguid IN (%s) AND action_type IN %s AND action_param1 IN (%s);" % (liste, CAST, retires),
+           "DELETE FROM smart_scripts WHERE source_type = 0 AND entryorguid IN (%s) AND action_type IN %s AND "
+           "action_param1 IN (%s);" % (liste, CAST, retires), ""]
+    down = ["-- Rend aux monstres des Tarides et des Cavernes leurs sorts de Blizzard (migration 137).",
+            "USE acore_world;",
+            "UPDATE smart_scripts s JOIN solazeroth_v3_sorts_tarides_origine o ON o.entryorguid = s.entryorguid AND "
+            "o.source_type = s.source_type AND o.id = s.id AND o.link = s.link SET s.action_param1 = o.action_param1;",
+            "INSERT INTO smart_scripts SELECT * FROM solazeroth_v3_sorts_tarides_retires;",
+            "DROP TABLE solazeroth_v3_sorts_tarides_origine;",
+            "DROP TABLE solazeroth_v3_sorts_tarides_retires;",
+            "DELETE FROM spell_dbc WHERE ID IN (%s);" % ids, ""]
+    for suffixe, contenu in ((".up.sql", up), (".down.sql", down)):
+        with open(MIGRATION_TARIDES + suffixe, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(contenu))
+    print("Migration 137 écrite : %d sorts, %d remplacements, %d sorts retirés." % (
+        len(SORTS_TARIDES), len(REMPLACE_TARIDES), len(RETIRES_TARIDES)))
+
+
 def main():
     import auras_nommees as an
     d = dbc.Dbc.ouvrir(os.path.join(DBC_SERVEUR, "Spell.dbc"))
-    rangs = lignes(d)
+    rangs = lignes(d, SORTS)
     types = an.types_colonnes()
     ids = ", ".join(str(s[0]) for s in SORTS)
     liste = ", ".join(map(str, sorted(monstres_zone())))
@@ -150,4 +238,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main_tarides() if "--tarides" in sys.argv else main()

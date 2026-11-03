@@ -15,6 +15,10 @@ aussi les sorts de son script SmartAI, comme le serveur :
   soins reçus en %, boucliers de dégâts et effets déclenchés, renforts (diablotins, marcheurs), et renforts appelés
   en combat par le script (chefs renforcés, lot 3c) ;
 - zones au sol (Pluie de feu…) : le joueur en sort au bout de SORTIE_DE_ZONE s (lot 3c) ;
+- lot T1 des Tarides (03/11/2026) : vol de vie direct (Sangsue, Morsure fatale), bouclier qui absorbe les dégâts
+  (Mot de pouvoir : Bouclier) et dégâts subis en % par le joueur (Blessure infectée) ; option contact : les sorts
+  lancés en combat qui ont une portée minimale (Tir, 5 m) ne partent pas au contact (le moteur refuse le sort ; le
+  monstre « CMC » revient alors en mêlée). Les outils de Durotar ne la passent pas : leurs chiffres ne bougent pas ;
 - ignorés : ce que la v3 annule (esquive, blocage, chances de toucher), la course, la taille, les interruptions (le
   joueur n'incante pas), l'Intelligence.
 
@@ -47,15 +51,18 @@ INTERRUPTIBLE = 0x8          # Spell.dbc, InterruptFlags : SPELL_INTERRUPT_FLAG_
 SILENCE_HEURT = 3.0          # Heurt de bouclier (techniques_v3.py) : réduit au silence 3 s
 SORTIE_DE_ZONE = 3.0         # temps passé dans une zone au sol : réaction (1,4 s) et quelques pas
 
-_spell = _durees = _bd = None
+_spell = _durees = _bd = _portees = None
 SORTS_AJOUTES = {}   # sorts Sol'Azeroth (spell_dbc) : id -> enregistrement, ajoutés par sorts_monstres_v3.py
 APPELES = {}         # renforts appelés en combat : (entrée, puissance) -> fiche
 
 
 def _charger():
-    global _spell, _durees, _bd
+    global _spell, _durees, _bd, _portees
     if _spell is None:
         _spell = {e[0]: e for e in dbc.Dbc.ouvrir(os.path.join(DBC, "Spell.dbc")).enregistrements}
+        # SpellRange.dbc : portée minimale (champ 1, flottant) de chaque indice de portée (Spell.dbc, champ 46).
+        _portees = {e[0]: struct.unpack("<f", struct.pack("<I", e[1]))[0]
+                    for e in dbc.Dbc.ouvrir(os.path.join(DBC, "SpellRange.dbc")).enregistrements}
         _durees = {e[0]: s32(e[1]) for e in dbc.Dbc.ouvrir(os.path.join(DBC, "SpellDuration.dbc")).enregistrements}
         _bd = {(int(l), int(c)): float(b) for l, c, b in sql(
             "SELECT level, class, damage_base FROM acore_world.creature_classlevelstats")}
@@ -117,6 +124,8 @@ def effets(sid, niveau, classe, cible_script):
             sortie.append(("arme_pct", ENNEMI, v, 0, None))
         elif effet == 10:
             sortie.append(("soin", SOI, v, 0, None))
+        elif effet == 9:
+            sortie.append(("vol_direct", ENNEMI, v, 0, None))
         elif effet in (28, 56) and misc > 0:
             sortie.append(("renfort", SOI, misc, 0, None))
         elif effet in (6, 27, 35):
@@ -143,6 +152,8 @@ def effets(sid, niveau, classe, cible_script):
                 sortie.append(("armure_pct", qui, v, dure, e[49]))
             elif aura == 118:
                 sortie.append(("soins_pct", qui, v, dure, None))
+            elif aura == 69 and qui == SOI:
+                sortie.append(("absorbe", SOI, v, dure, None))
             elif aura == 15:
                 sortie.append(("epines", SOI, v * 2, dure, None))
             elif aura == 42 and e[116 + i]:
@@ -164,8 +175,9 @@ def incantation(e):
     return max(0, _incantations.get(e[28], 0)) / 1000.0
 
 
-def sorts_du_monstre(entree, niveau, classe=None):
-    """Sorts du script SmartAI : [{id, evenement, p, chance, unique, cible, incantation, effets}]."""
+def sorts_du_monstre(entree, niveau, classe=None, contact=False):
+    """Sorts du script SmartAI : [{id, evenement, p, chance, unique, cible, incantation, effets}]. contact : sans les
+    sorts de combat à portée minimale (lot T1 des Tarides)."""
     _charger()
     if classe is None:
         classe = int(sql("SELECT unit_class FROM acore_world.creature_template WHERE entry = %d" % entree)[0][0])
@@ -185,6 +197,8 @@ def sorts_du_monstre(entree, niveau, classe=None):
         e = enregistrement(sid)
         if not e or ev not in (EN_COMBAT, HORS_COMBAT, VIE_BASSE, ENGAGEMENT, A_DISTANCE, ALLIE_BLESSE, ALLIE_SANS_BUFF):
             continue
+        if contact and ev in (EN_COMBAT, VIE_BASSE) and _portees.get(e[46], 0.0) > 0:
+            continue
         ef = effets(sid, niveau, classe, cible)
         if not ef:
             continue
@@ -195,17 +209,17 @@ def sorts_du_monstre(entree, niveau, classe=None):
     return liste
 
 
-def monstre_avec_sorts(entree, niveau=None, renforts=True):
+def monstre_avec_sorts(entree, niveau=None, renforts=True, contact=False):
     m = sim.monstre_depuis_base(entree, niveau)
     classe = int(sql("SELECT unit_class FROM acore_world.creature_template WHERE entry = %d" % entree)[0][0])
-    m.sorts = sorts_du_monstre(entree, m.puissance, classe)
+    m.sorts = sorts_du_monstre(entree, m.puissance, classe, contact)
     m.renforts = []
     if renforts:
         for s in m.sorts:
             for genre, _, v, _, _ in s["effets"]:
                 if genre == "renfort" and s["evenement"] in (HORS_COMBAT, ENGAGEMENT, ALLIE_SANS_BUFF):
                     try:
-                        m.renforts.append(monstre_avec_sorts(int(v), m.puissance, renforts=False))
+                        m.renforts.append(monstre_avec_sorts(int(v), m.puissance, renforts=False, contact=contact))
                     except IndexError:
                         pass
     return m
@@ -223,6 +237,7 @@ class Etat:
         self.epines = []      # (fin, dégâts rendus à chaque coup du joueur)
         self.declenche = []   # [fin, dégâts, sens, chance, charges]
         self.hots = []        # [prochain, fin, valeur, intervalle]
+        self.bouclier = [0.0, 0.0]   # [fin, dégâts encore absorbés]
 
     def actifs(self, liste, t):
         return [x for x in liste if x[0] > t]
@@ -321,6 +336,11 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
         vie_j -= reste
         subi += reste
 
+    def plus_subis(d):
+        """Dégâts subis en % par le joueur (Blessure infectée)."""
+        f = sum(v for v, _ in actif("subis_pct"))
+        return round(d * (1 + f / 100.0)) if f else d
+
     def frappe_monstre(i, pourcent=1.0, plus=0.0, sort=False):
         """Coup de mêlée, ou coup d'arme d'un sort (sort : tout le coup suit facteur_sorts, comme EchelleSort au
         serveur ; les bonus fixes des auras du monstre, eux, ne le suivent pas)."""
@@ -337,7 +357,7 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
             if x[0] > t and x[2] == "porte" and x[4] > 0 and alea.random() < x[3]:
                 d += round(x[1] * facteur_sorts)
                 x[4] -= 1
-        encaisser(d)
+        encaisser(plus_subis(d))
 
     def lancer(i, s):
         """Effet d'un sort de monstre (à la fin de son incantation)."""
@@ -347,8 +367,14 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
             fin = t + dure
             if genre == "direct":
                 d = v * facteur_sorts
-                encaisser(sim.apres_armure(round(d * sim.MONSTRES_DEGATS), armure_joueur(), e.m.puissance) if extra
-                          else round(d * 2))
+                encaisser(plus_subis(sim.apres_armure(round(d * sim.MONSTRES_DEGATS), armure_joueur(), e.m.puissance)
+                                     if extra else round(d * 2)))
+            elif genre == "vol_direct":
+                d = plus_subis(round(v * facteur_sorts * 2))
+                encaisser(d)
+                e.vie = min(e.m.vie, e.vie + d)
+            elif genre == "absorbe":
+                e.bouclier = [fin, v * facteur_sorts]
             elif genre == "arme":
                 frappe_monstre(i, 1.0, v, True)
             elif genre == "arme_pct":
@@ -382,7 +408,7 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
             elif genre == "declenche":
                 e.declenche.append([fin, v, extra[0], extra[1], extra[2]])
             elif qui == ENNEMI and genre in ("degats_moins", "degats_pct", "hate_pct", "armure", "armure_pct",
-                                             "soins_pct", "force", "pa"):
+                                             "soins_pct", "force", "pa", "subis_pct"):
                 cle = (s["id"], genre)
                 cumuls = 1
                 if cle in debuffs and debuffs[cle][0] > t and genre in ("armure", "armure_pct"):
@@ -528,6 +554,11 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
         if vie_j > 0:
             boire()
         for i, d in degats.items():
+            b = etats[i].bouclier
+            if b[0] > t and b[1] > 0:
+                pris = min(b[1], d)
+                b[1] -= pris
+                d -= pris
             etats[i].vie -= d
             inflige += d
             if etats[i].vie <= 0:

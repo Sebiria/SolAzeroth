@@ -15,6 +15,9 @@
 //   déclenchement (areatrigger_scripts, at_solazeroth_v3_scelle) refuse et repousse le joueur de quelques mètres ; toute
 //   autre téléportation vers la carte est refusée. Le Kraal (244, carte 47) et les Souilles (442, carte 129) des
 //   Tarides restent fermés jusqu'à bien plus tard.
+// Lot T1 des Tarides (03/11/2026, migration 136) : la garde posée devant chaque entrée scellée (colonne garde, guid
+// d'apparition) dit sa réplique (colonne replique) quand un joueur approche à moins de PORTEE_REPLIQUE m, une fois
+// toutes les ATTENTE_REPLIQUE s au plus (npc_solazeroth_v3_garde_scellee, mis par la migration sur ces apparitions).
 
 #include "SolAzeroth.h"
 #include "Chat.h"
@@ -48,6 +51,9 @@ namespace
     };
     std::unordered_map<uint32, Scellee> scellees;              // zone de déclenchement -> entrée
     std::unordered_map<uint32, std::string> cartesScellees;    // carte -> message
+    std::unordered_map<uint32, std::string> repliquesGardes;   // apparition de la garde -> réplique
+    float const PORTEE_REPLIQUE = 15.0f;
+    uint32 const ATTENTE_REPLIQUE = 60000;
 
     std::string Pourcent(uint32 centiemes)
     {
@@ -172,6 +178,43 @@ public:
     }
 };
 
+// Garde d'une entrée scellée : sa réplique quand un joueur approche.
+class npc_solazeroth_v3_garde_scellee : public CreatureScript
+{
+public:
+    npc_solazeroth_v3_garde_scellee() : CreatureScript("npc_solazeroth_v3_garde_scellee") { }
+
+    struct Garde : public ScriptedAI
+    {
+        explicit Garde(Creature* creature) : ScriptedAI(creature) { }
+
+        uint32 attente = 0;
+
+        void UpdateAI(uint32 diff) override
+        {
+            attente = attente > diff ? attente - diff : 0;
+            ScriptedAI::UpdateAI(diff);
+        }
+
+        void MoveInLineOfSight(Unit* qui) override
+        {
+            ScriptedAI::MoveInLineOfSight(qui);
+            if (attente || me->IsInCombat() || !qui || !qui->IsPlayer() || !me->IsWithinDist(qui, PORTEE_REPLIQUE))
+                return;
+            auto r = repliquesGardes.find(me->GetSpawnId());
+            if (r == repliquesGardes.end())
+                return;
+            me->Say(r->second, LANG_UNIVERSAL, qui);
+            attente = ATTENTE_REPLIQUE;
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new Garde(creature);
+    }
+};
+
 class solazeroth_v3_seuils_monde : public WorldScript
 {
 public:
@@ -183,6 +226,7 @@ public:
         carteDuPnj.clear();
         scellees.clear();
         cartesScellees.clear();
+        repliquesGardes.clear();
         if (QueryResult r = WorldDatabase.Query("SELECT carte, zone, seuil, quete, pnj, texte, x, y, z, o, choix, "
             "refus_quete, refus_pourcent, refus_entree FROM solazeroth_v3_donjons_seuils"))
         {
@@ -209,11 +253,14 @@ public:
                 seuils[s.carte] = std::move(s);
             } while (r->NextRow());
         }
-        if (QueryResult r = WorldDatabase.Query("SELECT declencheur, carte, message FROM solazeroth_v3_entrees_scellees"))
+        if (QueryResult r = WorldDatabase.Query("SELECT declencheur, carte, message, garde, replique FROM "
+            "solazeroth_v3_entrees_scellees"))
         {
             do
             {
                 Field* f = r->Fetch();
+                if (f[3].Get<uint32>() && !f[4].Get<std::string>().empty())
+                    repliquesGardes[f[3].Get<uint32>()] = f[4].Get<std::string>();
                 Scellee s{ f[1].Get<uint32>(), f[2].Get<std::string>() };
                 cartesScellees[s.carte] = s.message;
                 scellees[f[0].Get<uint32>()] = std::move(s);
@@ -229,5 +276,6 @@ void AddSC_solazeroth_v3_gouffre()
     new npc_solazeroth_v3_seuil();
     new solazeroth_v3_gouffre_joueur();
     new at_solazeroth_v3_scelle();
+    new npc_solazeroth_v3_garde_scellee();
     new solazeroth_v3_seuils_monde();
 }

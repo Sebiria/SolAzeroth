@@ -14,6 +14,15 @@
 //   ajoute 1 (v3_bivouac.cpp).
 // - F4 (31/10/2026) : puissance conseillée de chaque zone, calculée au démarrage d'après ses monstres, et envoyée à
 //   l'interface v3 (préfixe SOLZONE, « ZONE;basse;haute ») au changement de zone et toutes les 10 s.
+// - Lot T1 des Tarides (03/11/2026, point 1 du §5.2 du brouillon) : puissance par secteur, fixée à chaque apparition.
+//   Avant que le moteur ne calcule les statistiques (OnBeforeCreatureSelectLevel), le niveau tiré est ramené sur la
+//   plage de puissance du secteur de l'apparition (table solazeroth_v3_puissance_apparitions, écrite par
+//   outils\puissance_tarides.py), en ligne droite depuis la plage d'origine du secteur, arrondi et borné. Vie, dégâts,
+//   puissance d'attaque et armure sont ainsi ceux de ce niveau, et les sorts suivent (v3_combat.cpp). Une entrée de
+//   solazeroth_v3_puissance_entrees marquée « fixe » l'emporte (chefs nommés, élites hors annexes). Une créature
+//   invoquée par un monstre des secteurs prend sa puissance ; invoquée autrement dans la zone, la plage la plus
+//   fréquente de son entrée. Durotar n'a pas de secteurs : rien n'y change. Une zone à secteurs a pour puissance
+//   conseillée la plage de ses secteurs (solazeroth_v3_puissance_secteurs : les Tarides 14-30).
 
 #include "SolAzeroth.h"
 #include "Config.h"
@@ -26,7 +35,9 @@
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
+#include "TemporarySummon.h"
 #include <algorithm>
+#include <cmath>
 #include <unordered_map>
 #include <vector>
 
@@ -39,7 +50,79 @@ namespace
     struct Puissance : DataMap::Base
     {
         uint8 valeur = 0;
+        bool secteur = false;   // puissance fixée par un secteur (lot T1 des Tarides)
     };
+
+    // Plage d'une apparition ou d'une entrée : niveaux d'origine du secteur et puissances du secteur ou de la sous-zone.
+    struct Plage
+    {
+        uint8 origineMin = 0, origineMax = 0, puissanceMin = 0, puissanceMax = 0;
+        uint32 zone = 0;
+        bool fixe = false;
+    };
+    std::unordered_map<uint32, Plage> plagesApparitions;   // guid d'apparition -> plage
+    std::unordered_map<uint32, Plage> plagesEntrees;       // entrée -> plage
+    std::unordered_map<uint32, std::pair<uint8, uint8>> plagesZones;   // zone -> puissance conseillée
+
+    uint8 Ramener(uint8 niveau, Plage const& p)
+    {
+        if (p.puissanceMin == p.puissanceMax)
+            return p.puissanceMin;
+        if (p.origineMax <= p.origineMin)
+            return uint8(std::lround((p.puissanceMin + p.puissanceMax) / 2.0f));
+        float v = p.puissanceMin + float(int32(niveau) - int32(p.origineMin)) * (p.puissanceMax - p.puissanceMin)
+            / float(p.origineMax - p.origineMin);
+        return uint8(std::clamp<long>(std::lround(v), p.puissanceMin, p.puissanceMax));
+    }
+
+    Plage LirePlage(Field* f, uint32 premier)
+    {
+        Plage p;
+        p.origineMin = f[premier].Get<uint8>();
+        p.origineMax = f[premier + 1].Get<uint8>();
+        p.puissanceMin = f[premier + 2].Get<uint8>();
+        p.puissanceMax = f[premier + 3].Get<uint8>();
+        return p;
+    }
+
+    void ChargerSecteurs()
+    {
+        plagesApparitions.clear();
+        plagesEntrees.clear();
+        plagesZones.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT guid, origine_min, origine_max, puissance_min, puissance_max "
+            "FROM solazeroth_v3_puissance_apparitions"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                plagesApparitions[f[0].Get<uint32>()] = LirePlage(f, 1);
+            } while (r->NextRow());
+        }
+        if (QueryResult r = WorldDatabase.Query("SELECT entree, origine_min, origine_max, puissance_min, puissance_max, "
+            "zone, fixe FROM solazeroth_v3_puissance_entrees"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                Plage p = LirePlage(f, 1);
+                p.zone = f[5].Get<uint32>();
+                p.fixe = f[6].Get<uint8>() != 0;
+                plagesEntrees[f[0].Get<uint32>()] = p;
+            } while (r->NextRow());
+        }
+        if (QueryResult r = WorldDatabase.Query("SELECT zone, MIN(puissance_min), MAX(puissance_max) FROM "
+            "solazeroth_v3_puissance_secteurs GROUP BY zone"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                plagesZones[f[0].Get<uint32>()] = { f[1].Get<uint8>(), f[2].Get<uint8>() };
+            } while (r->NextRow());
+        }
+        LOG_INFO("module", "Sol'Azeroth v3 : puissance par secteur pour {} apparitions et {} entrées",
+            plagesApparitions.size(), plagesEntrees.size());
+    }
 
     struct ArmePortee : DataMap::Base
     {
@@ -55,8 +138,8 @@ namespace
     };
 
     // Puissance conseillée par zone : du 5e au 90e centile des puissances de ses monstres ordinaires (sans PNJ de
-    // service, élites ni bestioles). Durotar donne 1-10, les Tarides 11-22. Une zone trop disparate (capitale, plus de
-    // 25 d'écart) n'a pas de puissance conseillée.
+    // service, élites ni bestioles). Durotar donne 1-10. Une zone trop disparate (capitale, plus de 25 d'écart) n'a pas
+    // de puissance conseillée. Une zone à secteurs prend la plage de ses secteurs (lot T1 : les Tarides 14-30).
     std::unordered_map<uint32, std::pair<uint8, uint8>> puissanceDesZones;
 
     void CalculerPuissanceDesZones()
@@ -80,6 +163,8 @@ namespace
             if (haut - bas <= 25)
                 puissanceDesZones[zone] = { bas, haut };
         }
+        for (auto const& [zone, plage] : plagesZones)
+            puissanceDesZones[zone] = plage;
         LOG_INFO("module", "Sol'Azeroth v3 : puissance conseillée calculée pour {} zones", puissanceDesZones.size());
     }
 }
@@ -105,6 +190,43 @@ class solazeroth_v3_niveau_creatures : public AllCreatureScript
 {
 public:
     solazeroth_v3_niveau_creatures() : AllCreatureScript("solazeroth_v3_niveau_creatures") { }
+
+    // Lot T1 des Tarides : le niveau tiré est remplacé par la puissance du secteur, avant le calcul des statistiques.
+    void OnBeforeCreatureSelectLevel(CreatureTemplate const* /*cinfo*/, Creature* creature, uint8& niveau) override
+    {
+        if (creature->IsPet() || creature->HasUnitTypeMask(UNIT_MASK_MINION))
+            return;
+        bool secteur = false;
+        auto entree = plagesEntrees.find(creature->GetEntry());
+        auto apparition = plagesApparitions.find(creature->GetSpawnId());
+        if (entree != plagesEntrees.end() && entree->second.fixe)
+        {
+            niveau = Ramener(niveau, entree->second);
+            secteur = true;
+        }
+        else if (creature->GetSpawnId() && apparition != plagesApparitions.end())
+        {
+            niveau = Ramener(niveau, apparition->second);
+            secteur = true;
+        }
+        else if (!creature->GetSpawnId() && creature->IsSummon())
+        {
+            Unit* invocateur = creature->ToTempSummon()->GetSummonerUnit();
+            Creature* monstre = invocateur ? invocateur->ToCreature() : nullptr;
+            Puissance const* p = monstre ? monstre->CustomData.Get<Puissance>("solazeroth_puissance") : nullptr;
+            if (p && p->secteur)
+            {
+                niveau = p->valeur;
+                secteur = true;
+            }
+            else if (entree != plagesEntrees.end() && entree->second.zone == creature->GetZoneId())
+            {
+                niveau = Ramener(niveau, entree->second);
+                secteur = true;
+            }
+        }
+        creature->CustomData.GetDefault<Puissance>("solazeroth_puissance")->secteur = secteur;
+    }
 
     // Appelé à la fin de Creature::SelectLevel, statistiques déjà calculées au niveau d'origine.
     void OnCreatureSelectLevel(CreatureTemplate const* /*cinfo*/, Creature* creature) override
@@ -146,7 +268,15 @@ public:
 class solazeroth_v3_niveau_monde : public WorldScript
 {
 public:
-    solazeroth_v3_niveau_monde() : WorldScript("solazeroth_v3_niveau_monde", { WORLDHOOK_ON_STARTUP }) { }
+    solazeroth_v3_niveau_monde() : WorldScript("solazeroth_v3_niveau_monde", { WORLDHOOK_ON_BEFORE_WORLD_INITIALIZED,
+        WORLDHOOK_ON_STARTUP }) { }
+
+    // Avant le chargement des grilles (PreloadAllNonInstancedMapGrids) : les premières apparitions lisent déjà les
+    // secteurs.
+    void OnBeforeWorldInitialized() override
+    {
+        ChargerSecteurs();
+    }
 
     void OnStartup() override
     {

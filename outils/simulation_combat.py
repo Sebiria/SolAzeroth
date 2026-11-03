@@ -431,11 +431,16 @@ def monstre_depuis_base(entree, niveau=None, reglages=None):
     return fiche
 
 
+# Lot T1 des Tarides (03/11/2026) : pièces virtuelles (fiches_zones.pieces_a), au barème à une autre puissance que
+# les pièces en base ; entrée -> même dictionnaire que objet(), plus classe et sous-classe.
+VIRTUELS = {}
 EMPLACEMENTS = {1: 0, 3: 2, 5: 4, 20: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9, 16: 14, 13: 15, 17: 15, 21: 15, 14: 16,
                 22: 16, 23: 16}
 
 
 def objet(entree):
+    if entree in VIRTUELS:
+        return dict(VIRTUELS[entree])
     l = sql("SELECT InventoryType, armor, dmg_min1, dmg_max1, delay, %s, ItemLevel FROM acore_world.item_template "
             "WHERE entry = %d"
             % (", ".join("stat_type%d, stat_value%d" % (i, i) for i in range(1, 11)), entree))[0]

@@ -28,6 +28,7 @@ l'on s'arrête pour incanter.
 py simulation_demoniste.py      (rapport : démoniste et guerrier côte à côte, seul puis en groupe)
 py simulation_demoniste.py --gouffre   (lot D5 : Gouffre de Ragefeu par difficulté, puis rares secrets en bleu)
 py simulation_demoniste.py --passifs   (lot D5 : gain de chaque passif, démoniste et guerrier)
+py simulation_demoniste.py --tarides   (lot T1 : fiches des Tarides contre les monstres des secteurs)
 """
 import os
 import random
@@ -77,6 +78,10 @@ class Demoniste:
 
 
 def stats(entree):
+    if entree in sim.VIRTUELS:
+        o = sim.VIRTUELS[entree]
+        return {"classe": o["classe"], "sous": o["sous"], "type": o["type"], "armure": o["armure"],
+                "niveau": o["niveau"], "pa": o["pa"], "endurance": o["endurance"]}
     l = sim.sql("SELECT class, subclass, InventoryType, armor, ItemLevel, %s FROM acore_world.item_template WHERE entry = %d"
                 % (", ".join("stat_type%d, stat_value%d" % (i, i) for i in range(1, 11)), entree))[0]
     s = {}
@@ -487,6 +492,26 @@ def gouffre():
                  sim.simuler(g, m, n, potion=donjons.POTION_F7)["victoire"], lot4c.essai(g, m, b)))
 
 
+def tarides():
+    """Lot T1 des Tarides : démoniste et guerrier aux pièces d'arrivée refaites à chaque point de la zone
+    (fiches_zones.joueurs, Repos du feu 3, potion rang 2), contre les monstres des secteurs (mêlée seule, comme
+    rapport())."""
+    import fiches_zones as fz
+    for nom, puissance in te.PANOPLIES_TARIDES.items():
+        g, dm, _ = fz.joueurs(puissance)
+        print("\nTarides, %s : démoniste puissance %d, vie %d, armure %d, PA %d ; guerrier vie %d, armure %d" % (
+            nom, puissance, dm.vie, dm.armure, dm.pa, g.vie, g.armure))
+        for e, p in te.MONSTRES_TARIDES:
+            if not puissance - 2 <= p <= puissance + 3:
+                continue
+            m = monstre(e, p)
+            rd = simuler(dm, [m], 1000, potion=te.POTION_TARIDES)
+            rg = sim.simuler(g, m, 1000, potion=te.POTION_TARIDES)
+            print("  %-26s P%-2d | démoniste perdue %5.1f %% %5.1f s | guerrier perdue %5.1f %% %5.1f s%s" % (
+                m.nom[:26], p, te.perdue(rd), rd["duree"], te.perdue(rg), rg["duree"],
+                te.verdict_perdue(dm, m, te.perdue(rd))))
+
+
 def passifs():
     """Lot D5 : gain de chaque passif de donjon, en points de victoires, contre un fouette-queue réglé pour que chaque
     classe gagne environ une fois sur deux (simulation_donjons.passifs), sur la panoplie de fin de Durotar avec le
@@ -529,4 +554,5 @@ def passifs():
 
 
 if __name__ == "__main__":
-    passifs() if "--passifs" in sys.argv else gouffre() if "--gouffre" in sys.argv else rapport()
+    (passifs() if "--passifs" in sys.argv else gouffre() if "--gouffre" in sys.argv
+     else tarides() if "--tarides" in sys.argv else rapport())

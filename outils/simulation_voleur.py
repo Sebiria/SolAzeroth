@@ -21,6 +21,7 @@ Contre un groupe : les coups vont au premier monstre en vie, les monstres frappe
 py simulation_voleur.py             (rapport : voleur et guerrier côte à côte, seul puis en groupe)
 py simulation_voleur.py --gouffre   (Gouffre de Ragefeu par difficulté, puis rares secrets en bleu)
 py simulation_voleur.py --passifs   (gain de chaque passif, voleur et guerrier)
+py simulation_voleur.py --tarides   (lot T1 : fiches des Tarides contre les monstres des secteurs)
 """
 import math
 import os
@@ -58,6 +59,8 @@ class Voleur:
 
 def stats(entree):
     o = sim.objet(entree)
+    if entree in sim.VIRTUELS:
+        return o
     l = sim.sql("SELECT class, subclass FROM acore_world.item_template WHERE entry = %d" % entree)[0]
     o["classe"], o["sous"] = int(l[0]), int(l[1])
     return o
@@ -392,6 +395,25 @@ def gouffre():
                  sim.simuler(g, m, n, potion=donjons.POTION_F7)["victoire"], lot4c.essai(g, m, b)))
 
 
+def tarides():
+    """Lot T1 des Tarides : voleur et guerrier aux pièces d'arrivée refaites à chaque point de la zone
+    (fiches_zones.joueurs, Repos du feu 3, potion rang 2), contre les monstres des secteurs (mêlée seule, comme
+    rapport())."""
+    import fiches_zones as fz
+    for nom, puissance in te.PANOPLIES_TARIDES.items():
+        g, _, v = fz.joueurs(puissance)
+        print("\nTarides, %s : %s ; guerrier vie %d, armure %d" % (nom, v, g.vie, g.armure))
+        for e, p in te.MONSTRES_TARIDES:
+            if not puissance - 2 <= p <= puissance + 3:
+                continue
+            m = sim.monstre_depuis_base(e, p)
+            rv = simuler(v, [m], 1000, potion=te.POTION_TARIDES)
+            rg = sim.simuler(g, m, 1000, potion=te.POTION_TARIDES)
+            print("  %-26s P%-2d | voleur perdue %5.1f %% %5.1f s | guerrier perdue %5.1f %% %5.1f s%s" % (
+                m.nom[:26], p, te.perdue(rv), rv["duree"], te.perdue(rg), rg["duree"],
+                te.verdict_perdue(v, m, te.perdue(rv))))
+
+
 def passifs():
     """Gain de chaque passif de donjon, en points de victoires, contre un fouette-queue réglé pour que chaque classe
     gagne environ une fois sur deux, sur la panoplie de fin de Durotar avec le Repos et la potion F7."""
@@ -426,4 +448,5 @@ def passifs():
 
 
 if __name__ == "__main__":
-    passifs() if "--passifs" in sys.argv else gouffre() if "--gouffre" in sys.argv else rapport()
+    (passifs() if "--passifs" in sys.argv else gouffre() if "--gouffre" in sys.argv
+     else tarides() if "--tarides" in sys.argv else rapport())

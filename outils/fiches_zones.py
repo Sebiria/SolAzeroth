@@ -13,6 +13,12 @@ Les objets des rares secrets (rares_secrets_v3.EXCLUS) n'y sont jamais.
 - SORTIE_TARIDES : l'arrivée en zone 3, aux bleues des Cavernes des Lamentations (34). Les pièces s'écrivent au lot
   T8 (§4.7.4 du brouillon des Tarides) ; d'ici là, seule la puissance attendue est fixée.
 
+Lot T1 des Tarides (03/11/2026) : fiches à une puissance P de la zone, pour les simulations des secteurs. Les pièces
+vertes et bleues suivent le même barème (equipement_v3.caracteristiques) : pieces_a(spe, P) refait les pièces
+d'arrivée à la puissance P (pièces virtuelles de simulation_combat), et joueurs(P) donne le guerrier, le démoniste et
+le voleur qui les portent (personnage du journal, Repos du feu 3, comme rares_secrets_v3.fiche sans les autres
+bonus). À P = 14, ce sont les pièces en base.
+
 py fiches_zones.py  (relit les pièces en base et affiche les fiches)
 """
 import os
@@ -49,6 +55,56 @@ ARRIVEE_TARIDES = fiche("Arrivée aux Tarides", gz.TARIDES, gz.DUROTAR, GOUFFRE,
 SORTIE_TARIDES = fiche("Sortie des Tarides (arrivée en zone 3)", gz.ZONE_3, gz.TARIDES, None,
                        gz.TARIDES["donjon"]["bleues"])
 FICHES = [ARRIVEE_TARIDES, SORTIE_TARIDES]
+SEBIRIA = 1                 # personnage dont on lit l'équipement (journaux de combat)
+REPOS = 5                   # Repos du feu 3 : +5 Force, Intelligence ou Agilité (simulation_camp.repos)
+_baremes = []
+
+
+def pieces_a(spe, puissance):
+    """Les pièces d'arrivée de spe au barème de cette puissance (rang 0) : entrées virtuelles de simulation_combat,
+    sauf à la puissance d'arrivée (pièces en base)."""
+    import equipement_gouffre_v3 as eg
+    import equipement_v3 as e3
+    import simulation_combat as sim
+    pieces = GOUFFRE[spe]
+    if puissance == ARRIVEE_TARIDES["puissance"]:
+        return list(pieces)
+    if not _baremes:
+        _baremes.append(eg.baremes())
+    armures, armes = _baremes[0]
+    # Modèle : l'objet d'origine de la pièce, comme le générateur (equipement_gouffre_v3), sinon la pièce (orbe).
+    source = {e: src for e, _, src, *_ in eg.PIECES}
+    modeles = e3.objets({source.get(e, e) for e in pieces})
+    sortie = []
+    for e in pieces:
+        m = modeles[source.get(e, e)]
+        c = e3.caracteristiques(m, puissance, armures, armes)
+        # Dégâts d'arme : ceux de la pièce en base, dans le rapport du barème (la base garde ses arrondis).
+        reelle, c0 = sim.objet(e), e3.caracteristiques(m, ARRIVEE_TARIDES["puissance"], armures, armes)
+        rapport = (c["dmg_min1"] + c["dmg_max1"]) / (c0["dmg_min1"] + c0["dmg_max1"]) if c0["dmg_max1"] else 0
+        virtuelle = 990000000 + (e - 910000) * 1000 + round(puissance * 10)
+        sim.VIRTUELS[virtuelle] = {
+            "emplacement": sim.EMPLACEMENTS.get(int(m["InventoryType"])), "armure": c["armor"],
+            "bas": reelle["bas"] * rapport, "haut": reelle["haut"] * rapport, "vitesse": reelle["vitesse"],
+            "pa": c["ap"], "endurance": c["endurance"], "niveau": puissance,
+            "classe": int(m["class"]), "sous": int(m["subclass"]), "type": int(m["InventoryType"])}
+        sortie.append(virtuelle)
+    return sortie
+
+
+def joueurs(puissance):
+    """(guerrier, démoniste, voleur) aux pièces d'arrivée refaites à cette puissance, Repos du feu 3, rang 0."""
+    import simulation_camp as camp
+    import simulation_combat as sim
+    import simulation_demoniste as sd
+    import simulation_voleur as sv
+    sebiria = max((f for f in camp.fiches() if f.nom == "Sebiria"), key=lambda f: f.puissance)
+    g = camp.repos(sim.equiper(sebiria, pieces_a("guerrier_tank", puissance), SEBIRIA), REPOS)
+    d = sd.renforce(sd.demoniste(pieces_a("demoniste_affliction", puissance), SEBIRIA, repas=REPOS))
+    v = sv.renforce(sv.voleur(pieces_a("voleur_assassinat", puissance), SEBIRIA, g.critique, repas=REPOS))
+    for j in (g, d, v):
+        j.puissance = puissance      # comme la fiche : la moyenne des 11 pièces
+    return g, d, v
 
 
 def verifier():
