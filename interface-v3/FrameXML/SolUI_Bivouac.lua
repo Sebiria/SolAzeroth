@@ -6,7 +6,7 @@
 -- la cuisine (SolUI_Cuisine.lua) ; vide, ou une fois le plat épuisé, il prend le premier plat des sacs. Le plat glissé
 -- est gardé par le serveur (.camp repas, v3_bivouac.cpp) et revient à la connexion.
 -- Consommable (demande du 03/11/2026) : un cinquième, à droite du repas. On y glisse n'importe quel objet qui s'utilise
--- et ne s'équipe pas (élixir, parchemin, bandage…) ; il reste le même, grisé une fois épuisé. Gardé par l'addon
+-- et ne s'équipe pas (élixir, parchemin, objet de quête…) ; il reste le même, grisé une fois épuisé. Gardé par l'addon
 -- SolAzeroth, par personnage (SolAzerothDB.consommables).
 
 local S = SolUI
@@ -135,7 +135,7 @@ local pierre = NouveauBouton(PIERRE, 2, 1, true)
 local repas = NouveauBouton(nil, 2, 0, true, "SolUIBivouacRepas")
 repas.videTitre, repas.videAide = "Repas", "Glisse ici un plat de la cuisine."
 local conso = NouveauBouton(nil, 3, 0, true, "SolUIBivouacConso")
-conso.videTitre, conso.videAide = "Consommable", "Glisse ici un objet qui s'utilise : élixir, parchemin, bandage…"
+conso.videTitre, conso.videAide = "Consommable", "Glisse ici un objet qui s'utilise : élixir, parchemin, objet de quête…"
 -- Pêche (demande du 31/10/2026) : à gauche du losange du passif, à sa hauteur.
 local peche = NouveauBouton(PECHE, 0, 0, false, "SolUIBivouacPeche")
 peche:ClearAllPoints()
