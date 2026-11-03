@@ -57,6 +57,9 @@ namespace
     uint32 const BOUCLIER_DE_DEPART = 2362;    // Vieux bouclier en bois
     uint32 const SORT_DAGUES = 1180;           // Dagues
     uint32 const DAGUE_DE_DEPART = 2092;       // Dague usée
+    // Démoniste (03/11/2026, analyse d'un premier combat perdu contre un sanglier de puissance 1) : un bâton, dont les
+    // dégâts par seconde (2,58 × 14, v3_niveau.cpp) portent sa puissance d'attaque de départ de 34 à 57.
+    uint32 const BATON_DE_DEPART = 5778;       // Canne de marche primitive
     uint32 const SORT_MASSES_1M = 198;         // Masses à une main
     uint32 const SORT_HACHES_1M = 196;         // Haches à une main
     uint32 const SORT_BATONS = 227;            // Bâtons
@@ -103,7 +106,8 @@ namespace
     {
         { 100201, "Trait de l'ombre", 0, 0, nullptr, false },
         { 100202, "Corruption", 0, 0, nullptr, false },
-        { 100203, "Diablotin", 910002, 0, "Nartok", false },                     // Les crocs de la Vallée
+        // Le Diablotin dès le départ (03/11/2026) : sans lui, 26 % de victoires contre un sanglier de puissance 1.
+        { 100203, "Diablotin", 0, 0, nullptr, false },
         { 100205, "Drain de vie", 910005, 0, "Nartok", true },                   // Les vils quasits, avant Yarrog
         { 100206, "Peur", 910008, 0, "Dhugru Gorelust", false },                 // Un rapport à Orgnil (Tranchecolline)
         { 100207, "Marcheur du Vide", 0, 2, "Dhugru Gorelust", true },          // chef renforcé de Tranchecolline
@@ -169,7 +173,7 @@ namespace
         // arme tranchante ou contondante (épée, masse, hache) ; dagues et bâtons seulement.
         { SPE_DEMONISTE_AFFLICTION, CLASS_WARLOCK, "affliction", "démoniste Affliction", SPELLFAMILY_WARLOCK,
           PASSIF_MOISSON, STAT_INTELLECT, &ORDRE_AFFLICTION, { SORT_DAGUES, SORT_BATONS },
-          { { EQUIPMENT_SLOT_MAINHAND, DAGUE_DE_DEPART } },
+          { { EQUIPMENT_SLOT_MAINHAND, BATON_DE_DEPART } },
           { ITEM_SUBCLASS_WEAPON_DAGGER, ITEM_SUBCLASS_WEAPON_STAFF } },
         // Lot V1 (« Voleur — proposition.md ») : deux dagues obligatoires, aucune autre arme. Kit et passif Toxines au
         // lot V2.
