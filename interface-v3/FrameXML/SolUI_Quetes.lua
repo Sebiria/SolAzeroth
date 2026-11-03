@@ -365,9 +365,7 @@ local function Recompense(n)
     b.icone = b:CreateTexture(nil, "ARTWORK")
     b.icone:SetSize(36, 36)
     b.icone:SetPoint("LEFT", 0, 0)
-    b.cadre = S.Texture(b, "BORDER", nil, S.Couleur("bord"))
-    b.cadre:SetPoint("TOPLEFT", b.icone, -1, 1)
-    b.cadre:SetPoint("BOTTOMRIGHT", b.icone, 1, -1)
+    b.contour = S.ContourRarete(b, b.icone)
     b.nombre = S.Texte(b, "Bold", 12, "clair")
     b.nombre:SetPoint("BOTTOMRIGHT", b.icone, "BOTTOMRIGHT", -2, 2)
     b.nom = S.Texte(b, "Regular", 12, "texte")
@@ -432,24 +430,25 @@ local function MajDetail(q)
     y = Poser(contenu.recit, y, 8)
 
     local n = 0
-    local function Ajouter(genre, numero, nom, icone, nombre)
+    local function Ajouter(genre, numero, nom, icone, nombre, qualite)
         n = n + 1
-        local _, nomVersion, iconeVersion = S.VersionObjet(GetQuestLogItemLink(genre, numero))
+        local version, nomVersion, iconeVersion = S.VersionObjet(GetQuestLogItemLink(genre, numero))
         nom, icone = nomVersion or nom, iconeVersion or icone
         local b = Recompense(n)
         b.genre, b.numero = genre, numero
         b.icone:SetTexture(icone)
+        S.Rarete(b.contour, version and S.QualiteObjet(version, qualite) or qualite)
         b.nombre:SetText(nombre and nombre > 1 and nombre or "")
         b.nom:SetText(nom or "")
         return b
     end
     for k = 1, GetNumQuestLogRewards() do
-        local nom, icone, nombre = GetQuestLogRewardInfo(k)
-        Ajouter("reward", k, nom, icone, nombre)
+        local nom, icone, nombre, qualite = GetQuestLogRewardInfo(k)
+        Ajouter("reward", k, nom, icone, nombre, qualite)
     end
     for k = 1, GetNumQuestLogChoices() do
-        local nom, icone, nombre = GetQuestLogChoiceInfo(k)
-        Ajouter("choice", k, nom, icone, nombre)
+        local nom, icone, nombre, qualite = GetQuestLogChoiceInfo(k)
+        Ajouter("choice", k, nom, icone, nombre, qualite)
     end
     local argent = GetQuestLogRewardMoney()
     if n > 0 or argent > 0 then

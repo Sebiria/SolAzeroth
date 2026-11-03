@@ -127,6 +127,38 @@ function S.Montrer(objet, visible)
     if visible then objet:Show() else objet:Hide() end
 end
 
+-- Cadre de rareté (03/11/2026, demande de l'utilisateur : toute icône d'objet, aujourd'hui et à venir, est encadrée à
+-- la couleur de sa rareté ; les sacs et la fiche le faisaient déjà). Contour de 2 px autour de « cible » (texture ou
+-- cadre, le parent par défaut) ; S.Rarete le teinte, filet gris sans objet.
+function S.ContourRarete(parent, cible)
+    local c = CreateFrame("Frame", nil, parent)
+    c:SetPoint("TOPLEFT", cible or parent, "TOPLEFT", -1, 1)
+    c:SetPoint("BOTTOMRIGHT", cible or parent, "BOTTOMRIGHT", 1, -1)
+    c:SetFrameLevel(parent:GetFrameLevel() + 2)
+    c:SetBackdrop({ edgeFile = S.BLANC, edgeSize = 2 })
+    c:SetBackdropBorderColor(S.Couleur("bord"))
+    return c
+end
+
+function S.Rarete(contour, qualite)
+    local t = qualite and ITEM_QUALITY_COLORS[qualite]
+    if t then contour:SetBackdropBorderColor(t.r, t.g, t.b, 1) else contour:SetBackdropBorderColor(S.Couleur("bord")) end
+end
+
+-- Qualité d'un objet ; s'il n'est pas encore en cache, on le demande au serveur (une fois) par une infobulle cachée.
+local demandeur, demandes = CreateFrame("GameTooltip", "SolUIDemandeObjet", UIParent, "GameTooltipTemplate"), {}
+function S.QualiteObjet(id, defaut)
+    if not id then return nil end
+    local _, _, qualite = GetItemInfo(id)
+    if not qualite and not demandes[id] then
+        demandes[id] = true
+        demandeur:SetOwner(UIParent, "ANCHOR_NONE")
+        demandeur:SetHyperlink("item:" .. id)
+        demandeur:Hide()
+    end
+    return qualite or defaut
+end
+
 -- 1840 -> « 1 840 » ; 1.25 -> « 1,3 » (décimales voulues).
 function S.Nombre(valeur, decimales)
     if decimales and decimales > 0 then

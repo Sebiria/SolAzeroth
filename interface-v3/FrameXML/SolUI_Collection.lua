@@ -28,9 +28,15 @@ local Maj
 -- Collection du serveur : objet -> nombre. « LISTE;objet:nombre,… » en morceaux puis « FIN » ; « MAJ;objet;total;changement ».
 local ranges, complete = {}, false
 local NOMS, CATEGORIES = {}, {}
-for _, c in ipairs(S.CATALOGUE) do
-    for _, o in ipairs(c.objets) do NOMS[o[1]], CATEGORIES[o[1]] = o, c.nom end
+-- Réindexé à la connexion (03/11/2026) : SolUI_RecettesGouffre.lua, chargé après ce fichier, ajoute la Braise du
+-- Gouffre au catalogue ; sans cela, elle s'appelait « objet 910190 ».
+local function Indexer()
+    for _, c in ipairs(S.CATALOGUE) do
+        for _, o in ipairs(c.objets) do NOMS[o[1]], CATEGORIES[o[1]] = o, c.nom end
+    end
 end
+Indexer()
+S.Ecouter("PLAYER_LOGIN", Indexer)
 
 -- Teinte d'un objet à collectionner (31/10/2026, demande de l'utilisateur) : vert pour les herbes, bleu pour les
 -- métaux et les pierres, orange pour les cuirs ; les autres gardent la couleur de leur qualité.
@@ -197,6 +203,7 @@ for n = 1, COLONNES * LIGNES do
     t.icone:SetSize(36, 36)
     t.icone:SetPoint("LEFT", 8, 0)
     t.icone:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    t.contour = S.ContourRarete(t, t.icone)
     t.nom = S.Texte(t, "Regular", 11, "texte")
     t.nom:SetPoint("TOPLEFT", t.icone, "TOPRIGHT", 8, 1)
     t.nom:SetWidth(TUILE_L - 60)
@@ -237,6 +244,7 @@ local grandeIcone = detail:CreateTexture(nil, "ARTWORK")
 grandeIcone:SetSize(64, 64)
 grandeIcone:SetPoint("TOPLEFT")
 grandeIcone:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+local contourGrande = S.ContourRarete(detail, grandeIcone)
 local detailNom = S.Texte(detail, "Bold", 16, "clair")
 detailNom:SetPoint("TOPLEFT", grandeIcone, "BOTTOMLEFT", 0, -12)
 detailNom:SetWidth(140)
@@ -297,6 +305,7 @@ function Maj()
             local a = nombre > 0
             t.id, t.objet = o[1], o
             t.icone:SetTexture(GetItemIcon(o[1]))
+            S.Rarete(t.contour, o[3] or 1)
             t.icone:SetDesaturated(not a)
             t.icone:SetAlpha(a and 1 or 0.45)
             t.nom:SetText(o[2])
@@ -311,6 +320,7 @@ function Maj()
     if choisi then
         local nombre = Nombre(choisi[1])
         grandeIcone:SetTexture(GetItemIcon(choisi[1]))
+        S.Rarete(contourGrande, choisi[3] or 1)
         grandeIcone:SetDesaturated(nombre == 0)
         detailNom:SetText(choisi[2])
         if nombre > 0 then detailNom:SetTextColor(Teinte(choisi[1])) else detailNom:SetTextColor(S.Couleur("gris")) end

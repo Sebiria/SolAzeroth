@@ -169,9 +169,11 @@ S.Message("SOLEQUIP", function(champs)
     if champs[1] ~= "OBJ" and champs[1] ~= "PIECE" and champs[1] ~= "DEBUT" and champs[1] ~= "HAUTE" then Maj() end
 end)
 
-local function NomObjet(id, defaut)
+-- qualiteDefaut : tant que le jeu n'a pas l'objet en cache (03/11/2026 : les pièces du Gouffre s'affichaient en vert,
+-- puis en bleu après un survol).
+local function NomObjet(id, defaut, qualiteDefaut)
     local nom, _, qualite = GetItemInfo(id)
-    local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[qualite or 2]
+    local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[qualite or qualiteDefaut or 2]
     return nom or defaut or ("objet " .. id), c and c.r or 1, c and c.g or 1, c and c.b or 1
 end
 
@@ -205,8 +207,16 @@ local function Icone(parent, taille)
     b.icone = b:CreateTexture(nil, "ARTWORK")
     b.icone:SetAllPoints()
     b.icone:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    b.contour = S.ContourRarete(b)
     Infobulle(b)
     return b
+end
+
+-- Objet d'une icône : image, infobulle et cadre de rareté.
+local function Poser(b, id, icone, qualiteDefaut)
+    b.id = id
+    b.icone:SetTexture(icone or GetItemIcon(id))
+    S.Rarete(b.contour, S.QualiteObjet(id, qualiteDefaut))
 end
 
 ------------------------------------------------------------------------
@@ -320,12 +330,32 @@ conditions:SetJustifyH("LEFT")
 local titreComposants = S.Texte(detail, "Bold", 11, "gris")
 titreComposants:SetPoint("TOPLEFT", conditions, "BOTTOMLEFT", 0, -18)
 titreComposants:SetText("COMPOSANTS")
+-- Survol d'un composant (03/11/2026, demande de l'utilisateur) : son infobulle, et où le trouver quand ce n'est pas
+-- évident.
+local PROVENANCES = {
+    [910190] = "Se trouve sur les boss du Gouffre de Ragefeu : 15 % de chances par boss, et une de plus sur le "
+        .. "dernier boss tué.",
+}
 local composants = {}
 for n = 1, 4 do
     local c = S.Texte(detail, "Regular", 13, "texte")
     c:SetPoint("TOPLEFT", titreComposants, "BOTTOMLEFT", 0, -8 - (n - 1) * 22)
     c:SetWidth(370)
     c:SetJustifyH("LEFT")
+    c.survol = CreateFrame("Frame", nil, detail)
+    c.survol:SetPoint("TOPLEFT", c, "TOPLEFT")
+    c.survol:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT")
+    c.survol:EnableMouse(true)
+    c.survol:SetScript("OnEnter", function(self)
+        if not self.id then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetHyperlink("item:" .. self.id)
+        if PROVENANCES[self.id] then
+            GameTooltip:AddLine(PROVENANCES[self.id], 0.71, 0.72, 0.75, true)
+            GameTooltip:Show()
+        end
+    end)
+    c.survol:SetScript("OnLeave", function() GameTooltip:Hide() end)
     composants[n] = c
 end
 local prixFabrication = S.Texte(detail, "Regular", 13, "texte")
@@ -393,8 +423,8 @@ local function MajFabrication()
         local r = liste[n + d]
         S.Montrer(l, r)
         if r then
-            l.recette, l.icone.id = r, r[1]
-            l.icone.icone:SetTexture(GetItemIcon(r[1]))
+            l.recette = r
+            Poser(l.icone, r[1], nil, (categorieDe[r].gouffre or r[2]:find("du Gouffre")) and 3 or 2)
             l.texte:SetText(r[2])
             l.info:SetText(categorieDe[r].surplus and "Consommable, 1 h" or ("Puissance " .. r[3]))
             l:Choisir(choisie == r)
@@ -403,10 +433,10 @@ local function MajFabrication()
     S.Montrer(detail, choisie)
     if not choisie then return end
     local r, c = choisie, categorieDe[choisie]
-    grande.id = r[1]
-    grande.icone:SetTexture(GetItemIcon(r[1]))
+    local qualiteDefaut = (c.gouffre or r[2]:find("du Gouffre")) and 3 or 2
+    Poser(grande, r[1], nil, qualiteDefaut)
     detailNom:SetText(r[2])
-    detailNom:SetTextColor(select(2, NomObjet(r[1], r[2])))
+    detailNom:SetTextColor(select(2, NomObjet(r[1], r[2], qualiteDefaut)))
     detailPuissance:SetText(c.feu and ("Repas de " .. (r[7] or "") .. " : +" .. r[3] .. " pendant 30 min")
         or c.surplus and "Consommable : bonus pendant 1 h" or ("Puissance " .. r[3]))
     for v, bv in ipairs(boutonsVariantes) do
@@ -463,6 +493,8 @@ local function MajFabrication()
     for n, ligne in ipairs(composants) do
         local comp = liste[n]
         S.Montrer(ligne, comp)
+        S.Montrer(ligne.survol, comp)
+        ligne.survol.id = comp and comp[1]
         if comp then
             local a = S.NombreCollection(comp[1])
             tout = tout and a >= comp[2]
@@ -575,8 +607,8 @@ local function MajAmelioration()
         local p = pieces[n + decalage]
         S.Montrer(l, p)
         if p then
-            l.piece, l.icone.id = p, p.id
-            l.icone.icone:SetTexture(GetItemIcon(p.id))
+            l.piece = p
+            Poser(l.icone, p.id)
             local nom, r, g, b = NomObjet(p.id)
             l.nom:SetText(nom)
             l.nom:SetTextColor(r, g, b)
@@ -756,8 +788,8 @@ local function Remplir(p, liste, Ligne)
         local piece = liste[n + decalage]
         S.Montrer(l, piece)
         if piece then
-            l.piece, l.icone.id = piece, piece.id
-            l.icone.icone:SetTexture(GetItemIcon(piece.id))
+            l.piece = piece
+            Poser(l.icone, piece.id)
             local nom, r, g, b = NomObjet(piece.id)
             l.nom:SetText(nom)
             l.nom:SetTextColor(r, g, b)
@@ -901,8 +933,7 @@ rangsJ:SetJustifyH("LEFT")
 local function MajJoaillerie()
     local hex = function(ok) return ok and "|cff8cc4a6" or "|cfff0918a" end
     local minerai = S.NombreCollection(J.minerai)
-    prospecter.icone.id = J.minerai
-    prospecter.icone.icone:SetTexture(GetItemIcon(J.minerai))
+    Poser(prospecter.icone, J.minerai)
     prospecter.nom:SetText("Prospection : " .. J.parProspection .. " " .. S.NomCollection(J.minerai) .. "   "
         .. hex(minerai >= J.parProspection) .. "(tu en as " .. minerai .. ")|r")
     local chances = {}
@@ -914,8 +945,7 @@ local function MajJoaillerie()
     for _, l in ipairs(lignesTaille) do
         local t = l.taille
         local brutes = S.NombreCollection(t[3])
-        l.icone.id = t[1]
-        l.icone.icone:SetTexture(GetItemIcon(t[1]) or GetItemIcon(t[3]))
+        Poser(l.icone, t[1], GetItemIcon(t[1]) or GetItemIcon(t[3]))
         l.nom:SetText(t[2] .. "   |cffb4b8bf(tu en as " .. S.NombreCollection(t[1]) .. ")|r")
         l.info:SetText("Demande " .. hex(brutes >= t[4]) .. t[4] .. " " .. S.NomCollection(t[3]) .. " (tu en as " .. brutes .. ")|r")
         l.bouton:SetAlpha(brutes >= t[4] and 1 or 0.5)
