@@ -199,7 +199,30 @@ end
 -- Cadre de rareté (03/11/2026, demande de l'utilisateur : toute icône d'objet, aujourd'hui et à venir, est encadrée à
 -- la couleur de sa rareté ; les sacs et la fiche le faisaient déjà). Contour de 2 px autour de « cible » (texture ou
 -- cadre, le parent par défaut) ; S.Rarete le teinte, filet gris sans objet.
+-- Anneau bronze autour de l'icône (texture AnneauIcone découpée en 9 morceaux), liseré de rareté juste dedans.
+local function AnneauIcone(parent, cible)
+    local a = CreateFrame("Frame", nil, parent)
+    a:SetPoint("TOPLEFT", cible, "TOPLEFT", -4, 4)
+    a:SetPoint("BOTTOMRIGHT", cible, "BOTTOMRIGHT", 4, -4)
+    a:SetFrameLevel(parent:GetFrameLevel() + 1)
+    local m = {}
+    for i, d in ipairs(MORCEAUX) do
+        m[i] = S.Texture(a, "ARTWORK", "AnneauIcone")
+        m[i]:SetSize(5, 5)
+        m[i]:SetPoint(d[1])
+        m[i]:SetTexCoord(d[2], d[3], d[4], d[5])
+    end
+    for _, b in ipairs({ { 1, 2, "TOPRIGHT", "BOTTOMLEFT", 0.25, 0.75, 0, 0.25 }, { 3, 4, "TOPRIGHT", "BOTTOMLEFT", 0.25, 0.75, 0.75, 1 },
+                         { 1, 3, "BOTTOMLEFT", "TOPRIGHT", 0, 0.25, 0.25, 0.75 }, { 2, 4, "BOTTOMLEFT", "TOPRIGHT", 0.75, 1, 0.25, 0.75 } }) do
+        local t = S.Texture(a, "ARTWORK", "AnneauIcone")
+        t:SetPoint("TOPLEFT", m[b[1]], b[3])
+        t:SetPoint("BOTTOMRIGHT", m[b[2]], b[4])
+        t:SetTexCoord(b[5], b[6], b[7], b[8])
+    end
+end
+
 function S.ContourRarete(parent, cible)
+    AnneauIcone(parent, cible or parent)
     local c = CreateFrame("Frame", nil, parent)
     c:SetPoint("TOPLEFT", cible or parent, "TOPLEFT", -1, 1)
     c:SetPoint("BOTTOMRIGHT", cible or parent, "BOTTOMRIGHT", 1, -1)

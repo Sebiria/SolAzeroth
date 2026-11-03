@@ -247,6 +247,20 @@ def bronze(nom):
     image.save(os.path.join(TEXTURES, nom + ".tga"))
 
 
+def anneau_icone(nom):
+    """Anneau bronze des icônes d'objets (64 x 64, coins de 16 pixels) : S.ContourRarete le découpe comme S.Panneau.
+    Bande de 12 pixels (noir, biseau, noir), centre transparent : le liseré de rareté se pose juste dedans."""
+    t = 64
+    image = Image.new("RGBA", (t, t), (0, 0, 0, 0))
+    pixels = image.load()
+    for y in range(t):
+        for x in range(t):
+            d = min(x, y, t - 1 - x, t - 1 - y)
+            if d < 12:
+                pixels[x, y] = profil_bronze(d)
+    image.save(os.path.join(TEXTURES, nom + ".tga"))
+
+
 def grain(taille, graine, flou):
     """Bruit gris flouté, raccordable en mosaïque."""
     import random
@@ -367,6 +381,7 @@ def rouleau(nom):
 def textures():
     os.makedirs(TEXTURES, exist_ok=True)
     bronze("Bronze")
+    anneau_icone("AnneauIcone")
     fond_olive("FondOlive")
     gemme("Gemme", (169, 220, 255), (44, 118, 198))
     plaque("Plaque")
