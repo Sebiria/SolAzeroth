@@ -2,7 +2,11 @@
 USE acore_world;
 
 -- Lieux comptés par sous-zone ; créatures invoquées ignorées si invocations = 0 (Durotar : 1, comme avant).
-ALTER TABLE solazeroth_v3_lieux_monstres ADD COLUMN sous_zones VARCHAR(64) NOT NULL DEFAULT '', ADD COLUMN invocations TINYINT UNSIGNED NOT NULL DEFAULT 1;
+SET @manque = (SELECT COUNT(*) = 0 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'acore_world' AND TABLE_NAME = 'solazeroth_v3_lieux_monstres' AND COLUMN_NAME = 'sous_zones');
+SET @requete = IF(@manque, 'ALTER TABLE solazeroth_v3_lieux_monstres ADD COLUMN sous_zones VARCHAR(64) NOT NULL DEFAULT '''', ADD COLUMN invocations TINYINT UNSIGNED NOT NULL DEFAULT 1', 'DO 0');
+PREPARE requete FROM @requete;
+EXECUTE requete;
+DEALLOCATE PREPARE requete;
 -- Quêtes écrites à la main qui retiennent un chef renforcé (en plus de celles que v3_zone.cpp trouve seul).
 CREATE TABLE solazeroth_v3_lieux_chefs_quetes (lieu INT UNSIGNED NOT NULL, quete INT UNSIGNED NOT NULL, PRIMARY KEY (lieu, quete));
 

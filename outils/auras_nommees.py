@@ -8,6 +8,7 @@ import os
 import subprocess
 
 import dbc
+import artisanat_tarides
 import bivouac_v3
 import bonus_v3
 import cuisine_v3
@@ -149,7 +150,9 @@ def main():
     passifs = passifs_v3.lignes(d)
     monstres = sorts_monstres_v3.lignes(d)   # v3 (01/11/2026) : sorts des monstres, migration 106
     bonus = bonus_v3.lignes(d)               # audit du jeu, lot 4c : migration 117
-    d.enregistrements.extend(lignes + incantations + kit + demoniste + voleur + bivouac + cuisine + passifs + monstres + bonus)
+    tarides = artisanat_tarides.sorts(d)     # lot T8 des Tarides : consommables, migration 141 (écrite par artisanat_tarides.py)
+    d.enregistrements.extend(lignes + incantations + kit + demoniste + voleur + bivouac + cuisine + passifs + monstres + bonus
+                             + tarides)
     os.makedirs(DBC_CLIENT, exist_ok=True)
     d.enregistrer(os.path.join(DBC_CLIENT, "Spell.dbc"))
 

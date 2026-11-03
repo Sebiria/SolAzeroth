@@ -32,8 +32,11 @@ namespace SolAzeroth
     unsigned char DifficultesOuvertes(Player* player, unsigned int carte);
     // Lot 5 : objectifs d'artisan, une fois par compte (v3_aventurier.cpp ; les plats : la clé est l'entrée du plat).
     enum ObjectifArtisanCle : unsigned int { ARTISAN_VERTE = 1, ARTISAN_BLEUE, ARTISAN_RANG_3, ARTISAN_RANG_5,
-        ARTISAN_TRANSFERT, ARTISAN_PLAN, ARTISAN_ENCHANTEMENT, ARTISAN_PIERRE_TAILLEE, ARTISAN_CONSOMMABLE };
-    unsigned int const ARTISAN_NOMBRE = 9 + 5;   // et les 5 plats de Durotar
+        ARTISAN_TRANSFERT, ARTISAN_PLAN, ARTISAN_ENCHANTEMENT, ARTISAN_PIERRE_TAILLEE, ARTISAN_CONSOMMABLE,
+        // Lot T8 des Tarides (03/11/2026) : première pièce verte de puissance 15 ou plus, premier rang 4 ou 5 payé en
+        // pierres des Tarides, premier enchantement sur une pièce de puissance 15 ou plus.
+        ARTISAN_VERTE_TARIDES, ARTISAN_PIERRE_TARIDES, ARTISAN_ENCHANTEMENT_TARIDES };
+    unsigned int const ARTISAN_NOMBRE = 12 + 5;   // et les 5 plats de Durotar
     void ObjectifArtisan(Player* player, unsigned int cle);
     // v3 : difficulté du donjon de cette carte (1 à 5 ; 0 hors donjon), techniques de ses monstres (masque) et verrou
     // (premier combat livré), et rang de réputation des donjons du compte (1 à 10) (v3_donjons.cpp).

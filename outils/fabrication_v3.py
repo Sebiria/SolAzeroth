@@ -22,6 +22,11 @@ MALACHITE, OEIL_TIGRE = 774, 818
 HAUTES = {
     8: (MALACHITE, 1, 20000),     # haut de Tranchecolline : bottes, gants et ceintures
     10: (OEIL_TIGRE, 1, 50000),   # haut du sud et du nord : haubert, claymore, gilets
+    # Lot T8 des Tarides (03/11/2026, §4.7.2) : le torse de chaque palier, écrit par artisanat_tarides.py (migration
+    # 141) ; ce script-ci ne prend que les recettes sous la puissance du Gouffre.
+    18: (1206, 1, 70000),         # Agate mousse, palier I « de la Croisée »
+    24: (1529, 1, 110000),        # Jade, palier II « des oasis »
+    30: (1705, 1, 180000),        # Pierre de lune inférieure, palier III « de Taurajo »
 }
 GOUFFRE = 14
 
@@ -42,7 +47,9 @@ def main():
     up += ["CREATE TABLE IF NOT EXISTS solazeroth_v3_recettes_hautes (objet INT UNSIGNED NOT NULL PRIMARY KEY, composant "
            "INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, plan INT UNSIGNED NOT NULL) ENGINE=InnoDB DEFAULT "
            "CHARSET=utf8mb4;",
-           "DELETE FROM solazeroth_v3_recettes_hautes;"]
+           # Lot T8 des Tarides : seulement les recettes de ce script (les Tarides ont les leurs, migration 141).
+           "DELETE FROM solazeroth_v3_recettes_hautes WHERE objet IN (%s);"
+           % ", ".join(str(o) for o, n, _ in recettes if int(n) in HAUTES)]
     for objet, niveau, _ in recettes:
         if int(niveau) in HAUTES:
             composant, nombre, plan = HAUTES[int(niveau)]

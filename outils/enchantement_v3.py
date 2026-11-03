@@ -25,6 +25,9 @@ LUA = r"C:\SolAzeroth\interface-v3\FrameXML\SolUI_Enchantements.lua"
 POUSSIERE, ESSENCE = 10940, 10938
 OR_PAR_COMPOSANT = 10   # cuivre
 PLASTRON, BRASSARDS, CAPE, BOUCLIER, ARME_1M, ARME_2M, MAIN_GAUCHE = [5, 20], [9], [16], [14], [13, 21, 22], [17], [23]
+MAINS = [10]
+# Lot T8 des Tarides : composants du désenchantement des pièces 16 à 25 (tables 2, 3, 22 et 23).
+ESSENCE_SUPERIEURE, ESSENCE_ASTRALE, PETIT_ECLAT = 10939, 10998, 10978
 
 # (identifiant, nom, effet, enchantement de SpellItemEnchantment.dbc, InventoryType, composants)
 ENCHANTEMENTS = [
@@ -41,8 +44,24 @@ ENCHANTEMENTS = [
     (9, "Intelligence mineure", "+1 Intelligence", 79, MAIN_GAUCHE, {POUSSIERE: 2, ESSENCE: 1}),
 ]
 
-# Table de désenchantement d'une pièce verte : (armure, arme) par tranche de niveau d'objet.
-TABLES = [(15, 1, 21), (20, 2, 22), (25, 3, 23)]
+# Lot T8 des Tarides (03/11/2026, §4.7.5) : palier « inférieur », écrit par artisanat_tarides.py (migration 141).
+# Il s'ajoute à celui de Durotar : sur une même pièce, le nouveau remplace l'ancien. Caractéristique principale sur les
+# brassards et les gants (et l'orbe) ; pas de bottes, comme à Durotar.
+ENCHANTEMENTS_TARIDES = [
+    (10, "Force inférieure", "+3 Force", 823, BRASSARDS + MAINS, {POUSSIERE: 4, ESSENCE_ASTRALE: 1}),
+    (11, "Agilité inférieure", "+3 Agilité", 849, BRASSARDS + MAINS, {POUSSIERE: 4, ESSENCE_ASTRALE: 1}),
+    (12, "Intelligence inférieure", "+3 Intelligence", 723, BRASSARDS + MAINS + MAIN_GAUCHE,
+     {POUSSIERE: 4, ESSENCE_ASTRALE: 1}),
+    (13, "Santé inférieure", "+15 points de vie", 242, PLASTRON, {POUSSIERE: 4, ESSENCE_SUPERIEURE: 1}),
+    (14, "Protection inférieure", "+20 armure", 744, CAPE, {POUSSIERE: 3, ESSENCE_SUPERIEURE: 1}),
+    (15, "Bouclier renforcé", "+30 armure", 848, BOUCLIER, {POUSSIERE: 4, ESSENCE_ASTRALE: 1}),
+    (16, "Frappe inférieure", "+2 aux dégâts de l'arme", 241, ARME_1M, {POUSSIERE: 4, ESSENCE_ASTRALE: 1, PETIT_ECLAT: 1}),
+    (17, "Impact inférieur", "+3 aux dégâts de l'arme", 943, ARME_2M, {POUSSIERE: 6, ESSENCE_ASTRALE: 2, PETIT_ECLAT: 1}),
+]
+
+# Table de désenchantement d'une pièce verte : (armure, arme) par tranche de niveau d'objet. Lot T8 des Tarides :
+# tranches 26 à 30 et 31 à 35 (tables de Blizzard relues en base, 4 et 24, 5 et 25).
+TABLES = [(15, 1, 21), (20, 2, 22), (25, 3, 23), (30, 4, 24), (35, 5, 25)]
 
 
 def lua(texte):

@@ -49,11 +49,14 @@ def main():
     up = ["-- Audit du jeu, lot 4a (02/11/2026) : fournisseur de matériaux de Razor Hill. Généré par",
           "-- outils\\fournisseur_v3.py : ne pas modifier à la main (prix et hypothèses y sont écrits).",
           "USE acore_world;",
-          "CREATE TABLE IF NOT EXISTS solazeroth_v3_fournisseur (objet INT UNSIGNED NOT NULL PRIMARY KEY, nom VARCHAR(64) "
-          "NOT NULL, prix INT UNSIGNED NOT NULL, plafond INT UNSIGNED NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
-          "DELETE FROM solazeroth_v3_fournisseur;"]
-    up += ["INSERT INTO solazeroth_v3_fournisseur VALUES (%d, '%s', %d, %d);" % (e, echappe(n), p, PLAFOND)
-           for e, n, p in lignes]
+          # Lot T9 des Tarides (03/11/2026) : colonne pnj (le fournisseur qui vend la ligne : Mogra ici, Hraq à la
+          # Croisée, migration 142) ; on n'efface que les lignes de Mogra.
+          "CREATE TABLE IF NOT EXISTS solazeroth_v3_fournisseur (pnj INT UNSIGNED NOT NULL DEFAULT %d, objet INT UNSIGNED "
+          "NOT NULL, nom VARCHAR(64) NOT NULL, prix INT UNSIGNED NOT NULL, plafond INT UNSIGNED NOT NULL, PRIMARY KEY "
+          "(pnj, objet)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;" % PNJ,
+          "DELETE FROM solazeroth_v3_fournisseur WHERE pnj = %d;" % PNJ]
+    up += ["INSERT INTO solazeroth_v3_fournisseur (pnj, objet, nom, prix, plafond) VALUES (%d, %d, '%s', %d, %d);"
+           % (PNJ, e, echappe(n), p, PLAFOND) for e, n, p in lignes]
     up += ["DELETE FROM creature_template WHERE entry = %d;" % PNJ,
            "DELETE FROM creature_template_model WHERE CreatureID = %d;" % PNJ,
            "DELETE FROM creature WHERE guid = %d;" % GUID,

@@ -60,6 +60,7 @@
 #include "SpellAuras.h"
 #include "StringFormat.h"
 #include <algorithm>
+#include <map>
 #include <set>
 #include <unordered_map>
 #include <vector>
@@ -99,10 +100,26 @@ namespace
     };
     std::unordered_map<uint32, Enchantement> enchantements;
 
-    std::unordered_map<uint8, std::vector<std::pair<uint32, uint32>>> pierresDuRang;   // rang -> (pierre, nombre)
+    // Lot T8 des Tarides (03/11/2026) : les pierres des rangs 4 et 5 dépendent de la puissance de la pièce (colonne
+    // puissance de solazeroth_v3_rangs_pierres : 0 pour Durotar, 15 pour les Tarides) ; on prend le palier le plus haut
+    // que la pièce atteint. Plusieurs minerais se prospectent (cuivre, étain) : .equipement prospecter [minerai].
+    using Pierres = std::vector<std::pair<uint32, uint32>>;
+    std::map<uint8, std::unordered_map<uint8, Pierres>> pierresDuRang;   // puissance -> rang -> (pierre, nombre)
     std::unordered_map<uint32, std::pair<uint32, uint32>> tailles;                    // pierre -> (brute, nombre)
     struct Prospection { uint32 minerai = 0, nombre = 0; std::vector<std::pair<uint32, uint32>> gemmes; };   // (gemme, %)
-    Prospection prospection;
+    std::map<uint32, Prospection> prospections;   // minerai -> prospection
+    uint32 const MINERAI_DUROTAR = 2770;          // Minerai de cuivre, prospecté sans argument
+    uint8 const PUISSANCE_TARIDES = 15;
+
+    // Palier de pierres d'une pièce : le plus haut dont la puissance minimale est atteinte (0 : aucun).
+    uint8 PalierDesPierres(uint32 niveau)
+    {
+        uint8 palier = 0;
+        for (auto const& [puissance, rangs] : pierresDuRang)
+            if (niveau >= puissance)
+                palier = puissance;
+        return palier;
+    }
 
     uint32 Version(uint32 base, uint8 rang)
     {
@@ -511,7 +528,11 @@ namespace
             else if (base >= GOUFFRE_PREMIERE && base <= GOUFFRE_DERNIERE)
                 SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_BLEUE);
             else if (base && item->GetTemplate()->ItemLevel >= 7)
+            {
                 SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_VERTE);
+                if (item->GetTemplate()->ItemLevel >= PUISSANCE_TARIDES)
+                    SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_VERTE_TARIDES);
+            }
             else if (!base)
                 SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_CONSOMMABLE);
         }
@@ -614,11 +635,12 @@ public:
         }
         pierresDuRang.clear();
         tailles.clear();
-        prospection = Prospection();
-        if (QueryResult r = WorldDatabase.Query("SELECT rang, pierre, nombre FROM solazeroth_v3_rangs_pierres"))
+        prospections.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT puissance, rang, pierre, nombre FROM solazeroth_v3_rangs_pierres"))
         {
             do
-                pierresDuRang[(*r)[0].Get<uint8>()].emplace_back((*r)[1].Get<uint32>(), (*r)[2].Get<uint32>());
+                pierresDuRang[(*r)[0].Get<uint8>()][(*r)[1].Get<uint8>()].emplace_back((*r)[2].Get<uint32>(),
+                    (*r)[3].Get<uint32>());
             while (r->NextRow());
         }
         if (QueryResult r = WorldDatabase.Query("SELECT pierre, brute, nombre FROM solazeroth_v3_tailles"))
@@ -632,6 +654,7 @@ public:
         {
             do
             {
+                Prospection& prospection = prospections[(*r)[0].Get<uint32>()];
                 prospection.minerai = (*r)[0].Get<uint32>();
                 prospection.nombre = (*r)[1].Get<uint32>();
                 prospection.gemmes.emplace_back((*r)[2].Get<uint32>(), (*r)[3].Get<uint32>());
@@ -708,12 +731,18 @@ public:
         return true;
     }
 
-    // .equipement prospecter : 5 Minerais de cuivre -> une gemme brute, rangée dans la Collection.
-    static bool HandleProspecter(ChatHandler* handler)
+    // .equipement prospecter [minerai] : 5 Minerais de cuivre (sans argument), ou un autre minerai prospectable (lot T8 :
+    // 3 Minerais d'étain) -> une gemme brute, rangée dans la Collection.
+    static bool HandleProspecter(ChatHandler* handler, Optional<uint32> minerai)
     {
         Player* player = handler->GetPlayer();
-        if (!prospection.minerai || prospection.gemmes.empty())
+        auto it = prospections.find(minerai.value_or(MINERAI_DUROTAR));
+        if (it == prospections.end() || it->second.gemmes.empty())
+        {
+            handler->SendErrorMessage("Ce minerai ne se prospecte pas.");
             return false;
+        }
+        Prospection const& prospection = it->second;
         if (Possede(player, prospection.minerai) < prospection.nombre)
         {
             handler->SendErrorMessage("Il faut {} × {} pour prospecter (tu en as {}).", prospection.nombre,
@@ -792,7 +821,8 @@ public:
             handler->SendErrorMessage("Pas assez d'or.");
             return false;
         }
-        auto const& pierres = pierresDuRang[actuel.rang + 1];
+        uint8 const palier = PalierDesPierres(item->GetTemplate()->ItemLevel);
+        auto const& pierres = pierresDuRang[palier][actuel.rang + 1];
         for (auto const& [pierre, nombre] : pierres)
             if (Possede(player, pierre) < nombre)
             {
@@ -810,6 +840,8 @@ public:
         player->ModifyMoney(-int32(prix));
         if (actuel.rang + 1 == 3 || actuel.rang + 1 == RANG_MAX)
             SolAzeroth::ObjectifArtisan(player, actuel.rang + 1 == 3 ? SolAzeroth::ARTISAN_RANG_3 : SolAzeroth::ARTISAN_RANG_5);
+        if (palier >= PUISSANCE_TARIDES && !pierres.empty())
+            SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_PIERRE_TARIDES);
         if (Remplacer(player, bag, slot, item, suivant))
             ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat("|cff8cc4a6Amélioration :|r {} passe au rang {}.",
                 Nom(actuel.base), actuel.rang + 1));
@@ -998,6 +1030,8 @@ public:
         player->ModifyMoney(-int32(enchantement.prix));
         Enchanter(player, item, enchantement.enchantement);
         SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_ENCHANTEMENT);
+        if (item->GetTemplate()->ItemLevel >= PUISSANCE_TARIDES)
+            SolAzeroth::ObjectifArtisan(player, SolAzeroth::ARTISAN_ENCHANTEMENT_TARIDES);
         handler->SendSysMessage(Acore::StringFormat("|cff8cc4a6Enchantement :|r {} est enchanté.", Nom(item->GetEntry())));
         Envoyer(player);
         return true;

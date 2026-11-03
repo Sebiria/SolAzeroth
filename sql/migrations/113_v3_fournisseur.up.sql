@@ -1,13 +1,13 @@
 -- Audit du jeu, lot 4a (02/11/2026) : fournisseur de matériaux de Razor Hill. Généré par
 -- outils\fournisseur_v3.py : ne pas modifier à la main (prix et hypothèses y sont écrits).
 USE acore_world;
-CREATE TABLE IF NOT EXISTS solazeroth_v3_fournisseur (objet INT UNSIGNED NOT NULL PRIMARY KEY, nom VARCHAR(64) NOT NULL, prix INT UNSIGNED NOT NULL, plafond INT UNSIGNED NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-DELETE FROM solazeroth_v3_fournisseur;
-INSERT INTO solazeroth_v3_fournisseur VALUES (2589, 'Etoffe de lin', 1000, 20);
-INSERT INTO solazeroth_v3_fournisseur VALUES (2934, 'Lanières de cuir déchirées', 1000, 20);
-INSERT INTO solazeroth_v3_fournisseur VALUES (2318, 'Cuir léger', 2000, 20);
-INSERT INTO solazeroth_v3_fournisseur VALUES (2835, 'Pierre brute', 800, 20);
-INSERT INTO solazeroth_v3_fournisseur VALUES (2770, 'Minerai de cuivre', 4000, 20);
+CREATE TABLE IF NOT EXISTS solazeroth_v3_fournisseur (pnj INT UNSIGNED NOT NULL DEFAULT 910030, objet INT UNSIGNED NOT NULL, nom VARCHAR(64) NOT NULL, prix INT UNSIGNED NOT NULL, plafond INT UNSIGNED NOT NULL, PRIMARY KEY (pnj, objet)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+DELETE FROM solazeroth_v3_fournisseur WHERE pnj = 910030;
+INSERT INTO solazeroth_v3_fournisseur (pnj, objet, nom, prix, plafond) VALUES (910030, 2589, 'Etoffe de lin', 1000, 20);
+INSERT INTO solazeroth_v3_fournisseur (pnj, objet, nom, prix, plafond) VALUES (910030, 2934, 'Lanières de cuir déchirées', 1000, 20);
+INSERT INTO solazeroth_v3_fournisseur (pnj, objet, nom, prix, plafond) VALUES (910030, 2318, 'Cuir léger', 2000, 20);
+INSERT INTO solazeroth_v3_fournisseur (pnj, objet, nom, prix, plafond) VALUES (910030, 2835, 'Pierre brute', 800, 20);
+INSERT INTO solazeroth_v3_fournisseur (pnj, objet, nom, prix, plafond) VALUES (910030, 2770, 'Minerai de cuivre', 4000, 20);
 DELETE FROM creature_template WHERE entry = 910030;
 DELETE FROM creature_template_model WHERE CreatureID = 910030;
 DELETE FROM creature WHERE guid = 9100030;

@@ -157,6 +157,9 @@ ZONE_3 = extrapoler(TARIDES, "Zone 3 (fictive)", None, (34, 50), {
     "voleur_assassinat": {"emplacements": (6, 6), "techniques": [100314, 100318]},   # Sprint, Feinte
 })
 ZONES = [DUROTAR, TARIDES, ZONE_3]
+# Lot T3 des Tarides (03/11/2026) : ce qui n'est pas encore construit dans une zone construite par lots, et le lot qui
+# le construira. Ces points ne sont pas comparés au jeu. À vider au fil des lots.
+A_CONSTRUIRE = {"Les Tarides": {"annexes": "T4", "reliques": "T4", "donjon": "T5", "plats": "T7", "camp": "T7"}}
 
 
 def facteur(puissance):
@@ -307,8 +310,9 @@ def relire(zone):
     }
     if not parts:
         return lu
-    # Genres de solazeroth_v3_zone_parts : 1 quête, 2 sous-zone, 3 lieu, 4 annexe à donneur, 5 relique. Annexes,
-    # reliques et lieux : les tables n'ont pas encore de colonne de zone (tout est à Durotar).
+    # Genres de solazeroth_v3_zone_parts : 1 quête, 2 sous-zone, 3 lieu, 4 annexe à donneur, 5 relique. Annexes et
+    # reliques : les tables n'ont pas encore de colonne de zone (tout est à Durotar ; une zone dont les annexes sont
+    # « à construire » ne les compare pas).
     lignes = sql("SELECT cle, eclats, insignes FROM solazeroth_v3_annexes")
     numeros = sorted({int(c[1:]) for c, _, _ in lignes})
     bareme = {}
@@ -325,7 +329,9 @@ def relire(zone):
         "parts": {"histoire": parts.get(1, 0), "exploration": parts.get(2, 0), "lieux": parts.get(3, 0),
                   "annexes": parts.get(4, 0), "reliques": parts.get(5, 0)},
         "annexes": {
-            "lieux": int(sql("SELECT COUNT(DISTINCT lieu) FROM solazeroth_v3_lieux_monstres")[0][0]),
+            # Lot T3 des Tarides : seulement les lieux de la zone (ceux de ses parts de genre 3).
+            "lieux": int(sql(f"SELECT COUNT(DISTINCT m.lieu) FROM solazeroth_v3_lieux_monstres m JOIN "
+                             f"solazeroth_v3_zone_parts p ON p.genre = 3 AND p.cle = m.lieu WHERE p.zone = {z}")[0][0]),
             "primes": sum(11 <= n <= 19 for n in numeros), "contrats": sum(20 <= n <= 24 for n in numeros),
             "defis": sum(25 <= n <= 30 for n in numeros),
             "reliques": int(sql("SELECT COUNT(*) FROM solazeroth_v3_reliques")[0][0]),
@@ -364,7 +370,9 @@ def comparer(zone, lu, precedentes):
     if lu["seuil"] is not None and lu["seuil"] != (d["zone"], d["donjon"]["seuil"]):
         ecarts.append(f"donjon : seuil du gabarit {d['donjon']['seuil']} % de la zone {d['zone']}, table "
                       f"{lu['seuil'][1]:g} % de la zone {lu['seuil'][0]}")
-    if lu["construite"] and lu["seuil"] is None:
+    # Lot T3 des Tarides : une zone construite par lots ne compare pas ce qui reste à construire (A_CONSTRUIRE).
+    attente = A_CONSTRUIRE.get(d["nom"], {})
+    if lu["construite"] and lu["seuil"] is None and "donjon" not in attente:
         ecarts.append(f"donjon : pas de seuil dans solazeroth_v3_donjons_seuils pour la carte {d['donjon']['carte']}")
     if not lu["construite"]:
         return ecarts
@@ -372,15 +380,21 @@ def comparer(zone, lu, precedentes):
                "lieux": d["parts"]["lieux"], "reliques": d["parts"]["reliques"],
                "annexes": d["parts"]["primes"] + d["parts"]["contrats"] + d["parts"]["defis"]}
     for k, v in attendu.items():
+        if k in attente:
+            continue
         if abs(lu["parts"][k] - v) > 1e-6:
             ecarts.append(f"part {k} : gabarit {v:g} %, jeu {lu['parts'][k]:g} %")
     for k, v in d["annexes"].items():
+        if k in attente or (k != "lieux" and "annexes" in attente):
+            continue
         if lu["annexes"][k] != v:
             ecarts.append(f"annexes {k} : gabarit {v}, jeu {lu['annexes'][k]}")
-    if lu["bareme"] != d["bareme"]:
+    if lu["bareme"] != d["bareme"] and "annexes" not in attente:
         ecarts.append(f"barème : gabarit {d['bareme']}, jeu {lu['bareme']}")
-    if lu["plats"] != d["plats"]:
+    if lu["plats"] != d["plats"] and "plats" not in attente:
         ecarts.append(f"plats : gabarit {d['plats']}, jeu {lu['plats']}")
+    if "camp" in attente:
+        return ecarts
     if lu["camp"] != d["camp"]:
         ecarts.append(f"camp : gabarit {d['camp']}, v3_bivouac.cpp {lu['camp']}")
     # Chaque rang de la zone a son coût en base (sauf le feu 1, en Marques).
@@ -401,6 +415,9 @@ def main():
         lu = relire(zone)
         ecarts = comparer(zone, lu, precedentes)
         etat = "" if lu["construite"] else " (pas encore construite : récolte, techniques et donjon seulement)"
+        attente = A_CONSTRUIRE.get(zone["nom"])
+        if lu["construite"] and attente:
+            etat = " (à construire : " + ", ".join(f"{k} ({v})" for k, v in attente.items()) + ")"
         print(f"  {zone['nom']}{etat} : " + ("conforme" if not ecarts else f"{len(ecarts)} écart(s)"))
         for e in ecarts:
             print("    écart : " + e)

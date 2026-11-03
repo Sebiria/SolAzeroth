@@ -28,7 +28,7 @@ UPDATE solazeroth_v3_recettes SET puissance = 5 WHERE objet = 910224;
 UPDATE solazeroth_v3_recettes SET puissance = 6 WHERE objet = 910225;
 UPDATE solazeroth_v3_recettes SET puissance = 7 WHERE objet = 910226;
 CREATE TABLE IF NOT EXISTS solazeroth_v3_recettes_hautes (objet INT UNSIGNED NOT NULL PRIMARY KEY, composant INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, plan INT UNSIGNED NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-DELETE FROM solazeroth_v3_recettes_hautes;
+DELETE FROM solazeroth_v3_recettes_hautes WHERE objet IN (910201, 910203, 910204, 910206, 910212, 910213, 910215, 910216, 910218, 910220, 910222, 910223, 910225);
 INSERT INTO solazeroth_v3_recettes_hautes VALUES (910201, 818, 1, 50000);
 INSERT INTO solazeroth_v3_recettes_hautes VALUES (910203, 774, 1, 20000);
 INSERT INTO solazeroth_v3_recettes_hautes VALUES (910204, 774, 1, 20000);

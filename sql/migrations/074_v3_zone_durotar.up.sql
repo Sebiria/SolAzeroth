@@ -3,7 +3,7 @@
 DROP TABLE IF EXISTS acore_world.solazeroth_v3_zone_parts;
 CREATE TABLE acore_world.solazeroth_v3_zone_parts (zone INT UNSIGNED NOT NULL, genre TINYINT UNSIGNED NOT NULL, cle INT UNSIGNED NOT NULL, part INT UNSIGNED NOT NULL, nom VARCHAR(100) NOT NULL, PRIMARY KEY (zone, genre, cle));
 DROP TABLE IF EXISTS acore_world.solazeroth_v3_lieux_monstres;
-CREATE TABLE acore_world.solazeroth_v3_lieux_monstres (lieu INT UNSIGNED NOT NULL, creature INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, PRIMARY KEY (lieu, creature));
+CREATE TABLE acore_world.solazeroth_v3_lieux_monstres (lieu INT UNSIGNED NOT NULL, creature INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, sous_zones VARCHAR(64) NOT NULL DEFAULT '', invocations TINYINT UNSIGNED NOT NULL DEFAULT 1, PRIMARY KEY (lieu, creature));
 DROP TABLE IF EXISTS acore_world.solazeroth_v3_lieux_chefs;
 CREATE TABLE acore_world.solazeroth_v3_lieux_chefs (lieu INT UNSIGNED NOT NULL PRIMARY KEY, origine INT UNSIGNED NOT NULL, renforce INT UNSIGNED NOT NULL);
 CREATE TABLE IF NOT EXISTS acore_characters.solazeroth_v3_lieux (guid INT UNSIGNED NOT NULL, lieu INT UNSIGNED NOT NULL, creature INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, PRIMARY KEY (guid, lieu, creature));
@@ -68,7 +68,7 @@ INSERT INTO acore_world.solazeroth_v3_zone_parts VALUES
 (14, 3, 8, 150, 'Caverne des Terrevent'),
 (14, 3, 9, 200, 'Ravin asséché'),
 (14, 3, 10, 300, 'Rocher du crâne');
-INSERT INTO acore_world.solazeroth_v3_lieux_monstres VALUES
+INSERT INTO acore_world.solazeroth_v3_lieux_monstres (lieu, creature, nombre) VALUES
 (1, 3102, 16),
 (1, 3101, 21),
 (2, 3128, 28),
@@ -77,8 +77,8 @@ INSERT INTO acore_world.solazeroth_v3_lieux_monstres VALUES
 (3, 3112, 18),
 (4, 3115, 11),
 (4, 3116, 9),
-(5, 3119, 12),
-(5, 3120, 7),
+(5, 3119, 18),
+(5, 3120, 11),
 (6, 3206, 13),
 (6, 3207, 15),
 (7, 3113, 12),

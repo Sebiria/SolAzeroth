@@ -66,8 +66,14 @@ def main():
     w("USE acore_world;")
     w("")
     w("-- Lieux comptés par sous-zone ; créatures invoquées ignorées si invocations = 0 (Durotar : 1, comme avant).")
-    w("ALTER TABLE solazeroth_v3_lieux_monstres ADD COLUMN sous_zones VARCHAR(64) NOT NULL DEFAULT '', "
-      "ADD COLUMN invocations TINYINT UNSIGNED NOT NULL DEFAULT 1;")
+    # Lot T3 : la migration 074 crée maintenant la table avec ces colonnes ; on ne les ajoute que si elles manquent.
+    w("SET @manque = (SELECT COUNT(*) = 0 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'acore_world' "
+      "AND TABLE_NAME = 'solazeroth_v3_lieux_monstres' AND COLUMN_NAME = 'sous_zones');")
+    w("SET @requete = IF(@manque, 'ALTER TABLE solazeroth_v3_lieux_monstres ADD COLUMN sous_zones VARCHAR(64) NOT NULL "
+      "DEFAULT '''', ADD COLUMN invocations TINYINT UNSIGNED NOT NULL DEFAULT 1', 'DO 0');")
+    w("PREPARE requete FROM @requete;")
+    w("EXECUTE requete;")
+    w("DEALLOCATE PREPARE requete;")
     w("-- Quêtes écrites à la main qui retiennent un chef renforcé (en plus de celles que v3_zone.cpp trouve seul).")
     w("CREATE TABLE solazeroth_v3_lieux_chefs_quetes (lieu INT UNSIGNED NOT NULL, quete INT UNSIGNED NOT NULL, "
       "PRIMARY KEY (lieu, quete));")

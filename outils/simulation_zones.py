@@ -11,25 +11,54 @@ zone plus large) × facteur de la puissance des monstres du secteur, car les éc
 que les coûts (v3_collection.cpp Eclats). L'or suit la même règle (hypothèse : les primes en or des quêtes et annexes
 montent avec la zone). Les pierres taillées viennent des filons (--filons par % de zone, sans facteur : leur nombre par
 rang est fixe). Les heures : 70 éclats par heure à Durotar (rapport de l'artisan de l'audit, ~60 monstres par heure).
+Lot T8 des Tarides (03/11/2026) : chaque zone a sa joaillerie. Les pièces de puissance 15 ou plus paient leurs rangs 4
+et 5 en pierres des Tarides (solazeroth_v3_rangs_pierres, puissance 15 : 2 Agates mousse taillées et 1 Jade taillé,
+puis 2 Jades taillés et 1 Pierre de lune taillée), tirées de l'étain (3 Minerais d'étain par prospection : Agate
+mousse 33 %, Jade 52 %, Pierre de lune inférieure 15 %). Aux Tarides, 138 des 200 filons sont d'étain ou d'argent
+(304 Minerais d'étain sur 138 filons, soit 2,2 par filon, brouillon §4.7.5) et les autres de cuivre ; Durotar ne change pas.
 Lancé avec py simulation_zones.py [--filons 0 1 2].
 """
 import argparse
 
 import gabarit_zone
-from simulation_rangs import BRUTES_PAR_PIERRE, PIECES, PIERRES_PAR_RANG, PROSPECTION, cout, gemmes_par_filon
+from simulation_rangs import (BRUTES_PAR_PIERRE, CHANCE_GEMME_FILON, MINERAI_PAR_FILON, MINERAI_PAR_PROSPECTION, PIECES,
+                              PIERRES_PAR_RANG, PROSPECTION, cout)
 
 ECLATS_PAR_HEURE = 70          # à Durotar (facteur 1)
 PAR_RANG = 0.1                 # SolAzeroth.V3.PuissanceParRang
 
+# Lot T8 des Tarides : pierres des rangs 4 et 5 par puissance minimale de la pièce (artisanat_tarides.py), et
+# minerais de chaque zone : (part des filons, minerai par filon, minerai par prospection, chances des gemmes).
+PIERRES_PAR_PALIER = {0: PIERRES_PAR_RANG, 15: {4: {"agate": 2, "jade": 1}, 5: {"jade": 2, "lune": 1}}}
+CUIVRE = (1.0, MINERAI_PAR_FILON, MINERAI_PAR_PROSPECTION, PROSPECTION)
+ETAIN = (138 / 200, 2.2, 3, {"agate": 0.33, "jade": 0.52, "lune": 0.15})
+MINERAIS = {"Durotar": [CUIVRE], "Les Tarides": [(62 / 200,) + CUIVRE[1:], ETAIN]}
+
+
+def gemmes_par_filon(zone):
+    """Gemmes brutes de chaque sorte par filon de la zone, tout le minerai prospecté (simulation_rangs.py pour
+    Durotar). Une zone sans relevé prend les minerais de la précédente (la zone 3 fictive, ceux des Tarides)."""
+    minerais = MINERAIS.get(zone["nom"]) or MINERAIS["Les Tarides"]
+    gemmes = {}
+    for part, par_filon, par_prospection, chances in minerais:
+        for g, c in chances.items():
+            gemmes[g] = gemmes.get(g, 0.0) + part * (CHANCE_GEMME_FILON + par_filon / par_prospection * c)
+    return gemmes
+
+
+def pierres_du_rang(niveau, vers):
+    palier = max(p for p in PIERRES_PAR_PALIER if niveau >= p)
+    return PIERRES_PAR_PALIER[palier].get(vers, {})
+
 
 def simuler(zones, filons_par_pourcent, transfert, rang_max=5):
     reserve, ors = 0.0, 0.0
-    gemmes = {g: 0.0 for g in PROSPECTION}
-    par_filon = gemmes_par_filon()
+    gemmes = {}
     rangs = [0] * PIECES
     resultats = []
     for zone in zones:
         eco = zone["economie"]
+        par_filon = gemmes_par_filon(zone)
         gagne = depense = heures = 0.0
         lignes = []
         for nom, debut, fin, (pa, pb), niveau in zone["secteurs"]:
@@ -47,16 +76,16 @@ def simuler(zones, filons_par_pourcent, transfert, rang_max=5):
                 gagne += revenu * part
                 ors += eco["or_par_pourcent"] * eco["taille"] * f_monstres * part
                 heures += eco["eclats_par_pourcent"] * eco["taille"] / ECLATS_PAR_HEURE * part
-                for g in gemmes:
-                    gemmes[g] += filons_par_pourcent * par_filon[g] * part
+                for g in par_filon:
+                    gemmes[g] = gemmes.get(g, 0.0) + filons_par_pourcent * par_filon[g] * part
                 while True:
                     i = min(range(PIECES), key=lambda k: rangs[k])
                     vers = rangs[i] + 1
                     if vers > rang_max:
                         break
                     eclats, prix = cout(niveau, vers)
-                    besoin = {g: n * BRUTES_PAR_PIERRE for g, n in PIERRES_PAR_RANG.get(vers, {}).items()}
-                    if reserve < eclats or ors < prix or any(gemmes[g] < n for g, n in besoin.items()):
+                    besoin = {g: n * BRUTES_PAR_PIERRE for g, n in pierres_du_rang(niveau, vers).items()}
+                    if reserve < eclats or ors < prix or any(gemmes.get(g, 0.0) < n for g, n in besoin.items()):
                         break
                     reserve -= eclats
                     depense += eclats

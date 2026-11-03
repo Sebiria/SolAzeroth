@@ -44,6 +44,13 @@ def affichages():
     return {e: e for e in ICONES}
 
 
+def affichages_sources():
+    """{apparence: (apparence copiée, icône)} pour l'ItemDisplayInfo.dbc du patch (icones_retail.ecrire_affichages)."""
+    brutes = {int(e): int(a) for e, a in sql("SELECT entry, displayid FROM acore_world.item_template WHERE entry IN (%s)"
+                                             % ", ".join(str(b) for _, _, b, _ in TAILLES))}
+    return {e: (brutes[b], ICONES[e]) for e, _, b, _ in TAILLES}
+
+
 def lua(t):
     return '"' + t.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -76,9 +83,11 @@ def main():
            "INSERT INTO solazeroth_v3_tailles VALUES %s;" % ", ".join(
                "(%d, %d, %d)" % (e, b, n) for e, _, b, n in TAILLES),
            "DROP TABLE IF EXISTS solazeroth_v3_rangs_pierres;",
-           "CREATE TABLE solazeroth_v3_rangs_pierres (rang TINYINT UNSIGNED NOT NULL, pierre INT UNSIGNED NOT NULL, "
-           "nombre INT UNSIGNED NOT NULL, PRIMARY KEY (rang, pierre));",
-           "INSERT INTO solazeroth_v3_rangs_pierres VALUES %s;" % ", ".join(
+           # Lot T8 des Tarides : puissance minimale de la pièce (0 : Durotar ; 15 : les Tarides, migration 141).
+           "CREATE TABLE solazeroth_v3_rangs_pierres (puissance TINYINT UNSIGNED NOT NULL DEFAULT 0, "
+           "rang TINYINT UNSIGNED NOT NULL, pierre INT UNSIGNED NOT NULL, "
+           "nombre INT UNSIGNED NOT NULL, PRIMARY KEY (puissance, rang, pierre));",
+           "INSERT INTO solazeroth_v3_rangs_pierres (rang, pierre, nombre) VALUES %s;" % ", ".join(
                "(%d, %d, %d)" % (r, p, n) for r, liste in RANGS.items() for p, n in liste),
            ""]
     down = ["-- Retire la joaillerie. Les pierres taillées rangées restent en Collection, sans emploi.",
@@ -113,10 +122,7 @@ def main():
         f.write("\n".join(l) + "\n")
     import icones_retail
     import quetes_durotar
-    affichage_brut = {int(e): int(affichage) for e, affichage in sql(
-        "SELECT entry, displayid FROM acore_world.item_template WHERE entry IN (%s)"
-        % ", ".join(str(b) for _, _, b, _ in TAILLES))}
-    icones_retail.affichages_objets({e: (affichage_brut[b], ICONES[e]) for e, _, b, _ in TAILLES})
+    icones_retail.ecrire_affichages()   # lot T8 des Tarides : avec les pierres des autres zones
     quetes_durotar.item_dbc()
     print("%d pierres taillées, prospection et pierres des rangs 4 et 5 : migration 085 et SolUI_Joaillerie.lua écrits."
           % len(TAILLES))

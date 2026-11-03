@@ -20,6 +20,11 @@
 // l'utilisateur du 01/11/2026). Un chef renforcé déjà apparu, hors combat, s'efface alors et le chef d'origine revient.
 // Lot T0 : aux quêtes trouvées ainsi s'ajoutent celles de solazeroth_v3_lieux_chefs_quetes (lieu, quête), pour une quête
 // qui vise le chef sans le tuer ni prendre d'objet sur lui.
+// Lot T3 des Tarides (03/11/2026, décision 2 du brouillon) : un lieu paie à sa première fermeture (mort du chef renforcé,
+// ou troupe complète pour un lieu sans chef renforcé) ce que donne solazeroth_v3_lieux_recompenses (Marques, cuivre,
+// éclats, composants « objet:nombre,… » rangés dans la Collection). Payé une fois par personnage
+// (acore_characters.solazeroth_v3_lieux_payes). Seuls les lieux des Tarides ont une ligne (migration 140) : Durotar
+// ne paie rien, comme avant.
 // - genre 4 (31/10/2026), annexe à quête (primes, contrats, défis : migration 084, v3_annexes.cpp) : la quête rendue ;
 // - genre 5, relique : son objet dans la Collection.
 // Interface (SolUI_Zone.lua, préfixe SOLZONE), quand ça change et qu'on est dans une zone qui a des parts :
@@ -83,11 +88,22 @@ namespace
     std::unordered_map<uint32, Chef> chefs;              // lieu -> chef renforcé
     std::unordered_map<uint32, uint32> lieuDuRenforce;   // copie renforcée -> lieu
 
+    // Lot T3 : récompense d'un lieu, à sa première fermeture.
+    uint32 const ECLAT = 910120;
+    struct Recompense
+    {
+        uint32 marques = 0, cuivre = 0, eclats = 0;
+        std::vector<std::pair<uint32, uint32>> composants;
+    };
+    std::unordered_map<uint32, Recompense> recompenses;   // lieu -> récompense
+    std::unordered_map<uint32, std::string> nomDuLieu;
+
     struct Progres : DataMap::Base
     {
         std::unordered_map<uint64, uint32> tues;   // (lieu << 32 | créature) -> nombre ; chef renforcé : 1 = lieu clos
         std::unordered_map<uint32, ObjectGuid> invoques;   // lieu -> chef renforcé apparu
         std::unordered_set<uint32> prevenus;               // lieux dont le chef attend la fin d'une quête (annoncé)
+        std::unordered_set<uint32> payes;                  // lieux déjà payés (lot T3)
         uint32 attente = 0;
         size_t empreinte = 0;
     };
@@ -136,6 +152,28 @@ namespace
             return p->tues[Cle(part.cle, c->second.renforce)] != 0;
         auto [tues, requis] = Troupe(p, part.cle);
         return requis && tues >= requis;
+    }
+
+    // Lot T3 : paiement d'un lieu à sa première fermeture.
+    void Payer(Player* player, Progres* p, uint32 lieu)
+    {
+        auto r = recompenses.find(lieu);
+        if (r == recompenses.end() || !p->payes.insert(lieu).second)
+            return;
+        CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_lieux_payes (guid, lieu) VALUES ({}, {})",
+            player->GetGUID().GetCounter(), lieu);
+        Recompense const& rec = r->second;
+        std::string const& nom = nomDuLieu[lieu];
+        SolAzeroth::DonnerMarques(player, rec.marques, nom);
+        if (rec.cuivre)
+            player->ModifyMoney(int32(rec.cuivre));
+        if (rec.eclats)
+            SolAzeroth::AjouterACollection(player, ECLAT, rec.eclats);
+        for (auto const& [objet, nombre] : rec.composants)
+            SolAzeroth::AjouterACollection(player, objet, nombre);
+        ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat(
+            "|cfff6c27a{} : lieu nettoyé.|r {} po {} pa, {} éclats et {} composant(s) rangés dans la Collection.", nom,
+            rec.cuivre / GOLD, rec.cuivre % GOLD / SILVER, rec.eclats, rec.composants.size()));
     }
 
     // Quête du journal, pas encore remplie, qui vise le chef d'origine (0 : aucune).
@@ -333,6 +371,13 @@ public:
                 p->tues[Cle((*r)[0].Get<uint32>(), (*r)[1].Get<uint32>())] = (*r)[2].Get<uint32>();
             while (r->NextRow());
         }
+        if (QueryResult r = CharacterDatabase.Query("SELECT lieu FROM solazeroth_v3_lieux_payes WHERE guid = {}",
+            player->GetGUID().GetCounter()))
+        {
+            do
+                p->payes.insert((*r)[0].Get<uint32>());
+            while (r->NextRow());
+        }
     }
 
     void OnPlayerCreatureKillCredit(Player* player, Creature* creature) override
@@ -351,6 +396,7 @@ public:
                 player->GetGUID().GetCounter(), lieu);
             CharacterDatabase.Execute("INSERT INTO solazeroth_v3_lieux (guid, lieu, creature, nombre) VALUES ({}, {}, {}, 1)",
                 player->GetGUID().GetCounter(), lieu, creature->GetEntry());
+            Payer(player, p, lieu);
             return;
         }
         auto it = lieuxDuMonstre.find(creature->GetEntry());
@@ -372,6 +418,10 @@ public:
             CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_lieux (guid, lieu, creature, nombre) VALUES ({}, {}, {}, {})",
                 player->GetGUID().GetCounter(), lieu, creature->GetEntry(), tues);
             p->attente = 0;
+            // Lieu sans chef renforcé : il se ferme quand la troupe est complète.
+            if (!chefs.count(lieu))
+                if (auto [faits, requis] = Troupe(p, lieu); requis && faits >= requis)
+                    Payer(player, p, lieu);
         }
     }
 
@@ -391,6 +441,7 @@ public:
     void OnPlayerDelete(ObjectGuid guid, uint32 /*compte*/) override
     {
         CharacterDatabase.Execute("DELETE FROM solazeroth_v3_lieux WHERE guid = {}", guid.GetCounter());
+        CharacterDatabase.Execute("DELETE FROM solazeroth_v3_lieux_payes WHERE guid = {}", guid.GetCounter());
     }
 };
 
@@ -407,6 +458,8 @@ public:
         zoneDuLieu.clear();
         chefs.clear();
         lieuDuRenforce.clear();
+        recompenses.clear();
+        nomDuLieu.clear();
         if (QueryResult r = WorldDatabase.Query("SELECT zone, genre, cle, part, nom FROM solazeroth_v3_zone_parts"))
         {
             do
@@ -414,7 +467,10 @@ public:
                 Field* f = r->Fetch();
                 Part part{ f[1].Get<uint8>(), f[2].Get<uint32>(), f[3].Get<uint32>(), f[4].Get<std::string>() };
                 if (part.genre == LIEU)
+                {
                     zoneDuLieu[part.cle] = f[0].Get<uint32>();
+                    nomDuLieu[part.cle] = part.nom;
+                }
                 parts[f[0].Get<uint32>()].push_back(std::move(part));
             } while (r->NextRow());
         }
@@ -442,6 +498,27 @@ public:
                 chef.origine = f[1].Get<uint32>();
                 chef.renforce = f[2].Get<uint32>();
                 lieuDuRenforce[chef.renforce] = f[0].Get<uint32>();
+            } while (r->NextRow());
+        }
+        if (QueryResult r = WorldDatabase.Query("SELECT lieu, marques, cuivre, eclats, composants FROM solazeroth_v3_lieux_recompenses"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                Recompense& rec = recompenses[f[0].Get<uint32>()];
+                rec.marques = f[1].Get<uint32>();
+                rec.cuivre = f[2].Get<uint32>();
+                rec.eclats = f[3].Get<uint32>();
+                std::string const liste = f[4].Get<std::string>();
+                for (std::string_view morceau : Acore::Tokenize(liste, ',', false))
+                {
+                    std::vector<std::string_view> paire = Acore::Tokenize(morceau, ':', false);
+                    if (paire.size() != 2)
+                        continue;
+                    Optional<uint32> objet = Acore::StringTo<uint32>(paire[0]), nombre = Acore::StringTo<uint32>(paire[1]);
+                    if (objet && nombre)
+                        rec.composants.emplace_back(*objet, *nombre);
+                }
             } while (r->NextRow());
         }
         // Quêtes qui visent le chef d'origine : le tuer, ou un objet de quête qu'il laisse.
@@ -487,8 +564,8 @@ public:
                     chef.carte = lieu.mapid;
                     chef.place.Relocate(lieu.posX, lieu.posY, lieu.posZ, lieu.orientation);
                 }
-        LOG_INFO("module", ">> Sol'Azeroth v3 : pourcentage de {} zone(s), {} lieux à nettoyer, {} chefs renforcés",
-            parts.size(), zoneDuLieu.size(), chefs.size());
+        LOG_INFO("module", ">> Sol'Azeroth v3 : pourcentage de {} zone(s), {} lieux à nettoyer, {} chefs renforcés, {} lieux payés",
+            parts.size(), zoneDuLieu.size(), chefs.size(), recompenses.size());
     }
 };
 

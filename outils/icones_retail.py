@@ -47,6 +47,10 @@ ICONES_OBJETS = [
     "inv_jewelcrafting_80_cutgem01_green",    # Malachite taillée
     "inv_jewelcrafting_80_cutgem01_orange",   # Œil de tigre taillé
     "inv_jewelcrafting_80_cutgem01_purple",   # Œil ténébreux taillé
+    # Lot T8 des Tarides : variantes recolorées des pierres de Durotar (icones_pierres_tarides.py), sans téléchargement.
+    "solazeroth_cutgem_agate",                # Agate mousse taillée
+    "solazeroth_cutgem_jade",                 # Jade taillé
+    "solazeroth_cutgem_lune",                 # Pierre de lune taillée
 ]
 ITEMDISPLAYINFO_SERVEUR = r"C:\SolAzeroth\data\dbc\ItemDisplayInfo.dbc"
 ITEMDISPLAYINFO = r"C:\SolAzeroth\patch-client\fichiers\DBFilesClient\ItemDisplayInfo.dbc"
@@ -109,6 +113,16 @@ def affichages_objets(affichages):
         ligne[5] = d.ajouter_texte("SolAzeroth_" + nom)
         d.enregistrements.append(ligne)
     d.enregistrer(ITEMDISPLAYINFO)
+
+
+def ecrire_affichages():
+    """Lot T8 des Tarides : l'ItemDisplayInfo.dbc du patch avec les pierres taillées de toutes les zones (Durotar :
+    joaillerie_v3 ; les Tarides : artisanat_tarides). Chaque générateur l'appelle, pour ne pas effacer les autres."""
+    import artisanat_tarides
+    import joaillerie_v3
+    affichages = dict(joaillerie_v3.affichages_sources())
+    affichages.update(artisanat_tarides.affichages_sources())
+    affichages_objets(affichages)
 
 
 def blp_avec_mipmaps(image):

@@ -14,6 +14,10 @@
 -- Joaillerie (01/11/2026, SolUI_Joaillerie.lua, généré par outils\joaillerie_v3.py) : prospecter le Minerai de cuivre
 -- et tailler les gemmes ; les rangs 4 et 5 demandent des pierres taillées. Survoler une pièce de l'onglet Amélioration
 -- montre la liste de courses jusqu'aux rangs 4 et 5 (éclats, or, pierres, gemmes brutes et minerai à prospecter).
+-- Lot T8 des Tarides (03/11/2026, SolUI_ArtisanatTarides.lua, généré par outils\artisanat_tarides.py) : une recette
+-- peut nommer son niveau du menu (champ niveau : « Les Tarides ») ; plusieurs prospections (J.prospections : cuivre,
+-- étain) ; les pierres des rangs 4 et 5 dépendent de la puissance de la pièce (J.paliers : à partir de 15, celles des
+-- Tarides ; en dessous, J.rangs, celles de Durotar).
 
 local S = SolUI
 
@@ -114,20 +118,23 @@ local EFFETS_VARIANTES = { "+ 1 % de critique", "+ 2 % de hâte", "0,5 % de vol 
 S.HAUTES = {}
 -- Lot 4a (02/11/2026) : prix de Mogra, fournisseuse de matériaux de Razor Hill (v3_fournisseur.cpp) :
 -- « PRIX;objet:prix:reste aujourd'hui,… ». Affichés dans les listes de courses.
+-- Lot T9 des Tarides (03/11/2026) : « PRIX;objet:prix:reste:fournisseurs,… » ; plusieurs fournisseurs (Mogra à Razor
+-- Hill, Hraq à la Croisée), noms séparés par « / » ; le prix est celui de ce joueur (selon sa puissance).
 S.FOURNISSEUR = {}
 S.Message("SOLFOURN", function(champs)
     if champs[1] ~= "PRIX" then return end
     wipe(S.FOURNISSEUR)
-    for objet, prix, reste in (champs[2] or ""):gmatch("(%d+):(%d+):(%d+)") do
-        S.FOURNISSEUR[tonumber(objet)] = { prix = tonumber(prix), reste = tonumber(reste) }
+    for objet, prix, reste, noms in (champs[2] or ""):gmatch("(%d+):(%d+):(%d+):?([^,]*)") do
+        S.FOURNISSEUR[tonumber(objet)] = { prix = tonumber(prix), reste = tonumber(reste),
+            noms = noms ~= "" and noms:gsub("/", ", ") or "fournisseur" }
     end
 end)
 
--- « (Mogra : 8 pa) » pour un matériau qu'elle vend, s'il en manque ; vide sinon.
+-- « (Mogra, Hraq : 8 pa) » pour un matériau qu'un fournisseur vend, s'il en manque ; vide sinon.
 local function ChezMogra(objet, manque)
     local f = S.FOURNISSEUR[objet]
     if not f or manque <= 0 then return "" end
-    return "  |cffb4b8bf(Mogra : " .. S.Argent(f.prix) .. ")|r"   -- l'unité ; Mogra est à Razor Hill
+    return "  |cffb4b8bf(" .. f.noms .. " : " .. S.Argent(f.prix) .. ")|r"   -- l'unité
 end
 S.ChezMogra = ChezMogra
 
@@ -254,8 +261,8 @@ local niveaux, categorieDe = {}, {}   -- { nom, sous = { { nom, recettes } } } ;
 do
     local index = {}
     for _, c in ipairs(S.RECETTES) do
-        local nom = (c.feu or c.surplus) and c.nom or c.gouffre and "Gouffre" or c.nom == "Rudimentaire" and c.nom
-            or "Inhabituel"
+        local nom = c.niveau or (c.feu or c.surplus) and c.nom or c.gouffre and "Gouffre" or c.nom == "Rudimentaire"
+            and c.nom or "Inhabituel"
         local niveau = index[nom]
         if not niveau then
             niveau = { nom = nom, sous = {}, parGenre = {} }
@@ -602,6 +609,23 @@ local function SourceDuTransfert(p)
     return meilleure
 end
 
+-- Lot T8 des Tarides : pierres du rang r pour une pièce, selon sa puissance (niveau d'objet, le même à tous les rangs).
+local function PierresDuRang(id, r)
+    local J = S.JOAILLERIE
+    local niveau = select(4, GetItemInfo(id)) or 0
+    local choisi
+    for _, palier in ipairs(J.paliers or {}) do
+        if niveau >= palier.puissance and (not choisi or palier.puissance > choisi.puissance) then choisi = palier end
+    end
+    return (choisi and choisi.rangs or J.rangs)[r] or {}
+end
+
+-- Lot T8 des Tarides : les prospections (Durotar seule si SolUI_ArtisanatTarides.lua n'en ajoute pas).
+local function Prospections()
+    local J = S.JOAILLERIE
+    return J.prospections or { { minerai = J.minerai, parProspection = J.parProspection, chances = J.chances } }
+end
+
 local function MajAmelioration()
     local eclats = S.NombreCollection(ECLAT)
     soldes:SetText("Éclats cadavériques : " .. eclats .. "     Or : " .. (GetMoney() > 0 and S.Argent(GetMoney()) or "0"))
@@ -630,7 +654,7 @@ local function MajAmelioration()
                 local ok = eclats >= p.eclats and GetMoney() >= p.prix
                 local texte = (eclats >= p.eclats and "" or "|cfff0918a") .. p.eclats .. " éclats|r   "
                     .. (GetMoney() >= p.prix and "" or "|cfff0918a") .. S.Argent(p.prix) .. "|r"
-                for _, pn in ipairs(S.JOAILLERIE.rangs[p.rang + 1] or {}) do
+                for _, pn in ipairs(PierresDuRang(p.id, p.rang + 1)) do
                     local a = S.NombreCollection(pn[1])
                     ok = ok and a >= pn[2]
                     texte = texte .. "   " .. (a >= pn[2] and "" or "|cfff0918a") .. pn[2] .. " " .. S.NomCollection(pn[1]) .. "|r"
@@ -662,12 +686,12 @@ local function Courses(p, cible)
     table.insert(lignes, hex(GetMoney() >= prix) .. S.Argent(prix) .. "|r")
     local pierres, ordre = {}, {}
     for r = p.rang + 1, cible do
-        for _, pn in ipairs(S.JOAILLERIE.rangs[r] or {}) do
+        for _, pn in ipairs(PierresDuRang(p.id, r)) do
             if not pierres[pn[1]] then table.insert(ordre, pn[1]) end
             pierres[pn[1]] = (pierres[pn[1]] or 0) + pn[2]
         end
     end
-    local brutes, minerai = {}, 0
+    local brutes, minerais, ordreMinerais = {}, {}, {}
     for _, pierre in ipairs(ordre) do
         local voulu, possede = pierres[pierre], S.NombreCollection(pierre)
         table.insert(lignes, hex(possede >= voulu) .. voulu .. " " .. S.NomCollection(pierre) .. " (tu en as " .. possede .. ")|r")
@@ -681,16 +705,20 @@ local function Courses(p, cible)
         local manque = math.max(0, voulu - possede)
         table.insert(lignes, "   à tailler : " .. voulu .. " " .. S.NomCollection(brute) .. " (tu en as " .. possede .. ")")
         -- Prospections à prévoir en moyenne : chaque prospection donne cette gemme avec sa chance.
-        for _, gc in ipairs(S.JOAILLERIE.chances) do
-            if gc[1] == brute and manque > 0 then
-                minerai = minerai + math.ceil(manque * 100 / gc[2]) * S.JOAILLERIE.parProspection
+        for _, pr in ipairs(Prospections()) do
+            for _, gc in ipairs(pr.chances) do
+                if gc[1] == brute and manque > 0 then
+                    if not minerais[pr.minerai] then table.insert(ordreMinerais, pr.minerai) end
+                    minerais[pr.minerai] = (minerais[pr.minerai] or 0)
+                        + math.ceil(manque * 100 / gc[2]) * pr.parProspection
+                end
             end
         end
     end
-    if minerai > 0 then
-        local possede = S.NombreCollection(S.JOAILLERIE.minerai)
-        table.insert(lignes, "   à prospecter : environ " .. minerai .. " " .. S.NomCollection(S.JOAILLERIE.minerai)
-            .. " (tu en as " .. possede .. ")" .. ChezMogra(S.JOAILLERIE.minerai, minerai - possede))
+    for _, m in ipairs(ordreMinerais) do
+        local possede = S.NombreCollection(m)
+        table.insert(lignes, "   à prospecter : environ " .. minerais[m] .. " " .. S.NomCollection(m)
+            .. " (tu en as " .. possede .. ")" .. ChezMogra(m, minerais[m] - possede))
     end
     return lignes
 end
@@ -896,10 +924,13 @@ introJ:SetJustifyH("LEFT")
 introJ:SetText("Prospecte le minerai pour en tirer des gemmes brutes, puis taille-les. Les pierres taillées servent aux "
     .. "rangs 4 et 5 de l'équipement. Tout se fait partout et se range dans la Collection.")
 
+local PROSPECTIONS = Prospections()
+-- Lot T8 des Tarides : lignes plus serrées quand il y en a plus de 6 (deux prospections, six tailles).
+local PAS_J = #PROSPECTIONS + #J.tailles > 6 and 58 or 64
 local function LigneJ(n)
     local l = CreateFrame("Frame", nil, p5)
-    l:SetSize(950, 56)
-    l:SetPoint("TOPLEFT", 24, -60 - (n - 1) * 64)
+    l:SetSize(950, PAS_J - 8)
+    l:SetPoint("TOPLEFT", 24, -60 - (n - 1) * PAS_J)
     l:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
     l:SetBackdropColor(0.11, 0.118, 0.133, 1)
     l:SetBackdropBorderColor(S.Couleur("bord"))
@@ -918,34 +949,42 @@ local function LigneJ(n)
     return l
 end
 
-local prospecter = LigneJ(1)
-prospecter.bouton.texte:SetText("Prospecter")
-prospecter.bouton:SetScript("OnClick", function() SendChatMessage(".equipement prospecter", "SAY") end)
+local lignesProspection = {}
+for n, pr in ipairs(PROSPECTIONS) do
+    local l = LigneJ(n)
+    l.bouton.texte:SetText("Prospecter")
+    l.bouton:SetScript("OnClick", function() SendChatMessage(".equipement prospecter " .. pr.minerai, "SAY") end)
+    l.prospection = pr
+    lignesProspection[n] = l
+end
 local lignesTaille = {}
 for n, t in ipairs(J.tailles) do
-    local l = LigneJ(n + 1)
+    local l = LigneJ(n + #PROSPECTIONS)
     l.bouton.texte:SetText("Tailler")
     l.bouton:SetScript("OnClick", function() SendChatMessage(".equipement tailler " .. t[1], "SAY") end)
     l.taille = t
     lignesTaille[n] = l
 end
 local rangsJ = S.Texte(p5, "Regular", 13, "texte")
-rangsJ:SetPoint("TOPLEFT", 24, -60 - (#J.tailles + 1) * 64 - 8)
+rangsJ:SetPoint("TOPLEFT", 24, -60 - (#J.tailles + #PROSPECTIONS) * PAS_J - 8)
 rangsJ:SetWidth(950)
 rangsJ:SetJustifyH("LEFT")
 
 local function MajJoaillerie()
     local hex = function(ok) return ok and "|cff8cc4a6" or "|cfff0918a" end
-    local minerai = S.NombreCollection(J.minerai)
-    Poser(prospecter.icone, J.minerai)
-    prospecter.nom:SetText("Prospection : " .. J.parProspection .. " " .. S.NomCollection(J.minerai) .. "   "
-        .. hex(minerai >= J.parProspection) .. "(tu en as " .. minerai .. ")|r")
-    local chances = {}
-    for _, gc in ipairs(J.chances) do
-        table.insert(chances, S.NomCollection(gc[1]) .. " " .. gc[2] .. " % (" .. S.NombreCollection(gc[1]) .. ")")
+    for _, l in ipairs(lignesProspection) do
+        local pr = l.prospection
+        local minerai = S.NombreCollection(pr.minerai)
+        Poser(l.icone, pr.minerai)
+        l.nom:SetText("Prospection : " .. pr.parProspection .. " " .. S.NomCollection(pr.minerai) .. "   "
+            .. hex(minerai >= pr.parProspection) .. "(tu en as " .. minerai .. ")|r")
+        local chances = {}
+        for _, gc in ipairs(pr.chances) do
+            table.insert(chances, S.NomCollection(gc[1]) .. " " .. gc[2] .. " % (" .. S.NombreCollection(gc[1]) .. ")")
+        end
+        l.info:SetText("Une gemme brute : " .. table.concat(chances, "  ·  "))
+        l.bouton:SetAlpha(minerai >= pr.parProspection and 1 or 0.5)
     end
-    prospecter.info:SetText("Une gemme brute : " .. table.concat(chances, "  ·  "))
-    prospecter.bouton:SetAlpha(minerai >= J.parProspection and 1 or 0.5)
     for _, l in ipairs(lignesTaille) do
         local t = l.taille
         local brutes = S.NombreCollection(t[3])
@@ -954,13 +993,20 @@ local function MajJoaillerie()
         l.info:SetText("Demande " .. hex(brutes >= t[4]) .. t[4] .. " " .. S.NomCollection(t[3]) .. " (tu en as " .. brutes .. ")|r")
         l.bouton:SetAlpha(brutes >= t[4] and 1 or 0.5)
     end
-    local morceaux = {}
-    for _, r in ipairs({ 4, 5 }) do
-        local liste = {}
-        for _, pn in ipairs(J.rangs[r] or {}) do table.insert(liste, pn[2] .. " " .. S.NomCollection(pn[1])) end
-        table.insert(morceaux, "Rang " .. r .. " : " .. table.concat(liste, " et "))
+    local function Rangs(rangs)
+        local morceaux = {}
+        for _, r in ipairs({ 4, 5 }) do
+            local liste = {}
+            for _, pn in ipairs(rangs[r] or {}) do table.insert(liste, pn[2] .. " " .. S.NomCollection(pn[1])) end
+            table.insert(morceaux, "rang " .. r .. " : " .. table.concat(liste, " et "))
+        end
+        return table.concat(morceaux, "   ·   ")
     end
-    rangsJ:SetText("En plus des éclats et de l'or :  " .. table.concat(morceaux, "   ·   "))
+    local texte = "En plus des éclats et de l'or :  " .. Rangs(J.rangs)
+    for _, palier in ipairs(J.paliers or {}) do
+        texte = texte .. "\nPièces de puissance " .. palier.puissance .. " ou plus :  " .. Rangs(palier.rangs)
+    end
+    rangsJ:SetText(texte)
 end
 
 

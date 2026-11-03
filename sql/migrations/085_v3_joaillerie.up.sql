@@ -26,5 +26,5 @@ DROP TABLE IF EXISTS solazeroth_v3_tailles;
 CREATE TABLE solazeroth_v3_tailles (pierre INT UNSIGNED NOT NULL PRIMARY KEY, brute INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL);
 INSERT INTO solazeroth_v3_tailles VALUES (910180, 774, 2), (910181, 818, 2), (910182, 1210, 2);
 DROP TABLE IF EXISTS solazeroth_v3_rangs_pierres;
-CREATE TABLE solazeroth_v3_rangs_pierres (rang TINYINT UNSIGNED NOT NULL, pierre INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, PRIMARY KEY (rang, pierre));
-INSERT INTO solazeroth_v3_rangs_pierres VALUES (4, 910180, 2), (4, 910181, 1), (5, 910181, 2), (5, 910182, 1);
+CREATE TABLE solazeroth_v3_rangs_pierres (puissance TINYINT UNSIGNED NOT NULL DEFAULT 0, rang TINYINT UNSIGNED NOT NULL, pierre INT UNSIGNED NOT NULL, nombre INT UNSIGNED NOT NULL, PRIMARY KEY (puissance, rang, pierre));
+INSERT INTO solazeroth_v3_rangs_pierres (rang, pierre, nombre) VALUES (4, 910180, 2), (4, 910181, 1), (5, 910181, 2), (5, 910182, 1);

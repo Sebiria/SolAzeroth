@@ -459,10 +459,11 @@ def item_dbc():
     import orbes_v3
     import rares_secrets_v3
     import tissu_v3
+    import artisanat_tarides   # lot T8 des Tarides : pièces vertes, rangs et pierres taillées
     existants = {e[0] for e in table.enregistrements}
     for e, source, genre in annexes_durotar.lignes_dbc() + joaillerie_v3.lignes_dbc() +             equipement_gouffre_v3.lignes_dbc() + \
             rares_secrets_v3.lignes_dbc() + tissu_v3.lignes_dbc() + orbes_v3.lignes_dbc() + batons_v3.lignes_dbc() + \
-            quetes_tarides.lignes_dbc():
+            quetes_tarides.lignes_dbc() + artisanat_tarides.lignes_dbc():
         if e not in existants:
             ligne = list(table.chercher(source))
             ligne[0] = e
@@ -477,6 +478,7 @@ def item_dbc():
         table.enregistrements.append(ligne)
     # Apparences propres (icônes retail des pierres taillées, ItemDisplayInfo.dbc du patch).
     affichages = joaillerie_v3.affichages()
+    affichages.update(artisanat_tarides.affichages())
     for ligne in table.enregistrements:
         if ligne[0] in affichages:
             ligne[5] = affichages[ligne[0]]
