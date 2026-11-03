@@ -263,9 +263,8 @@ titreJournal:SetText("Journal des quêtes")
 local compteJournal = S.Texte(barre, "Regular", 12, "gris")
 compteJournal:SetPoint("LEFT", titreJournal, "RIGHT", 12, 0)
 
-local fermer = CreateFrame("Button", nil, barre, "UIPanelCloseButton")
-fermer:SetPoint("RIGHT", -6, 0)
-fermer:SetScript("OnClick", function() journal:Hide() end)
+local fermer = S.BoutonFermer(barre, journal)
+fermer:SetPoint("RIGHT", -12, 0)
 
 local filet = S.Texture(journal, "ARTWORK", nil, S.Couleur("bord"))
 filet:SetPoint("TOPLEFT", 1, -44)

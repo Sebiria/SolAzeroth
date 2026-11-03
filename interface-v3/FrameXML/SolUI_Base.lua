@@ -1,7 +1,7 @@
 -- Sol'Azeroth v3, F4 (31/10/2026) : écran de combat, d'après la maquette « 6 · Synthèse » (document v3, §2.1).
 -- Ces fichiers sont ajoutés à FrameXML par le patch du client (outils\interface_v3.py) : ils gardent les droits de
 -- Blizzard, même en combat.
--- Base commune : polices Inter, couleurs, racine à l'échelle de la maquette, messages du serveur.
+-- Base commune : polices, couleurs (bronze et parchemin depuis le 03/11/2026), racine à l'échelle de la maquette, messages du serveur.
 
 SolUI = {}
 local S = SolUI
@@ -10,29 +10,35 @@ S.MEDIA = "Interface\\SolAzeroth\\"
 S.TEXTURES = S.MEDIA .. "Textures\\"
 S.BLANC = "Interface\\Buttons\\WHITE8X8"
 
+-- Refonte bronze, lot 1 (03/11/2026) : Alegreya Sans pour le texte, Cinzel (« Titre ») pour les titres. Alegreya a un
+-- œil plus petit qu'Inter : ses tailles sont grossies d'autant, pour garder la lisibilité et la place des maquettes.
 local POLICES = {
-    Light = S.MEDIA .. "Polices\\Inter-Light.ttf",
-    Regular = S.MEDIA .. "Polices\\Inter-Regular.ttf",
-    SemiBold = S.MEDIA .. "Polices\\Inter-SemiBold.ttf",
-    Bold = S.MEDIA .. "Polices\\Inter-Bold.ttf",
+    Light = S.MEDIA .. "Polices\\AlegreyaSans-Regular.ttf",
+    Regular = S.MEDIA .. "Polices\\AlegreyaSans-Medium.ttf",
+    SemiBold = S.MEDIA .. "Polices\\AlegreyaSans-Bold.ttf",
+    Bold = S.MEDIA .. "Polices\\AlegreyaSans-ExtraBold.ttf",
+    Titre = S.MEDIA .. "Polices\\Cinzel-Bold.ttf",
 }
+local function Taille(graisse, taille)
+    return graisse == "Titre" and taille or math.floor(taille * 1.15 + 0.5)
+end
 
--- Couleurs de la maquette (r, g, b de 0 à 1).
+-- Couleurs « bronze et parchemin » (r, g, b de 0 à 1), canevas « Sol'Azeroth — Interface bronze ».
 S.C = {
-    texte = { 0.91, 0.914, 0.922 },       -- #e8e9eb
-    clair = { 0.945, 0.949, 0.957 },      -- #f1f2f4
-    gris = { 0.706, 0.722, 0.749 },       -- #b4b8bf
-    ambre = { 0.941, 0.635, 0.227 },      -- #f0a23a
-    ambreClair = { 0.965, 0.761, 0.478 }, -- #f6c27a
-    vert = { 0.373, 0.604, 0.494 },       -- #5f9a7e
-    vertClair = { 0.549, 0.769, 0.651 },  -- #8cc4a6
-    rouge = { 0.788, 0.282, 0.243 },      -- #c9483e
-    rougeClair = { 0.941, 0.569, 0.541 }, -- #f0918a
-    bleu = { 0.478, 0.702, 0.902 },       -- #7ab3e6
-    fond = { 0.078, 0.082, 0.094 },       -- #141518
-    bord = { 0.184, 0.196, 0.220 },       -- #2f3238
-    creux = { 0.059, 0.063, 0.071 },      -- #0f1012
-    bordCreux = { 0.165, 0.176, 0.196 },  -- #2a2d32
+    texte = { 0.945, 0.894, 0.753 },      -- #f1e4c0 parchemin clair
+    clair = { 0.965, 0.922, 0.796 },      -- #f6ebcb
+    gris = { 0.749, 0.682, 0.533 },       -- #bfae88 parchemin terni
+    ambre = { 0.886, 0.722, 0.376 },      -- #e2b860 or
+    ambreClair = { 0.957, 0.835, 0.541 }, -- #f4d58a
+    vert = { 0.369, 0.604, 0.290 },       -- #5e9a4a
+    vertClair = { 0.620, 0.831, 0.541 },  -- #9ed48a
+    rouge = { 0.780, 0.196, 0.169 },      -- #c7322b
+    rougeClair = { 0.941, 0.565, 0.541 }, -- #f0908a
+    bleu = { 0.353, 0.659, 1.0 },         -- #5aa8ff
+    fond = { 0.149, 0.165, 0.125 },       -- #262a20 olive sombre
+    bord = { 0.541, 0.416, 0.227 },       -- #8a6a3a bronze
+    creux = { 0.086, 0.094, 0.059 },      -- #16180f
+    bordCreux = { 0.369, 0.271, 0.149 },  -- #5e4526 bronze sombre
 }
 
 function S.Couleur(nom, alpha)
@@ -94,10 +100,10 @@ S.OPTIONS = { carte = 92, reperes = 1 }
 ------------------------------------------------------------------------
 -- Fabriques
 ------------------------------------------------------------------------
--- Texte en Inter, avec une ombre pour rester lisible sur le décor.
+-- Texte (Alegreya Sans, ou Cinzel pour « Titre »), avec une ombre pour rester lisible sur le décor.
 function S.Texte(parent, graisse, taille, couleur, alpha, couche)
     local texte = parent:CreateFontString(nil, couche or "OVERLAY")
-    texte:SetFont(POLICES[graisse] or POLICES.Regular, taille)
+    texte:SetFont(POLICES[graisse] or POLICES.Regular, Taille(graisse, taille))
     texte:SetShadowColor(0, 0, 0, 0.85)
     texte:SetShadowOffset(1, -1)
     texte:SetTextColor(S.Couleur(couleur or "texte", alpha))
@@ -105,7 +111,7 @@ function S.Texte(parent, graisse, taille, couleur, alpha, couche)
 end
 
 function S.Police(texte, graisse, taille)
-    texte:SetFont(POLICES[graisse] or POLICES.Regular, taille)
+    texte:SetFont(POLICES[graisse] or POLICES.Regular, Taille(graisse, taille))
 end
 
 -- Texture de Interface\SolAzeroth\Textures (nom) ou unie (nil), teintée.
@@ -116,11 +122,74 @@ function S.Texture(parent, couche, nom, r, g, b, a)
     return texture
 end
 
--- Panneau de la maquette : fond graphite translucide et filet d'un pixel.
+-- Panneau (refonte bronze, lot 1, 03/11/2026). Deux sortes :
+-- - cadre : fond olive grenu, ombré vers le bas, dans un cadre de bronze en 9 morceaux (Textures\Bronze, coins de 16) ;
+-- - encart (panneau dans un panneau : alpha sous 0,7 ou bord « bordCreux ») : creux sombre et filet de bronze sombre.
+-- Les morceaux du cadre sont des textures du panneau : SetBackdropBorderColor ne les touche pas.
+local MORCEAUX = {   -- point, coordonnées dans la texture (gauche, droite, haut, bas)
+    { "TOPLEFT", 0, 0.25, 0, 0.25 }, { "TOPRIGHT", 0.75, 1, 0, 0.25 },
+    { "BOTTOMLEFT", 0, 0.25, 0.75, 1 }, { "BOTTOMRIGHT", 0.75, 1, 0.75, 1 },
+}
+local COIN = 16
+
 function S.Panneau(cadre, alpha, bord)
-    cadre:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
-    cadre:SetBackdropColor(S.Couleur("fond", alpha or 0.92))
-    cadre:SetBackdropBorderColor(S.Couleur(bord or "bord"))
+    if (alpha and alpha < 0.7) or bord == "bordCreux" then
+        cadre:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
+        cadre:SetBackdropColor(S.Couleur("creux", alpha or 0.92))
+        cadre:SetBackdropBorderColor(S.Couleur("bordCreux"))
+        return
+    end
+    cadre:SetBackdrop({ bgFile = S.TEXTURES .. "FondOlive", tile = true, tileSize = 128,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 } })
+    cadre:SetBackdropColor(1, 1, 1, alpha or 0.92)
+    if cadre.bronze then return end
+    local ombre = S.Texture(cadre, "BACKGROUND", nil, 1, 1, 1, 1)
+    ombre:SetPoint("TOPLEFT", 4, -4)
+    ombre:SetPoint("BOTTOMRIGHT", -4, 4)
+    ombre:SetGradientAlpha("VERTICAL", 0, 0, 0, 0.35, 0, 0, 0, 0)
+    local m = {}
+    for i, d in ipairs(MORCEAUX) do
+        m[i] = S.Texture(cadre, "BORDER", "Bronze")
+        m[i]:SetSize(COIN, COIN)
+        m[i]:SetPoint(d[1])
+        m[i]:SetTexCoord(d[2], d[3], d[4], d[5])
+    end
+    local function Bord(a, b, l, r, h, bas)
+        local t = S.Texture(cadre, "BORDER", "Bronze")
+        t:SetPoint(a[1], m[a[2]], a[3])
+        t:SetPoint(b[1], m[b[2]], b[3])
+        t:SetTexCoord(l, r, h, bas)
+        return t
+    end
+    Bord({ "TOPLEFT", 1, "TOPRIGHT" }, { "BOTTOMRIGHT", 2, "BOTTOMLEFT" }, 0.25, 0.75, 0, 0.25)       -- haut
+    Bord({ "TOPLEFT", 3, "TOPRIGHT" }, { "BOTTOMRIGHT", 4, "BOTTOMLEFT" }, 0.25, 0.75, 0.75, 1)       -- bas
+    Bord({ "TOPLEFT", 1, "BOTTOMLEFT" }, { "BOTTOMRIGHT", 3, "TOPRIGHT" }, 0, 0.25, 0.25, 0.75)       -- gauche
+    Bord({ "TOPLEFT", 2, "BOTTOMLEFT" }, { "BOTTOMRIGHT", 4, "TOPRIGHT" }, 0.75, 1, 0.25, 0.75)       -- droite
+    cadre.bronze = m
+end
+
+-- Gemmes bleues serties aux quatre coins (grandes fenêtres).
+function S.Gemmes(cadre)
+    for _, point in ipairs({ "TOPLEFT", "TOPRIGHT", "BOTTOMLEFT", "BOTTOMRIGHT" }) do
+        local g = S.Texture(cadre, "OVERLAY", "Gemme")
+        g:SetSize(18, 18)
+        g:SetPoint("CENTER", cadre, point, point:find("LEFT") and 3 or -3, point:find("TOP") and -3 or 3)
+    end
+end
+
+-- Bouton rond en bronze marqué d'une croix : ferme « cadre » (ou appelle surClic).
+function S.BoutonFermer(parent, cadre, surClic)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(30, 30)
+    local fond = S.Texture(b, "ARTWORK", "BoutonRond")
+    fond:SetAllPoints()
+    local x = S.Texture(b, "OVERLAY", "Croix", S.Couleur("ambreClair"))
+    x:SetSize(16, 16)
+    x:SetPoint("CENTER", 0, 1)
+    b:SetScript("OnEnter", function() x:SetVertexColor(S.Couleur("clair")) end)
+    b:SetScript("OnLeave", function() x:SetVertexColor(S.Couleur("ambreClair")) end)
+    b:SetScript("OnClick", surClic or function() cadre:Hide() end)
+    return b
 end
 
 function S.Montrer(objet, visible)
@@ -194,6 +263,7 @@ function S.Fenetre(nom, largeur, hauteur, titre)
     f:SetMovable(true)
     f:SetClampedToScreen(true)
     S.Panneau(f, 0.97)
+    S.Gemmes(f)
     f:Hide()
     tinsert(UISpecialFrames, nom)
     local barre = CreateFrame("Frame", nil, f)
@@ -204,17 +274,19 @@ function S.Fenetre(nom, largeur, hauteur, titre)
     barre:RegisterForDrag("LeftButton")
     barre:SetScript("OnDragStart", function() f:StartMoving() end)
     barre:SetScript("OnDragStop", function() f:StopMovingOrSizing(); f:SetUserPlaced(false) end)
-    f.titre = S.Texte(barre, "Bold", 20, "clair")
+    f.titre = S.Texte(barre, "Titre", 20, "ambreClair")
     f.titre:SetPoint("LEFT", 24, -2)
     f.titre:SetText(titre)
     f.barre = barre
-    local fermer = CreateFrame("Button", nil, barre, "UIPanelCloseButton")
-    fermer:SetPoint("RIGHT", -8, 0)
-    fermer:SetScript("OnClick", function() f:Hide() end)
+    local filet = S.Texture(barre, "ARTWORK", nil, S.Couleur("bordCreux"))
+    filet:SetHeight(2)
+    filet:SetPoint("BOTTOMLEFT", 12, 0)
+    filet:SetPoint("BOTTOMRIGHT", -12, 0)
+    S.BoutonFermer(barre, f):SetPoint("RIGHT", -14, 0)
     return f
 end
 
--- Bouton plat : filet gris, fond ambre quand il est choisi (b:Choisir(vrai)).
+-- Bouton plat : creux olive bordé de bronze ; choisi (b:Choisir(vrai)), fond or bruni et filet d'or.
 function S.BoutonPlat(parent, texte, largeur, hauteur, taille)
     local b = CreateFrame("Button", nil, parent)
     b:SetSize(largeur, hauteur or 36)
@@ -224,11 +296,11 @@ function S.BoutonPlat(parent, texte, largeur, hauteur, taille)
     b.texte:SetText(texte or "")
     function b:Choisir(oui)
         self.choisi = oui
-        self:SetBackdropColor(0.165, 0.129, 0.086, oui and 1 or 0)
+        if oui then self:SetBackdropColor(0.361, 0.271, 0.11, 1) else self:SetBackdropColor(S.Couleur("creux", 0.85)) end
         self:SetBackdropBorderColor(S.Couleur(oui and "ambre" or "bord"))
         self.texte:SetTextColor(S.Couleur(oui and "ambreClair" or "texte"))
     end
-    b:SetScript("OnEnter", function(self) if not self.choisi then self:SetBackdropBorderColor(S.Couleur("gris", 0.8)) end end)
+    b:SetScript("OnEnter", function(self) if not self.choisi then self:SetBackdropBorderColor(S.Couleur("ambre", 0.8)) end end)
     b:SetScript("OnLeave", function(self) self:Choisir(self.choisi) end)
     b:Choisir(false)
     return b

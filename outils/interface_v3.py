@@ -2,8 +2,8 @@
 
 Usage : py -3.11 outils\\interface_v3.py   (Pillow et fontTools ; le Pillow de 3.14 est cassé)
 
-- Polices : graisses statiques tirées d'Inter variable (interface-v3\\sources\\InterVariable.ttf, rsms/inter v4.1,
-  licence OFL) -> Interface\\SolAzeroth\\Polices\\Inter-*.ttf.
+- Polices (refonte bronze, 03/11/2026) : Alegreya Sans et Cinzel en graisse 700 tirée de Cinzel variable
+  (interface-v3\\sources, google/fonts, licence OFL) -> Interface\\SolAzeroth\\Polices.
 - Textures (TGA 32 bits, tracées ici) -> Interface\\SolAzeroth\\Textures\\*.tga.
 - Code : interface-v3\\FrameXML\\*.lua, copié dans Interface\\FrameXML et ajouté au FrameXML.toc du client
   (repris de ses archives, avant « ## add new modules above here »).
@@ -36,23 +36,26 @@ CODE = ["SolUI_Base.lua", "SolUI_Zones.lua", "SolUI_Rarete.lua", "SolUI_Cacher.l
         "SolUI_Reglages.lua", "SolUI_Options.lua", "SolUI_Fiche.lua"]
 GENERES = {"SolUI_Cartes.lua"}   # écrits par ce script, pas copiés de interface-v3\FrameXML
 
-GRAISSES = {"Light": 300, "Regular": 400, "SemiBold": 600, "Bold": 700}
-
 SUR = 4  # suréchantillonnage des textures (anticrénelage)
 
 
 # ---------------------------------------------------------------- Polices
+# Refonte bronze, lot 1 (03/11/2026) : Alegreya Sans pour le texte, Cinzel pour les titres (licence OFL, dépôt
+# google/fonts), à la place d'Inter. Le dossier est vidé d'abord : Inter ne traîne plus dans le patch.
 
 def polices():
     from fontTools.ttLib import TTFont
     from fontTools.varLib import instancer
 
-    os.makedirs(POLICES, exist_ok=True)
-    source = os.path.join(SOURCES, "sources", "InterVariable.ttf")
-    for nom, graisse in GRAISSES.items():
-        police = instancer.instantiateVariableFont(TTFont(source), {"wght": graisse, "opsz": 14})
-        police.save(os.path.join(POLICES, "Inter-%s.ttf" % nom))
-    shutil.copy2(os.path.join(SOURCES, "sources", "Inter-LICENSE.txt"), os.path.join(POLICES, "Inter-LICENSE.txt"))
+    shutil.rmtree(POLICES, ignore_errors=True)
+    os.makedirs(POLICES)
+    sources = os.path.join(SOURCES, "sources")
+    for graisse in ("Regular", "Medium", "Bold", "ExtraBold"):
+        shutil.copy2(os.path.join(sources, "AlegreyaSans-%s.ttf" % graisse), POLICES)
+    cinzel = instancer.instantiateVariableFont(TTFont(os.path.join(sources, "Cinzel[wght].ttf")), {"wght": 700})
+    cinzel.save(os.path.join(POLICES, "Cinzel-Bold.ttf"))
+    for licence in ("AlegreyaSans-OFL.txt", "Cinzel-OFL.txt"):
+        shutil.copy2(os.path.join(sources, licence), POLICES)
 
 
 # ---------------------------------------------------------------- Textures
@@ -198,8 +201,179 @@ def fleche(nom):
     enregistrer(image, nom, 32, 32)
 
 
+# ---------------------------------------------------------------- Bronze et parchemin (refonte, lot 1, 03/11/2026)
+# Direction « bronze et parchemin » choisie par l'utilisateur (canevas « Sol'Azeroth — Interface bronze »). Textures en
+# couleur, pas teintées en jeu : on pourra les remplacer un jour par des textures peintes sans toucher au code.
+
+NOIR_BRONZE = (42, 30, 14)
+
+
+def melange(a, b, t):
+    t = max(0.0, min(1.0, t))
+    return tuple(int(round(x + (y - x) * t)) for x, y in zip(a, b))
+
+
+def profil_bronze(d):
+    """Couleur (r, v, b, a) du cadre bronze à d pixels du bord extérieur (texture à 2 pixels par unité)."""
+    if d < 2:
+        return NOIR_BRONZE + (255,)
+    if d < 10:   # bande biseautée : claire au tiers, plus sombre vers l'intérieur
+        t = (d - 2) / 8.0
+        couleur = melange((110, 82, 40), (232, 200, 130), t / 0.35) if t < 0.35 else \
+            melange((232, 200, 130), (122, 90, 44), (t - 0.35) / 0.65)
+        return couleur + (255,)
+    if d < 12:
+        return NOIR_BRONZE + (255,)
+    if d < 14:
+        return (232, 200, 130, 115)
+    return (0, 0, 0, int(130 * max(0.0, 1 - (d - 14) / 18.0)))   # ombre portée vers l'intérieur
+
+
+def bronze(nom):
+    """Cadre en 9 morceaux (128 x 128, coins de 32 pixels) : S.Panneau (SolUI_Base.lua) le découpe par SetTexCoord.
+    Aucun morceau n'est tourné, la bande peut donc être dissymétrique (sombre dehors, ombre dedans)."""
+    t = 128
+    image = Image.new("RGBA", (t, t), (0, 0, 0, 0))
+    pixels = image.load()
+    for y in range(t):
+        for x in range(t):
+            d = min(x, y, t - 1 - x, t - 1 - y)
+            if d < 32:
+                pixels[x, y] = profil_bronze(d)
+    dessin = ImageDraw.Draw(image)   # rivets aux coins, sur la bande
+    for cx, cy in ((6, 6), (t - 7, 6), (6, t - 7), (t - 7, t - 7)):
+        dessin.ellipse((cx - 4, cy - 4, cx + 4, cy + 4), fill=NOIR_BRONZE + (255,))
+        dessin.ellipse((cx - 3, cy - 3, cx + 2, cy + 2), fill=(240, 214, 150, 255))
+    image.save(os.path.join(TEXTURES, nom + ".tga"))
+
+
+def grain(taille, graine, flou):
+    """Bruit gris flouté, raccordable en mosaïque."""
+    import random
+    from PIL import ImageFilter
+    alea = random.Random(graine)
+    bruit = Image.new("L", (taille, taille))
+    bruit.putdata([alea.randint(0, 255) for _ in range(taille * taille)])
+    mosaique = Image.new("L", (taille * 3, taille * 3))
+    for i in range(3):
+        for j in range(3):
+            mosaique.paste(bruit, (i * taille, j * taille))
+    return mosaique.filter(ImageFilter.GaussianBlur(flou)).crop((taille, taille, 2 * taille, 2 * taille)).load()
+
+
+def fond_olive(nom):
+    """Fond des panneaux : olive sombre grenu, en mosaïque (128 x 128)."""
+    t = 128
+    valeurs = grain(t, 7, 1.2)
+    image = Image.new("RGBA", (t, t))
+    pixels = image.load()
+    for y in range(t):
+        for x in range(t):
+            v = (valeurs[x, y] - 128) / 128.0 * 7
+            pixels[x, y] = (int(46 + v), int(50 + v), int(38 + v * 0.8), 255)
+    image.save(os.path.join(TEXTURES, nom + ".tga"))
+
+
+def gemme(nom, claire, foncee):
+    """Gemme en losange sertie de bronze (32 x 32), aux coins des fenêtres."""
+    image = blanc(32, 32)
+    dessin = ImageDraw.Draw(image)
+    k = SUR
+
+    def losange_(m, couleur):
+        dessin.polygon([(16 * k, m * k), ((32 - m) * k, 16 * k), (16 * k, (32 - m) * k), (m * k, 16 * k)], fill=couleur)
+    losange_(1, NOIR_BRONZE + (255,))
+    losange_(3, (226, 194, 122, 255))
+    losange_(6, foncee + (255,))
+    dessin.polygon([(16 * k, 6 * k), (26 * k, 16 * k), (6 * k, 16 * k)], fill=claire + (255,))
+    dessin.polygon([(16 * k, 9 * k), (20 * k, 13 * k), (16 * k, 14 * k), (12 * k, 13 * k)], fill=(255, 255, 255, 200))
+    enregistrer(image, nom, 32, 32)
+
+
+def plaque(nom):
+    """Plaque de titre en bronze aux bouts pointus (256 x 64)."""
+    l, h = 256, 64
+    image = blanc(l, h)
+    dessin = ImageDraw.Draw(image)
+    k = SUR
+
+    def forme(m):
+        return [((m + 18) * k, m * k), ((l - m - 18) * k, m * k), ((l - m) * k, h / 2 * k),
+                ((l - m - 18) * k, (h - m) * k), ((m + 18) * k, (h - m) * k), (m * k, h / 2 * k)]
+    dessin.polygon(forme(2), fill=NOIR_BRONZE + (255,))
+    for i in range(5, 31):   # du clair (bord) au foncé (cœur)
+        dessin.polygon(forme(i), fill=melange((214, 170, 100), (122, 90, 44), (i - 5) / 26.0) + (255,))
+    dessin.line([(26 * k, 8 * k), ((l - 26) * k, 8 * k)], fill=(250, 226, 170, 180), width=k)
+    enregistrer(image, nom, l, h)
+
+
+def bouton_rond(nom):
+    """Bouton rond en bronze (64 x 64) : anneau biseauté, creux olive sombre."""
+    image = blanc(64, 64)
+    dessin = ImageDraw.Draw(image)
+    k = SUR
+    dessin.ellipse((1 * k, 1 * k, 63 * k, 63 * k), fill=NOIR_BRONZE + (255,))
+    for i in range(3, 11):
+        dessin.ellipse((i * k, i * k, (64 - i) * k, (64 - i) * k),
+                       fill=melange((232, 200, 130), (122, 90, 44), (i - 3) / 8.0) + (255,))
+    dessin.ellipse((11 * k, 11 * k, 53 * k, 53 * k), fill=NOIR_BRONZE + (255,))
+    for i in range(12, 32):
+        dessin.ellipse((i * k, (i - 3) * k, (64 - i) * k, (61 - i) * k),
+                       fill=melange((78, 82, 66), (30, 33, 25), (i - 12) / 20.0) + (255,))
+    enregistrer(image, nom, 64, 64)
+
+
+def croix(nom):
+    image = blanc(32, 32)
+    dessin = ImageDraw.Draw(image)
+    k = SUR
+    for (x1, y1), (x2, y2) in (((9, 9), (23, 23)), ((23, 9), (9, 23))):
+        dessin.line([(x1 * k, y1 * k), (x2 * k, y2 * k)], fill="white", width=3 * k)
+    enregistrer(image, nom, 32, 32)
+
+
+def parchemin(nom):
+    """Parchemin (256 x 256), étiré sur sa carte : grain clair, bords roussis."""
+    t = 256
+    valeurs = grain(t, 11, 1.5)
+    image = Image.new("RGBA", (t, t))
+    pixels = image.load()
+    for y in range(t):
+        for x in range(t):
+            v = (valeurs[x, y] - 128) / 128.0 * 10
+            roussi = max(0.0, 1 - min(x, y, t - 1 - x, t - 1 - y) / 40.0) ** 2 * 0.45
+            base = melange((238, 224, 190), (220, 199, 156), y / float(t))
+            pixels[x, y] = melange(tuple(int(c + v) for c in base), (150, 104, 52), roussi) + (255,)
+    image.save(os.path.join(TEXTURES, nom + ".tga"))
+
+
+def rouleau(nom):
+    """Rouleau du parchemin (256 x 32) : cylindre de bois, bouts arrondis."""
+    l, h = 256, 32
+    image = blanc(l, h)
+    dessin = ImageDraw.Draw(image)
+    k = SUR
+    for i in range(14):
+        dessin.rectangle((4 * k, (4 + i) * k, (l - 4) * k, (5 + i) * k),
+                         fill=melange((196, 150, 92), (78, 52, 24), abs(i - 4) / 10.0) + (255,))
+    masque = Image.new("L", image.size, 0)
+    ImageDraw.Draw(masque).rounded_rectangle((2 * k, 4 * k, (l - 2) * k, 18 * k), 7 * k, fill=255)
+    image.putalpha(Image.composite(image.getchannel("A"), masque, masque))
+    ImageDraw.Draw(image).rounded_rectangle((2 * k, 4 * k, (l - 2) * k, 18 * k), 7 * k,
+                                            outline=NOIR_BRONZE + (255,), width=k)
+    enregistrer(image, nom, l, h)
+
+
 def textures():
     os.makedirs(TEXTURES, exist_ok=True)
+    bronze("Bronze")
+    fond_olive("FondOlive")
+    gemme("Gemme", (169, 220, 255), (44, 118, 198))
+    plaque("Plaque")
+    bouton_rond("BoutonRond")
+    croix("Croix")
+    parchemin("Parchemin")
+    rouleau("Rouleau")
     arc("Arc", 3)
     arc("ArcLarge", 5)
     anneau("Anneau", 128, 3)
