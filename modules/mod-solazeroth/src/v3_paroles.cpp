@@ -4,31 +4,24 @@
 //   fenêtre.
 // - Trois scènes au rendu des quêtes clés (D07 Yarrog, D12 Benedict, D30 Taragaman) : le serveur envoie
 //   « SCENE;quête » (préfixe SOLPAROLE), le client les joue dans sa fenêtre de paroles (SolUI_Paroles.lua), hors combat.
+// - Lot T2 des Tarides (03/11/2026) : plus rien d'écrit en dur pour Durotar. Les cris sont dans la table
+//   solazeroth_v3_cris (créature, zone, texte ; migration 139), lue au démarrage ; le serveur annonce chaque quête rendue
+//   et le client ne joue que les scènes qu'il connaît (Durotar : D07, D12, D30 ; les Tarides : T08, T27, T36).
 
 #include "SolAzeroth.h"
 #include "Creature.h"
+#include "DatabaseEnv.h"
+#include "Log.h"
 #include "Player.h"
 #include "QuestDef.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
+#include <string>
 #include <unordered_map>
-#include <unordered_set>
 
 namespace
 {
-    std::unordered_map<uint32, char const*> const CRIS = {
-        { 3183, "Les recrues de Thrall… La Lame ardente a faim de chair fraîche !" },          // Yarrog Plaie-d'ombre
-        { 3192, "Un orc dans mon donjon ? Gardes ! Abattez-le !" },                           // Lieutenant Benedict
-        { 5808, "La combe est aux Kolkar ! Tu n'en sortiras pas vivant." },                   // Kolkanis
-        { 3205, "Mes enfants, à moi ! Vol'jin paiera pour cette insolence !" },               // Zalazane
-        { 3203, "Tu tombes mal : je préparais justement un petit feu…" },                     // Féplouf Sombrorage
-        { 3204, "L'Œil m'a montré ta venue. Il m'a aussi montré ta mort." },                  // Gazz'uz
-        { 11517, "Intrus ! Les Ragefeu vont t'écraser !" },                                   // Lorgnesilex
-        { 11518, "Les ombres répondent à mon appel, pas au tien !" },                         // Jergosh l'Invocateur
-        { 11519, "Tu oses descendre dans l'antre de la Lame ?" },                             // Bazzalan
-        { 11520, "Encore un cœur à dévorer ! Approche !" },                                   // Taragaman l'Affameur
-    };
-    std::unordered_set<uint32> const SCENES = { 910007, 910012, 910030 };
+    std::unordered_map<uint32, std::string> cris;   // créature -> son cri (solazeroth_v3_cris)
 
     struct Crie : DataMap::Base { };
 }
@@ -43,16 +36,33 @@ public:
         Creature* creature = unite ? unite->ToCreature() : nullptr;
         if (!creature || !cible || !cible->GetCharmerOrOwnerPlayerOrPlayerItself())
             return;
-        auto it = CRIS.find(creature->GetEntry());
-        if (it == CRIS.end() || creature->CustomData.Get<Crie>("solazeroth_v3_paroles"))
+        auto it = cris.find(creature->GetEntry());
+        if (it == cris.end() || creature->CustomData.Get<Crie>("solazeroth_v3_paroles"))
             return;
         creature->CustomData.GetDefault<Crie>("solazeroth_v3_paroles");   // une fois par apparition
         creature->Yell(it->second, LANG_UNIVERSAL);
     }
 };
 
-// Récompense d'une quête (appelé à la fin de Player::RewardQuest) : la scène, s'il y en a une. Signalement 29
-// (03/11/2026) : le calcul de l'expérience, utilisé jusque-là, a lieu aussi à l'affichage de la quête, avant de l'accepter.
+class solazeroth_v3_paroles_monde : public WorldScript
+{
+public:
+    solazeroth_v3_paroles_monde() : WorldScript("solazeroth_v3_paroles_monde", { WORLDHOOK_ON_STARTUP }) { }
+
+    void OnStartup() override
+    {
+        cris.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT creature, texte FROM solazeroth_v3_cris"))
+            do
+                cris[(*r)[0].Get<uint32>()] = (*r)[1].Get<std::string>();
+            while (r->NextRow());
+        LOG_INFO("module", "Sol'Azeroth v3 : {} cris de chefs", cris.size());
+    }
+};
+
+// Récompense d'une quête (appelé à la fin de Player::RewardQuest) : la scène, si le client en a une pour elle.
+// Signalement 29 (03/11/2026) : le calcul de l'expérience, utilisé jusque-là, a lieu aussi à l'affichage de la
+// quête, avant de l'accepter.
 class solazeroth_v3_paroles_joueur : public PlayerScript
 {
 public:
@@ -60,13 +70,14 @@ public:
 
     void OnPlayerCompleteQuest(Player* player, Quest const* quete) override
     {
-        if (quete && SCENES.count(quete->GetQuestId()))
+        if (quete)
             SolAzeroth::EnvoyerAddon(player, "SOLPAROLE", Acore::StringFormat("SCENE;{}", quete->GetQuestId()));
     }
 };
 
 void AddSC_solazeroth_v3_paroles()
 {
+    new solazeroth_v3_paroles_monde();
     new solazeroth_v3_paroles_unites();
     new solazeroth_v3_paroles_joueur();
 }

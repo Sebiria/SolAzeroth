@@ -18,6 +18,8 @@ manie que dagues et bâtons, le voleur que des dagues (v3_kit.cpp).
 
 Migrations : 124 (tissu et orbes), 127 (dagues des armes de quête), 130 (cuir, dagues de main gauche, table des
 versions). quetes_durotar.item_dbc() ajoute les nouvelles lignes à l'Item.dbc du patch.
+Lot T2 des Tarides : SolUI_Versions.lua reçoit aussi les versions des récompenses des Tarides (quetes_tarides.py,
+migration 139).
 """
 import os
 import sys
@@ -137,6 +139,23 @@ def versions():
     return v
 
 
+def ecrire_versions_lua():
+    """SolUI_Versions.lua : versions de Durotar (ce fichier) et des zones suivantes (quetes_tarides.versions,
+    lot T2 des Tarides)."""
+    import quetes_tarides
+    toutes = versions() + quetes_tarides.versions()
+    lua = ["-- Généré par outils\\tissu_v3.py : ne pas modifier à la main.",
+           "-- Classe -> pièce du monde -> { sa version que la classe reçoit, son nom } (v3_armures.cpp).",
+           "SolUI.VERSIONS = {"]
+    for classe, cle in ((DEMONISTE, "WARLOCK"), (VOLEUR, "ROGUE")):
+        lua.append("    %s = {" % cle)
+        lua += ['        [%d] = { %d, "%s" },' % (o, n, nom) for c, o, n, nom in toutes if c == classe]
+        lua.append("    },")
+    lua.append("}")
+    with open(VERSIONS_LUA, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lua) + "\n")
+
+
 def main():
     armures, armes = e3.baremes()
     up, down = objets_sql(paires(), armures, armes)
@@ -162,16 +181,7 @@ def main():
                                 "versions par classe.", "-- Généré par outils\\tissu_v3.py : ne pas modifier à la main."],
            up, ["-- Retire le cuir et les dagues de main gauche du voleur, et la table des versions.", "USE acore_world;",
                 "DROP TABLE IF EXISTS solazeroth_v3_versions;"] + down)
-    lua = ["-- Généré par outils\\tissu_v3.py : ne pas modifier à la main.",
-           "-- Classe -> pièce du monde -> { sa version que la classe reçoit, son nom } (v3_armures.cpp).",
-           "SolUI.VERSIONS = {"]
-    for classe, cle in ((DEMONISTE, "WARLOCK"), (VOLEUR, "ROGUE")):
-        lua.append("    %s = {" % cle)
-        lua += ['        [%d] = { %d, "%s" },' % (o, n, nom) for c, o, n, nom in versions() if c == classe]
-        lua.append("    },")
-    lua.append("}")
-    with open(VERSIONS_LUA, "w", encoding="utf-8", newline="\n") as f:
-        f.write("\n".join(lua) + "\n")
+    ecrire_versions_lua()
     import quetes_durotar
     quetes_durotar.item_dbc()
     modeles = e3.objets({m for _, _, _, m, _ in paires() + paires_armes() + paires_voleur()})

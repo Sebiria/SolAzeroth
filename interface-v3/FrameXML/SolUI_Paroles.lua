@@ -74,6 +74,7 @@ local LECONS = {
 -- Scènes, par quête rendue : { clé, PNJ, nom, {}, { répliques } }.
 local GORNEK, ZUREETHA, GARTHOK, ORGNIL, RUGA = { 3143, "Gornek" }, { 3145, "Zureetha Mireloin" }, { 3139, "Gar'Thok" },
     { 3142, "Orgnil Marque-l'âme" }, { 910001, "Ruga Brise-cendre" }
+local THORK, TONGA, FEEGLY = { 3429, "Thork" }, { 3448, "Tonga Totem-runique" }, { 3421, "Feegly l'Exilé" }
 local function R(qui, texte) return { qui[1], qui[2], texte } end
 local SCENES = {
     [910007] = { "scene_yarrog", ZUREETHA[1], ZUREETHA[2], {}, {
@@ -91,6 +92,22 @@ local SCENES = {
         R(ORGNIL, "Le Gouffre est purgé. Mais une lame brisée se reforge : ceux-là n'étaient qu'une branche."),
         R(RUGA, "La faille est calme, pour la première fois depuis des lunes. Je garderai l'entrée. Toi, tu as mieux à faire."),
         R(ORGNIL, "Durotar te doit beaucoup. Quand tu seras {prêt|prête}, d'autres terres auront besoin de toi."),
+    } },
+    -- Les Tarides (lot T2, 03/11/2026) : T08 Sarilus, T27 la Larme des lunes, T36 la savane guérie (quête du lot T5).
+    [910048] = { "scene_sarilus", THORK[1], THORK[2], {}, {
+        R(THORK, "Sarilus mort, la Lame n'a plus de tête dans les Tarides. Mais ces lettres m'inquiètent plus que lui."),
+        R(TONGA, "Des druides au croc de serpent… Je connais ce signe. Quand tu auras fini ici, viens me voir : il faut que tu saches d'où vient l'eau des oasis."),
+        R(THORK, "Avant ça, passe voir les maîtres de la Croisée. Ce que tu as appris en Durotar ne suffira plus."),
+    } },
+    [910067] = { "scene_larme", FEEGLY[1], FEEGLY[2], {}, {
+        R(FEEGLY, "Elle brille, même en plein jour. Les nains l'appelaient la Larme. Moi, je l'appelais mon trésor."),
+        R(FEEGLY, "Mais la nuit, elle me parlait. D'un druide qui dort, et d'un rêve qui pourrit. Je n'en veux plus."),
+        R(FEEGLY, "Porte-la loin d'ici, {l'ami|l'amie}. Loin des serpents. Et ne la regarde pas trop longtemps."),
+    } },
+    [910076] = { "scene_savane", TONGA[1], TONGA[2], {}, {
+        R(TONGA, "Sens-tu le vent ? Il vient de l'ouest, et il ne sent plus la vase."),
+        R(THORK, "Les caravanes repartent et les Kolkar se terrent. Je n'aurais pas cru voir ça de mon vivant."),
+        R(TONGA, "Naralex rêvera encore, mais plus seul. La savane te doit sa guérison. Elle se souviendra de toi, {voyageur|voyageuse}."),
     } },
 }
 

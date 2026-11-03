@@ -86,8 +86,8 @@ namespace
         { 100015, "Cri de défi", 910008, 0, "Gar'Thok", false },                 // Un rapport à Orgnil (Tranchecolline)
         { 100014, "Riposte du rempart", 0, 2, "Gar'Thok", true },               // chef renforcé de Tranchecolline
         { 100016, "Second souffle", 910019, 0, "Maître Gadrin", false },         // Le crâne de Minshina (Sen'jin)
-        { 100020, "Fracasser armure", PLUS_TARD, 0, nullptr, true },             // zone 2
-        { 100018, "Mur protecteur", PLUS_TARD, 0, nullptr, false },              // zone 2
+        { 100020, "Fracasser armure", 910048, 0, "Thork", true },                // T08 Sarilus (la Croisée)
+        { 100018, "Mur protecteur", 910059, 0, "Ruga Totem-de-rage", false },    // T19 Joyaux (Camp Taurajo)
         { 100021, "Désarmement", PLUS_TARD, 0, nullptr, false },                 // zone 3
         { 100017, "Ravage", PLUS_TARD, 0, nullptr, false },                      // zone 3
         { 100022, "Onde de choc", PLUS_TARD, 0, nullptr, true },                 // zone 4
@@ -108,8 +108,8 @@ namespace
         { 100206, "Peur", 910008, 0, "Dhugru Gorelust", false },                 // Un rapport à Orgnil (Tranchecolline)
         { 100207, "Marcheur du Vide", 0, 2, "Dhugru Gorelust", true },          // chef renforcé de Tranchecolline
         { 100204, "Malédiction d'agonie", 910019, 0, "Dhugru Gorelust", false }, // Le crâne de Minshina (Sen'jin)
-        { 100208, "Malédiction de faiblesse", PLUS_TARD, 0, nullptr, true },     // zone 2
-        { 100209, "Siphon de vie", PLUS_TARD, 0, nullptr, false },               // zone 2
+        { 100208, "Malédiction de faiblesse", 910048, 0, "Gazrog", true },       // T08 Sarilus (la Croisée)
+        { 100209, "Siphon de vie", 910059, 0, "Takar le Prophète", false },      // T19 Joyaux (Camp Taurajo)
         { 100213, "Voile mortel", PLUS_TARD, 0, nullptr, false },                // zone 3
         { 100211, "Graine de corruption", PLUS_TARD, 0, nullptr, false },        // zone 3
         { 100210, "Hurlement de terreur", PLUS_TARD, 0, nullptr, true },         // zone 4
@@ -131,8 +131,8 @@ namespace
         { 100308, "Camouflage", 910008, 0, "Kaplak", false },                    // Un rapport à Orgnil (Tranchecolline)
         { 100311, "Coup bas", 0, 2, "Kaplak", true },                            // chef renforcé de Tranchecolline
         { 100316, "Éventail de couteaux", 910019, 0, "Kaplak", false },          // Le crâne de Minshina (Sen'jin)
-        { 100312, "Poison affaiblissant", PLUS_TARD, 0, nullptr, true },         // zone 2
-        { 100313, "Lancer de couteau", PLUS_TARD, 0, nullptr, false },           // zone 2
+        { 100312, "Poison affaiblissant", 910048, 0, "Darsok Vivedague", true }, // T08 Sarilus (la Croisée)
+        { 100313, "Lancer de couteau", 910059, 0, "Tatternack Forgacier", false }, // T19 Joyaux (Camp Taurajo)
         { 100314, "Sprint", PLUS_TARD, 0, nullptr, false },                      // zone 3
         { 100318, "Feinte", PLUS_TARD, 0, nullptr, false },                      // zone 3
         { 100306, "Rupture", PLUS_TARD, 0, nullptr, true },                      // zone 4
