@@ -50,6 +50,9 @@ table.insert(ENTREES, { place = "PF", commande = "CLICK SolUIBivouac" .. PIERRE 
 table.insert(ENTREES, { place = "R", commande = "CLICK SolUIBivouacRepas:LeftButton",
     nom = function() return S.Repas() and GetItemInfo(S.Repas()) or "Repas" end,
     icone = function() return S.Repas() and GetItemIcon(S.Repas()) end })
+table.insert(ENTREES, { place = "C", commande = "CLICK SolUIBivouacConso:LeftButton",
+    nom = function() return S.Conso() and GetItemInfo(S.Conso()) or "Consommable" end,
+    icone = function() return S.Conso() and GetItemIcon(S.Conso()) end })
 table.insert(ENTREES, { place = "Pê", commande = "CLICK SolUIBivouacPeche:LeftButton",
     nom = function() return (GetSpellInfo(51294)) or "Pêche" end, icone = function() return select(3, GetSpellInfo(51294)) end })
 local FENETRES = {

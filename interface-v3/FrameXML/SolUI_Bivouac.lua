@@ -5,6 +5,9 @@
 -- Repas (demande du 31/10/2026) : un quatrième, à droite de la potion et sous la pierre de foyer. On y glisse un plat de
 -- la cuisine (SolUI_Cuisine.lua) ; vide, ou une fois le plat épuisé, il prend le premier plat des sacs. Le plat glissé
 -- est gardé par le serveur (.camp repas, v3_bivouac.cpp) et revient à la connexion.
+-- Consommable (demande du 03/11/2026) : un cinquième, à droite du repas. On y glisse n'importe quel objet qui s'utilise
+-- et ne s'équipe pas (élixir, parchemin, bandage…) ; il reste le même, grisé une fois épuisé. Gardé par l'addon
+-- SolAzeroth, par personnage (SolAzerothDB.consommables).
 
 local S = SolUI
 
@@ -115,8 +118,8 @@ local function NouveauBouton(sort, colonne, ligne, objet, nom)
                 GameTooltip:Show()
             end
         else
-            GameTooltip:SetText("Repas")
-            GameTooltip:AddLine("Glisse ici un plat de la cuisine.", 1, 1, 1, true)
+            GameTooltip:SetText(self.videTitre)
+            GameTooltip:AddLine(self.videAide, 1, 1, 1, true)
             GameTooltip:Show()
         end
     end)
@@ -130,6 +133,9 @@ local potion = NouveauBouton(POTION, 1, 0)
 local feu = NouveauBouton(FEU, 1, 1)
 local pierre = NouveauBouton(PIERRE, 2, 1, true)
 local repas = NouveauBouton(nil, 2, 0, true, "SolUIBivouacRepas")
+repas.videTitre, repas.videAide = "Repas", "Glisse ici un plat de la cuisine."
+local conso = NouveauBouton(nil, 3, 0, true, "SolUIBivouacConso")
+conso.videTitre, conso.videAide = "Consommable", "Glisse ici un objet qui s'utilise : élixir, parchemin, bandage…"
 -- Pêche (demande du 31/10/2026) : à gauche du losange du passif, à sa hauteur.
 local peche = NouveauBouton(PECHE, 0, 0, false, "SolUIBivouacPeche")
 peche:ClearAllPoints()
@@ -182,6 +188,33 @@ repas:SetScript("PreClick", function(self)
 end)
 repas:SetScript("PostClick", function(self) self:SetAttribute("type", "item") end)
 
+-- Consommable : tout objet qui s'utilise sans s'équiper.
+local function ChoisirConso(id)
+    conso.id = id
+    conso:SetAttribute("item", id and ("item:" .. id) or nil)
+    conso.icone:SetTexture(id and GetItemIcon(id) or nil)
+end
+function S.Conso() return conso.id end
+function S.ReprendreConso(id) if type(id) == "number" then ChoisirConso(id) end end
+
+local function DeposerConso()
+    local genre, id = GetCursorInfo()
+    if genre ~= "item" then return false end
+    if GetItemSpell(id) and not IsEquippableItem(id) then
+        ChoisirConso(id)
+        if S.EnregistrerConso then S.EnregistrerConso(id) end
+    else
+        UIErrorsFrame:AddMessage("Seuls les objets qui s'utilisent vont ici.", 1, 0.3, 0.3)
+    end
+    ClearCursor()
+    return true
+end
+conso:SetScript("OnReceiveDrag", DeposerConso)
+conso:SetScript("PreClick", function(self)
+    if DeposerConso() then self:SetAttribute("type", nil) end
+end)
+conso:SetScript("PostClick", function(self) self:SetAttribute("type", "item") end)
+
 -- Plat épuisé ou bouton vide : le premier plat des sacs.
 local function RepasDesSacs()
     if S.etat.repas and GetItemCount(S.etat.repas) > 0 then return end
@@ -198,7 +231,7 @@ S.Ecouter("PLAYER_ENTERING_WORLD", RepasDesSacs)
 
 -- Touches réglées dans la fenêtre « Techniques et raccourcis ».
 local function MajTouches()
-    for _, b in ipairs({ potion, feu, pierre, repas, peche }) do
+    for _, b in ipairs({ potion, feu, pierre, repas, conso, peche }) do
         b.touche:SetText(S.ToucheCourte(GetBindingKey(b.commande)))
     end
 end
@@ -237,6 +270,8 @@ potion:SetScript("OnUpdate", function(self, ecoule)
     Etat(pierre, false)
     repas.nombre:SetText(S.etat.repas and GetItemCount(S.etat.repas) or "")
     Etat(repas, not S.etat.repas)
+    conso.nombre:SetText(conso.id and GetItemCount(conso.id) or "")
+    Etat(conso, not conso.id)
     Etat(peche, false)
     MajRebours()
 end)

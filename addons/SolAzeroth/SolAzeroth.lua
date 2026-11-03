@@ -67,6 +67,10 @@ evenements:SetScript("OnEvent", function(self, event, nom, fonction)
             local cle = UnitName("player") .. "-" .. GetRealmName()
             SolAzerothDB.suivies[cle] = SolAzerothDB.suivies[cle] or {}
             SolUI.QUETES_SUIVIES = SolAzerothDB.suivies[cle]
+            -- Bouton du consommable de ce personnage (SolUI_Bivouac.lua).
+            SolAzerothDB.consommables = SolAzerothDB.consommables or {}
+            SolUI.ReprendreConso(SolAzerothDB.consommables[cle])
+            SolUI.EnregistrerConso = function(id) SolAzerothDB.consommables[cle] = id end
             SolUI.MajQuetes()
         end
     elseif event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
