@@ -998,12 +998,26 @@ class solazeroth_v3_equipement_joueur : public PlayerScript
 {
 public:
     solazeroth_v3_equipement_joueur() : PlayerScript("solazeroth_v3_equipement_joueur", { PLAYERHOOK_ON_UPDATE,
-        PLAYERHOOK_ON_DELETE }) { }
+        PLAYERHOOK_ON_DELETE, PLAYERHOOK_ON_BEFORE_BUY_ITEM_FROM_VENDOR }) { }
 
     struct Recompte : DataMap::Base
     {
         uint32 attente = 0;
     };
+
+    // 03/11/2026 (signalement de l'utilisateur : presque toute la panoplie achetable en sortant de la vallée) : une
+    // pièce de nos recettes ne s'achète qu'à la puissance qui ouvre sa recette, comme à la forge.
+    void OnPlayerBeforeBuyItemFromVendor(Player* player, ObjectGuid /*vendorguid*/, uint32 /*vendorslot*/, uint32& item,
+        uint8 /*count*/, uint8 /*bag*/, uint8 /*slot*/) override
+    {
+        auto it = recettes.find(item);
+        if (it == recettes.end() || player->IsGameMaster()
+            || SolAzeroth::PuissanceJoueur(player) + 0.05f >= it->second.puissance)
+            return;
+        ChatHandler(player->GetSession()).SendErrorMessage("Il faut une puissance de {} pour acheter cette pièce.",
+            it->second.puissance);
+        item = 0;
+    }
 
     void OnPlayerDelete(ObjectGuid guid, uint32 /*compte*/) override
     {

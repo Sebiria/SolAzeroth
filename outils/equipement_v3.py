@@ -199,7 +199,9 @@ def lignes_dbc():
 
 
 def prix(p, poids):
-    return round(p * poids * 100)
+    # x3 le 03/11/2026 (signalement de l'utilisateur : la panoplie de maille coûtait 51 pa, l'or de la vallée) ;
+    # migration 134.
+    return round(p * poids * 300)
 
 
 def requise(p):
