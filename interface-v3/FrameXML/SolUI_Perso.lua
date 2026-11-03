@@ -398,14 +398,18 @@ for _, c in ipairs({ { "TOPLEFT", "BOTTOMLEFT", "HORIZONTAL", 1, 0, true }, { "T
     if c[6] then tx:SetWidth(EPAISSEUR) else tx:SetHeight(EPAISSEUR) end
     tx:SetGradientAlpha(c[3], 0.8, 0.08, 0.06, c[4] * 0.55, 0.8, 0.08, 0.06, c[5] * 0.55)
 end
-bords:SetScript("OnUpdate", function(self)
-    self:SetAlpha(0.55 + 0.45 * math.abs(math.sin(GetTime() * 2.5)))
-end)
 local function MajVieBasse()
     local part = UnitHealth("player") / math.max(1, UnitHealthMax("player"))
     S.Montrer(bords, part < SEUIL_VIE_BASSE and not UnitIsDeadOrGhost("player"))
 end
+-- Revérifié à chaque image tant qu'il est montré : à la reconnexion, la vie maximale arrive après l'entrée dans le
+-- monde, sans UNIT_HEALTH ; le bord restait rouge à vie pleine (signalement du 03/11/2026).
+bords:SetScript("OnUpdate", function(self)
+    MajVieBasse()
+    self:SetAlpha(0.55 + 0.45 * math.abs(math.sin(GetTime() * 2.5)))
+end)
 S.Ecouter("UNIT_HEALTH", function(_, unite) if unite == "player" then MajVieBasse() end end)
+S.Ecouter("UNIT_MAXHEALTH", function(_, unite) if unite == "player" then MajVieBasse() end end)
 S.Ecouter("PLAYER_ENTERING_WORLD", MajVieBasse)
 
 -- Recharge globale : la plus récente des recharges courtes (1,6 s au plus) des sorts du grimoire.
