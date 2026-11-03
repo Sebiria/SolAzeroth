@@ -20,10 +20,10 @@ local LECONS = {
         "Chaque monstre a la sienne. Plus fort que toi, il encaisse mieux : regarde sa puissance avant de charger.",
         "Ton équipement, tu le fabriqueras toi-même avec ce que tu récoltes. Tout est dans tes carnets : Personnage (C), Techniques (K), Artisanat (P), Collection (B), Aventure (L), Camp (N).",
         "La vallée se complète : l'histoire, l'exploration, les annexes. Le suivi de zone te dit où tu en es ; un clic dessus, et tu vois ce qu'il reste à faire.",
-        "Va voir Gornek dans l'Antre. Et si tu oublies quelque chose, le Lexique (J) garde tout.",
+        "Et si tu oublies quelque chose, le Lexique (J) garde tout.",
     } },
     { "marques", 10176, "Kaltunk", { "marques", "or" }, {
-        "Une Marque du voyageur ! C'est la monnaie de l'effort : primes, contrats, défis et reliques en donnent.",
+        "Une Marque du voyageur ! C'est la monnaie de l'effort : quêtes, primes, contrats, défis et reliques en donnent.",
         "Elle paie ton camp, les passifs et, plus tard, tes montures. Elle ne prend pas de place dans ton sac.",
         "L'or, lui, vient des quêtes. Il paie la fabrication, les rangs et les réparations.",
     } },

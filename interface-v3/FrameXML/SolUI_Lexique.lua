@@ -30,6 +30,7 @@ S.LEXIQUE = {
         { "marques", "Marques du voyageur",
           "La monnaie de l'effort, à côté de l'or et des éclats : un jeton qui ne prend pas de place dans le sac. Elle paie le camp, la carte des reliques, les passifs et les montures.",
           T("Obtenir")
+          .. "• Quêtes de l'histoire : 1 à 5 pour certaines.\n"
           .. "• Primes, contrats et défis : 5 à 30 (médaille d'argent ×1,5, d'or ×2).\n"
           .. "• Chaque relique : 5.\n"
           .. "• Épreuve du jour : 1 par vague tenue, une fois par jour.\n"

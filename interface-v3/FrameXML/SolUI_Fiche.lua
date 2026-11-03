@@ -156,8 +156,34 @@ local volDeVie = Ligne("Vol de vie", -430)
 
 Rubrique("CARACTÉRISTIQUES", -466)
 local stats = {}
+-- Survol : ce que fait la caractéristique ici (signalement 40, 03/11/2026). Règles du serveur : v3_niveau.cpp (puissance
+-- d'attaque), le reste est celui du jeu (ni esquive ni parade en v3).
+local EFFETS = {
+    "Blocage avec un bouclier.",
+    "Un peu de critique et d'armure.",
+    "10 points de vie par point.",
+    "Critique des sorts.",
+    "Aucun effet : hors combat, la vie remonte d'elle-même.",
+}
+local PRINCIPALE = { [1] = 1, [2] = 4, [3] = 2 }   -- spécialisation -> caractéristique (tank, Affliction, Assassinat)
 for i, t in ipairs({ "Force", "Agilité", "Endurance", "Intelligence", "Esprit" }) do
-    stats[i] = Ligne(t, -486 - (i - 1) * 18)
+    local y = -486 - (i - 1) * 18
+    stats[i] = Ligne(t, y)
+    local survol = CreateFrame("Frame", nil, f)
+    survol:SetPoint("TOPLEFT", X, y + 2)
+    survol:SetSize(836 - X, 18)
+    survol:EnableMouse(true)
+    survol:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(t)
+        if PRINCIPALE[S.etat.spe or 0] == i then
+            GameTooltip:AddLine("Caractéristique principale de ta spécialisation : 2 de puissance d'attaque par point.",
+                S.Couleur("ambreClair"))
+        end
+        GameTooltip:AddLine(EFFETS[i], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    survol:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
 local function Pourcent(v) return S.Nombre(v, 1) .. " %" end
@@ -260,7 +286,7 @@ local aideSacs = S.Texte(sacs, "Regular", 11, "gris")
 aideSacs:SetPoint("BOTTOMLEFT", 14, 14)
 aideSacs:SetWidth(220)
 aideSacs:SetJustifyH("LEFT")
-aideSacs:SetText("Glisse une pièce sur sa case, ou clic droit pour la porter.")
+aideSacs:SetText("Glisse une pièce sur sa case, ou clic droit pour la porter. Maj + clic droit : en main gauche.")
 local videSacs = S.Texte(sacs, "Regular", 12, "gris")
 videSacs:SetPoint("TOPLEFT", 14, -40)
 videSacs:SetText("Aucune pièce à porter.")
@@ -279,6 +305,16 @@ local function CaseSac(sac, place)
     c = CreateFrame("Button", "SolUIFicheSac" .. sac .. "Place" .. place, supportsSacs[sac], "ContainerFrameItemButtonTemplate")
     c:SetID(place)
     c:SetSize(T_SAC, T_SAC)
+    -- Maj + clic droit : en main gauche (signalement 41 : deux dagues, impossible de choisir la main).
+    c:SetScript("OnClick", function(self, bouton)
+        if bouton == "RightButton" and IsShiftKeyDown() then
+            EquipItemByName(GetContainerItemLink(sac, place), GetInventorySlotInfo("SecondaryHandSlot"))
+        elseif IsModifiedClick() then
+            ContainerFrameItemButton_OnModifiedClick(self, bouton)
+        else
+            ContainerFrameItemButton_OnClick(self, bouton)
+        end
+    end)
     local fond = S.Texture(c, "BACKGROUND", nil, S.Couleur("creux"))
     fond:SetAllPoints()
     c.contour = CreateFrame("Frame", nil, c)

@@ -1031,6 +1031,8 @@ end
 
 -- Épingles qui se chevauchent (PNJ côte à côte, signalement du 01/11/2026) : seule la plus importante reste, son
 -- infobulle reprend les quêtes des autres. « places » : { g, x, y (pointe, en pixels), cote, rang }.
+-- Signalements 38 et 39 (03/11/2026) : à 0,7 côté, une épingle fusionnée restait sur le PNJ voisin (jusqu'à ~90 m sur
+-- la carte du monde) ; seules les épingles presque confondues fusionnent désormais, les autres se chevauchent.
 local function Fusionner(places)
     table.sort(places, function(a, b)
         if RANG[a.g.genre] ~= RANG[b.g.genre] then return RANG[a.g.genre] < RANG[b.g.genre] end
@@ -1040,7 +1042,7 @@ local function Fusionner(places)
     for _, p in ipairs(places) do
         local hote
         for _, h in ipairs(gardees) do
-            if math.abs(h.x - p.x) < h.cote * 0.7 and math.abs(h.y - p.y) < h.cote * 0.7 then hote = h; break end
+            if math.abs(h.x - p.x) < h.cote * 0.3 and math.abs(h.y - p.y) < h.cote * 0.3 then hote = h; break end
         end
         if not hote then
             hote, p.quetes = p, {}
