@@ -10,14 +10,15 @@ Une zone se décrit par un dictionnaire (voir DUROTAR) :
 - rangs du camp et de la potion achetables dans la zone (règle « deux fois par zone », doc F5) ;
 - emplacements et techniques ouverts, par spécialisation : ce sont les classes qui s'adaptent au monde (demande de
   l'utilisateur du 02/11/2026, en vue du démoniste) ;
-- donjon ;
+- donjon (puissance des monstres et niveau d'objet de ses pièces bleues) ;
 - économie (revenu par % de zone, filons) pour simulation_zones.py.
 Une valeur None est « à remplir » : le vérificateur la liste à part, sans la compter comme une erreur.
 
 Lancé seul (py gabarit_zone.py) :
 1. relit Durotar dans la base et le code (zone_parts, annexes, camp, plats, filons et plantes, techniques de
    v3_kit.cpp) et la compare à sa description : le gabarit dit vrai sur la zone qui existe ;
-2. vérifie l'emboîtement de Durotar, des Tarides (11-25, choix de l'utilisateur) et d'une zone 3 extrapolée (26-40).
+2. vérifie l'emboîtement de Durotar, des Tarides (14-30, choix de l'utilisateur du 03/11/2026) et d'une zone 3
+   extrapolée (34-50) : chaque zone commence au niveau d'objet des pièces bleues du donjon précédent.
 Code de sortie 1 s'il y a une erreur.
 """
 import os
@@ -61,7 +62,8 @@ DUROTAR = {
         "voleur_assassinat": {"emplacements": (3, 5),
                               "techniques": [100302, 100304, 100305, 100307, 100308, 100311, 100316]},
     },
-    "donjon": {"nom": "Gouffre de Ragefeu", "carte": 389, "puissance": (10, 12)},
+    # Bleues du Gouffre : niveau d'objet 14 (equipement_gouffre_v3.PUISSANCE), la puissance d'arrivée aux Tarides.
+    "donjon": {"nom": "Gouffre de Ragefeu", "carte": 389, "puissance": (10, 12), "bleues": 14},
     # Revenu mesuré (simulation_rangs.py) ; filons présents à la fois (pools et filons seuls, filons_heure.py).
     "economie": {"eclats_par_pourcent": 18, "or_par_pourcent": 2700, "taille": 1.0, "filons_actifs": 53},
 }
@@ -84,22 +86,33 @@ def extrapoler(base, nom, zone, plage, specialisations, recolte=None, donjon=Non
     economie["taille"] = taille if taille is not None else base["economie"]["taille"] * (b1 - b0 + 1) / (a1 - a0 + 1)
     economie["filons_actifs"] = None
     camp = {g: (r[1] + 1, r[1] + 2) for g, r in base["camp"].items()}
+    # Donjon et bleues : mêmes écarts à la fin de zone que la zone de base, en points (Durotar finit à 10, Gouffre
+    # 10-12, bleues 14 : + 0, + 2, + 4). Décision 3 du brouillon des Tarides : bleues à fin + 4, pas ramenées en
+    # proportion de la plage.
+    d0, d1 = base["donjon"]["puissance"]
+    donjon = dict(donjon or {"nom": None, "carte": None})
+    donjon.setdefault("puissance", (b1 + d0 - a1, b1 + d1 - a1))
+    donjon.setdefault("bleues", b1 + base["donjon"]["bleues"] - a1)
     return {
         "nom": nom, "zone": zone, "plage": plage, "secteurs": secteurs,
         "parts": dict(base["parts"]), "annexes": dict(base["annexes"]), "bareme": dict(base["bareme"]),
         "recolte": recolte, "plats": None, "camp": camp, "specialisations": specialisations,
-        "donjon": donjon or {"nom": None, "carte": None, "puissance": (b1, b1 + 2)}, "economie": economie,
+        "donjon": donjon, "economie": economie,
     }
 
 
 # Lot 3b (« Audit du jeu\lot_3b_deblocages_proposition.md ») : techniques et emplacements des zones suivantes.
-TARIDES = extrapoler(DUROTAR, "Les Tarides", 17, (11, 25), {
+# Plage 14-30 (décision de l'utilisateur du 03/11/2026 : la Croisée à 14-16, fin de zone hors instance à 30).
+TARIDES = extrapoler(DUROTAR, "Les Tarides", 17, (14, 30), {
     "guerrier_tank": {"emplacements": (5, 6), "techniques": [100020, 100018]},    # Fracasser armure, Mur protecteur
     "demoniste_affliction": {"emplacements": (5, 6), "techniques": [100208, 100209]},   # Faiblesse, Siphon de vie
     "voleur_assassinat": {"emplacements": (5, 6), "techniques": [100312, 100313]},   # Poison affaiblissant, Lancer
 }, recolte={"filons": [1731, 1732, 1733], "plantes": [1617, 1618, 1619, 1620, 2041, 2045, 3729]})
 TARIDES["economie"]["filons_actifs"] = 166   # filons_heure.py (cuivre, étain, argent de la zone 17)
-ZONE_3 = extrapoler(TARIDES, "Zone 3 (fictive)", None, (26, 40), {
+TARIDES["plats"] = 10                         # plafond des Tarides (décision de l'utilisateur du 03/11/2026)
+# Zone 3 : commence aux bleues des Cavernes (34) ; même largeur que les Tarides (16 points), fin à 50. Fin choisie
+# pour le gabarit, à valider par l'utilisateur.
+ZONE_3 = extrapoler(TARIDES, "Zone 3 (fictive)", None, (34, 50), {
     "guerrier_tank": {"emplacements": (6, 6), "techniques": [100021, 100017]},    # Désarmement, Ravage
     "demoniste_affliction": {"emplacements": (6, 6), "techniques": [100213, 100211]},   # Voile mortel, Graine
     "voleur_assassinat": {"emplacements": (6, 6), "techniques": [100314, 100318]},   # Sprint, Feinte
@@ -159,8 +172,12 @@ def verifier(zone, precedente=None):
         if r1 - r0 != 1:
             erreurs.append(f"{nom} : {g} ouvre {r1 - r0 + 1} rangs, deux attendus")
     if precedente:
-        if p0 != precedente["plage"][1] + 1:
-            erreurs.append(f"{nom} : la plage commence à {p0}, la zone précédente finit à {precedente['plage'][1]}")
+        # La zone commence au niveau d'objet des bleues du donjon précédent : c'est la puissance d'un joueur qui
+        # arrive tout en bleu, au rang 0 (Durotar : bleues du Gouffre 14, les Tarides commencent à 14). Le saut
+        # entre la fin d'une zone et le début de la suivante est donc voulu.
+        bleues = precedente["donjon"].get("bleues")
+        if p0 != bleues:
+            erreurs.append(f"{nom} : la plage commence à {p0}, les bleues du donjon précédent valent {bleues}")
         for g, (r0, _) in zone["camp"].items():
             if r0 != precedente["camp"][g][1] + 1:
                 erreurs.append(f"{nom} : {g} reprend au rang {r0}, la zone précédente finit au rang "
