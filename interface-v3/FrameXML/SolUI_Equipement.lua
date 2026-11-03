@@ -586,11 +586,15 @@ StaticPopupDialogs["SOLUI_TRANSFERT_RANG"] = {
     hideOnEscape = true,
 }
 
--- La pièce de même emplacement dont le rang, moins un, dépasse celui de p (la plus haute).
+-- La pièce de même emplacement dont le rang, moins un, dépasse celui de p (la plus haute), à 5 de puissance au plus
+-- (03/11/2026 : le niveau d'objet est le même à tous les rangs ; le serveur vérifie aussi).
+local ECART_TRANSFERT = 5
 local function SourceDuTransfert(p)
     local meilleure
+    local niveau = select(4, GetItemInfo(p.id)) or 0
     for _, q in ipairs(pieces) do
         if q ~= p and q.emplacement == p.emplacement and q.emplacement > 0 and q.rang >= 2 and q.rang - 1 > p.rang
+            and math.abs((select(4, GetItemInfo(q.id)) or 0) - niveau) <= ECART_TRANSFERT
             and (not meilleure or q.rang > meilleure.rang) then
             meilleure = q
         end

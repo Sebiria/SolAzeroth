@@ -77,7 +77,8 @@ S.LEXIQUE = {
           .. "• Artisanat › Amélioration, hors combat.\n"
           .. "• Coût : 15, 30, 60, 105 puis 180 éclats, et de l'or ; plus pour les pièces puissantes.\n"
           .. "• Rangs 4 et 5 : une pierre taillée en plus (Joaillerie).\n"
-          .. "• L'enchantement est gardé." },
+          .. "• L'enchantement est gardé.\n"
+          .. "• Transférer : une pièce de rang 2 ou plus donne son rang, moins un, à une pièce du même emplacement (5 de puissance d'écart au plus), et revient au rang 0. Coût : une Braise du Gouffre." },
         { "enchantement", "Désenchantement et enchantement",
           "Une pièce dont tu n'as plus besoin se désenchante en composants d'enchantement.",
           T("Désenchanter")

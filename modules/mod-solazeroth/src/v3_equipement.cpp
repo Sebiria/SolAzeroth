@@ -32,7 +32,8 @@
 //     solazeroth_v3_plans). Interface : « HAUTE;objet;composant;nombre;prix du plan;plan possédé 0|1 » après « DEBUT » ;
 //   - transfert de rang (choix de l'utilisateur : un rang de moins et une Braise du Gouffre) : .equipement transferer
 //     <sac> <case> <sac> <case> pose sur la seconde pièce (même emplacement) le rang de la première moins un ; la
-//     première revient au rang 0. Les pierres taillées des rangs 4 et 5 ne sont pas redemandées. Le champ 12 de « OBJ »
+//     première revient au rang 0. Au plus 5 de puissance d'écart entre les deux pièces (03/11/2026). Les pierres
+//     taillées des rangs 4 et 5 ne sont pas redemandées. Le champ 12 de « OBJ »
 //     donne l'emplacement (InventoryType, la robe comptée comme un torse) pour l'aperçu de l'interface.
 // - Audit du jeu, lot 4c (02/11/2026, choix de l'utilisateur ; sorts : outils\bonus_v3.py, migration 117 ; chiffres :
 //   outils\simulation_lot4c.py) :
@@ -267,6 +268,7 @@ namespace
     struct Haute { uint32 composant = 0, nombre = 0, plan = 0; };
     std::unordered_map<uint32, Haute> hautes;
     uint32 const BRAISE = 910190;
+    int32 const ECART_TRANSFERT = 5;    // puissance d'écart au plus entre les deux pièces d'un transfert de rang
 
     // Lot 4c : variantes et panoplie du Gouffre (outils\bonus_v3.py).
     uint32 const PANOPLIE_2 = 101600, PANOPLIE_4 = 101601, PANOPLIE_6 = 101602;
@@ -870,6 +872,14 @@ public:
         if (is->second.rang < 2)
         {
             handler->SendErrorMessage("La pièce d'origine doit être au moins au rang 2.");
+            return false;
+        }
+        // 03/11/2026 (choix de l'utilisateur, contre les abus) : au plus 5 de puissance d'écart entre les deux pièces au
+        // rang 0. Le niveau d'objet est le même à tous les rangs d'une pièce.
+        int32 ecart = int32(source->GetTemplate()->ItemLevel) - int32(cible->GetTemplate()->ItemLevel);
+        if (std::abs(ecart) > ECART_TRANSFERT)
+        {
+            handler->SendErrorMessage("Les deux pièces doivent avoir au plus {} de puissance d'écart.", ECART_TRANSFERT);
             return false;
         }
         uint8 rang = is->second.rang - 1;

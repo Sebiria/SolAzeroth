@@ -57,6 +57,9 @@ DUROTAR = {
         # Lot D2 : mêmes étapes du récit (Diablotin, Drain de vie, Peur, Marcheur du Vide, Malédiction d'agonie).
         "demoniste_affliction": {"emplacements": (3, 5),
                                  "techniques": [100201, 100202, 100203, 100205, 100206, 100207, 100204]},
+        # Lots V2 et V6 : mêmes étapes (Coup de pied, Évasion, Camouflage, Coup bas, Éventail de couteaux).
+        "voleur_assassinat": {"emplacements": (3, 5),
+                              "techniques": [100302, 100304, 100305, 100307, 100308, 100311, 100316]},
     },
     "donjon": {"nom": "Gouffre de Ragefeu", "carte": 389, "puissance": (10, 12)},
     # Revenu mesuré (simulation_rangs.py) ; filons présents à la fois (pools et filons seuls, filons_heure.py).
@@ -93,11 +96,13 @@ def extrapoler(base, nom, zone, plage, specialisations, recolte=None, donjon=Non
 TARIDES = extrapoler(DUROTAR, "Les Tarides", 17, (11, 25), {
     "guerrier_tank": {"emplacements": (5, 6), "techniques": [100020, 100018]},    # Fracasser armure, Mur protecteur
     "demoniste_affliction": {"emplacements": (5, 6), "techniques": [100208, 100209]},   # Faiblesse, Siphon de vie
+    "voleur_assassinat": {"emplacements": (5, 6), "techniques": [100312, 100313]},   # Poison affaiblissant, Lancer
 }, recolte={"filons": [1731, 1732, 1733], "plantes": [1617, 1618, 1619, 1620, 2041, 2045, 3729]})
 TARIDES["economie"]["filons_actifs"] = 166   # filons_heure.py (cuivre, étain, argent de la zone 17)
 ZONE_3 = extrapoler(TARIDES, "Zone 3 (fictive)", None, (26, 40), {
     "guerrier_tank": {"emplacements": (6, 6), "techniques": [100021, 100017]},    # Désarmement, Ravage
     "demoniste_affliction": {"emplacements": (6, 6), "techniques": [100213, 100211]},   # Voile mortel, Graine
+    "voleur_assassinat": {"emplacements": (6, 6), "techniques": [100314, 100318]},   # Sprint, Feinte
 })
 ZONES = [DUROTAR, TARIDES, ZONE_3]
 
@@ -190,7 +195,7 @@ def sql(requete):
 
 
 # Listes de v3_kit.cpp (ORDRE_<nom>) et spécialisations du gabarit (lot D2 : une liste par spécialisation).
-ORDRES = {"TANK": "guerrier_tank", "AFFLICTION": "demoniste_affliction"}
+ORDRES = {"TANK": "guerrier_tank", "AFFLICTION": "demoniste_affliction", "ASSASSINAT": "voleur_assassinat"}
 
 
 def techniques_du_kit():
