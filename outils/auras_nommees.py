@@ -162,7 +162,9 @@ def main():
     os.makedirs(DBC_CLIENT, exist_ok=True)
     d.enregistrer(os.path.join(DBC_CLIENT, "Spell.dbc"))
     if "--client" in sys.argv:
-        # Lot T7 des Tarides : le Spell.dbc du client seul, sans réécrire les migrations (déjà appliquées).
+        # Lot T7 des Tarides : le Spell.dbc du client seul, sans réécrire les migrations (déjà appliquées). Lot T6 : et la
+        # boutique des montures de l'interface (le Zhévra rapide en sort ; la migration 147 le retire du serveur).
+        montures_v3.ecrire_lua(catalogue)
         print("Spell.dbc du client écrit (", len(d.enregistrements), "sorts ) ; migrations non réécrites.")
         return
 

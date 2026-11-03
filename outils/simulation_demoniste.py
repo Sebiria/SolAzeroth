@@ -435,6 +435,15 @@ def renforce(dm, rangs=0, repos=True):
     return Demoniste(dm.nom, vie, round(dm.armure * f), pa, dm.puissance * f)
 
 
+def avec_bonus(dm, b):
+    """Bonus du défi des rares secrets (repas, consommables, critique), approchés pour le démoniste : vie et armure sur
+    la fiche, dégâts subis sur la vie, dégâts infligés, critique (×1,5) et hâte sur la PA ; le vol de vie est ignoré
+    (Moisson). Lot T6 des Tarides : sorti de gouffre() pour rares_secrets_v3.controle."""
+    return Demoniste(dm.nom, round(dm.vie * b.get("vie", 1.0) / b.get("subis", 1.0)), round(dm.armure * b.get("armure", 1.0)),
+                     dm.pa * b.get("inflige", 1.0) * (1 + b.get("critique", 0.0) * 0.5 / 100) * (1 + b.get("hate", 0.0)),
+                     dm.puissance)
+
+
 def gouffre():
     """Lot D5 : le Gouffre de Ragefeu (élite et dernier boss, difficultés 1 à 5, potion F7, Repos) et les rares
     secrets (tout en bleu du Gouffre), démoniste contre guerrier aux mêmes pièces."""
@@ -475,11 +484,7 @@ def gouffre():
     import simulation_lot4c as lot4c
     g, b = rares.fiche()
     dm = renforce(demoniste(rares.GOUFFRE, guid, repas=5))
-    # Bonus du défi (repas, consommables, critique), approchés pour le démoniste : vie et armure sur la fiche, dégâts
-    # subis sur la vie, dégâts infligés, critique (×1,5) et hâte sur la PA ; le vol de vie est ignoré (Moisson).
-    db = Demoniste(dm.nom, round(dm.vie * b.get("vie", 1.0) / b.get("subis", 1.0)), round(dm.armure * b.get("armure", 1.0)),
-                   dm.pa * b.get("inflige", 1.0) * (1 + b.get("critique", 0.0) * 0.5 / 100) * (1 + b.get("hate", 0.0)),
-                   dm.puissance)
+    db = avec_bonus(dm, b)
     print("\nRares secrets (réglés en jeu, puissance %d), tout en bleu du Gouffre, Repos, potion F7 : victoires (%%) "
           "sans / avec les autres bonus" % rares.PUISSANCE_RARE)
     for entree, origine, nom, _, _, _, _, techniques, *_ in rares.RARES:

@@ -26,7 +26,8 @@ etiquette.texte:SetPoint("CENTER", 0, 0)
 
 -- Lot 6b (02/11/2026, demande de l'utilisateur : « leur cadre doit être spécial, différent des rares ») : un rare
 -- secret (outils\rares_secrets_v3.py) a un liseré violet autour du cadre, l'étiquette « SECRET » pleine et le nom violet.
-local RARES_SECRETS = { [910040] = true, [910041] = true, [910042] = true }
+-- Lot T6 des Tarides : la liste ci-dessous est réécrite par rares_secrets_v3.py, pour toutes les zones.
+local RARES_SECRETS = { [910040] = true, [910041] = true, [910042] = true, [910043] = true, [910044] = true, [910045] = true, [910046] = true, [910047] = true }
 local VIOLET = { 0.639, 0.208, 0.933 }
 local lisere = CreateFrame("Frame", nil, cible)
 lisere:SetPoint("TOPLEFT", cible, "TOPLEFT", -4, 4)

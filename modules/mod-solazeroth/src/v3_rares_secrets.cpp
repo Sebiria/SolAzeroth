@@ -2,6 +2,8 @@
 // ni point sur la carte, réglés pour un personnage tout en bleu du Gouffre et tous ses bonus (outils\rares_secrets_v3.py,
 // migration 121). Le bijou et la bague tombent du corps ; la monture rejoint les montures du compte. La fenêtre des
 // objectifs compte les vaincus de la zone, « SECRETS;vaincus;total;noms » (v3_zone.cpp), sans nommer les autres.
+// Lot T6 des Tarides (03/11/2026) : tout est lu par zone dans solazeroth_v3_rares_secrets ; les Tarides en ont cinq
+// (migration 147, réglés pour les bleues des Cavernes), et l'événement du cauchemar ne les appelle pas (v3_modes.cpp).
 
 #include "SolAzeroth.h"
 #include "Chat.h"

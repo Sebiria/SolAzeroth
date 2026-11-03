@@ -1,0 +1,20 @@
+-- Retire les rares secrets des Tarides ; le Zhévra rapide revient en boutique à 125 %. Objets déjà gagnés : disparaissent ;
+-- monture : reste au compte. Les apparitions d'origine de Bras-de-pierre et du Requin du sable reviennent.
+USE acore_world;
+DELETE FROM creature WHERE guid BETWEEN 9100043 AND 9100047;
+DELETE FROM smart_scripts WHERE source_type = 0 AND entryorguid IN (910043, 910044, 910045, 910046, 910047);
+DELETE FROM creature_loot_template WHERE Entry IN (910043, 910044, 910045, 910046, 910047);
+DELETE FROM creature_template WHERE entry IN (910043, 910044, 910045, 910046, 910047);
+DELETE FROM creature_template_model WHERE CreatureID IN (910043, 910044, 910045, 910046, 910047);
+DELETE FROM creature_equip_template WHERE CreatureID IN (910043, 910044, 910045, 910046, 910047);
+DELETE FROM creature_template_movement WHERE CreatureId IN (910043, 910044, 910045, 910046, 910047);
+DELETE FROM creature_template_locale WHERE entry IN (910043, 910044, 910045, 910046, 910047);
+DELETE FROM item_template WHERE entry IN (910302, 910303, 910304, 910305);
+DELETE FROM item_template_locale WHERE ID IN (910302, 910303, 910304, 910305);
+DELETE FROM solazeroth_v3_rares_secrets WHERE creature IN (910043, 910044, 910045, 910046, 910047);
+DELETE FROM acore_characters.solazeroth_v3_rares_vaincus WHERE creature IN (910043, 910044, 910045, 910046, 910047);
+INSERT IGNORE INTO creature SELECT * FROM solazeroth_v3_t6_apparitions;
+INSERT IGNORE INTO creature_addon SELECT * FROM solazeroth_v3_t6_apparitions_addon;
+DROP TABLE solazeroth_v3_t6_apparitions, solazeroth_v3_t6_apparitions_addon;
+INSERT IGNORE INTO solazeroth_v3_montures VALUES (48954, 125, 670);
+UPDATE spell_dbc SET EffectBasePoints_2 = 124 WHERE ID IN (48954, 49322);

@@ -108,7 +108,8 @@ namespace
         bool rare = false;   // rare appelé par un événement du cauchemar : il donne ses éclats malgré l'appel
     };
 
-    // Rares de chaque zone (rang rare ou rare élite parmi ses créatures), pour l'événement du cauchemar.
+    // Rares de chaque zone (rang rare ou rare élite parmi ses créatures), pour l'événement du cauchemar. Lot T6 des
+    // Tarides (point 8.5 du comparatif) : sans les rares secrets (solazeroth_v3_rares_secrets), à Durotar aussi.
     std::unordered_map<uint32, std::vector<uint32>> raresDesZones;
 
     Modes* ModesDe(Player* player) { return player->CustomData.GetDefault<Modes>("solazeroth_v3_modes"); }
@@ -353,7 +354,8 @@ namespace
     {
         raresDesZones.clear();
         if (QueryResult resultat = WorldDatabase.Query("SELECT DISTINCT c.zoneId, t.entry FROM creature c JOIN creature_template "
-            "t ON t.entry = c.id WHERE c.zoneId <> 0 AND t.`rank` IN (2, 4) AND t.npcflag = 0"))
+            "t ON t.entry = c.id WHERE c.zoneId <> 0 AND t.`rank` IN (2, 4) AND t.npcflag = 0 AND t.entry NOT IN "
+            "(SELECT creature FROM solazeroth_v3_rares_secrets)"))
         {
             do
             {

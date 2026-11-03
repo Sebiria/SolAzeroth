@@ -116,7 +116,7 @@ VITESSES = {
           "Palefroi de guerre noir", "Tigre de guerre noir", "Trotteur de bataille noir", "Elekk de guerre noir",
           "Cheval de guerre squelette rouge", "Cheval de guerre squelette ocre", "Grand elekk d'élite",
           "Faucon de guerre rapide"],
-    125: ["Zhévra rapide", "Ours polaire blanc", "Ours polaire brun", "Ours polaire noir", "Ours brun cuirassé",
+    125: ["Ours polaire blanc", "Ours polaire brun", "Ours polaire noir", "Ours brun cuirassé",
           "Ours de guerre noir", "Loup rapide de la Horde", "Palefroi rapide de l'Alliance",
           "Faucon-pérégrin saccage-soleil", "Palefroi quel'dorei"],
     130: ["Mammouth laineux", "Mammouth des glaces", "Mammouth de guerre noir", "Grand mammouth des glaces",
@@ -132,7 +132,8 @@ VITESSES = {
     150: ["Char d'assaut qiraji noir", "Destrier de la mort cramoisi"],
 }
 # Lot 6b (02/11/2026) : montures secrètes, hors boutique, gagnées ailleurs (rares_secrets_v3.py) : nom -> vitesse.
-SECRETES = {"Raptor razzashi rapide": 60}
+# Lot T6 des Tarides (03/11/2026) : le Zhévra rapide (125 % en boutique jusque-là) est la monture de Bras-de-pierre.
+SECRETES = {"Raptor razzashi rapide": 60, "Zhévra rapide": 60}
 MONTURE, OBJET_MONTURE = 15, 5                # classe et sous-classe des objets de monture
 EFFET_MONTE, EFFET_VITESSE = 78, 32           # auras des montures terrestres
 MONTE = [33388, 33391, 34090, 34091, 54197, 33389, 33392, 34092, 34093, 54198]   # formations à la monte
@@ -214,7 +215,11 @@ def ecrire(modifies, catalogue, sorts_sql):
     for suffixe, contenu in ((".up.sql", up), (".down.sql", down)):
         with open(MIGRATION + suffixe, "w", encoding="utf-8", newline="\n") as f:
             f.write("\n".join(contenu) + "\n")
+    ecrire_lua(catalogue)
 
+
+def ecrire_lua(catalogue):
+    """La boutique de l'interface (lot T6 des Tarides : aussi écrite par auras_nommees.py --client)."""
     sortie = ["-- Généré par outils\\montures_v3.py (auras_nommees.py) : ne pas modifier à la main.",
               "-- Paliers du rang d'aventurier { points, récompense } et boutique des montures { sort, nom, vitesse, prix }.",
               "SolUI.PALIERS = {"]

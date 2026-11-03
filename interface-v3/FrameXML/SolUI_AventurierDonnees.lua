@@ -181,7 +181,6 @@ SolUI.MONTURES = {
     { 66846, "Cheval de guerre squelette ocre", 120, 570 },
     { 34407, "Grand elekk d'élite", 120, 570 },
     { 35028, "Faucon de guerre rapide", 120, 570 },
-    { 48954, "Zhévra rapide", 125, 670 },
     { 54753, "Ours polaire blanc", 125, 670 },
     { 59573, "Ours polaire brun", 125, 670 },
     { 59572, "Ours polaire noir", 125, 670 },

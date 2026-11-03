@@ -343,6 +343,16 @@ def rapport():
     return resultats
 
 
+def avec_bonus(v, b):
+    """Bonus du défi des rares secrets approchés pour le voleur : vie et armure, dégâts subis sur la vie, dégâts
+    infligés, critique et hâte sur les dégâts des dagues et la PA. Lot T6 des Tarides : sorti de gouffre() pour
+    rares_secrets_v3.controle."""
+    f = b.get("inflige", 1.0) * (1 + b.get("hate", 0.0))
+    arme = lambda a: (a[0] * f, a[1] * f, a[2])
+    return Voleur(v.nom, round(v.vie * b.get("vie", 1.0) / b.get("subis", 1.0)), round(v.armure * b.get("armure", 1.0)),
+                  v.pa * f, v.puissance, arme(v.main), arme(v.gauche), v.critique + b.get("critique", 0.0))
+
+
 def gouffre():
     """Gouffre de Ragefeu (élite et dernier boss, difficultés 1 à 5, potion F7, Repos) et rares secrets (tout en bleu
     du Gouffre), voleur contre guerrier aux mêmes pièces."""
@@ -379,12 +389,7 @@ def gouffre():
     import simulation_lot4c as lot4c
     g, b = rares.fiche()
     v = renforce(voleur(rares.GOUFFRE, guid, g.critique, repas=5))
-    # Bonus du défi approchés pour le voleur : vie et armure, dégâts subis sur la vie, dégâts infligés, critique et hâte
-    # sur les dégâts des dagues et la PA.
-    f = b.get("inflige", 1.0) * (1 + b.get("hate", 0.0))
-    arme = lambda a: (a[0] * f, a[1] * f, a[2])
-    vb = Voleur(v.nom, round(v.vie * b.get("vie", 1.0) / b.get("subis", 1.0)), round(v.armure * b.get("armure", 1.0)),
-                v.pa * f, v.puissance, arme(v.main), arme(v.gauche), v.critique + b.get("critique", 0.0))
+    vb = avec_bonus(v, b)
     print("\nRares secrets (réglés en jeu, puissance %d), tout en bleu du Gouffre, Repos, potion F7 : victoires (%%) "
           "sans / avec les autres bonus" % rares.PUISSANCE_RARE)
     for entree, origine, nom, *_ in rares.RARES:
