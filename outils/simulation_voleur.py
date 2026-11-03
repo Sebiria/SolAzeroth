@@ -260,7 +260,7 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, recharges=None, potion=
             if assomme[k] >= t:
                 prochain[quoi] = assomme[k] + 0.01
                 continue
-            brut = round(alea.randint(m.bas, m.haut) * sim.MONSTRES_DEGATS)
+            brut = round(alea.randint(m.bas, m.haut) * sim.MONSTRES_DEGATS * getattr(m, "courbe_degats", 1.0))
             d = sim.apres_armure(brut, j.armure, m.puissance)
             if alea.random() * 100 < m.critique:
                 d *= 2
@@ -406,7 +406,7 @@ def tarides():
         for e, p in te.MONSTRES_TARIDES:
             if not puissance - 2 <= p <= puissance + 3:
                 continue
-            m = sim.monstre_depuis_base(e, p)
+            m = sim.courber(sim.monstre_depuis_base(e, p))      # courbe des monstres (migration 138)
             rv = simuler(v, [m], 1000, potion=te.POTION_TARIDES)
             rg = sim.simuler(g, m, 1000, potion=te.POTION_TARIDES)
             print("  %-26s P%-2d | voleur perdue %5.1f %% %5.1f s | guerrier perdue %5.1f %% %5.1f s%s" % (

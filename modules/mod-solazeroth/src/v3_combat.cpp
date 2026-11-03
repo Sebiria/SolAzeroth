@@ -355,10 +355,14 @@ public:
     }
 
     // multiplicateur : celui de la mêlée (et des techniques physiques, qui passent par l'armure), ou celui des sorts.
+    // Lot T1 des Tarides : multiplié aussi par la courbe des monstres (SolAzeroth::CourbeDegats, v3_niveau.cpp).
     template <typename T>
     static void AppliquerMonstre(Unit* cible, Unit* attaquant, T& degats, float multiplicateur)
     {
-        if (multiplicateur != 1.0f && Monstre(attaquant) && cible && cible->GetCharmerOrOwnerPlayerOrPlayerItself())
+        if (!Monstre(attaquant) || !cible || !cible->GetCharmerOrOwnerPlayerOrPlayerItself())
+            return;
+        multiplicateur *= SolAzeroth::CourbeDegats(attaquant);
+        if (multiplicateur != 1.0f)
             degats = T(std::lround(degats * multiplicateur)); // arrondi : 1 x 2,5 donnait 2 (journal du 31/10/2026)
     }
 
@@ -389,6 +393,9 @@ public:
     void ModifyHealReceived(Unit* /*cible*/, Unit* soigneur, uint32& soin, SpellInfo const* sort) override
     {
         soin = uint32(std::lround(soin * EchelleSort(soigneur, sort) * FacteurSorts(soigneur)));
+        // Lot T1 : les soins des monstres suivent leur vie (courbe des monstres).
+        if (Monstre(soigneur))
+            soin = uint32(std::lround(soin * SolAzeroth::CourbeVie(soigneur)));
     }
 };
 

@@ -163,7 +163,7 @@ def combat(joueur, monstre, alea, riposte=False, reaction=1.4, potion=None, pass
                 d = 0
                 prochain[quoi] = t + 0.5
         elif quoi == "melee_m":
-            brut = round(alea.randint(monstre.bas, monstre.haut) * MONSTRES_DEGATS)
+            brut = round(alea.randint(monstre.bas, monstre.haut) * MONSTRES_DEGATS * getattr(monstre, "courbe_degats", 1.0))
             d = apres_armure(brut, joueur.armure, monstre.puissance)
             if alea.random() * 100 < monstre.critique:
                 d *= 2
@@ -265,7 +265,8 @@ def combat_groupe(joueur, monstres, alea, cri=True, reaction=1.4):
         else:
             i = quoi[1]
             m = monstres[i]
-            d = apres_armure(round(alea.randint(m.bas, m.haut) * MONSTRES_DEGATS), joueur.armure, m.puissance)
+            d = apres_armure(round(alea.randint(m.bas, m.haut) * MONSTRES_DEGATS * getattr(m, "courbe_degats", 1.0)),
+                             joueur.armure, m.puissance)
             encaisser(d * 2 if alea.random() * 100 < m.critique else d)
             prochain[quoi] = t + m.vitesse * (1.25 if t < ralenti_jusqua else 1.0)
         for i, d in degats.items():
@@ -428,6 +429,40 @@ def monstre_depuis_base(entree, niveau=None, reglages=None):
     fiche = Fiche(nom, max(1, int(math.ceil(int(s[0]) * vie_mod) * MONSTRES_VIE)), round(int(s[1]) * armure_mod),
                   round(minimum), round(maximum), vitesse, CRITIQUE_MONSTRE, niveau)
     fiche.entree = entree
+    return fiche
+
+
+# Lot T1 des Tarides (03/11/2026) : courbe des monstres (v3_niveau.cpp), pour ceux dont la puissance vient d'un
+# secteur : vie et dégâts multipliés au-delà de la puissance 14 (solazeroth_v3_courbe_puissance), puis par la correction
+# de l'entrée (solazeroth_v3_courbe_entrees). COURBE et COURBE_ENTREES : lues en base au premier appel ; un outil de
+# calibrage peut les remplacer.
+COURBE, COURBE_ENTREES = None, None
+
+
+def courbe(puissance, entree=0):
+    """(vie, dégâts) de la courbe pour cette puissance et cette entrée, comme au serveur."""
+    global COURBE, COURBE_ENTREES
+    if COURBE is None:
+        try:
+            COURBE = {int(p): (float(v), float(d)) for p, v, d in
+                      sql("SELECT puissance, vie, degats FROM acore_world.solazeroth_v3_courbe_puissance")}
+            COURBE_ENTREES = {int(e): (float(v), float(d)) for e, v, d in
+                              sql("SELECT entree, vie, degats FROM acore_world.solazeroth_v3_courbe_entrees")}
+        except Exception:      # tables absentes (avant la migration 138)
+            COURBE, COURBE_ENTREES = {}, {}
+    v, d = 1.0, 1.0
+    en_deca = [p for p in COURBE if p <= puissance]
+    if puissance > 14 and en_deca:
+        v, d = COURBE[max(en_deca)]
+    cv, cd = COURBE_ENTREES.get(entree, (1.0, 1.0))
+    return v * cv, d * cd
+
+
+def courber(fiche, facteurs=None):
+    """La fiche avec la courbe des monstres (monstre d'un secteur) : vie multipliée, dégâts par courbe_degats."""
+    v, d = facteurs or courbe(fiche.puissance, getattr(fiche, "entree", 0))
+    fiche.vie = max(1, int(fiche.vie * v))
+    fiche.courbe_vie, fiche.courbe_degats = v, d
     return fiche
 
 

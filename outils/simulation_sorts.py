@@ -19,6 +19,8 @@ aussi les sorts de son script SmartAI, comme le serveur :
   (Mot de pouvoir : Bouclier) et dégâts subis en % par le joueur (Blessure infectée) ; option contact : les sorts
   lancés en combat qui ont une portée minimale (Tir, 5 m) ne partent pas au contact (le moteur refuse le sort ; le
   monstre « CMC » revient alors en mêlée). Les outils de Durotar ne la passent pas : leurs chiffres ne bougent pas ;
+  option courbe : la courbe des monstres (simulation_combat.courber) sur la vie, la mêlée, les dégâts des sorts et
+  les soins (pas les boucliers), comme v3_niveau.cpp et v3_combat.cpp ;
 - ignorés : ce que la v3 annule (esquive, blocage, chances de toucher), la course, la taille, les interruptions (le
   joueur n'incante pas), l'Intelligence.
 
@@ -209,7 +211,23 @@ def sorts_du_monstre(entree, niveau, classe=None, contact=False):
     return liste
 
 
-def monstre_avec_sorts(entree, niveau=None, renforts=True, contact=False):
+# Genres d'effet multipliés par la courbe : dégâts (comme v3_combat.cpp AppliquerMonstre) et soins (ModifyHealReceived).
+COURBE_DEGATS = ("direct", "vol_direct", "dot", "drain", "epines", "declenche", "degats_plus", "arme")
+COURBE_SOINS = ("soin", "hot")
+
+
+def courber(m, facteurs=None):
+    """Le monstre avec la courbe des monstres, sorts et renforts compris (mêmes facteurs pour ses renforts)."""
+    sim.courber(m, facteurs)
+    for r in getattr(m, "renforts", []):
+        courber(r, (m.courbe_vie, m.courbe_degats) if facteurs else None)
+    for s in m.sorts:
+        s["effets"] = [(g, q, v * (m.courbe_degats if g in COURBE_DEGATS else m.courbe_vie if g in COURBE_SOINS
+                                   else 1.0), d, x) for g, q, v, d, x in s["effets"]]
+    return m
+
+
+def monstre_avec_sorts(entree, niveau=None, renforts=True, contact=False, courbe=False):
     m = sim.monstre_depuis_base(entree, niveau)
     classe = int(sql("SELECT unit_class FROM acore_world.creature_template WHERE entry = %d" % entree)[0][0])
     m.sorts = sorts_du_monstre(entree, m.puissance, classe, contact)
@@ -222,6 +240,8 @@ def monstre_avec_sorts(entree, niveau=None, renforts=True, contact=False):
                         m.renforts.append(monstre_avec_sorts(int(v), m.puissance, renforts=False, contact=contact))
                     except IndexError:
                         pass
+    if courbe:
+        courber(m)
     return m
 
 
@@ -346,7 +366,8 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
         serveur ; les bonus fixes des auras du monstre, eux, ne le suivent pas)."""
         e = etats[i]
         bonus = sum(v for _, v in e.actifs(e.plus, t)) + plus
-        brut = (alea.randint(e.m.bas, e.m.haut) * (melee if e.principal else 1.0) * pourcent + bonus)             * sim.MONSTRES_DEGATS
+        brut = ((alea.randint(e.m.bas, e.m.haut) * getattr(e.m, "courbe_degats", 1.0) * (melee if e.principal else 1.0)
+                 * pourcent + bonus) * sim.MONSTRES_DEGATS)
         if sort:
             brut *= facteur_sorts
         brut *= 1 + sum(v for _, v in e.actifs(e.pct, t)) / 100.0
@@ -429,9 +450,10 @@ def combat_sorts(joueur, monstres, alea, potion=None, reaction=1.4, sorts=True, 
 
     def appeler(entree, puissance):
         """Renfort appelé en combat : il frappe le joueur, avec ses sorts."""
-        cle = (entree, puissance)
+        courbe = hasattr(etats[0].m, "courbe_degats")      # appelé par un monstre de secteur : la courbe aussi
+        cle = (entree, puissance, courbe)
         if cle not in APPELES:
-            APPELES[cle] = monstre_avec_sorts(entree, puissance, renforts=False)
+            APPELES[cle] = monstre_avec_sorts(entree, puissance, renforts=False, courbe=courbe)
         etats.append(Etat(APPELES[cle]))
         etats[-1].principal = False
         i = len(etats) - 1

@@ -9,6 +9,7 @@ class Creature;
 class Item;
 class Map;
 class Player;
+class Unit;
 struct ItemTemplate;
 
 namespace SolAzeroth
@@ -110,6 +111,10 @@ namespace SolAzeroth
     // v3, F9 : change la puissance d'une créature (v3_niveau.cpp) ; éclats du mode de zone et rare appelé par le
     // cauchemar (v3_modes.cpp).
     void FixerPuissanceCreature(Creature* creature, unsigned char puissance);
+    // Lot T1 des Tarides : facteurs de la courbe des monstres (vie et soins, dégâts), fixés à l'apparition ; 1 hors
+    // des secteurs et jusqu'à la puissance 14 (v3_niveau.cpp).
+    float CourbeVie(Unit const* unite);
+    float CourbeDegats(Unit const* unite);
     float FacteurEclatsMode(Creature* creature);
     bool RareDeCauchemar(Creature* creature);
     // Lot 3a (02/11/2026) : techniques d'un monstre de mode (masque : 1 Enragé, 2 Renforçant, 4 Volcanique, 8 Explosif)

@@ -239,7 +239,7 @@ def combat(j, monstres, alea, kit=DUROTAR, reaction=1.4, p=None, recharges=None,
                 coup_m[i] = retour(i)
                 continue
             coup_m[i] = t + m.vitesse
-            brut = round(alea.randint(m.bas, m.haut) * sim.MONSTRES_DEGATS)
+            brut = round(alea.randint(m.bas, m.haut) * sim.MONSTRES_DEGATS * getattr(m, "courbe_degats", 1.0))
             if t < marcheur_jusqua and vie_marcheur > 0:
                 vie_marcheur -= sim.apres_armure(brut, j.armure, m.puissance)
                 if vie_marcheur <= 0:
@@ -504,7 +504,7 @@ def tarides():
         for e, p in te.MONSTRES_TARIDES:
             if not puissance - 2 <= p <= puissance + 3:
                 continue
-            m = monstre(e, p)
+            m = sim.courber(monstre(e, p))      # courbe des monstres (migration 138)
             rd = simuler(dm, [m], 1000, potion=te.POTION_TARIDES)
             rg = sim.simuler(g, m, 1000, potion=te.POTION_TARIDES)
             print("  %-26s P%-2d | démoniste perdue %5.1f %% %5.1f s | guerrier perdue %5.1f %% %5.1f s%s" % (

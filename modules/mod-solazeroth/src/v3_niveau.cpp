@@ -23,6 +23,13 @@
 //   invoquée par un monstre des secteurs prend sa puissance ; invoquée autrement dans la zone, la plage la plus
 //   fréquente de son entrée. Durotar n'a pas de secteurs : rien n'y change. Une zone à secteurs a pour puissance
 //   conseillée la plage de ses secteurs (solazeroth_v3_puissance_secteurs : les Tarides 14-30).
+// - Lot T1 des Tarides, courbe des monstres (choix de l'utilisateur du 03/11/2026, point 19 du brouillon) : au-delà de
+//   la puissance 14, la pente des monstres de Blizzard dépasse celle des pièces. Un monstre dont la puissance vient
+//   d'un secteur a sa vie (et ses soins) et ses dégâts (mêlée, sorts, dégâts sur la durée : v3_combat.cpp) multipliés
+//   par la courbe de sa puissance (solazeroth_v3_courbe_puissance, 1 jusqu'à 14 ; au-delà de la dernière ligne, la
+//   dernière), puis par la correction de son entrée (solazeroth_v3_courbe_entrees, cas isolés). Écrites par
+//   outils\courbe_monstres.py, réglées par simulation contre le guerrier. Fixés à l'apparition : un mode de zone qui
+//   change ensuite la puissance ne les change pas. Durotar et le Gouffre n'ont pas de secteurs : rien n'y change.
 
 #include "SolAzeroth.h"
 #include "Config.h"
@@ -36,6 +43,7 @@
 #include "ScriptMgr.h"
 #include "StringFormat.h"
 #include "TemporarySummon.h"
+#include <map>
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
@@ -51,6 +59,7 @@ namespace
     {
         uint8 valeur = 0;
         bool secteur = false;   // puissance fixée par un secteur (lot T1 des Tarides)
+        float courbeVie = 1.0f, courbeDegats = 1.0f;   // courbe des monstres (lot T1)
     };
 
     // Plage d'une apparition ou d'une entrée : niveaux d'origine du secteur et puissances du secteur ou de la sous-zone.
@@ -63,6 +72,20 @@ namespace
     std::unordered_map<uint32, Plage> plagesApparitions;   // guid d'apparition -> plage
     std::unordered_map<uint32, Plage> plagesEntrees;       // entrée -> plage
     std::unordered_map<uint32, std::pair<uint8, uint8>> plagesZones;   // zone -> puissance conseillée
+    std::map<uint8, std::pair<float, float>> courbe;                       // puissance -> (vie, dégâts)
+    std::unordered_map<uint32, std::pair<float, float>> courbeEntrees;    // entrée -> correction (vie, dégâts)
+
+    std::pair<float, float> Courbe(uint8 puissance, uint32 entree)
+    {
+        std::pair<float, float> f = { 1.0f, 1.0f };
+        auto i = courbe.upper_bound(puissance);    // la ligne de cette puissance, ou la dernière en deçà
+        if (puissance > 14 && i != courbe.begin())
+            f = std::prev(i)->second;
+        auto e = courbeEntrees.find(entree);
+        if (e != courbeEntrees.end())
+            f = { f.first * e->second.first, f.second * e->second.second };
+        return f;
+    }
 
     uint8 Ramener(uint8 niveau, Plage const& p)
     {
@@ -90,6 +113,24 @@ namespace
         plagesApparitions.clear();
         plagesEntrees.clear();
         plagesZones.clear();
+        courbe.clear();
+        courbeEntrees.clear();
+        if (QueryResult r = WorldDatabase.Query("SELECT puissance, vie, degats FROM solazeroth_v3_courbe_puissance"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                courbe[f[0].Get<uint8>()] = { f[1].Get<float>(), f[2].Get<float>() };
+            } while (r->NextRow());
+        }
+        if (QueryResult r = WorldDatabase.Query("SELECT entree, vie, degats FROM solazeroth_v3_courbe_entrees"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                courbeEntrees[f[0].Get<uint32>()] = { f[1].Get<float>(), f[2].Get<float>() };
+            } while (r->NextRow());
+        }
         if (QueryResult r = WorldDatabase.Query("SELECT guid, origine_min, origine_max, puissance_min, puissance_max "
             "FROM solazeroth_v3_puissance_apparitions"))
         {
@@ -175,6 +216,20 @@ unsigned char SolAzeroth::PuissanceHauteZone(unsigned int zone)
     return it == puissanceDesZones.end() ? 0 : it->second.second;
 }
 
+float SolAzeroth::CourbeVie(Unit const* unite)
+{
+    Creature* creature = unite ? const_cast<Unit*>(unite)->ToCreature() : nullptr;
+    Puissance const* p = creature ? creature->CustomData.Get<Puissance>("solazeroth_puissance") : nullptr;
+    return p ? p->courbeVie : 1.0f;
+}
+
+float SolAzeroth::CourbeDegats(Unit const* unite)
+{
+    Creature* creature = unite ? const_cast<Unit*>(unite)->ToCreature() : nullptr;
+    Puissance const* p = creature ? creature->CustomData.Get<Puissance>("solazeroth_puissance") : nullptr;
+    return p ? p->courbeDegats : 1.0f;
+}
+
 unsigned char SolAzeroth::PuissanceCreature(Creature const* creature)
 {
     Puissance const* p = creature ? const_cast<Creature*>(creature)->CustomData.Get<Puissance>("solazeroth_puissance") : nullptr;
@@ -234,16 +289,21 @@ public:
         if (creature->IsPet() || creature->HasUnitTypeMask(UNIT_MASK_MINION))
             return;
         uint8 origine = creature->GetLevel();
-        creature->CustomData.GetDefault<Puissance>("solazeroth_puissance")->valeur = origine;
+        Puissance* p = creature->CustomData.GetDefault<Puissance>("solazeroth_puissance");
+        p->valeur = origine;
+        // Lot T1 : courbe des monstres, pour ceux dont la puissance vient d'un secteur.
+        std::pair<float, float> f = p->secteur ? Courbe(origine, creature->GetEntry()) : std::make_pair(1.0f, 1.0f);
+        p->courbeVie = f.first;
+        p->courbeDegats = f.second;
         if (origine < NIVEAU_FIXE)
             creature->SetLevel(NIVEAU_FIXE);
 
         // Calibrage (journal du 31/10/2026 : un sanglier tenait 6 s et ne coûtait rien) : vie des monstres multipliée par
         // SolAzeroth.V3.MonstresVie. Leurs dégâts le sont dans v3_combat.cpp (SolAzeroth.V3.MonstresDegats).
         static float const multiplicateur = sConfigMgr->GetOption<float>("SolAzeroth.V3.MonstresVie", 2.0f);
-        if (multiplicateur != 1.0f)
+        if (multiplicateur * f.first != 1.0f)
         {
-            uint32 vie = std::max<uint32>(1, uint32(creature->GetCreateHealth() * multiplicateur));
+            uint32 vie = std::max<uint32>(1, uint32(creature->GetCreateHealth() * multiplicateur * f.first));
             creature->SetCreateHealth(vie);
             creature->SetMaxHealth(vie);
             creature->SetHealth(vie);

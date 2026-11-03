@@ -13,7 +13,8 @@ changement de chiffres (monstres, armure, équipement, kit), comme le demande l'
 
 3. Lot T1 des Tarides (03/11/2026, --tarides, non bloquant) : les fiches des Tarides (fiches_zones.joueurs : pièces
    d'arrivée refaites au barème de chaque point de la zone, Repos du feu 3, potion rang 2, Heurt) contre les monstres
-   des secteurs (puissance par secteur, migration 136), avec leurs sorts au contact. Cible du lot 3c : un monstre seul
+   des secteurs (puissance par secteur, migration 136 ; courbe des monstres, migration 138), avec leurs sorts au
+   contact. Cible du lot 3c : un monstre seul
    de sa puissance coûte 15 à 30 % de vie (une défaite compte 100 %).
 
 py tests_equilibrage.py            (code de sortie 1 si la fidélité du modèle n'est plus tenue)
@@ -208,7 +209,7 @@ def rapport_tarides():
         for e, p in MONSTRES_TARIDES:
             if not puissance - 2 <= p <= puissance + 3:
                 continue
-            m = ss.monstre_avec_sorts(e, p, contact=True)
+            m = ss.monstre_avec_sorts(e, p, contact=True, courbe=True)
             r = ss.simuler(g, m, 400, potion=POTION_TARIDES, heurt=HEURT)
             print("  %-34s P%-2d vie perdue %5.1f %%, %3.0f %% de victoires, %4.1f s%s" % (
                 m.nom[:34], p, perdue(r), r["victoire"], r["duree"], verdict_perdue(g, m, perdue(r))))
