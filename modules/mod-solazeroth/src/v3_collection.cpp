@@ -21,11 +21,15 @@
 #include "Chat.h"
 #include "CommandScript.h"
 #include "DatabaseEnv.h"
+#include "GameObject.h"
 #include "Item.h"
 #include "LootMgr.h"
+#include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "Spell.h"
+#include "SpellInfo.h"
 #include "StringFormat.h"
 #include "WorldSession.h"
 #include <algorithm>
@@ -46,6 +50,12 @@ namespace
     // Herboristerie et minage de grand maître, sorts de récolte de grand maître (le minage n'a plus besoin de pioche :
     // migration 073).
     std::pair<uint16, uint32> const RECOLTE[] = { { 182, 50300 }, { 186, 50310 }, { 356, 51294 } };
+    // On pêche sans canne : le jeu montrait l'arme en main. Pendant la pêche, les mains montrent une Canne à pêche
+    // (signalement du 03/11/2026) ; les armes reviennent à la fin (SetVisibleItemSlot : la transmogrification aussi).
+    uint32 const CANNE = 6256;
+    // Une touche sur cinq ramène quelque chose (demande du 03/11/2026 : on pêchait à chaque lancer) ; sinon, le poisson
+    // se décroche et le bouchon disparaît.
+    uint32 const PRISE = 20;
     // Bonus des métiers de Blizzard, appris avec la compétence : Robustesse du minage (+60 Endurance au rang 6),
     // Sang-de-vie de l'herboristerie. Retirés (31/10/2026 : 713 points de vie au lieu d'une centaine).
     uint32 const BONUS_METIERS[] = { 53120, 53121, 53122, 53123, 53124, 53040,
@@ -105,6 +115,7 @@ namespace
         std::vector<std::pair<uint32, uint32>> enAttente;   // objets entrés dans le sac, rangés au prochain passage
         bool retrait = false;                               // .collection retirer : ne pas ranger ce qu'on retire
         ObjectGuid vide;                                    // butin entièrement rangé, à refermer
+        bool canne = false;                                 // canne montrée à la place des armes, pendant la pêche
     };
 
     Collection* CollectionDe(Player* player)
@@ -179,7 +190,19 @@ class solazeroth_v3_collection_joueur : public PlayerScript
 public:
     solazeroth_v3_collection_joueur() : PlayerScript("solazeroth_v3_collection_joueur", {
         PLAYERHOOK_ON_LOGIN, PLAYERHOOK_ON_BEFORE_SEND_LOOT, PLAYERHOOK_ON_STORE_NEW_ITEM, PLAYERHOOK_ON_UPDATE,
-        PLAYERHOOK_ON_DELETE, PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST, PLAYERHOOK_ON_CREATURE_KILL_CREDIT }) { }
+        PLAYERHOOK_ON_DELETE, PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST, PLAYERHOOK_ON_CREATURE_KILL_CREDIT,
+        PLAYERHOOK_ON_SPELL_CAST }) { }
+
+    void OnPlayerSpellCast(Player* player, Spell* spell, bool /*skipCheck*/) override
+    {
+        if (!spell->GetSpellInfo()->IsAbilityOfSkillType(SKILL_FISHING))
+            return;
+        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_MAINHAND * 2, CANNE);
+        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + EQUIPMENT_SLOT_MAINHAND * 2, 0);
+        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_OFFHAND * 2, 0);
+        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + EQUIPMENT_SLOT_OFFHAND * 2, 0);
+        CollectionDe(player)->canne = true;
+    }
 
     void OnPlayerCompleteQuest(Player* player, Quest const* quete) override
     {
@@ -223,6 +246,16 @@ public:
     // ordinaires du butin sont pris (pas ceux de quête, ni ceux réservés à un joueur ou soumis à une condition).
     void OnPlayerBeforeSendLoot(Player* player, ObjectGuid lootGuid, Loot* loot) override
     {
+        if (lootGuid.IsGameObject())
+            if (GameObject* go = ObjectAccessor::GetGameObject(*player, lootGuid))
+                if ((go->GetGoType() == GAMEOBJECT_TYPE_FISHINGNODE || go->GetGoType() == GAMEOBJECT_TYPE_FISHINGHOLE)
+                    && urand(1, 100) > PRISE)
+                {
+                    loot->clear();
+                    CollectionDe(player)->vide = lootGuid;
+                    ChatHandler(player->GetSession()).SendNotification("Le poisson s'est décroché.");
+                    return;
+                }
         uint32 recolte = 0;
         for (LootItem& objet : loot->items)
         {
@@ -281,6 +314,12 @@ public:
     void OnPlayerUpdate(Player* player, uint32 /*diff*/) override
     {
         Collection* c = CollectionDe(player);
+        if (c->canne && !player->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+        {
+            c->canne = false;
+            for (uint8 slot : { EQUIPMENT_SLOT_MAINHAND, EQUIPMENT_SLOT_OFFHAND })
+                player->SetVisibleItemSlot(slot, player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
+        }
         if (c->vide)
         {
             // Comme si le joueur fermait la fenêtre : le filon ou l'herbe disparaît aussitôt.

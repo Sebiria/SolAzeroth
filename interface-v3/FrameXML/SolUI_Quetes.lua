@@ -861,6 +861,11 @@ WorldMapFrame:HookScript("OnHide", S.MajQuetes)
 -- mètres du jeu de qui les donne, et qui reprend les quêtes du journal (« R »). Les deux sont dessinés en épingles
 -- (plus bas), sur la carte du monde comme sur la mini-carte.
 local disponibles, aRendre, recues = {}, {}, {}
+-- Infobulle des épingles de la carte du monde : la nôtre, car la carte du jeu cache WorldMapTooltip à chaque image
+-- quand la souris n'est pas sur une de ses zones d'objectif (WorldMapBlobFrame_OnUpdate) : elle n'apparaissait pas
+-- (demande du 03/11/2026 : voir la puissance d'une quête à prendre au survol).
+local bulleCarte = CreateFrame("GameTooltip", "SolUIBulleCarte", WorldMapFrame, "GameTooltipTemplate")
+bulleCarte:SetFrameStrata("TOOLTIP")
 local MajMarques, MajZonesMonde   -- plus bas (Épingles)
 
 S.Message("SOLQDISPO", function(champs)
@@ -1196,7 +1201,7 @@ MajMarques = function()
     end
     for _, p in ipairs(Fusionner(places)) do
         n = n + 1
-        local e = Epingle(marques, n, WorldMapButton, WorldMapTooltip)
+        local e = Epingle(marques, n, WorldMapButton, bulleCarte)
         Habiller(e, p.g, cote)
         e.quetes = p.quetes
         e:SetPoint("BOTTOM", WorldMapButton, "TOPLEFT", p.x, p.y - cote * 0.04)
@@ -1207,7 +1212,7 @@ MajMarques = function()
     for _, c in ipairs(SignesSur(GetMapInfo())) do
         if c.x >= 0 and c.x <= 1 and c.y >= 0 and c.y <= 1 then
             k = k + 1
-            local f = Signe(signesMonde, k, WorldMapButton, WorldMapTooltip)
+            local f = Signe(signesMonde, k, WorldMapButton, bulleCarte)
             f.signe = c
             f.icone:SetTexture(c.texture)
             f:SetSize(18 * S.OPTIONS.reperes, 18 * S.OPTIONS.reperes)
@@ -1238,15 +1243,15 @@ local function ZoneMonde(n)
     z.point:SetSize(8, 8)
     z.point:SetPoint("CENTER")
     z:SetScript("OnEnter", function(self)
-        WorldMapTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        WorldMapTooltip:AddLine(S.TitreQuete(self.quete), S.Couleur("ambreClair"))
+        bulleCarte:SetOwner(self, "ANCHOR_RIGHT")
+        bulleCarte:AddLine(S.TitreQuete(self.quete), S.Couleur("ambreClair"))
         for _, o in ipairs(Objectifs(self.quete.index)) do
-            WorldMapTooltip:AddLine((o.compte and (o.compte .. "  ") or "") .. o.texte,
+            bulleCarte:AddLine((o.compte and (o.compte .. "  ") or "") .. o.texte,
                 S.Couleur(o.fini and "vertClair" or "texte"))
         end
-        WorldMapTooltip:Show()
+        bulleCarte:Show()
     end)
-    z:SetScript("OnLeave", function() WorldMapTooltip:Hide() end)
+    z:SetScript("OnLeave", function() bulleCarte:Hide() end)
     zonesMonde[n] = z
     return z
 end
