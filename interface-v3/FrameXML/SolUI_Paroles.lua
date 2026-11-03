@@ -145,9 +145,12 @@ local file, lecon, n = {}, nil, 1
 local orateur
 local function Orateur(entree, texte)
     nom:SetText(texte)
+    -- Reconnu par son numéro de créature (dans le GUID), pas par son nom : le client peut nommer le PNJ autrement que
+    -- nos répliques (signalement 44 : « Zureetha Fargaze »).
     local unite
     for _, u in ipairs({ "npc", "target", "mouseover" }) do
-        if UnitExists(u) and UnitName(u) == texte then unite = u; break end
+        local guid = UnitExists(u) and not UnitIsPlayer(u) and UnitGUID(u)
+        if guid and tonumber(guid:sub(7, 12), 16) == entree then unite = u; break end
     end
     if unite then SetPortraitTexture(visage, unite) end
     S.Montrer(visage, unite ~= nil)

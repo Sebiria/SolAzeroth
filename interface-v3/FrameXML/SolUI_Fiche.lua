@@ -11,6 +11,7 @@ local S = SolUI
 local PAR_RANG = 0.1             -- SolAzeroth.V3.PuissanceParRang
 local ARMURE_K, ARMURE_C = 100, 3 -- SolAzeroth.V3.ArmureK et ArmureC
 local VOL_DE_VIE = 0.5           -- variante Vol de vie (SolUI_Equipement.lua)
+local HATE = 2                   -- variante Hâte, en %
 
 local GAUCHE = { "HeadSlot", "NeckSlot", "ShoulderSlot", "BackSlot", "ChestSlot", "ShirtSlot", "TabardSlot", "WristSlot" }
 local DROITE = { "HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot", "Finger1Slot", "Trinket0Slot",
@@ -18,7 +19,7 @@ local DROITE = { "HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot"
 local ARMES = { "MainHandSlot", "SecondaryHandSlot", "RangedSlot" }
 local HORS_PUISSANCE = { ShirtSlot = true, TabardSlot = true }   -- comme CalculerPuissance (v3_combat.cpp)
 
-local f = S.Fenetre("SolUIFiche", 1124, 580, "Fiche")   -- 860 + les pièces des sacs
+local f = S.Fenetre("SolUIFiche", 1124, 600, "Fiche")   -- 860 + les pièces des sacs
 local cases = {}
 local portees = {}   -- emplacement du jeu (1 à 19) -> { rang, variante }, d'après « .equipement » (SOLEQUIP)
 local etatAme
@@ -123,14 +124,37 @@ local function Rubrique(texte, y)
     t:SetText(texte)
 end
 
-local function Ligne(texte, y)
+-- Survol d'une ligne : son titre puis les lignes que rend Lignes() (signalements 40 et 46, 03/11/2026).
+local function Survol(titre, y, Lignes)
+    local survol = CreateFrame("Frame", nil, f)
+    survol:SetPoint("TOPLEFT", X, y + 2)
+    survol:SetSize(836 - X, 18)
+    survol:EnableMouse(true)
+    survol:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(titre)
+        for _, l in ipairs(Lignes()) do
+            if type(l) == "table" then
+                GameTooltip:AddLine(l[1], S.Couleur(l[2]))
+            else
+                GameTooltip:AddLine(l, 1, 1, 1, true)
+            end
+        end
+        GameTooltip:Show()
+    end)
+    survol:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
+local function Ligne(texte, y, Lignes)
     local l = S.Texte(f, "Regular", 13, "texte")
     l:SetPoint("TOPLEFT", X, y)
     l:SetText(texte)
     local v = S.Texte(f, "SemiBold", 13, "clair")
     v:SetPoint("TOPRIGHT", f, "TOPLEFT", 836, y)
+    if Lignes then Survol(texte, y, Lignes) end
     return v
 end
+local function Lanceur() return S.etat.spe == 2 end   -- sorts : Intelligence, l'arme ne frappe pas
 
 Rubrique("PUISSANCE", -128)
 local puissance = S.Texte(f, "Bold", 28, "ambreClair")
@@ -146,15 +170,30 @@ local apportRangs = Ligne("Apport des rangs", -234)
 local ameValeur = Ligne("Âme", -254)
 
 Rubrique("COMBAT", -290)
-local vie = Ligne("Vie", -310)
-local armure = Ligne("Armure", -330)
-local reduction = Ligne("Coups d'un monstre de ta puissance", -350)
-local attaque = Ligne("Puissance d'attaque", -370)
-local degats = Ligne("Dégâts de l'arme", -390)
-local critique = Ligne("Critique", -410)
-local volDeVie = Ligne("Vol de vie", -430)
+local vie = Ligne("Vie", -310, function() return {
+    "10 points par point d'Endurance.",
+    "Elle remonte hors combat (2 % par seconde), au feu de camp et par ta potion." } end)
+local armure = Ligne("Armure", -330, function() return {
+    "Retire un montant fixe à chaque coup reçu : les petits coups passent mal." } end)
+local reduction = Ligne("Coups d'un monstre de ta puissance", -350, function() return {
+    "Part que ton armure retire au coup moyen d'un monstre de ta puissance.",
+    "Face à un monstre plus puissant, elle baisse." } end)
+local attaque = Ligne("Puissance d'attaque", -370, function() return {
+    "Augmente les dégâts de tes " .. (Lanceur() and "sorts" or "techniques") .. ".",
+    "2 par point de la caractéristique principale de ta spécialisation"
+        .. (Lanceur() and ", plus les dégâts de ton arme (elle ne frappe pas)." or ".") } end)
+local degats = Ligne("Dégâts de l'arme", -390, function() return {
+    Lanceur() and "Ton arme ne frappe pas : ses dégâts par seconde s'ajoutent à ta puissance d'attaque."
+        or "Tes techniques font un pourcentage de ces dégâts. Entre parenthèses : la vitesse de l'arme." } end)
+local critique = Ligne("Critique", -410, function() return {
+    "Chance qu'un coup soit critique.",
+    "Variante Critique des pièces : + 1 % chacune. L'Agilité en donne un peu." } end)
+local hate = Ligne("Hâte", -430, function() return {
+    "Coups et incantations plus rapides.", "Variante Hâte des pièces : + 2 % chacune." } end)
+local volDeVie = Ligne("Vol de vie", -450, function() return {
+    "Part des dégâts infligés qui te revient en vie.", "Variante Vol de vie des pièces : 0,5 % chacune." } end)
 
-Rubrique("CARACTÉRISTIQUES", -466)
+Rubrique("CARACTÉRISTIQUES", -486)
 local stats = {}
 -- Survol : ce que fait la caractéristique ici (signalement 40, 03/11/2026). Règles du serveur : v3_niveau.cpp (puissance
 -- d'attaque), le reste est celui du jeu (ni esquive ni parade en v3).
@@ -167,23 +206,15 @@ local EFFETS = {
 }
 local PRINCIPALE = { [1] = 1, [2] = 4, [3] = 2 }   -- spécialisation -> caractéristique (tank, Affliction, Assassinat)
 for i, t in ipairs({ "Force", "Agilité", "Endurance", "Intelligence", "Esprit" }) do
-    local y = -486 - (i - 1) * 18
-    stats[i] = Ligne(t, y)
-    local survol = CreateFrame("Frame", nil, f)
-    survol:SetPoint("TOPLEFT", X, y + 2)
-    survol:SetSize(836 - X, 18)
-    survol:EnableMouse(true)
-    survol:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText(t)
+    stats[i] = Ligne(t, -506 - (i - 1) * 18, function()
+        local l = {}
         if PRINCIPALE[S.etat.spe or 0] == i then
-            GameTooltip:AddLine("Caractéristique principale de ta spécialisation : 2 de puissance d'attaque par point.",
-                S.Couleur("ambreClair"))
+            table.insert(l, { "Caractéristique principale de ta spécialisation : 2 de puissance d'attaque par point.",
+                "ambreClair" })
         end
-        GameTooltip:AddLine(EFFETS[i], 1, 1, 1, true)
-        GameTooltip:Show()
+        table.insert(l, EFFETS[i])
+        return l
     end)
-    survol:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
 local function Pourcent(v) return S.Nombre(v, 1) .. " %" end
@@ -196,8 +227,8 @@ local function Maj()
         or S.etat.spe == 3 and "Voleur — Assassinat"
         or (UnitClass("player")))
 
-    -- Niveau d'objet moyen sans les rangs, et nombre de variantes Vol de vie portées.
-    local somme, nombre, vols = 0, 0, 0
+    -- Niveau d'objet moyen sans les rangs, et nombre de variantes Hâte et Vol de vie portées.
+    local somme, nombre, vols, hates = 0, 0, 0, 0
     for id, c in pairs(cases) do
         local lien = GetInventoryItemLink("player", id)
         local niveau = lien and select(4, GetItemInfo(lien))
@@ -206,6 +237,7 @@ local function Maj()
         end
         local p = lien and portees[id]
         if p and p.variante == 3 then vols = vols + 1 end
+        if p and p.variante == 2 then hates = hates + 1 end
     end
     local moyen = nombre > 0 and somme / nombre or 0
     local P = S.etat.puissance
@@ -225,6 +257,7 @@ local function Maj()
     local vitesse = UnitAttackSpeed("player")
     degats:SetText(S.Nombre(mini) .. " – " .. S.Nombre(maxi) .. "  (" .. S.Nombre(vitesse, 1) .. " s)")
     critique:SetText(Pourcent(GetCritChance()))
+    hate:SetText(Pourcent(hates * HATE))
     volDeVie:SetText(Pourcent(vols * VOL_DE_VIE))
     for i = 1, 5 do
         local _, valeur = UnitStat("player", i)
