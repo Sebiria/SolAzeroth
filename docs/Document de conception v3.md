@@ -203,6 +203,21 @@ Ce brouillon sert de base de discussion : chiffres, noms et choix sont à repren
 - **Personnage de test** : guerrier, spécialisation tank.
 - **Rôle du test** : vérifier que le jeu est amusant et exigeant avant d'étendre la refonte au reste d'Azeroth. Il construit une première tranche de jeu, mais le contenu de Durotar visé reste toute la zone.
 
+## 4 bis. Deuxième zone : les Tarides (décisions du 03/11/2026)
+
+Le détail est dans « Les Tarides — Histoire et quêtes (brouillon).md » (§5.2, 18 points tranchés ; plan de construction §5.3, lots T0 à T10) et dans « Les Tarides — comparatif avec Durotar.md » (142 éléments comparés).
+
+- **Plage** : puissance 14 à 30 hors instance. La Croisée est à 14-16, car le joueur arrive en bleu du Gouffre au rang 0, sans les objets des rares : puissance 14,0. Secteurs : Croisée 14-16, oasis et côte 18-22, sud 25-27, extrême sud 27-30, abords des Cavernes 30.
+- **Emboîtement des zones** (`gabarit_zone.py`) : une zone commence au niveau d'objet des bleues du donjon précédent. Zone 3, fictive : 34-50.
+- **Cavernes des Lamentations** : 30-32, avec le même écart qu'au Gouffre. Les bleues sont à 34, ouvertes à 30, avec le composant Graine de cauchemar et la panoplie des Lamentations. Le Kraal et les Souilles restent fermés.
+- **5 rares secrets** (zone grande) à la puissance 35, avec des objets à 38.
+- **Artisanat de la zone** : paliers verts à 18, 24 et 30, faits avec les ressources de la zone. La prospection de l'étain se fait par 3 minerais, pour garder le rapport entre gemmes nécessaires et gemmes disponibles de Durotar (environ 1,1). 10 plats.
+- **Marchands** : formule de Durotar (puissance × poids × 300 c). L'équipement de Blizzard est retiré des marchands, à Durotar comme aux Tarides. Les armes à distance passent par les armes permises de chaque spécialisation (le futur chasseur).
+- **Fournisseur de matériaux** : le prix dépend de la puissance de l'acheteur (prix de base × facteur), pas de la zone. Un même matériau a donc le même prix partout, et l'arbitrage entre zones est impossible. Plafond de 20 par jour, commun à tous les fournisseurs. Un seul prix de base par matériau, d'après sa rareté sur tout le jeu (l'argent est rare). Exception : le cuivre garde 40 pa. Hraq vend aux Tarides.
+- **Annexes** : la Croisée part du dernier palier de Durotar (1 po 20 pa et 15 éclats par point de part), puis le barème monte moins vite. Le total de la zone est gardé.
+- **Transfert de rang** : un rang de moins, avec au plus 5 de puissance d'écart entre les deux pièces (construit le 03/11/2026). Il coûte le composant du donjon de la zone de la pièce.
+- **Interface de l'artisanat** : tous les métiers prennent le menu à deux niveaux de l'armure, rangés par zone et par palier (lot T10).
+
 ## 6. Plan technique des fondations (proposé le 31/10/2026, à valider)
 
 Le principe : chaque étape se termine par une compilation, un démarrage propre du serveur et un essai en jeu par l'utilisateur. Le moteur d'AzerothCore reste intact tant qu'un point d'accroche existe. Quand il faut le modifier, la modification est gardée sous forme de patch, comme `patches\mod-challenge-modes.patch`. Le nouveau code va dans des fichiers `v3_*.cpp`, ce qui demande une seule reconfiguration de la compilation.
@@ -382,7 +397,7 @@ Le principe : chaque étape se termine par une compilation, un démarrage propre
   - message `SOLZONE` « ZONE;basse;haute » au changement de zone et toutes les 10 s ;
   - Rempart renvoyé au moins toutes les 2 s, et puissance toutes les 10 s, pour qu'un /reload retrouve tout.
 - **Puissance conseillée d'une zone** : du 5e au 90e centile des niveaux d'origine de ses monstres ordinaires (sans PNJ de service, élites ni bestioles), calculée au démarrage.
-  - Exemples : Durotar 1–10, les Tarides 11–22.
+  - Exemples : Durotar 1–10, les Tarides 14–30 (décision du 03/11/2026).
   - Une zone trop disparate (plus de 25 d'écart, comme une capitale) n'en a pas.
 - L'ancienne jauge du Rempart de l'addon SolAzerothKit est retirée.
 - **Pour revenir à l'interface de Blizzard** : supprimer `patch-client\fichiers\Interface\FrameXML`, puis relancer `construire_patch.py`.
