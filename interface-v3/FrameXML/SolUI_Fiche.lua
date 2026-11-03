@@ -2,7 +2,8 @@
 -- Fiche, en graphite, à la place de la fiche dorée de Blizzard (CharacterFrame). Elle ne montre pas le niveau (caché en
 -- v3) mais ce qui compte ici : la puissance et son détail, le rang de chaque pièce, l'âme, et les pourcentages que le jeu
 -- ne montrait nulle part (réduction de l'armure, critique, vol de vie des variantes).
--- Les pièces se posent et s'enlèvent comme dans la fiche du jeu : glisser-déposer, clic, Maj + clic pour un lien.
+-- Les pièces se posent et s'enlèvent comme dans la fiche du jeu : glisser-déposer, clic, Maj + clic pour un lien. Les
+-- pièces des sacs sont à droite de la fiche (signalements 33 et 34).
 
 local S = SolUI
 
@@ -17,7 +18,7 @@ local DROITE = { "HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot"
 local ARMES = { "MainHandSlot", "SecondaryHandSlot", "RangedSlot" }
 local HORS_PUISSANCE = { ShirtSlot = true, TabardSlot = true }   -- comme CalculerPuissance (v3_combat.cpp)
 
-local f = S.Fenetre("SolUIFiche", 860, 580, "Fiche")
+local f = S.Fenetre("SolUIFiche", 1124, 580, "Fiche")   -- 860 + les pièces des sacs
 local cases = {}
 local portees = {}   -- emplacement du jeu (1 à 19) -> { rang, variante }, d'après « .equipement » (SOLEQUIP)
 local etatAme
@@ -127,7 +128,7 @@ local function Ligne(texte, y)
     l:SetPoint("TOPLEFT", X, y)
     l:SetText(texte)
     local v = S.Texte(f, "SemiBold", 13, "clair")
-    v:SetPoint("TOPRIGHT", -24, y)
+    v:SetPoint("TOPRIGHT", f, "TOPLEFT", 836, y)
     return v
 end
 
@@ -166,6 +167,7 @@ local function Maj()
     for _, c in pairs(cases) do MajCase(c) end
     nom:SetText(UnitName("player"))
     spe:SetText(S.etat.spe == 1 and "Guerrier — Tank" or S.etat.spe == 2 and "Démoniste — Affliction"
+        or S.etat.spe == 3 and "Voleur — Assassinat"
         or (UnitClass("player")))
 
     -- Niveau d'objet moyen sans les rangs, et nombre de variantes Vol de vie portées.
@@ -241,7 +243,88 @@ S.Ecouter("PLAYER_EQUIPMENT_CHANGED", function()
     Maj()
 end)
 
+------------------------------------------------------------------------
+-- Équipement des sacs, dans la fiche, à droite (signalements 33 et 34, 03/11/2026 : le carnet n'ouvre qu'une fenêtre à
+-- la fois, l'inventaire et la fiche ne se voyaient jamais ensemble). Les pièces portables seulement, sur des cases du
+-- jeu (ContainerFrameItemButtonTemplate) : glisser sur la fiche, ou clic droit pour porter.
+------------------------------------------------------------------------
+local COL_SACS, T_SAC, E_SAC = 5, 40, 5
+local sacs = CreateFrame("Frame", nil, f)
+sacs:SetPoint("TOPLEFT", 860, -64)
+sacs:SetPoint("BOTTOMRIGHT", -16, 16)
+S.Panneau(sacs, 0.6)
+local titreSacs = S.Texte(sacs, "Bold", 11, "gris")
+titreSacs:SetPoint("TOPLEFT", 14, -14)
+titreSacs:SetText("À PORTER, DANS LES SACS")
+local aideSacs = S.Texte(sacs, "Regular", 11, "gris")
+aideSacs:SetPoint("BOTTOMLEFT", 14, 14)
+aideSacs:SetWidth(220)
+aideSacs:SetJustifyH("LEFT")
+aideSacs:SetText("Glisse une pièce sur sa case, ou clic droit pour la porter.")
+local videSacs = S.Texte(sacs, "Regular", 12, "gris")
+videSacs:SetPoint("TOPLEFT", 14, -40)
+videSacs:SetText("Aucune pièce à porter.")
+
+local supportsSacs, casesSacs = {}, {}
+for sac = 0, NUM_BAG_SLOTS or 4 do
+    supportsSacs[sac] = CreateFrame("Frame", nil, sacs)
+    supportsSacs[sac]:SetID(sac)
+    supportsSacs[sac]:SetAllPoints(sacs)
+    casesSacs[sac] = {}
+end
+
+local function CaseSac(sac, place)
+    local c = casesSacs[sac][place]
+    if c then return c end
+    c = CreateFrame("Button", "SolUIFicheSac" .. sac .. "Place" .. place, supportsSacs[sac], "ContainerFrameItemButtonTemplate")
+    c:SetID(place)
+    c:SetSize(T_SAC, T_SAC)
+    local fond = S.Texture(c, "BACKGROUND", nil, S.Couleur("creux"))
+    fond:SetAllPoints()
+    c.contour = CreateFrame("Frame", nil, c)
+    c.contour:SetPoint("TOPLEFT", -1, 1)
+    c.contour:SetPoint("BOTTOMRIGHT", 1, -1)
+    c.contour:SetFrameLevel(c:GetFrameLevel() + 2)
+    c.contour:SetBackdrop({ edgeFile = S.BLANC, edgeSize = 2 })
+    casesSacs[sac][place] = c
+    return c
+end
+
+local function MajSacs()
+    if not f:IsShown() then return end
+    local n = 0
+    for sac = 0, NUM_BAG_SLOTS or 4 do
+        local total = GetContainerNumSlots(sac) or 0
+        for place = 1, math.max(total, #casesSacs[sac]) do
+            local lien = place <= total and GetContainerItemLink(sac, place)
+            if lien and IsEquippableItem(lien) then
+                local c = CaseSac(sac, place)
+                local x, y = n % COL_SACS, math.floor(n / COL_SACS)
+                c:ClearAllPoints()
+                c:SetPoint("TOPLEFT", sacs, "TOPLEFT", 14 + x * (T_SAC + E_SAC), -40 - y * (T_SAC + E_SAC))
+                local texture, nombre, verrou, qualite = GetContainerItemInfo(sac, place)
+                local teinte = ITEM_QUALITY_COLORS[qualite or -1]
+                if teinte then
+                    c.contour:SetBackdropBorderColor(teinte.r, teinte.g, teinte.b, 1)
+                else
+                    c.contour:SetBackdropBorderColor(S.Couleur("bord"))
+                end
+                SetItemButtonTexture(c, texture)
+                SetItemButtonCount(c, nombre)
+                SetItemButtonDesaturated(c, verrou)
+                c:Show()
+                n = n + 1
+            elseif casesSacs[sac][place] then
+                casesSacs[sac][place]:Hide()
+            end
+        end
+    end
+    S.Montrer(videSacs, n == 0)
+end
+for _, e in ipairs({ "BAG_UPDATE", "ITEM_LOCK_CHANGED", "UNIT_INVENTORY_CHANGED" }) do S.Ecouter(e, MajSacs) end
+
 f:SetScript("OnShow", function()
+    MajSacs()
     modele:SetUnit("player")
     angle = 0
     modele:SetFacing(0)

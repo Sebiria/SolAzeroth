@@ -56,6 +56,11 @@ end
 -- Rangé, et refermé aussitôt s'il s'ouvre (touche O, commandes) pour ne pas réserver de place aux fenêtres.
 S.Ranger(FriendsFrame)
 FriendsFrame:HookScript("OnShow", function(self) HideUIPanel(self) end)
+-- Recherche de donjon du jeu : inaccessible (signalement 32, 03/11/2026 ; le jeu est solo). Même traitement.
+if LFDParentFrame then
+    S.Ranger(LFDParentFrame)
+    LFDParentFrame:HookScript("OnShow", function(self) HideUIPanel(self) end)
+end
 
 -- Ces cadres se replacent d'eux-mêmes (UIParent_ManageFramePositions) : rangés, ils restent invisibles.
 

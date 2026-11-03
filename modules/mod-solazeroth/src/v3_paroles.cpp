@@ -51,13 +51,14 @@ public:
     }
 };
 
-// Récompense d'une quête (appelé par Player::RewardQuest, à tout niveau) : la scène, s'il y en a une.
+// Récompense d'une quête (appelé à la fin de Player::RewardQuest) : la scène, s'il y en a une. Signalement 29
+// (03/11/2026) : le calcul de l'expérience, utilisé jusque-là, a lieu aussi à l'affichage de la quête, avant de l'accepter.
 class solazeroth_v3_paroles_joueur : public PlayerScript
 {
 public:
-    solazeroth_v3_paroles_joueur() : PlayerScript("solazeroth_v3_paroles_joueur", { PLAYERHOOK_ON_QUEST_COMPUTE_EXP }) { }
+    solazeroth_v3_paroles_joueur() : PlayerScript("solazeroth_v3_paroles_joueur", { PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST }) { }
 
-    void OnPlayerQuestComputeXP(Player* player, Quest const* quete, uint32& /*xp*/) override
+    void OnPlayerCompleteQuest(Player* player, Quest const* quete) override
     {
         if (quete && SCENES.count(quete->GetQuestId()))
             SolAzeroth::EnvoyerAddon(player, "SOLPAROLE", Acore::StringFormat("SCENE;{}", quete->GetQuestId()));

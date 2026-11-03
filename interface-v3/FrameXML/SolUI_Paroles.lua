@@ -105,7 +105,8 @@ end
 local h = CreateFrame("Frame", "SolUIParoles", S.racine)
 h:SetSize(600, 150)
 h:SetPoint("BOTTOM", S.racine, "BOTTOM", 0, 210)
-h:SetFrameStrata("HIGH")
+-- Au-dessus des fenêtres (HIGH) : à la même strate, leurs morceaux s'entremêlaient (signalement 31).
+h:SetFrameStrata("DIALOG")
 h:EnableMouse(true)
 S.Panneau(h, 0.96, "ambre")
 h:Hide()
@@ -120,9 +121,11 @@ repli:SetPoint("BOTTOMRIGHT", -1, 1)
 repli:SetTexture("Interface\\Icons\\INV_Misc_GroupNeedMore")
 repli:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 repli:SetAlpha(0.35)
-local portrait = CreateFrame("PlayerModel", nil, cadre)
-portrait:SetPoint("TOPLEFT", 1, -1)
-portrait:SetPoint("BOTTOMRIGHT", -1, 1)
+-- Portrait fixe (signalement 30, 03/11/2026 : le modèle 3D restait blanc) : le visage du PNJ quand on lui parle ou
+-- qu'on le cible, sinon l'icône de repli.
+local visage = cadre:CreateTexture(nil, "OVERLAY")
+visage:SetPoint("TOPLEFT", 6, -6)
+visage:SetPoint("BOTTOMRIGHT", -6, 6)
 
 local nom = S.Texte(h, "Bold", 16, "ambreClair")
 nom:SetPoint("TOPLEFT", cadre, "TOPRIGHT", 16, -4)
@@ -142,11 +145,13 @@ local file, lecon, n = {}, nil, 1
 local orateur
 local function Orateur(entree, texte)
     nom:SetText(texte)
-    if entree ~= orateur and portrait.SetCreature then
-        portrait:ClearModel()
-        portrait:SetCreature(entree)
-        portrait:SetCamera(0)
+    local unite
+    for _, u in ipairs({ "npc", "target", "mouseover" }) do
+        if UnitExists(u) and UnitName(u) == texte then unite = u; break end
     end
+    if unite then SetPortraitTexture(visage, unite) end
+    S.Montrer(visage, unite ~= nil)
+    repli:SetAlpha(unite and 0 or 0.35)
     orateur = entree
 end
 
@@ -173,12 +178,22 @@ end
 
 local function Prochaine()
     if h:IsShown() or #file == 0 or InCombatLockdown() or UnitIsDeadOrGhost("player") then return end
+    -- Pas par-dessus un carnet ouvert (signalement 31) : la leçon attend qu'il se ferme.
+    if SolUICarnet and SolUICarnet:IsShown() then return end
     lecon, n, orateur = table.remove(file, 1), 1, nil
-    -- Fenêtre affichée avant le portrait : un modèle chargé dans un cadre caché reste blanc (signalements 22 et 25).
     h:Show()
     Afficher()
     PlaySound("igQuestListOpen")
 end
+-- Une leçon en attente (carnet ouvert) part dès que la voie est libre.
+local attente = CreateFrame("Frame")
+local ecoule = 0
+attente:SetScript("OnUpdate", function(_, dt)
+    ecoule = ecoule + dt
+    if ecoule < 0.5 then return end
+    ecoule = 0
+    if #file > 0 and not h:IsShown() then Prochaine() end
+end)
 
 suivant:SetScript("OnClick", function()
     if n < #lecon[5] then
