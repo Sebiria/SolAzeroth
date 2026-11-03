@@ -5,6 +5,10 @@
 // - genre 2, sous-zone explorée (les zones découvertes du jeu, PLAYER_EXPLORED_ZONES) ;
 // - genre 3, lieu à nettoyer : tous les monstres de sa troupe tués dans la zone, au nombre voulu
 //   (solazeroth_v3_lieux_monstres). Les monstres tués pour une quête comptent aussi.
+//   Lot T0 des Tarides (03/11/2026, migration 135) : deux colonnes par ligne. « sous_zones » : liste de sous-zones
+//   (GetAreaId() du monstre), vide pour toute la zone (Durotar) ; une même entrée vit dans plusieurs lieux aux Tarides.
+//   « invocations » : 0, les créatures invoquées (vagues, renforts) ne comptent pas ; 1, elles comptent (Durotar,
+//   comme avant).
 // Chef renforcé (A01, A02, A05, A06, A10 ; solazeroth_v3_lieux_chefs, créatures de la migration 075) : quand la
 // troupe est tombée et que le joueur est à moins de PROCHE m de la place du chef, le chef d'origine disparaît et sa
 // copie renforcée apparaît, annoncée dans la discussion avec sa distance (essai du 31/10/2026 : bloqué à 45/46 au fort de
@@ -14,6 +18,8 @@
 // prendre un objet de quête sur lui : histoire, défis comme « Le Convent en cinq minutes »). Sinon la puissance annoncée
 // de la quête serait fausse dès que la troupe est tombée, ses monstres comptant aussi pour les quêtes (remarque de
 // l'utilisateur du 01/11/2026). Un chef renforcé déjà apparu, hors combat, s'efface alors et le chef d'origine revient.
+// Lot T0 : aux quêtes trouvées ainsi s'ajoutent celles de solazeroth_v3_lieux_chefs_quetes (lieu, quête), pour une quête
+// qui vise le chef sans le tuer ni prendre d'objet sur lui.
 // - genre 4 (31/10/2026), annexe à quête (primes, contrats, défis : migration 084, v3_annexes.cpp) : la quête rendue ;
 // - genre 5, relique : son objet dans la Collection.
 // Interface (SolUI_Zone.lua, préfixe SOLZONE), quand ça change et qu'on est dans une zone qui a des parts :
@@ -33,7 +39,10 @@
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "StringConvert.h"
 #include "StringFormat.h"
+#include "Tokenize.h"
+#include <algorithm>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
@@ -54,8 +63,14 @@ namespace
     };
 
     std::unordered_map<uint32, std::vector<Part>> parts;                                // zone -> parts
+    struct Compte
+    {
+        uint32 lieu, nombre;
+        std::vector<uint32> sousZones;   // vide : toute la zone du lieu
+        bool invocations;                // les créatures invoquées comptent
+    };
     std::unordered_map<uint32, std::vector<std::pair<uint32, uint32>>> monstresDuLieu;  // lieu -> (créature, nombre)
-    std::unordered_map<uint32, std::vector<std::pair<uint32, uint32>>> lieuxDuMonstre;  // créature -> (lieu, nombre)
+    std::unordered_map<uint32, std::vector<Compte>> lieuxDuMonstre;                      // créature -> lieux
     std::unordered_map<uint32, uint32> zoneDuLieu;
 
     struct Chef
@@ -288,6 +303,12 @@ bool SolAzeroth::MonstreDeLieu(unsigned int entree)
     return lieuxDuMonstre.count(entree) > 0;
 }
 
+// Lot T0 des Tarides : copie renforcée d'un chef de lieu (solazeroth_v3_lieux_chefs), pour les éclats et les passifs.
+bool SolAzeroth::ChefRenforce(unsigned int entree)
+{
+    return lieuDuRenforce.count(entree) > 0;
+}
+
 std::vector<unsigned int> SolAzeroth::ZonesAvecParts()
 {
     std::vector<unsigned int> zones;
@@ -336,10 +357,16 @@ public:
         if (it == lieuxDuMonstre.end())
             return;
         Progres* p = ProgresDe(player);
-        for (auto const& [lieu, nombre] : it->second)
+        for (Compte const& compte : it->second)
         {
+            uint32 const lieu = compte.lieu, nombre = compte.nombre;
             uint32& tues = p->tues[Cle(lieu, creature->GetEntry())];
             if (zoneDuLieu[lieu] != creature->GetZoneId() || tues >= nombre)
+                continue;
+            if (!compte.invocations && creature->IsSummon())
+                continue;
+            if (!compte.sousZones.empty() && std::find(compte.sousZones.begin(), compte.sousZones.end(),
+                creature->GetAreaId()) == compte.sousZones.end())
                 continue;
             ++tues;
             CharacterDatabase.Execute("REPLACE INTO solazeroth_v3_lieux (guid, lieu, creature, nombre) VALUES ({}, {}, {}, {})",
@@ -391,13 +418,19 @@ public:
                 parts[f[0].Get<uint32>()].push_back(std::move(part));
             } while (r->NextRow());
         }
-        if (QueryResult r = WorldDatabase.Query("SELECT lieu, creature, nombre FROM solazeroth_v3_lieux_monstres"))
+        if (QueryResult r = WorldDatabase.Query(
+            "SELECT lieu, creature, nombre, sous_zones, invocations FROM solazeroth_v3_lieux_monstres"))
         {
             do
             {
                 Field* f = r->Fetch();
                 monstresDuLieu[f[0].Get<uint32>()].emplace_back(f[1].Get<uint32>(), f[2].Get<uint32>());
-                lieuxDuMonstre[f[1].Get<uint32>()].emplace_back(f[0].Get<uint32>(), f[2].Get<uint32>());
+                Compte compte{ f[0].Get<uint32>(), f[2].Get<uint32>(), {}, f[4].Get<uint8>() != 0 };
+                std::string const aires = f[3].Get<std::string>();
+                for (std::string_view aire : Acore::Tokenize(aires, ',', false))
+                    if (Optional<uint32> n = Acore::StringTo<uint32>(aire))
+                        compte.sousZones.push_back(*n);
+                lieuxDuMonstre[f[1].Get<uint32>()].push_back(std::move(compte));
             } while (r->NextRow());
         }
         if (QueryResult r = WorldDatabase.Query("SELECT lieu, origine, renforce FROM solazeroth_v3_lieux_chefs"))
@@ -429,6 +462,20 @@ public:
                 for (auto& [numero, chef] : chefs)
                     if (chef.origine == f[0].Get<uint32>())
                         chef.quetes.push_back(f[1].Get<uint32>());
+            } while (r->NextRow());
+        }
+        // Quêtes écrites à la main (lot T0) : celles que la recherche ci-dessus ne trouve pas.
+        if (QueryResult r = WorldDatabase.Query("SELECT lieu, quete FROM solazeroth_v3_lieux_chefs_quetes"))
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                if (auto c = chefs.find(f[0].Get<uint32>()); c != chefs.end())
+                {
+                    std::vector<uint32>& quetes = c->second.quetes;
+                    if (std::find(quetes.begin(), quetes.end(), f[1].Get<uint32>()) == quetes.end())
+                        quetes.push_back(f[1].Get<uint32>());
+                }
             } while (r->NextRow());
         }
         // Place du chef : celle de l'apparition d'origine.

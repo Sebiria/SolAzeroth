@@ -56,7 +56,6 @@ namespace
     // 2 (25 %) ou 3 (10 %) ; élite ×3 ; rare, chef de donjon ou chef renforcé ×5 ; et davantage avec la puissance,
     // au-delà de celle de Durotar (niveau d'origine 12). Valeurs choisies par l'utilisateur, à calibrer avec F8.
     uint32 const ECLAT = 910120;
-    uint32 const CHEF_RENFORCE_PREMIER = 910010, CHEF_RENFORCE_DERNIER = 910014;   // migration 075
 
     // Lot 4a (02/11/2026, C4 du consensus) : les éclats suivent l'écart de puissance, comme le contour de la cible
     // (SolUI_Cible.lua) : plein à 2 points de moins au plus, puis 0,8, 0,6, 0,45, et ×0,25 pour un monstre gris (6
@@ -72,7 +71,7 @@ namespace
         CreatureTemplate const* modele = creature->GetCreatureTemplate();
         if (modele->type == CREATURE_TYPE_CRITTER)
             return 0;
-        bool renforce = modele->Entry >= CHEF_RENFORCE_PREMIER && modele->Entry <= CHEF_RENFORCE_DERNIER;
+        bool renforce = SolAzeroth::ChefRenforce(modele->Entry);   // lot T0 : table solazeroth_v3_lieux_chefs
         if (creature->IsSummon() && !renforce && !SolAzeroth::RareDeCauchemar(creature))   // renforts appelés : rien
             return 0;
         uint32 tirage = urand(1, 100);

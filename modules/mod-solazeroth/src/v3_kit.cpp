@@ -154,7 +154,7 @@ namespace
         std::vector<Technique> const* ordre;
         std::vector<uint32> competences;                // compétences d'arme, apprises au choix et à chaque application
         std::vector<std::pair<uint8, uint32>> armes;    // armes de départ, posées si les mains sont vides
-        std::vector<uint32> permises;                   // sous-classes d'arme de mêlée équipables (vide : toutes)
+        std::vector<uint32> permises;                   // sous-classes d'arme équipables, mêlée et distance (vide : toutes)
     };
 
     std::vector<Specialisation> const SPECIALISATIONS =
@@ -517,6 +517,10 @@ bool SolAzeroth::ArmePermise(Player* player, ItemTemplate const* modele)
         case ITEM_SUBCLASS_WEAPON_SWORD2: case ITEM_SUBCLASS_WEAPON_STAFF: case ITEM_SUBCLASS_WEAPON_EXOTIC:
         case ITEM_SUBCLASS_WEAPON_EXOTIC2: case ITEM_SUBCLASS_WEAPON_FIST: case ITEM_SUBCLASS_WEAPON_DAGGER:
         case ITEM_SUBCLASS_WEAPON_SPEAR:
+        // Lot T0 des Tarides (décision 2 du comparatif) : les armes à distance passent aussi par « permises ». Aucune
+        // spécialisation actuelle ne les permet ; le futur chasseur les permettra.
+        case ITEM_SUBCLASS_WEAPON_BOW: case ITEM_SUBCLASS_WEAPON_GUN: case ITEM_SUBCLASS_WEAPON_CROSSBOW:
+        case ITEM_SUBCLASS_WEAPON_THROWN: case ITEM_SUBCLASS_WEAPON_WAND:
             break;
         default:
             return true;

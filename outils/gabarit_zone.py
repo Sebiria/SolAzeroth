@@ -5,7 +5,9 @@ Une zone se décrit par un dictionnaire (voir DUROTAR) :
 - plage de puissance et secteurs (début et fin en % de zone, puissance des monstres, niveau d'objet du nouvel
   équipement) ;
 - parts du pourcentage par source, et nombre d'annexes par famille ;
-- barème des récompenses d'annexe (éclats et Marques par famille, à la puissance 12 ou moins) ;
+- barème des récompenses d'annexe (éclats et Marques par famille, à la puissance 12 ou moins) ; barème par point de
+  part, par tranche de puissance (lot T0 des Tarides : la zone suivante part de la dernière tranche, décision 4 du
+  comparatif) ;
 - plantes et filons (règle des zones de départ : de quoi débuter les métiers sans sortir) et plats ;
 - rangs du camp et de la potion achetables dans la zone (règle « deux fois par zone », doc F5) ;
 - emplacements et techniques ouverts, par spécialisation : ce sont les classes qui s'adaptent au monde (demande de
@@ -16,9 +18,13 @@ Une valeur None est « à remplir » : le vérificateur la liste à part, sans l
 
 Lancé seul (py gabarit_zone.py) :
 1. relit Durotar dans la base et le code (zone_parts, annexes, camp, plats, filons et plantes, techniques de
-   v3_kit.cpp) et la compare à sa description : le gabarit dit vrai sur la zone qui existe ;
+   v3_kit.cpp) et la compare à sa description : le gabarit dit vrai sur la zone qui existe. Lot T0 des Tarides
+   (03/11/2026) : les Tarides aussi, pour ce qui est déjà en base (récolte dans les deux sens, techniques, donjon) ;
+   le reste se compare dès que la zone a des parts ;
 2. vérifie l'emboîtement de Durotar, des Tarides (14-30, choix de l'utilisateur du 03/11/2026) et d'une zone 3
-   extrapolée (34-50) : chaque zone commence au niveau d'objet des pièces bleues du donjon précédent.
+   extrapolée (34-50) : chaque zone commence au niveau d'objet des pièces bleues du donjon précédent ;
+3. relit les fiches d'arrivée et de sortie (fiches_zones.py) : pièces en base, puissance, rang 0, sans les objets des
+   rares secrets.
 Code de sortie 1 s'il y a une erreur.
 """
 import os
@@ -30,11 +36,15 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe"
 CNF = os.path.join(ICI, "..", "config", "mysql-acore.cnf")
 KIT = os.path.join(ICI, "..", "modules", "mod-solazeroth", "src", "v3_kit.cpp")
+BIVOUAC = os.path.join(ICI, "..", "modules", "mod-solazeroth", "src", "v3_bivouac.cpp")
+LOCK = os.path.join(ICI, "..", "data", "dbc", "Lock.dbc")
 
 FAMILLES = ("lieux", "primes", "contrats", "defis", "reliques")
 SOURCES = ("histoire", "exploration") + FAMILLES
 EMPLACEMENTS_MAX = 8                    # EQUIPEES_MAX (v3_kit.cpp)
-RANGS_CAMP = {"feu": 2, "potion": 3}    # dernier rang achetable aujourd'hui (solazeroth_v3_camp_couts)
+# Dernier rang achetable aujourd'hui (RANG_FEU_MAX et RANG_POTION_MAX de v3_bivouac.cpp ; lot T0 : le gabarit
+# inversait le feu et la potion).
+RANGS_CAMP = {"feu": 3, "potion": 2}
 
 DUROTAR = {
     "nom": "Durotar", "zone": 14, "plage": (1, 10),
@@ -50,9 +60,14 @@ DUROTAR = {
     "annexes": {"lieux": 10, "primes": 9, "contrats": 5, "defis": 6, "reliques": 16},
     # Par annexe à donneur, tous paliers compris (solazeroth_v3_annexes) : (éclats, Marques), arrondis.
     "bareme": {"primes": (15, 22), "contrats": (16, 29), "defis": (11, 17)},
+    # Par point de part (« Durotar — Histoire et quêtes », §4.1) : (puissance la plus haute de la tranche, cuivres,
+    # éclats) ; Marques : 20 par point.
+    "bareme_par_point": {"marques": 20, "tranches": [(3, 3000, 5), (6, 6000, 8), (9, 10000, 12), (11, 12000, 15)]},
     "recolte": {"filons": [1731], "plantes": [1617, 1618, 1619, 1620]},
     "plats": 5,
-    "camp": {"feu": (1, 2), "potion": (2, 3)},
+    # Rangs ouverts dans la zone (v3_bivouac.cpp : feu 1 contre des Marques, 2 et 3 par solazeroth_v3_camp_couts genre
+    # 2 ; potion 1 et 2 par le genre 1). Lot T0 : le gabarit inversait les deux.
+    "camp": {"feu": (1, 3), "potion": (1, 2)},
     "specialisations": {
         "guerrier_tank": {"emplacements": (3, 5), "techniques": [100011, 100013, 100012, 100019, 100015, 100014, 100016]},
         # Lot D2 : mêmes étapes du récit (Diablotin, Drain de vie, Peur, Marcheur du Vide, Malédiction d'agonie).
@@ -63,24 +78,33 @@ DUROTAR = {
                               "techniques": [100302, 100304, 100305, 100307, 100308, 100311, 100316]},
     },
     # Bleues du Gouffre : niveau d'objet 14 (equipement_gouffre_v3.PUISSANCE), la puissance d'arrivée aux Tarides.
-    "donjon": {"nom": "Gouffre de Ragefeu", "carte": 389, "puissance": (10, 12), "bleues": 14},
+    "donjon": {"nom": "Gouffre de Ragefeu", "carte": 389, "puissance": (10, 12), "bleues": 14, "seuil": 60},
     # Revenu mesuré (simulation_rangs.py) ; filons présents à la fois (pools et filons seuls, filons_heure.py).
     "economie": {"eclats_par_pourcent": 18, "or_par_pourcent": 2700, "taille": 1.0, "filons_actifs": 53},
 }
 
 
-def extrapoler(base, nom, zone, plage, specialisations, recolte=None, donjon=None, taille=None):
+def extrapoler(base, nom, zone, plage, specialisations, recolte=None, donjon=None, taille=None, secteurs=None):
     """Zone de même forme que base, ses puissances ramenées sur la nouvelle plage. Le camp prend les deux rangs
-    suivants ; ce qui dépend de la zone réelle (récolte, plats, donjon) reste à remplir si on ne le donne pas."""
+    suivants ; ce qui dépend de la zone réelle (récolte, plats, donjon, barème moyen des annexes) reste à remplir si
+    on ne le donne pas. Le barème par point repart de la dernière tranche de base, puis × 1,54 par tranche (décision 4
+    du comparatif des Tarides)."""
     a0, a1 = base["plage"]
     b0, b1 = plage
 
     def ramener(p):
         return round(b0 + (p - a0) * (b1 - b0) / (a1 - a0), 1)
 
-    dernier = len(base["secteurs"])
-    secteurs = [("Donjon et fin" if i == dernier else f"Secteur {i}", d, f, (ramener(p[0]), ramener(p[1])), ramener(niveau))
-                for i, (_, d, f, p, niveau) in enumerate(base["secteurs"], 1)]
+    if secteurs is None:
+        dernier = len(base["secteurs"])
+        secteurs = [("Donjon et fin" if i == dernier else f"Secteur {i}", d, f, (ramener(p[0]), ramener(p[1])),
+                     ramener(niveau)) for i, (_, d, f, p, niveau) in enumerate(base["secteurs"], 1)]
+    _, cuivres, eclats = base["bareme_par_point"]["tranches"][-1]
+    tranches = []
+    for haut, *_ in base["bareme_par_point"]["tranches"]:
+        tranches.append((round(ramener(haut)), round(cuivres, -2), round(eclats)))
+        cuivres, eclats = cuivres * 1.54, eclats * 1.54
+    bareme_par_point = {"marques": base["bareme_par_point"]["marques"], "tranches": tranches}
     economie = dict(base["economie"])
     # Une zone plus large (15 points au lieu de 10) a proportionnellement plus de monstres par % de zone.
     economie["taille"] = taille if taille is not None else base["economie"]["taille"] * (b1 - b0 + 1) / (a1 - a0 + 1)
@@ -93,9 +117,11 @@ def extrapoler(base, nom, zone, plage, specialisations, recolte=None, donjon=Non
     donjon = dict(donjon or {"nom": None, "carte": None})
     donjon.setdefault("puissance", (b1 + d0 - a1, b1 + d1 - a1))
     donjon.setdefault("bleues", b1 + base["donjon"]["bleues"] - a1)
+    donjon.setdefault("seuil", base["donjon"]["seuil"])   # % de la zone pour entrer (60 %, décision 3)
     return {
         "nom": nom, "zone": zone, "plage": plage, "secteurs": secteurs,
-        "parts": dict(base["parts"]), "annexes": dict(base["annexes"]), "bareme": dict(base["bareme"]),
+        "parts": dict(base["parts"]), "annexes": dict(base["annexes"]), "bareme": None,
+        "bareme_par_point": bareme_par_point,
         "recolte": recolte, "plats": None, "camp": camp, "specialisations": specialisations,
         "donjon": donjon, "economie": economie,
     }
@@ -107,7 +133,20 @@ TARIDES = extrapoler(DUROTAR, "Les Tarides", 17, (14, 30), {
     "guerrier_tank": {"emplacements": (5, 6), "techniques": [100020, 100018]},    # Fracasser armure, Mur protecteur
     "demoniste_affliction": {"emplacements": (5, 6), "techniques": [100208, 100209]},   # Faiblesse, Siphon de vie
     "voleur_assassinat": {"emplacements": (5, 6), "techniques": [100312, 100313]},   # Poison affaiblissant, Lancer
-}, recolte={"filons": [1731, 1732, 1733], "plantes": [1617, 1618, 1619, 1620, 2041, 2045, 3729]})
+},
+    # Lot T0 (brouillon des Tarides, §4.6) : les entrées réelles de la zone 17, relevées en base. Cuivre 1731, 3763,
+    # 103713 ; étain 1732, 3764, 103711 ; argent 1733, 105569.
+    recolte={"filons": [1731, 1732, 1733, 3763, 3764, 103711, 103713, 105569],
+             "plantes": [1620, 1622, 1623, 1624, 1628, 2045, 3724, 3725, 3726, 3727, 3729, 3730]},
+    donjon={"nom": "Cavernes des Lamentations", "carte": 43},   # 30-32, bleues 34 (décision 16 du comparatif)
+    # Lot T0 : les vraies bornes des secteurs (point 10 du §5.2 : 0, 19,3, 48,55, 71,65, 100). Le donjon ne compte pas
+    # dans le pourcentage. Niveau d'objet du nouvel équipement : le haut du secteur (une quête donne la puissance de
+    # son secteur).
+    secteurs=[("La Croisée", 0, 19.3, (14, 16), 16.0), ("Oasis et côte", 19.3, 48.55, (18, 22), 22.0),
+              ("Le sud", 48.55, 71.65, (25, 27), 27.0), ("L'extrême sud", 71.65, 100, (27, 30), 30.0)])
+# Barème des annexes par point (décision 4 du comparatif, brouillon §4.1) : la Croisée part de la dernière tranche
+# de Durotar, puis × 1,54 environ par tranche.
+TARIDES["bareme_par_point"]["tranches"] = [(16, 12000, 15), (22, 18500, 23), (29, 28500, 36), (31, 44000, 55)]
 TARIDES["economie"]["filons_actifs"] = 166   # filons_heure.py (cuivre, étain, argent de la zone 17)
 TARIDES["plats"] = 10                         # plafond des Tarides (décision de l'utilisateur du 03/11/2026)
 # Zone 3 : commence aux bleues des Cavernes (34) ; même largeur que les Tarides (16 points), fin à 50. Fin choisie
@@ -135,6 +174,8 @@ def a_remplir(zone):
             manque.append(cle)
     if zone["donjon"].get("nom") is None:
         manque.append("donjon")
+    if zone.get("bareme") is None:
+        manque.append("barème moyen des annexes (une fois écrites)")
     if zone["economie"].get("filons_actifs") is None:
         manque.append("filons actifs (filons_heure.py)")
     return manque
@@ -168,10 +209,22 @@ def verifier(zone, precedente=None):
         erreurs.append(f"{nom} : le donjon ({zone['donjon']['puissance'][1]}) est plus faible que la zone ({p1})")
     if zone["recolte"] is not None and not (zone["recolte"].get("filons") and zone["recolte"].get("plantes")):
         erreurs.append(f"{nom} : il faut des filons et des plantes (règle des zones de départ)")
-    for g, (r0, r1) in zone["camp"].items():
-        if r1 - r0 != 1:
-            erreurs.append(f"{nom} : {g} ouvre {r1 - r0 + 1} rangs, deux attendus")
+    # Barème par point : tranches croissantes, qui couvrent la plage.
+    tranches = zone["bareme_par_point"]["tranches"]
+    for (h0, c0, e0), (h1, c1, e1) in zip(tranches, tranches[1:]):
+        if not (h1 > h0 and c1 > c0 and e1 > e0):
+            erreurs.append(f"{nom} : barème par point non croissant ({h0} puis {h1})")
+    if tranches[-1][0] < p1:
+        erreurs.append(f"{nom} : le barème par point s'arrête à {tranches[-1][0]}, la zone va jusqu'à {p1}")
     if precedente:
+        # Le camp ouvre deux rangs de chaque par zone. Durotar, qui ouvre le camp, a le feu 1 à 3.
+        for g, (r0, r1) in zone["camp"].items():
+            if r1 - r0 != 1:
+                erreurs.append(f"{nom} : {g} ouvre {r1 - r0 + 1} rangs, deux attendus")
+        # Décision 4 du comparatif des Tarides : rien ne baisse au changement de zone.
+        if tranches[0][1:] != precedente["bareme_par_point"]["tranches"][-1][1:]:
+            erreurs.append(f"{nom} : le barème par point commence à {tranches[0][1:]}, la zone précédente finit à "
+                           f"{precedente['bareme_par_point']['tranches'][-1][1:]}")
         # La zone commence au niveau d'objet des bleues du donjon précédent : c'est la puissance d'un joueur qui
         # arrive tout en bleu, au rang 0 (Durotar : bleues du Gouffre 14, les Tarides commencent à 14). Le saut
         # entre la fin d'une zone et le début de la suivante est donc voulu.
@@ -203,7 +256,7 @@ def verifier(zone, precedente=None):
 
 
 # ----------------------------------------------------------------------------------------------------------------
-# Relecture de Durotar dans la base et le code
+# Relecture des zones dans la base et le code
 # ----------------------------------------------------------------------------------------------------------------
 def sql(requete):
     r = subprocess.run([MYSQL, "--defaults-extra-file=" + CNF, "-N", "-B", "acore_world", "-e", requete],
@@ -216,21 +269,46 @@ ORDRES = {"TANK": "guerrier_tank", "AFFLICTION": "demoniste_affliction", "ASSASS
 
 
 def techniques_du_kit():
-    """Techniques de chaque liste de v3_kit.cpp ouvertes dès aujourd'hui, c'est-à-dire pas « PLUS_TARD »."""
+    """Techniques de chaque liste de v3_kit.cpp, dans l'ordre : (sort, ouverte dès aujourd'hui, pas « PLUS_TARD »)."""
     texte = open(KIT, encoding="utf-8").read()
     lu = {}
     for nom, bloc in re.findall(r"std::vector<Technique> const ORDRE_(\w+) =\s*\{(.*?)\n    \};", texte, re.S):
-        lu[ORDRES.get(nom, nom)] = [int(s) for s, quete in re.findall(r'\{ (\d+), "[^"]+", (\w+), \d+,', bloc)
-                                    if quete != "PLUS_TARD"]
+        lu[ORDRES.get(nom, nom)] = [(int(s), quete != "PLUS_TARD")
+                                    for s, quete in re.findall(r'\{ (\d+), "[^"]+", (\w+), \d+,', bloc)]
     return lu
 
 
-def relire_durotar():
-    """Durotar tel que le jeu le contient, sous la forme du gabarit (seulement ce qui se relit)."""
-    z = DUROTAR["zone"]
+def serrures_de_recolte():
+    """Serrures (Lock.dbc) des plantes et des filons : première clé de type « compétence » (2), herboristerie (2) ou
+    minage (3). Les coffres et objets de quête qui demandent l'herboristerie en deuxième clé n'en sont pas."""
+    sys.path.insert(0, ICI)
+    import dbc
+    return {r[0] for r in dbc.Dbc.ouvrir(LOCK).enregistrements if r[1] == 2 and r[9] in (2, 3)}
+
+
+def relire(zone):
+    """La zone telle que le jeu la contient, sous la forme du gabarit (seulement ce qui se relit). Tant que la zone
+    n'a pas de parts en base (« construite » faux), seuls la récolte, les techniques et le donjon se relisent."""
+    z = zone["zone"]
     parts = {int(g): int(p) / 100 for g, p in sql(f"SELECT genre, SUM(part) FROM solazeroth_v3_zone_parts "
                                                   f"WHERE zone = {z} GROUP BY genre")}
-    # Genres de solazeroth_v3_zone_parts : 1 quête, 2 sous-zone, 3 lieu, 4 annexe à donneur, 5 relique.
+    serrures = ", ".join(map(str, sorted(serrures_de_recolte())))
+    carte = zone["donjon"]["carte"]
+    seuil = sql(f"SELECT zone, seuil FROM solazeroth_v3_donjons_seuils WHERE carte = {carte}")
+    lu = {
+        "construite": bool(parts),
+        "recolte": {o for (o,) in sql(f"SELECT DISTINCT id FROM gameobject WHERE zoneId = {z}")},
+        "noeuds": {o for (o,) in sql(f"SELECT DISTINCT g.id FROM gameobject g JOIN gameobject_template t "
+                                     f"ON t.entry = g.id WHERE g.zoneId = {z} AND t.type = 3 "
+                                     f"AND t.data0 IN ({serrures})")},
+        "techniques": techniques_du_kit(),
+        "entree": bool(sql(f"SELECT 1 FROM areatrigger_teleport WHERE target_map = {carte} LIMIT 1")),
+        "seuil": (int(seuil[0][0]), int(seuil[0][1]) / 100) if seuil else None,
+    }
+    if not parts:
+        return lu
+    # Genres de solazeroth_v3_zone_parts : 1 quête, 2 sous-zone, 3 lieu, 4 annexe à donneur, 5 relique. Annexes,
+    # reliques et lieux : les tables n'ont pas encore de colonne de zone (tout est à Durotar).
     lignes = sql("SELECT cle, eclats, insignes FROM solazeroth_v3_annexes")
     numeros = sorted({int(c[1:]) for c, _, _ in lignes})
     bareme = {}
@@ -238,7 +316,12 @@ def relire_durotar():
         dans = [l for l in lignes if n0 <= int(l[0][1:]) <= n1]
         nombre = len({l[0] for l in dans})
         bareme[famille] = (round(sum(int(l[1]) for l in dans) / nombre), round(sum(int(l[2]) for l in dans) / nombre))
-    lu = {
+    texte = open(BIVOUAC, encoding="utf-8").read()
+    feu = int(re.search(r"RANG_FEU_MAX = (\d+)", texte).group(1))
+    potion = int(re.search(r"RANG_POTION_MAX = (\d+)", texte).group(1))
+    couts = {int(g): (int(a), int(b)) for g, a, b in
+             sql("SELECT genre, MIN(rang), MAX(rang) FROM solazeroth_v3_camp_couts GROUP BY genre")}
+    lu.update({
         "parts": {"histoire": parts.get(1, 0), "exploration": parts.get(2, 0), "lieux": parts.get(3, 0),
                   "annexes": parts.get(4, 0), "reliques": parts.get(5, 0)},
         "annexes": {
@@ -248,19 +331,43 @@ def relire_durotar():
             "reliques": int(sql("SELECT COUNT(*) FROM solazeroth_v3_reliques")[0][0]),
         },
         "plats": int(sql(f"SELECT COUNT(*) FROM solazeroth_v3_plats WHERE zone = {z}")[0][0]),
-        "camp": {g: (int(a), int(b)) for g, a, b in (
-            (["feu", "potion"][int(genre) - 1], a, b) for genre, a, b in
-            sql("SELECT genre, MIN(rang), MAX(rang) FROM solazeroth_v3_camp_couts GROUP BY genre"))},
-        "recolte": {o for (o,) in sql(f"SELECT DISTINCT id FROM gameobject WHERE zoneId = {z}")},
-        "techniques": techniques_du_kit(),
+        # Rangs : RANG_*_MAX de v3_bivouac.cpp. Coûts : genre 1 la potion, genre 2 le feu (rang 1 du feu contre
+        # des Marques, sans ligne de coût).
+        "camp": {"feu": (1, feu), "potion": (1, potion)},
+        "couts": {"feu": couts.get(2), "potion": couts.get(1)},
         "bareme": bareme,
-    }
+    })
     return lu
 
 
-def comparer_durotar(lu):
-    d = DUROTAR
+def comparer(zone, lu, precedentes):
+    """Écarts entre le gabarit de la zone et le jeu. precedentes : les zones d'avant (rang des techniques)."""
+    d = zone
     ecarts = []
+    declares = d["recolte"]["filons"] + d["recolte"]["plantes"]
+    for o in declares:
+        if str(o) not in lu["recolte"]:
+            ecarts.append(f"récolte : {o} n'apparaît pas dans la zone {d['zone']}")
+    for o in sorted(lu["noeuds"] - {str(x) for x in declares}, key=int):
+        ecarts.append(f"récolte : {o} (plante ou filon de la zone {d['zone']}) manque au gabarit")
+    # Les listes de v3_kit.cpp mettent les techniques de chaque zone à la suite de celles des zones précédentes.
+    for spe in sorted(set(lu["techniques"]) | set(d["specialisations"])):
+        gabarit = d["specialisations"].get(spe, {}).get("techniques")
+        debut = sum(len(p["specialisations"].get(spe, {}).get("techniques", [])) for p in precedentes)
+        tranche = lu["techniques"].get(spe, [])[debut:debut + len(gabarit or [])]
+        if [s for s, _ in tranche] != gabarit:
+            ecarts.append(f"techniques ({spe}) : gabarit {gabarit}, v3_kit.cpp {[s for s, _ in tranche] or None}")
+        elif lu["construite"] and not all(ouverte for _, ouverte in tranche):
+            ecarts.append(f"techniques ({spe}) : {[s for s, o in tranche if not o]} encore « PLUS_TARD »")
+    if not lu["entree"]:
+        ecarts.append(f"donjon : aucune entrée (areatrigger_teleport) vers la carte {d['donjon']['carte']}")
+    if lu["seuil"] is not None and lu["seuil"] != (d["zone"], d["donjon"]["seuil"]):
+        ecarts.append(f"donjon : seuil du gabarit {d['donjon']['seuil']} % de la zone {d['zone']}, table "
+                      f"{lu['seuil'][1]:g} % de la zone {lu['seuil'][0]}")
+    if lu["construite"] and lu["seuil"] is None:
+        ecarts.append(f"donjon : pas de seuil dans solazeroth_v3_donjons_seuils pour la carte {d['donjon']['carte']}")
+    if not lu["construite"]:
+        return ecarts
     attendu = {"histoire": d["parts"]["histoire"], "exploration": d["parts"]["exploration"],
                "lieux": d["parts"]["lieux"], "reliques": d["parts"]["reliques"],
                "annexes": d["parts"]["primes"] + d["parts"]["contrats"] + d["parts"]["defis"]}
@@ -275,23 +382,30 @@ def comparer_durotar(lu):
     if lu["plats"] != d["plats"]:
         ecarts.append(f"plats : gabarit {d['plats']}, jeu {lu['plats']}")
     if lu["camp"] != d["camp"]:
-        ecarts.append(f"camp : gabarit {d['camp']}, jeu {lu['camp']}")
-    for o in d["recolte"]["filons"] + d["recolte"]["plantes"]:
-        if str(o) not in lu["recolte"]:
-            ecarts.append(f"récolte : {o} n'apparaît pas dans la zone {d['zone']}")
-    for spe in sorted(set(lu["techniques"]) | set(d["specialisations"])):
-        gabarit = d["specialisations"].get(spe, {}).get("techniques")
-        if lu["techniques"].get(spe) != gabarit:
-            ecarts.append(f"techniques ({spe}) : gabarit {gabarit}, v3_kit.cpp {lu['techniques'].get(spe)}")
+        ecarts.append(f"camp : gabarit {d['camp']}, v3_bivouac.cpp {lu['camp']}")
+    # Chaque rang de la zone a son coût en base (sauf le feu 1, en Marques).
+    for g, (r0, r1) in d["camp"].items():
+        bas = max(r0, 2) if g == "feu" else r0
+        if lu["couts"][g] is None or lu["couts"][g][0] > bas or lu["couts"][g][1] < r1:
+            ecarts.append(f"camp : {g} {bas} à {r1} sans coût complet en base ({lu['couts'][g]})")
     return ecarts
 
 
 def main():
     erreurs = []
-    print("1. Durotar relu dans le jeu, comparé au gabarit")
-    ecarts = comparer_durotar(relire_durotar())
-    print("\n".join("  écart : " + e for e in ecarts) or "  conforme")
-    erreurs += ecarts
+    precedentes = []
+    print("1. Zones relues dans le jeu, comparées au gabarit")
+    for zone in ZONES:
+        if zone["zone"] is None:
+            continue
+        lu = relire(zone)
+        ecarts = comparer(zone, lu, precedentes)
+        etat = "" if lu["construite"] else " (pas encore construite : récolte, techniques et donjon seulement)"
+        print(f"  {zone['nom']}{etat} : " + ("conforme" if not ecarts else f"{len(ecarts)} écart(s)"))
+        for e in ecarts:
+            print("    écart : " + e)
+        erreurs += ecarts
+        precedentes.append(zone)
     print("\n2. Emboîtement des zones")
     precedente = None
     for zone in ZONES:
@@ -305,6 +419,14 @@ def main():
         for ligne in e:
             print("    " + ligne)
         precedente = zone
+    print("\n3. Fiches d'arrivée et de sortie (fiches_zones.py)")
+    import fiches_zones
+    e, lignes = fiches_zones.verifier()
+    for l in lignes:
+        print("  " + l)
+    for l in e:
+        print("  erreur : " + l)
+    erreurs += e
     print("\nAucun problème trouvé." if not erreurs else f"\n{len(erreurs)} problème(s).")
     return 1 if erreurs else 0
 

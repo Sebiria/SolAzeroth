@@ -18,7 +18,8 @@
 //   boss est tombé au moins une fois (au compte, solazeroth_v3_aventurier genre 7) se rejoint de n'importe où, hors
 //   combat et hors d'une instance, par .teleportdonjon <carte> (carnet Aventure, onglet Téléportation). Le donjon est
 //   remis à zéro avant : instance neuve, difficulté à choisir à l'entrée. Arrivée : celle de l'entrée du donjon
-//   (areatrigger_teleport) ; les conditions d'entrée restent (Gouffre de Ragefeu : v3_gouffre.cpp). Interface (préfixe
+//   (areatrigger_teleport) ; les conditions d'entrée restent, vérifiées avant la remise à zéro (lot T0 : table
+//   solazeroth_v3_donjons_seuils et entrées scellées, v3_gouffre.cpp). Interface (préfixe
 //   SOLTELEPORT) : « DEBUT », un « DONJON;carte;nom » par donjon terminé, « FIN ».
 
 #include "SolAzeroth.h"
@@ -444,6 +445,12 @@ public:
         if (player->IsInCombat() || !player->IsAlive() || player->IsInFlight())
         {
             handler->SendErrorMessage("Pas en combat, ni mort, ni en vol.");
+            return false;
+        }
+        // Lot T0 des Tarides : les conditions d'entrée (seuil, quête, entrée scellée) avant de remettre à zéro.
+        if (std::string refus = SolAzeroth::RefusDonjon(player, *carte); !refus.empty())
+        {
+            handler->SendErrorMessage(refus, false);
             return false;
         }
         for (uint8 difficulte = 0; difficulte < MAX_DIFFICULTY; ++difficulte)

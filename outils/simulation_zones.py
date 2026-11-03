@@ -36,13 +36,19 @@ def simuler(zones, filons_par_pourcent, transfert, rang_max=5):
             rangs = [max(0, r - 1) for r in rangs] if transfert else [0] * PIECES
             f_monstres = gabarit_zone.facteur((pa + pb) / 2)
             revenu = eco["eclats_par_pourcent"] * eco["taille"] * f_monstres
-            for _ in range(debut, fin):
-                reserve += revenu
-                gagne += revenu
-                ors += eco["or_par_pourcent"] * eco["taille"] * f_monstres
-                heures += eco["eclats_par_pourcent"] * eco["taille"] / ECLATS_PAR_HEURE
+            # Lot T0 des Tarides : bornes non entières (19,3 %…). Un pas par % de zone, le dernier au prorata ; aux
+            # bornes entières (Durotar), rien ne change.
+            largeur = fin - debut
+            pas = [1.0] * int(largeur + 1e-9)
+            if largeur - len(pas) > 1e-9:
+                pas.append(largeur - len(pas))
+            for part in pas:
+                reserve += revenu * part
+                gagne += revenu * part
+                ors += eco["or_par_pourcent"] * eco["taille"] * f_monstres * part
+                heures += eco["eclats_par_pourcent"] * eco["taille"] / ECLATS_PAR_HEURE * part
                 for g in gemmes:
-                    gemmes[g] += filons_par_pourcent * par_filon[g]
+                    gemmes[g] += filons_par_pourcent * par_filon[g] * part
                 while True:
                     i = min(range(PIECES), key=lambda k: rangs[k])
                     vers = rangs[i] + 1

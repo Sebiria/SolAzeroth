@@ -55,6 +55,11 @@ namespace SolAzeroth
     bool PassifActif(Player* player, unsigned char passif);
     // v3 : un monstre d'un lieu à nettoyer (v3_zone.cpp).
     bool MonstreDeLieu(unsigned int entree);
+    // v3, lot T0 des Tarides : copie renforcée d'un chef de lieu (solazeroth_v3_lieux_chefs ; v3_zone.cpp).
+    bool ChefRenforce(unsigned int entree);
+    // v3, lot T0 des Tarides : ce qui empêche ce joueur d'entrer dans ce donjon (seuil de zone, quête : table
+    // solazeroth_v3_donjons_seuils), message entier, ou une chaîne vide (v3_gouffre.cpp ; .teleportdonjon).
+    std::string RefusDonjon(Player* player, unsigned int carte);
     // v3, lot 3b : chef renforcé du lieu tombé (v3_zone.cpp).
     bool LieuClos(Player* player, unsigned int lieu);
     // v3 : meilleure médaille d'un défi (0 aucune, 1 bronze, 2 argent, 3 or) et carte des reliques achetée (v3_annexes.cpp).

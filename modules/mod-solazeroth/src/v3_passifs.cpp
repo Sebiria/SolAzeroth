@@ -53,7 +53,6 @@ namespace
     uint32 const PIERRE_DE_FOYER = 8690;
     uint32 const TRAIT_DE_L_OMBRE = 100201;                                       // v3_demoniste.cpp
     uint32 const FISSURE = 900101, SPHERE = 900100;                                // v3_modes.cpp
-    uint32 const CHEF_RENFORCE_PREMIER = 910010, CHEF_RENFORCE_DERNIER = 910014;   // migration 075
     uint32 const TICK = 1000;
 
     struct Choix
@@ -187,7 +186,7 @@ namespace
     {
         uint32 rang = creature->GetCreatureTemplate()->rank;
         return rang == CREATURE_ELITE_ELITE || rang == CREATURE_ELITE_RARE || rang == CREATURE_ELITE_RAREELITE
-            || (creature->GetEntry() >= CHEF_RENFORCE_PREMIER && creature->GetEntry() <= CHEF_RENFORCE_DERNIER);
+            || SolAzeroth::ChefRenforce(creature->GetEntry());   // lot T0 : solazeroth_v3_lieux_chefs
     }
 
     float Inflige(Player* player, Creature* cible)
