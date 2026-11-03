@@ -147,7 +147,7 @@ aide:SetText("Clique un bouton, puis appuie sur la touche voulue ; disposés com
 
 local plateau = CreateFrame("Frame", nil, p1)
 plateau:SetPoint("TOPLEFT", 24, -40)
-plateau:SetSize(576, 220)
+plateau:SetSize(584, 220)
 plateau:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
 plateau:SetBackdropColor(S.Couleur("creux", 0.9))
 plateau:SetBackdropBorderColor(S.Couleur("bordCreux"))
@@ -173,16 +173,17 @@ local function Touchette(parent)
     return t
 end
 
--- Disposition de l'écran : en haut 5 à 8, le feu et la pierre de foyer, en bas 1 à 4, la potion et le repas ; la pêche
--- à gauche, entre les deux rangées.
+-- Disposition de l'écran : en haut 5 à 8, le feu, la pierre de foyer et la monture, en bas 1 à 4, la potion, le repas et
+-- le consommable ; la pêche à gauche, entre les deux rangées.
 local PLACES = { [5] = { 0, 0 }, [6] = { 1, 0 }, [7] = { 2, 0 }, [8] = { 3, 0 }, [10] = { 4, 0 }, [11] = { 5, 0 },
-    [1] = { 0, 1 }, [2] = { 1, 1 }, [3] = { 2, 1 }, [4] = { 3, 1 }, [9] = { 4, 1 }, [12] = { 5, 1 }, [13] = { -1, 0.5 } }
+    [14] = { 6, 0 }, [1] = { 0, 1 }, [2] = { 1, 1 }, [3] = { 2, 1 }, [4] = { 3, 1 }, [9] = { 4, 1 }, [12] = { 5, 1 },
+    [13] = { 6, 1 }, [15] = { -1, 0.5 } }
 local cases = {}
 for n, e in ipairs(ENTREES) do
     local colonne, ligne = PLACES[n][1], PLACES[n][2]
     local b = CreateFrame("Button", nil, plateau)
     b:SetSize(TAILLE, TAILLE)
-    b:SetPoint("TOPLEFT", 14 + (colonne + 1) * 76 + (colonne >= 4 and 20 or 0) + (colonne >= 0 and 20 or 0), -22 - ligne * 104)
+    b:SetPoint("TOPLEFT", 14 + (colonne + 1) * 66 + (colonne >= 4 and 20 or 0) + (colonne >= 0 and 20 or 0), -22 - ligne * 104)
     b:SetBackdrop({ bgFile = S.BLANC, edgeFile = S.BLANC, edgeSize = 1, insets = { left = 1, right = 1, top = 1, bottom = 1 } })
     b.icone = b:CreateTexture(nil, "ARTWORK")
     b.icone:SetPoint("TOPLEFT", 6, -6)
